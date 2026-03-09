@@ -47,6 +47,7 @@ const TAB_COLORS = {
   desmanche:  '#ef4444',
   fornecedores: '#f97316',
   injecao:   '#8b5cf6',
+  patrimonio: '#D4AF37',
   master:    '#D4AF37',
 };
 const BLUE_INFO = '#3b82f6';
@@ -437,7 +438,7 @@ function MasterPanel({ setPlanosGlobais }) {
     { key: 'estoque', label: '📦 Estoque' },
     { key: 'financeiro', label: '💰 Financeiro' },
     { key: 'equipe', label: '👥 Equipe' },
-    { key: 'patrimonio', label: '🏢 Patrimônio' },
+    { key: 'patrimonio', label: '🔩 Desmanche' },
     { key: 'leads', label: '👥 Clientes' },
     { key: 'config', label: '⚙️ Config' },
     { key: 'estrategia', label: '🚀 Estratégia' },
@@ -539,6 +540,26 @@ function MasterPanel({ setPlanosGlobais }) {
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '25px' }}>
         <h2 style={{ margin: 0, color: MASTER_COLOR }}>👑 Painel Master</h2>
         <span style={{ background: `${MASTER_COLOR}22`, border: `1px solid ${MASTER_COLOR}`, padding: '5px 12px', borderRadius: '20px', color: MASTER_COLOR, fontSize: '12px', fontWeight: 'bold' }}>{oficinas.length} OFICINAS</span>
+      </div>
+
+      {/* ─── BACKUP JSON ─── */}
+      <div style={{ background: '#0a0a0a', border: `1px solid ${MASTER_COLOR}44`, borderRadius: '12px', padding: '16px', marginBottom: '24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '10px' }}>
+        <div>
+          <p style={{ color: MASTER_COLOR, fontWeight: 'bold', margin: '0 0 2px 0', fontSize: '14px' }}>💾 Backup de Dados (JSON)</p>
+          <p style={{ color: '#555', fontSize: '11px', margin: 0 }}>Exporta a lista de todas as oficinas cadastradas em formato JSON.</p>
+        </div>
+        <button onClick={() => {
+          const json = JSON.stringify(oficinas, null, 2);
+          const blob = new Blob([json], { type: 'application/json' });
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement('a');
+          a.href = url;
+          a.download = `backup_oficinas_${new Date().toISOString().split('T')[0]}.json`;
+          a.click();
+          URL.revokeObjectURL(url);
+        }} style={{ padding: '12px 20px', background: MASTER_COLOR, color: 'black', border: 'none', borderRadius: '8px', fontWeight: 'bold', cursor: 'pointer', fontSize: '13px', whiteSpace: 'nowrap' }}>
+          ⬇️ Baixar Backup JSON
+        </button>
       </div>
 
       {/* NOVO CMS DE PREÇOS MODULARES */}
@@ -796,13 +817,14 @@ const ModuloRevisao = ({ dadosOficina, papelLogado, oficinaId, osParaEditar, onC
       const checklistTexto = (itensProblema ? `ITENS QUE PRECISAM DE ATENÇÃO:\n${itensProblema}\n\n` : '') + `ITENS OK: ${itensOk}` + (obsVoz ? `\n\nOBS DO MECÂNICO: ${obsVoz}` : '');
       const totalRevisao = (Number(valorPecasRevisao) || 0) + (Number(valorMaoObraRevisao) || 0);
       const dadosRevisao = {
-        placa: normalizarPlaca(placa), modelo: modelo || '', km: kmAtual || '',
+        placa: normalizarPlaca(placa), modelo: modelo || '', km: kmAtual || '', kmAtual: kmAtual || '',
         nomeCliente: cliente || '', telefone: telefone || '',
         checklist: checklistTexto, diagnostico: laudoFinal || obsVoz || '',
-        status: 'Pendente',
+        status: 'pendente',
+        tipoServico: 'revisao_preventiva',
         total: totalRevisao,
-        valorPecas: valorPecasRevisao || 0,
-        valorMaoObra: valorMaoObraRevisao || 0,
+        valorPecas: Number(valorPecasRevisao) || 0,
+        valorMaoObra: Number(valorMaoObraRevisao) || 0,
         detalhesPecas: '', fotos: [], origem: 'revisao_preventiva',
         data_atualizacao: new Date().toISOString(),
         statusPagamento: 'pendente', statusRetorno: 'pendente',
@@ -816,23 +838,16 @@ const ModuloRevisao = ({ dadosOficina, papelLogado, oficinaId, osParaEditar, onC
         if (onCancelarEdicao) onCancelarEdicao();
       } else {
         // MODO NOVO
-        if (!laudoFinal || laudoFinal.includes('Gerando')) return alert("⚠️ Gere o diagnóstico primeiro!");
-        await addDoc(collection(db, 'oficinas', oficinaId, 'os'), {
+        const novaOsRef = await addDoc(collection(db, 'oficinas', oficinaId, 'os'), {
           ...dadosRevisao,
-          data: new Date().toLocaleDateString('pt-BR'),
-          data_registro: new Date(),
+          data: new Date().toISOString().split('T')[0],
+          data_registro: new Date().toISOString(),
         });
         setSalvoOS(true);
-        alert(`✅ O.S. criada com sucesso para ${placa.toUpperCase()}!`);
+        const dadosSalvos = { ...dadosRevisao, data: new Date().toISOString().split('T')[0], data_registro: new Date().toISOString() };
+        if (onSalvo) onSalvo(novaOsRef.id, dadosSalvos);
       }
 
-      setTimeout(() => {
-        setPlaca(''); setModelo(''); setKmAtual(''); setCliente(''); setTelefone('');
-        setObsVoz(''); setLaudoFinal(''); setSalvoOS(false);
-        setValorPecasRevisao(''); setValorMaoObraRevisao('');
-        setChecklist({ motor_correia: 'ok', motor_velas: 'ok', motor_fluido: 'ok', motor_vazamento: 'ok', freio_pastilha: 'ok', freio_disco: 'ok', freio_fluido: 'ok', susp_amortecedor: 'ok', susp_buchas: 'ok', susp_bieleta: 'ok', geral_filtro_cabine: 'ok', geral_filtro_ar: 'ok', geral_iluminacao: 'ok', geral_palhetas: 'ok' });
-      }, 1500);
-      alert(`✅ O.S. criada com sucesso para ${placa.toUpperCase()}!`);
       setTimeout(() => {
         setPlaca(''); setModelo(''); setKmAtual(''); setCliente(''); setTelefone('');
         setObsVoz(''); setLaudoFinal(''); setSalvoOS(false);
@@ -915,21 +930,21 @@ const ModuloRevisao = ({ dadosOficina, papelLogado, oficinaId, osParaEditar, onC
             {/* ✅ BOTÃO NOVO: ADICIONAR À O.S. */}
             <button
               onClick={adicionarNaOS}
-              disabled={salvandoOS || salvoOS || !laudoFinal || loadingIA}
+              disabled={salvandoOS || salvoOS}
               style={{
                 width: '100%', padding: '18px',
-                background: salvoOS ? '#00E676' : salvandoOS ? '#333' : (!laudoFinal || loadingIA) ? '#1a1a1a' : '#FF6600',
-                color: salvoOS ? 'black' : (!laudoFinal || loadingIA) ? '#555' : 'white',
-                border: `2px solid ${salvoOS ? '#00E676' : (!laudoFinal || loadingIA) ? '#333' : '#FF6600'}`,
+                background: salvoOS ? '#00E676' : salvandoOS ? '#333' : '#FF6600',
+                color: salvoOS ? 'black' : 'white',
+                border: `2px solid ${salvoOS ? '#00E676' : '#FF6600'}`,
                 borderRadius: '8px', fontWeight: '900', fontSize: '14px',
-                cursor: (salvandoOS || salvoOS || !laudoFinal || loadingIA) ? 'not-allowed' : 'pointer',
-                boxShadow: (!laudoFinal || loadingIA) ? 'none' : '0 4px 15px rgba(255,102,0,0.3)',
+                cursor: (salvandoOS || salvoOS) ? 'not-allowed' : 'pointer',
+                boxShadow: '0 4px 15px rgba(255,102,0,0.3)',
               }}
             >
               {salvoOS ? '✅ ADICIONADO À O.S.!' : salvandoOS ? '⏳ SALVANDO...' : '📋 ADICIONAR À O.S.'}
             </button>
             <p style={{ color: '#555', fontSize: '11px', textAlign: 'center', marginTop: '6px', marginBottom: '10px' }}>
-              {!laudoFinal ? 'Gere o diagnóstico primeiro para habilitar' : 'Salva a revisão como nova O.S. no sistema'}
+              {'Salva a revisão como nova O.S. no sistema'}
             </p>
             {laudoFinal && !laudoFinal.includes('Gerando') && (
               <div style={{ marginTop: '10px', background: '#001a05', border: '1px solid #00E676', padding: '15px', borderRadius: '8px' }}>
@@ -1078,7 +1093,7 @@ const ModuloPneus = ({ dadosOficina, papelLogado, oficinaId, osParaEditar, onCan
         telefone: telefone || '',
         checklist: checklistTexto || 'Serviço de Borracharia',
         diagnostico: laudoPneu ? `Laudo IA: ${laudoPneu}` : '',
-        status: 'Pendente',
+        status: 'pendente',
         statusPagamento: 'pendente',
         statusRetorno: 'pendente',
         total: totalGeral,
@@ -1099,14 +1114,13 @@ const ModuloPneus = ({ dadosOficina, papelLogado, oficinaId, osParaEditar, onCan
         if (onCancelarEdicao) onCancelarEdicao();
       } else {
         // MODO NOVO
-        await addDoc(collection(db, 'oficinas', oficinaId, 'os'), {
+        const novaRefPneu = await addDoc(collection(db, 'oficinas', oficinaId, 'os'), {
           ...dadosPneu,
           data: new Date().toLocaleDateString('pt-BR'),
           data_registro: new Date().toISOString(),
         });
         setSalvoOS(true);
-        alert(`✅ Pneus/Serviços adicionados à O.S. da placa ${normalizarPlaca(placa)}!`);
-        // Limpa os campos
+        if (onSalvo) onSalvo(novaRefPneu.id, dadosPneu);
         setTimeout(() => {
           setPlaca(''); setModelo(''); setCliente(''); setTelefone('');
           setServicosBorracharia([]); setPneuVenda(''); setQtdPneu('1'); setValorPneu('');
@@ -1309,7 +1323,11 @@ const CopilotoIA = ({ papelLogado, dadosOficina }) => {
       const res = await analyzeImage(`${promptBase}\n\nPERGUNTA DO MECÂNICO: ${perguntaFinal}`, fotoAnexada || null);
       setResposta(res);
     } catch (e) {
-      setResposta('❌ Erro ao consultar a IA. Verifique sua conexão e tente novamente.');
+      if (fotoAnexada) {
+        setResposta('❌ Análise de foto indisponível no momento.\n\n💡 **Alternativa:** Use o Gemini diretamente:\n1. Acesse gemini.google.com\n2. Clique em 📎 para anexar a foto\n3. Pergunte: "Analise este defeito automotivo"\n\nOu tente apenas com texto digitado (sem foto) que funciona normalmente.');
+      } else {
+        setResposta('❌ Erro ao consultar a IA. Verifique sua conexão e tente novamente.\n\nSe o erro persistir, use o botão "Vídeo no Gemini" para acessar a IA diretamente.');
+      }
     }
     setPensando(false);
   };
@@ -1326,108 +1344,57 @@ const CopilotoIA = ({ papelLogado, dadosOficina }) => {
 
   return (
     <div style={{ background: '#0a0a0a', padding: '20px', borderRadius: '15px', border: `1px solid ${COPILOTO_COLOR}` }}>
-      <h2 style={{ color: COPILOTO_COLOR, marginBottom: '5px' }}>👨‍🔧 Copiloto Técnico IA</h2>
-      <p style={{ color: '#888', fontSize: '13px', marginBottom: '20px' }}>Assistente mecânico com IA real. Tire foto do defeito, grave um vídeo no Gemini ou digite sua dúvida técnica.</p>
+      <h2 style={{ color: COPILOTO_COLOR, marginBottom: '5px' }}>👨‍🔧 Copiloto Técnico — Como Usar o Gemini</h2>
+      <p style={{ color: '#888', fontSize: '13px', marginBottom: '20px' }}>Use o Gemini gratuitamente para diagnosticar defeitos em veículos. Siga o passo a passo abaixo:</p>
 
-      {/* SELETOR DE MODO */}
-      <div style={{ display: 'flex', gap: '8px', marginBottom: '20px', flexWrap: 'wrap' }}>
+      {/* PASSO A PASSO TEXTO / VOZ */}
+      <div style={{ background: '#0d0020', border: `2px solid ${COPILOTO_COLOR}`, borderRadius: '12px', padding: '20px', marginBottom: '16px' }}>
+        <h4 style={{ color: COPILOTO_COLOR, margin: '0 0 14px 0', fontSize: '14px' }}>⌨️ Diagnóstico por Texto ou Voz</h4>
         {[
-          { id: 'texto', icon: '⌨️', label: 'Digitar / Voz' },
-          { id: 'foto', icon: '📸', label: 'Foto do Defeito' },
-          { id: 'video', icon: '🎥', label: 'Vídeo no Gemini' },
-        ].map(m => (
-          <button key={m.id} onClick={() => setModoAtivo(m.id)} style={{ flex: 1, minWidth: '120px', padding: '12px', background: modoAtivo === m.id ? COPILOTO_COLOR : '#111', color: modoAtivo === m.id ? 'black' : COPILOTO_COLOR, border: `1px solid ${COPILOTO_COLOR}`, borderRadius: '10px', fontWeight: 'bold', fontSize: '13px', cursor: 'pointer' }}>
-            {m.icon} {m.label}
-          </button>
+          '1️⃣ Abra gemini.google.com no PC ou o app Gemini no celular',
+          '2️⃣ Digite ou dite a dúvida: marca, modelo, problema e código (ex: "Fiat Palio 1.0, erro P0420, catalisador")',
+          '3️⃣ Comece com: "Você é um mecânico automotivo especialista. Me ajude com este problema:"',
+          '4️⃣ O Gemini responde com diagnóstico, causas prováveis e passo a passo de reparo',
+          '5️⃣ Peça torques, especificações e procedimentos — ele responde com precisão técnica',
+        ].map((p, i) => (
+          <p key={i} style={{ color: '#ccc', fontSize: '13px', margin: '0 0 8px 0', padding: '8px 12px', background: '#1a0030', borderRadius: '8px', borderLeft: `3px solid ${COPILOTO_COLOR}` }}>{p}</p>
         ))}
       </div>
 
-      {/* MODO VÍDEO: instruções para usar o Gemini */}
-      {modoAtivo === 'video' && (
-        <div style={{ background: '#0d0020', border: `2px solid ${COPILOTO_COLOR}`, borderRadius: '12px', padding: '20px', marginBottom: '20px' }}>
-          <h4 style={{ color: COPILOTO_COLOR, margin: '0 0 15px 0' }}>🎥 Como diagnosticar pelo Vídeo com Gemini</h4>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-            {[
-              '1️⃣ Abra o app Gemini no celular (ou gemini.google.com no PC)',
-              '2️⃣ Toque no ícone de câmera 📹 para iniciar análise ao vivo',
-              '3️⃣ Aponte a câmera para o defeito: barulho, vazamento, fumaça, peça vibrando...',
-              '4️⃣ Diga ao Gemini: "Você é um mecânico especialista. O que está errado neste veículo?"',
-              '5️⃣ O Gemini analisa em tempo real e responde pelo áudio!',
-            ].map((p, i) => (
-              <p key={i} style={{ color: '#ccc', fontSize: '13px', margin: 0, padding: '8px 12px', background: '#1a0030', borderRadius: '8px', borderLeft: `3px solid ${COPILOTO_COLOR}` }}>{p}</p>
-            ))}
-          </div>
-          <div style={{ marginTop: '15px', background: '#1a1a00', border: '1px solid #eab308', borderRadius: '8px', padding: '12px' }}>
-            <p style={{ color: '#eab308', fontSize: '12px', margin: 0 }}>💡 <strong>Dica pro:</strong> Funciona muito bem para: barulho na suspensão, motor falhando ao vivo, vazamentos, freios riscando. Já diagnosticamos vários defeitos difíceis assim!</p>
-          </div>
-          <a href="https://gemini.google.com" target="_blank" rel="noopener noreferrer" style={{ display: 'block', marginTop: '15px', padding: '12px', background: COPILOTO_COLOR, color: 'black', borderRadius: '8px', textAlign: 'center', fontWeight: 'bold', textDecoration: 'none' }}>
-            🚀 Abrir Gemini agora
-          </a>
+      {/* PASSO A PASSO FOTO */}
+      <div style={{ background: '#0d0020', border: `2px solid ${COPILOTO_COLOR}`, borderRadius: '12px', padding: '20px', marginBottom: '16px' }}>
+        <h4 style={{ color: COPILOTO_COLOR, margin: '0 0 14px 0', fontSize: '14px' }}>📸 Diagnóstico por Foto</h4>
+        {[
+          '1️⃣ Abra gemini.google.com no PC ou o app Gemini no celular',
+          '2️⃣ Clique no ícone 📎 (anexar) e selecione a foto da peça, defeito ou código no scanner',
+          '3️⃣ Digite: "Você é um mecânico especialista. Analise esta imagem e diga o que está errado"',
+          '4️⃣ O Gemini identifica peças danificadas, desgastes, vazamentos e codes DTC',
+        ].map((p, i) => (
+          <p key={i} style={{ color: '#ccc', fontSize: '13px', margin: '0 0 8px 0', padding: '8px 12px', background: '#1a0030', borderRadius: '8px', borderLeft: `3px solid ${COPILOTO_COLOR}` }}>{p}</p>
+        ))}
+      </div>
+
+      {/* PASSO A PASSO VÍDEO AO VIVO */}
+      <div style={{ background: '#0d0020', border: `2px solid ${COPILOTO_COLOR}`, borderRadius: '12px', padding: '20px', marginBottom: '20px' }}>
+        <h4 style={{ color: COPILOTO_COLOR, margin: '0 0 14px 0', fontSize: '14px' }}>🎥 Diagnóstico por Vídeo ao Vivo</h4>
+        {[
+          '1️⃣ Abra o app Gemini no celular (recurso disponível no app)',
+          '2️⃣ Toque no ícone de câmera 📹 para iniciar a análise ao vivo',
+          '3️⃣ Aponte a câmera para o defeito: barulho, vazamento, fumaça, peça vibrando',
+          '4️⃣ Diga: "Você é um mecânico especialista. O que está errado neste veículo?"',
+          '5️⃣ O Gemini analisa em tempo real e responde por áudio — ideal para ruídos e falhas intermitentes',
+        ].map((p, i) => (
+          <p key={i} style={{ color: '#ccc', fontSize: '13px', margin: '0 0 8px 0', padding: '8px 12px', background: '#1a0030', borderRadius: '8px', borderLeft: `3px solid ${COPILOTO_COLOR}` }}>{p}</p>
+        ))}
+        <div style={{ marginTop: '12px', background: '#1a1a00', border: '1px solid #eab308', borderRadius: '8px', padding: '10px' }}>
+          <p style={{ color: '#eab308', fontSize: '12px', margin: 0 }}>💡 <strong>Dica:</strong> Funciona muito bem para barulho na suspensão, motor falhando ao vivo, freios riscando e vazamentos.</p>
         </div>
-      )}
+      </div>
 
-      {/* MODO FOTO */}
-      {modoAtivo === 'foto' && (
-        <div style={{ marginBottom: '20px' }}>
-          <label style={{ display: 'block', padding: '20px', background: fotoAnexada ? '#0d0020' : '#111', border: `2px dashed ${COPILOTO_COLOR}`, borderRadius: '10px', textAlign: 'center', cursor: 'pointer', marginBottom: '10px' }}>
-            {fotoAnexada ? (
-              <img src={fotoAnexada} style={{ maxWidth: '100%', maxHeight: '200px', objectFit: 'contain', borderRadius: '8px' }} />
-            ) : (
-              <>
-                <div style={{ fontSize: '40px', marginBottom: '8px' }}>📸</div>
-                <strong style={{ color: COPILOTO_COLOR }}>Tire foto do defeito</strong>
-                <p style={{ color: '#555', fontSize: '12px', margin: '5px 0 0 0' }}>Peça com problema, código no scanner, vazamento, etc.</p>
-              </>
-            )}
-            <input type="file" accept="image/*" capture="environment" onChange={anexarFoto} style={{ display: 'none' }} />
-          </label>
-          {fotoAnexada && (
-            <button onClick={() => setFotoAnexada(null)} style={{ width: '100%', padding: '8px', background: 'transparent', color: '#555', border: '1px solid #333', borderRadius: '8px', cursor: 'pointer', fontSize: '12px' }}>🗑️ Remover foto</button>
-          )}
-        </div>
-      )}
-
-      {/* CAMPO DE PERGUNTA (texto + voz) - aparece em texto e foto */}
-      {modoAtivo !== 'video' && (
-        <>
-          {/* Exemplos rápidos */}
-          {modoAtivo === 'texto' && (
-            <div style={{ display: 'flex', gap: '8px', marginBottom: '15px', flexWrap: 'wrap' }}>
-              {EXEMPLOS.map((ex, i) => (
-                <button key={i} onClick={() => setPergunta(ex.q)} style={{ background: '#111', color: COPILOTO_COLOR, border: `1px solid ${COPILOTO_COLOR}44`, padding: '6px 12px', borderRadius: '20px', fontSize: '11px', cursor: 'pointer' }}>{ex.label}</button>
-              ))}
-            </div>
-          )}
-
-          <div style={{ display: 'flex', gap: '10px', marginBottom: '15px' }}>
-            <textarea
-              value={pergunta}
-              onChange={(e) => setPergunta(e.target.value)}
-              placeholder={modoAtivo === 'foto' ? 'Descreva o que vê na foto (opcional - a IA analisa mesmo sem texto)...' : 'Digite a dúvida ou código de erro (Ex: Palio falhando na lenta)...'}
-              rows={3}
-              style={{ flex: 1, padding: '12px', background: '#111', border: `1px solid ${COPILOTO_COLOR}44`, color: 'white', borderRadius: '8px', fontSize: '14px', resize: 'vertical' }}
-            />
-            <button onClick={ouvirVoz} style={{ padding: '0 16px', background: escutando ? '#ef4444' : '#222', color: escutando ? 'white' : COPILOTO_COLOR, border: `1px solid ${escutando ? '#ef4444' : '#333'}`, borderRadius: '8px', fontSize: '22px', cursor: 'pointer', alignSelf: 'stretch' }}>
-              {escutando ? '🔴' : '🎤'}
-            </button>
-          </div>
-
-          <button onClick={perguntar} disabled={pensando || (!pergunta && !fotoAnexada)} style={{ width: '100%', padding: '15px', background: pensando ? '#333' : COPILOTO_COLOR, color: 'white', border: 'none', borderRadius: '8px', fontWeight: 'bold', fontSize: '15px', cursor: pensando ? 'not-allowed' : 'pointer', marginBottom: '20px' }}>
-            {pensando ? '⏳ ANALISANDO COM IA...' : fotoAnexada ? '🔍 ANALISAR FOTO COM IA' : '🔍 PERGUNTAR AO COPILOTO'}
-          </button>
-        </>
-      )}
-
-      {/* RESPOSTA */}
-      {resposta && (
-        <div style={{ background: '#111', padding: '20px', borderRadius: '10px', border: `1px solid ${COPILOTO_COLOR}44` }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
-            <p style={{ color: COPILOTO_COLOR, fontSize: '12px', fontWeight: 'bold', margin: 0 }}>RESPOSTA TÉCNICA DA IA:</p>
-            <button onClick={() => { setPergunta(''); setFotoAnexada(null); setResposta(''); }} style={{ background: 'transparent', color: '#555', border: '1px solid #333', padding: '4px 10px', borderRadius: '5px', cursor: 'pointer', fontSize: '11px' }}>🗑️ Limpar</button>
-          </div>
-          <p style={{ color: '#ccc', fontSize: '14px', lineHeight: '1.7', whiteSpace: 'pre-wrap', margin: 0 }}>{resposta}</p>
-        </div>
-      )}
+      <a href="https://gemini.google.com" target="_blank" rel="noopener noreferrer"
+        style={{ display: 'block', padding: '15px', background: COPILOTO_COLOR, color: 'black', borderRadius: '10px', textAlign: 'center', fontWeight: 'bold', textDecoration: 'none', fontSize: '15px' }}>
+        🚀 Abrir Gemini agora
+      </a>
     </div>
   );
 };
@@ -2516,6 +2483,7 @@ export default function Admin() {
         setServicosAlinhamento([]); setObsAlinhamento(''); setFotosPneus([]);
       }, 3000);
       carregarOS();
+      setTimeout(() => setAbaAtiva('os'), 2000);
     } catch (err) { alert('Erro: ' + err.message); }
     finally { setSalvandoAlinhamento(false); }
   };
@@ -2600,6 +2568,7 @@ export default function Admin() {
         setValorPecasOleo(''); setValorMaoObraOleo(''); setObsOleo('');
       }, 3000);
       carregarOS();
+      setTimeout(() => setAbaAtiva('os'), 2000);
     } catch (err) { alert('Erro ao salvar: ' + err.message); }
     finally { setSalvandoOleo(false); }
   };
@@ -2674,10 +2643,49 @@ export default function Admin() {
     }
   };
   const abrirEdicao = (os) => {
-    const tipo = os.tipoServico || '';
-    const origem = os.origem || '';
+    const tipo = (os.tipoServico || '').toLowerCase();
+    const origem = (os.origem || '').toLowerCase();
 
-    if (tipo === 'oleo') {
+    if (origem === 'oficina' || ['mecanica','motos','lataria','amortecedor'].includes(tipo)) {
+      // ===== PREENCHE ABA OFICINA MECÂNICA =====
+      const subAba = tipo || 'mecanica';
+      setSubAbaOficina(subAba);
+      setFormVistoria({
+        placa: normalizarPlaca(os.placa),
+        modelo: os.modelo || '',
+        ano: os.ano || '',
+        cor: os.cor || '',
+        km: os.kmAtual || os.km || '',
+        cliente: os.nomeCliente || os.cliente || '',
+        telefone: os.telefone || '',
+        fotos: os.fotos || [],
+        tipoServico: subAba,
+        obs: os.detalhesPecas || os.obs || '',
+        campos: os.camposChecklist || os.campos || {},
+        valorPecas: String(os.valorPecas || ''),
+        valorMaoObra: String(os.valorMaoObra || ''),
+      });
+      setEditandoVistoria(os.id);
+      setMostrarFormVistoria(true);
+      setOsEditando(os);
+      setAbaAtiva('oficina');
+      setTimeout(() => window.scrollTo({ top: 0, behavior: 'smooth' }), 100);
+
+    } else if (tipo === 'injecao') {
+      // ===== PREENCHE ABA INJEÇÃO =====
+      setPlacaInjecao(normalizarPlaca(os.placa));
+      setModeloInjecao(os.modelo || '');
+      setClienteInjecao(os.nomeCliente || '');
+      setTelefoneInjecao(os.telefone || '');
+      setKmInjecao(os.kmAtual || '');
+      setValorPecasInjecao(String(os.valorPecas || ''));
+      setValorMaoObraInjecao(String(os.valorMaoObra || ''));
+      setFotosInjecao(os.fotos || []);
+      setOsEditando(os);
+      setAbaAtiva('injecao');
+      setTimeout(() => window.scrollTo({ top: 0, behavior: 'smooth' }), 100);
+
+    } else if (tipo === 'oleo') {
       // ===== PREENCHE ABA ÓLEO =====
       setPlacaOleo(normalizarPlaca(os.placa));
       setNomeClienteOleo(os.nomeCliente || '');
@@ -2711,7 +2719,7 @@ export default function Admin() {
       setAbaAtiva('alinhamento');
       setTimeout(() => window.scrollTo({ top: 0, behavior: 'smooth' }), 100);
 
-    } else if (origem === 'revisao_preventiva') {
+    } else if (origem === 'revisao_preventiva' || tipo === 'revisao_preventiva') {
       // ===== REVISÃO =====
       setOsEditando(os);
       setAbaAtiva('revisao');
@@ -2848,7 +2856,7 @@ export default function Admin() {
 
   // ✅ ABAS DISPONÍVEIS
   const ABAS_DISPONIVEIS = [
-    'dashboard', 'os', 'oficina', 'oleo', 'alinhamento', 'revisao', 'pneus', 'injecao', 'copiloto', 'retorno', 'estoque', 'financeiro', 'equipe',
+    'dashboard', 'os', 'oficina', 'patrimonio', 'oleo', 'alinhamento', 'revisao', 'pneus', 'injecao', 'copiloto', 'retorno', 'estoque', 'financeiro', 'equipe',
     'leads', 'assinatura', ...(papelLogado === 'master' ? ['master'] : []), 'config', 'estrategia', 'marketing', 'desmanche', 'fornecedores', 'ajuda'
   ].filter(aba => temPermissao(aba));
 
@@ -2856,7 +2864,7 @@ export default function Admin() {
     dashboard: '📊 VISÃO GERAL', os: '🔧 O.S.', oleo: '🛢️ ÓLEO', alinhamento: '⚙️ ALINHAMENTO',
     revisao: '🛡️ REVISÃO', pneus: '🛞 PNEUS', injecao: '⚡ INJEÇÃO', copiloto: '👨‍🔧 COPILOTO', assinatura: '💎 MEU PLANO',
     retorno: '🔄 RETORNO', estoque: 'ESTOQUE', financeiro: 'FINANCEIRO', equipe: '👥 EQUIPE',
-    oficina: '🏢 MECÂNICA', leads: '👥 CLIENTES', config: 'CONFIG', master: '👑 MASTER',
+    oficina: '🏢 MECÂNICA', patrimonio: '🏢 PATRIMÔNIO', leads: '👥 CLIENTES', config: 'CONFIG', master: '👑 MASTER',
     estrategia: '🚀 ESTRATÉGIA', marketing: '📣 MARKETING', desmanche: '🚗 DESMANCHE',
     fornecedores: '🔩 FORNECEDORES', ajuda: '💡 AJUDA'
   };
@@ -3303,11 +3311,20 @@ export default function Admin() {
                         if (tipo === 'borracharia' || tipo === 'pneus') return (
                           <button onClick={() => abrirEdicao(os)} style={{ flex: 1, padding: '6px', background: '#001a00', color: '#00E676', border: '1px solid #00E676', borderRadius: '5px', cursor: 'pointer', fontSize: '11px', fontWeight: 'bold' }}>🛞 Editar Pneu</button>
                         );
-                        if (origem === 'revisao_preventiva') return (
-                          <button onClick={() => abrirEdicao(os)} style={{ flex: 1, padding: '6px', background: '#00001a', color: '#3b82f6', border: '1px solid #3b82f6', borderRadius: '5px', cursor: 'pointer', fontSize: '11px', fontWeight: 'bold' }}>🛡️ Editar Rev.</button>
+                        if (origem === 'revisao_preventiva' || tipo === 'revisao_preventiva') return (
+                          <button onClick={() => abrirEdicao(os)} style={{ flex: 1, padding: '6px', background: '#00001a', color: '#3b82f6', border: '1px solid #3b82f6', borderRadius: '5px', cursor: 'pointer', fontSize: '11px', fontWeight: 'bold' }}>🛡️ Editar Revisão</button>
                         );
+                        if (tipo === 'injecao') return (
+                          <button onClick={() => abrirEdicao(os)} style={{ flex: 1, padding: '6px', background: '#0d0018', color: '#8b5cf6', border: '1px solid #8b5cf6', borderRadius: '5px', cursor: 'pointer', fontSize: '11px', fontWeight: 'bold' }}>⚡ Editar Injeção</button>
+                        );
+                        if (tipo === 'moto') return (
+                          <button onClick={() => abrirEdicao(os)} style={{ flex: 1, padding: '6px', background: '#1a0d00', color: '#f97316', border: '1px solid #f97316', borderRadius: '5px', cursor: 'pointer', fontSize: '11px', fontWeight: 'bold' }}>🏍️ Editar Moto</button>
+                        );
+                        // Mecânica / Oficina: label específico por tipoServico
+                        const labelMec = tipo === 'motos' ? '🏍️ Editar Moto' : tipo === 'lataria' ? '🚗 Editar Lataria' : tipo === 'amortecedor' ? '🛢️ Editar Amor.' : '🔧 Editar Mecânica';
+                        const corMec = tipo === 'motos' ? '#f97316' : tipo === 'lataria' ? '#ec4899' : tipo === 'amortecedor' ? '#eab308' : '#8b5cf6';
                         return (
-                          <button onClick={() => abrirEdicao(os)} style={{ flex: 1, padding: '6px', background: '#444', color: 'white', border: 'none', borderRadius: '5px', cursor: 'pointer', fontSize: '13px' }}>✏️ Editar O.S.</button>
+                          <button onClick={() => abrirEdicao(os)} style={{ flex: 1, padding: '6px', background: corMec + '22', color: corMec, border: `1px solid ${corMec}`, borderRadius: '5px', cursor: 'pointer', fontSize: '11px', fontWeight: 'bold' }}>{labelMec}</button>
                         );
                       })()}
                       <button onClick={() => abrirRecibo(os)} style={{ flex: 1, padding: '6px', background: '#555', color: 'white', border: 'none', borderRadius: '5px', cursor: 'pointer', fontSize: '13px' }}>🧾 Recibo PDF</button>
@@ -3609,7 +3626,7 @@ export default function Admin() {
             <div style={{ background: '#1a1500', border: `1px solid ${KM_COLOR}44`, borderRadius: '8px', padding: '10px 14px', marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px', fontSize: '12px', color: KM_COLOR }}>
               🔔 Lembrete automático será enviado ao cliente antes do agendamento
             </div>
-            <ModuloRevisao dadosOficina={dadosOficina} papelLogado={papelLogado} oficinaId={oficinaId} osParaEditar={osEditando?.origem === 'revisao_preventiva' ? osEditando : null} onCancelarEdicao={() => setOsEditando(null)} onSalvo={(id, dados) => { setListaCarros(prev => prev.map(o => o.id === id ? { ...o, ...dados } : o)); setOsEditando(null); carregarOS(); }} />
+            <ModuloRevisao dadosOficina={dadosOficina} papelLogado={papelLogado} oficinaId={oficinaId} osParaEditar={(osEditando?.origem === 'revisao_preventiva' || osEditando?.tipoServico === 'revisao_preventiva') ? osEditando : null} onCancelarEdicao={() => setOsEditando(null)} onSalvo={(id, dados) => { setListaCarros(prev => [...prev.filter(o => o.id !== id), { id, ...dados }]); setOsEditando(null); carregarOS(); setTimeout(() => setAbaAtiva('os'), 500); }} />
             {/* CALENDÁRIO DE AGENDAMENTO */}
             <div style={{ background: '#111', padding: '15px', borderRadius: '10px', border: `1px solid #3b82f644`, marginBottom: '16px', marginTop: '16px' }}>
               <label style={{ color: '#3b82f6', fontSize: '12px', fontWeight: 'bold', display: 'block', marginBottom: '10px' }}>📅 AGENDAR PRÓXIMA REVISÃO</label>
@@ -3665,7 +3682,7 @@ export default function Admin() {
 
         {/* ===== MÓDULO PNEUS E BORRACHARIA ===== */}
         {abaAtiva === 'pneus' && temPermissao('os') && (
-          <ModuloPneus dadosOficina={dadosOficina} papelLogado={papelLogado} oficinaId={oficinaId} osParaEditar={(osEditando?.tipoServico === 'borracharia' || osEditando?.tipoServico === 'pneus') ? osEditando : null} onCancelarEdicao={() => setOsEditando(null)} onSalvo={(id, dados) => { setListaCarros(prev => prev.map(o => o.id === id ? { ...o, ...dados } : o)); setOsEditando(null); carregarOS(); }} />
+          <ModuloPneus dadosOficina={dadosOficina} papelLogado={papelLogado} oficinaId={oficinaId} osParaEditar={(osEditando?.tipoServico === 'borracharia' || osEditando?.tipoServico === 'pneus') ? osEditando : null} onCancelarEdicao={() => setOsEditando(null)} onSalvo={(id, dados) => { setListaCarros(prev => [...prev.filter(o => o.id !== id), { id, ...dados }]); setOsEditando(null); carregarOS(); setTimeout(() => setAbaAtiva('os'), 1500); }} />
         )}
 
         {/* ===== ABA INJEÇÃO ELETRÔNICA ===== */}
@@ -3678,7 +3695,6 @@ export default function Admin() {
             <div style={{ display: 'flex', gap: '8px', marginBottom: '20px', overflowX: 'auto', paddingBottom: '4px' }}>
               {[
                 { key: 'injecao', label: '⚡ Injeção Eletrônica', cor: '#8b5cf6' },
-                { key: 'mecanica', label: '🔧 Mecânica', cor: GREEN_MONEY },
                 { key: 'motos', label: '🏍 Motos', cor: '#f97316' },
               ].map(({ key, label, cor }) => (
                 <button key={key} onClick={() => setSubAbaInjecao(key)}
@@ -3759,14 +3775,10 @@ export default function Admin() {
                 </div>
 
                 <div>
-                  {/* ECU + IA */}
+                  {/* ECU */}
                   <div style={{ background: '#111', padding: '15px', borderRadius: '10px', border: '1px solid #333', marginBottom: '12px' }}>
                     <label style={{ color: '#888', fontSize: '11px', fontWeight: 'bold', display: 'block', marginBottom: '8px' }}>💾 CENTRAL ELETRÔNICA (ECU)</label>
-                    <div style={{ background: '#0a0018', border: '1px solid #8b5cf644', borderRadius: '8px', padding: '14px', marginBottom: '10px' }}>
-                      <p style={{ color: '#8b5cf6', fontSize: '12px', fontWeight: 'bold', margin: '0 0 6px' }}>🤖 IA Assistente Técnico</p>
-                      <p style={{ color: '#aaa', fontSize: '12px', margin: '0 0 10px' }}>Não sabe o significado de um código? Pergunte ao Copiloto.</p>
-                      <button onClick={() => setAbaAtiva('copiloto')} style={{ width: '100%', padding: '10px', background: '#8b5cf6', color: 'white', border: 'none', borderRadius: '8px', fontWeight: 'bold', cursor: 'pointer', fontSize: '12px' }}>Consultar Código de Falha</button>
-                    </div>
+                    <div style={{ marginBottom: '10px' }}>
                     {[
                       { key: 'tensao_bateria', label: 'Tensão da Bateria', opts: ['OK','BAIXA'] },
                       { key: 'aterramento_ecu', label: 'Aterramento da ECU', opts: ['OK','FALHA'] },
@@ -3779,6 +3791,7 @@ export default function Admin() {
                         </div>
                       </div>
                     ))}
+                    </div>
                   </div>
 
                   {/* Fotos do scanner */}
@@ -3822,51 +3835,40 @@ export default function Admin() {
                       try {
                         const checklistTexto = Object.entries(checkInjecao).map(([k,v]) => `${k.replace(/_/g,' ')}: ${v}`).join(' | ');
                         const total = (Number(valorPecasInjecao)||0)+(Number(valorMaoObraInjecao)||0);
-                        await addDoc(collection(db, 'oficinas', oficinaId, 'os'), {
+                        const osData = {
                           nomeCliente: clienteInjecao, placa: placaInjecao, modelo: modeloInjecao,
                           kmAtual: kmInjecao, telefone: telefoneInjecao,
                           checklist: `Injeção Eletrônica - DTC: ${dtcCodes || 'N/A'} | ${checklistTexto}`,
                           tipoServico: 'injecao', fotos: fotosInjecao,
                           valorPecas: valorPecasInjecao, valorMaoObra: valorMaoObraInjecao, total,
-                          status: 'pendente', data_registro: new Date(), data: new Date().toLocaleString('pt-BR'),
-                        });
-                        setSalvoInjecao(true); setTimeout(() => setSalvoInjecao(false), 3000);
+                        };
+                        if (osEditando && osEditando.tipoServico === 'injecao') {
+                          await updateDoc(doc(db, 'oficinas', oficinaId, 'os', osEditando.id), osData);
+                          setOsEditando(null);
+                          alert('✅ O.S. de Injeção atualizada!');
+                        } else {
+                          await addDoc(collection(db, 'oficinas', oficinaId, 'os'), {
+                            ...osData, status: 'pendente', statusPagamento: 'pendente', data_registro: new Date().toISOString(), data: new Date().toISOString().split('T')[0],
+                          });
+                          setSalvoInjecao(true); setTimeout(() => setSalvoInjecao(false), 3000);
+                        }
                         setPlacaInjecao(''); setModeloInjecao(''); setKmInjecao(''); setClienteInjecao(''); setTelefoneInjecao('');
                         setDtcCodes(''); setDtcResultado(''); setCheckInjecao({}); setFotosInjecao([]);
                         setValorPecasInjecao(''); setValorMaoObraInjecao('');
                         carregarOS();
+                        setTimeout(() => setAbaAtiva('os'), 2000);
                       } catch(e) { alert('Erro: '+e.message); }
                       setSalvandoInjecao(false);
                     }} disabled={salvandoInjecao}
                       style={{ width: '100%', padding: '16px', background: salvandoInjecao ? '#333' : salvoInjecao ? GREEN_MONEY : '#8b5cf6', color: salvoInjecao ? 'black' : 'white', border: 'none', borderRadius: '8px', fontWeight: 'bold', fontSize: '14px', cursor: 'pointer' }}>
-                      {salvandoInjecao ? '⏳ SALVANDO...' : salvoInjecao ? '✅ SALVO NA O.S.!' : '💾 GERAR O.S. DE INJEÇÃO'}
+                      {salvandoInjecao ? '⏳ SALVANDO...' : osEditando?.tipoServico === 'injecao' ? '💾 ATUALIZAR O.S. DE INJEÇÃO' : salvoInjecao ? '✅ SALVO NA O.S.!' : '💾 GERAR O.S. DE INJEÇÃO'}
                     </button>
                   </div>
                 </div>
               </div>
             )}
 
-            {subAbaInjecao === 'mecanica' && (
-              <div style={{ background: '#111', padding: '15px', borderRadius: '10px', border: '1px solid #333' }}>
-                <label style={{ color: GREEN_MONEY, fontSize: '11px', fontWeight: 'bold', display: 'block', marginBottom: '10px' }}>🔧 CHECKLIST MECÂNICO GERAL</label>
-                {[
-                  { key: 'motor_ruidos', label: 'Motor - Ruídos e Vazamentos' },
-                  { key: 'cambio', label: 'Transmissão / Câmbio' },
-                  { key: 'susp_dianteira', label: 'Suspensão Dianteira' },
-                  { key: 'susp_traseira', label: 'Suspensão Traseira' },
-                  { key: 'freios_mec', label: 'Sistema de Freios' },
-                  { key: 'escapamento', label: 'Escapamento' },
-                ].map(({ key, label }) => (
-                  <div key={key} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '8px 0', borderBottom: '1px solid #1a1a1a' }}>
-                    <span style={{ fontSize: '13px', color: '#bbb' }}>{label}</span>
-                    <div style={{ display: 'flex', gap: '5px' }}>
-                      {['BOM','ATENÇÃO','RUIM'].map(s => <button key={s} onClick={() => setCheckInjecao(p=>({...p,[key]:s}))} style={{ padding: '4px 10px', borderRadius: '4px', border: `1px solid ${checkInjecao[key]===s?(s==='BOM'?GREEN_MONEY:s==='ATENÇÃO'?KM_COLOR:MAIN_COLOR):'#333'}`, background: checkInjecao[key]===s?'#1a1a1a':'#111', color: checkInjecao[key]===s?(s==='BOM'?GREEN_MONEY:s==='ATENÇÃO'?KM_COLOR:MAIN_COLOR):'#666', cursor:'pointer', fontSize:'11px', fontWeight:'bold' }}>{s}</button>)}
-                    </div>
-                  </div>
-                ))}
-                <button onClick={() => alert('✅ Checklist mecânico salvo na O.S.')} style={{ marginTop: '14px', width: '100%', padding: '14px', background: GREEN_MONEY, color: 'black', border: 'none', borderRadius: '8px', fontWeight: 'bold', cursor: 'pointer' }}>✅ GERAR O.S. MECÂNICA</button>
-              </div>
-            )}
+
 
             {subAbaInjecao === 'motos' && (
               <div style={{ background: '#111', padding: '15px', borderRadius: '10px', border: '1px solid #333' }}>
@@ -3885,7 +3887,24 @@ export default function Admin() {
                     </div>
                   </div>
                 ))}
-                <button onClick={() => alert('✅ Diagnóstico de moto salvo na O.S.')} style={{ marginTop: '14px', width: '100%', padding: '14px', background: '#f97316', color: 'white', border: 'none', borderRadius: '8px', fontWeight: 'bold', cursor: 'pointer' }}>✅ GERAR O.S. MOTO</button>
+                <button onClick={async () => {
+                  if (!placaInjecao || !clienteInjecao) { alert('Preencha Placa e Cliente!'); return; }
+                  try {
+                    await addDoc(collection(db, 'oficinas', oficinaId, 'os'), {
+                      placa: placaInjecao, modelo: modeloInjecao, nomeCliente: clienteInjecao,
+                      telefone: telefoneInjecao, kmAtual: kmInjecao,
+                      checklist: 'MANUTENÇÃO MOTO', tipoServico: 'moto',
+                      origem: 'mecanica', checklistMecanico: checkInjecao,
+                      valorPecas: 0, valorMaoObra: 0, total: 0,
+                      status: 'pendente', statusPagamento: 'pendente',
+                      data_registro: new Date().toISOString(), data: new Date().toLocaleDateString('pt-BR'),
+                    });
+                    alert('✅ O.S. de Moto criada com sucesso!');
+                    setPlacaInjecao(''); setModeloInjecao(''); setClienteInjecao(''); setTelefoneInjecao(''); setKmInjecao(''); setCheckInjecao({});
+                    carregarOS();
+                    setTimeout(() => setAbaAtiva('os'), 1500);
+                  } catch(e) { alert('Erro: ' + e.message); }
+                }} style={{ marginTop: '14px', width: '100%', padding: '14px', background: '#f97316', color: 'white', border: 'none', borderRadius: '8px', fontWeight: 'bold', cursor: 'pointer' }}>✅ GERAR O.S. MOTO</button>
               </div>
             )}
           </div>
@@ -4153,22 +4172,40 @@ export default function Admin() {
             if (!formVistoria.placa) return alert('⚠️ Preencha a placa!');
             setSalvandoVistoria(true);
             try {
-              const dados = { ...formVistoria, tipoServico: subAbaOficina, labelServico: cfg.label, data_registro: new Date().toISOString() };
+              const total = (parseFloat(formVistoria.valorPecas||0) + parseFloat(formVistoria.valorMaoObra||0));
+              const osData = {
+                nomeCliente: formVistoria.cliente || '',
+                placa: normalizarPlaca(formVistoria.placa),
+                modelo: formVistoria.modelo || '',
+                telefone: formVistoria.telefone || '',
+                kmAtual: formVistoria.km || '',
+                checklist: cfg.label,
+                detalhesPecas: formVistoria.obs || '',
+                observacoes: formVistoria.obs || '',
+                fotos: formVistoria.fotos || [],
+                valorPecas: parseFloat(formVistoria.valorPecas) || 0,
+                valorMaoObra: parseFloat(formVistoria.valorMaoObra) || 0,
+                total,
+                tipoServico: subAbaOficina,
+                labelServico: cfg.label,
+                origem: 'oficina',
+                camposChecklist: formVistoria.campos || {},
+              };
               if (editandoVistoria) {
-                await updateDoc(doc(db, 'oficinas', oficinaId, 'vistorias', editandoVistoria), dados);
+                await updateDoc(doc(db, 'oficinas', oficinaId, 'os', editandoVistoria), osData);
               } else {
-                await addDoc(collection(db, 'oficinas', oficinaId, 'vistorias'), dados);
-                const total = (parseFloat(formVistoria.valorPecas||0) + parseFloat(formVistoria.valorMaoObra||0));
-                if (total > 0) await addDoc(collection(db,'oficinas',oficinaId,'financeiro'), { tipo:'entrada', descricao:`${cfg.label} - ${formVistoria.placa} ${formVistoria.modelo}`, valor:total, data:new Date().toISOString(), categoria:'servico' });
+                await addDoc(collection(db, 'oficinas', oficinaId, 'os'), {
+                  ...osData,
+                  statusPagamento: 'pendente',
+                  data: new Date().toISOString().split('T')[0],
+                  data_registro: new Date().toISOString(),
+                });
+                if (total > 0) await addDoc(collection(db,'oficinas',oficinaId,'financeiro'), { tipo:'entrada', descricao:`${cfg.label} - ${normalizarPlaca(formVistoria.placa)} ${formVistoria.modelo}`, valor:total, data:new Date().toISOString(), categoria:'servico' });
               }
               setMostrarFormVistoria(false); setEditandoVistoria(null);
               setFormVistoria({ placa:'', modelo:'', ano:'', cor:'', km:'', cliente:'', telefone:'', fotos:[], tipoServico:subAbaOficina, obs:'', campos:{}, valorPecas:'', valorMaoObra:'' });
-              await carregarVistorias();
-              if (formVistoria.telefone && !editandoVistoria) {
-                const total = (parseFloat(formVistoria.valorPecas||0) + parseFloat(formVistoria.valorMaoObra||0));
-                const msg = encodeURIComponent(`Olá *${formVistoria.cliente||'Cliente'}*! 👋\n\n✅ Serviço de *${cfg.label}* registrado!\n🚗 Veículo: *${formVistoria.placa} - ${formVistoria.modelo}*\n${total>0?`💰 Total: *R$ ${total.toFixed(2).replace('.',',')}*\n`:''}\n_${dadosOficina?.nomeOficina||'Oficina IA'}_`);
-                setTimeout(()=>window.open(`https://wa.me/55${String(formVistoria.telefone).replace(/\D/g,'')}?text=${msg}`,'_blank'),300);
-              }
+              carregarOS();
+              setTimeout(() => setAbaAtiva('os'), 1500);
             } catch(e) { alert('Erro: '+e.message); }
             finally { setSalvandoVistoria(false); }
           };
@@ -4201,21 +4238,18 @@ export default function Admin() {
                 </div>
               </div>
 
-              {/* ─── BOTÃO + lista header ─── */}
+              {/* ─── BOTÃO Nova O.S. ─── */}
               {!mostrarFormVistoria && (
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
-                  <div>
-                    <h3 style={{ color: cfg.cor, margin: '0 0 2px 0', fontSize: '15px' }}>{cfg.icon} {cfg.label}</h3>
-                    <p style={{ color: '#444', margin: 0, fontSize: '11px' }}>
-                      {listaVistorias.filter(v=>(v.tipoServico||'mecanica')===subAbaOficina).length} O.S. registradas
-                    </p>
-                  </div>
+                <div style={{ marginBottom: '16px' }}>
                   <button onClick={() => {
                     setMostrarFormVistoria(true); setEditandoVistoria(null);
                     setFormVistoria({ placa:'', modelo:'', ano:'', cor:'', km:'', cliente:'', telefone:'', fotos:[], tipoServico:subAbaOficina, obs:'', campos:{}, valorPecas:'', valorMaoObra:'' });
-                  }} style={{ background: cfg.cor, color: 'white', border: 'none', borderRadius: '10px', padding: '12px 20px', fontWeight: 'bold', fontSize: '13px', cursor: 'pointer', boxShadow: `0 4px 14px ${cfg.cor}44` }}>
-                    + Nova O.S.
+                  }} style={{ width: '100%', background: cfg.cor, color: 'white', border: 'none', borderRadius: '10px', padding: '16px', fontWeight: 'bold', fontSize: '14px', cursor: 'pointer', boxShadow: `0 4px 14px ${cfg.cor}44` }}>
+                    + Nova O.S. de {cfg.label}
                   </button>
+                  <p style={{ color: '#444', margin: '10px 0 0 0', fontSize: '11px', textAlign: 'center' }}>
+                    As O.S. salvas aparecem na aba <strong style={{color:'#FF0033'}}>O.S.</strong>
+                  </p>
                 </div>
               )}
 
@@ -4408,109 +4442,70 @@ export default function Admin() {
                 </div>
               )}
 
-              {/* ═══════════════════════════════════════ */}
-              {/* LISTA DE O.S.                           */}
-              {/* ═══════════════════════════════════════ */}
-              {listaVistorias.filter(v=>(v.tipoServico||'mecanica')===subAbaOficina).length === 0 && !mostrarFormVistoria ? (
-                <div style={{ background: '#0a0a0a', border: `1px dashed ${cfg.cor}33`, borderRadius: '16px', padding: '50px', textAlign: 'center' }}>
-                  <p style={{ fontSize: '48px', margin: '0 0 10px 0' }}>{cfg.icon}</p>
-                  <p style={{ color: '#333', margin: '0 0 16px 0', fontSize: '14px' }}>Nenhuma O.S. de {cfg.label} ainda.</p>
-                  <button onClick={() => { setMostrarFormVistoria(true); setEditandoVistoria(null); setFormVistoria({ placa:'', modelo:'', ano:'', cor:'', km:'', cliente:'', telefone:'', fotos:[], tipoServico:subAbaOficina, obs:'', campos:{}, valorPecas:'', valorMaoObra:'' }); }}
-                    style={{ background: cfg.cor, color: 'white', border: 'none', borderRadius: '10px', padding: '12px 24px', fontWeight: 'bold', cursor: 'pointer', fontSize: '13px' }}>
-                    + Criar primeira O.S.
-                  </button>
-                </div>
-              ) : listaVistorias.filter(v=>(v.tipoServico||'mecanica')===subAbaOficina).map(vis => {
-                const vcfg = CONFIGS_OFICINA[vis.tipoServico||'mecanica'] || CONFIGS_OFICINA.mecanica;
-                const totalV = (parseFloat(vis.valorPecas||0)+parseFloat(vis.valorMaoObra||0));
-                const campos = vis.campos || {};
-                const problemasCount = Object.values(campos).filter(v => typeof v === 'string' && (v.includes('Atenção') || v.includes('Trocar'))).length;
-                return (
-                  <div key={vis.id} style={{ background: '#0a0a0a', border: `1px solid ${vcfg.cor}33`, borderRadius: '16px', marginBottom: '14px', overflow: 'hidden' }}>
-                    {/* Carrossel de fotos no card */}
-                    {(vis.fotos||[]).length > 0 && (
-                      <div style={{ position: 'relative', background: '#000', height: '180px' }}>
-                        <img src={(vis.fotos||[])[0]} style={{ width:'100%', height:'100%', objectFit:'cover', opacity: 0.85 }} />
-                        {(vis.fotos||[]).length > 1 && (
-                          <div style={{ position:'absolute', bottom:'8px', right:'10px', background:'#000000bb', borderRadius:'12px', padding:'3px 10px', color:'white', fontSize:'11px' }}>
-                            📸 {(vis.fotos||[]).length} fotos
-                          </div>
-                        )}
-                        <div style={{ position:'absolute', top:'10px', left:'10px', background:`${vcfg.cor}cc`, borderRadius:'8px', padding:'4px 10px', color:'white', fontSize:'11px', fontWeight:'bold' }}>
-                          {vcfg.icon} {vcfg.label}
-                        </div>
-                      </div>
-                    )}
-                    <div style={{ padding: '16px' }}>
-                      {/* Linha 1: placa + ações */}
-                      <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-start', marginBottom:'10px', gap:'8px', flexWrap:'wrap' }}>
-                        <div>
-                          <p style={{ color:'white', fontWeight:'900', margin:'0 0 2px 0', fontSize:'18px', letterSpacing:'1px' }}>{vis.placa}</p>
-                          <p style={{ color:'#666', fontSize:'12px', margin:0 }}>{vis.modelo}{vis.ano&&` · ${vis.ano}`}{vis.cor&&` · ${vis.cor}`}{vis.km&&` · ${Number(vis.km).toLocaleString('pt-BR')} km`}</p>
-                          {vis.cliente && <p style={{ color:'#888', fontSize:'12px', margin:'4px 0 0 0' }}>👤 {vis.cliente}{vis.telefone&&` · 📱 ${vis.telefone}`}</p>}
-                        </div>
-                        <div style={{ display:'flex', gap:'6px' }}>
-                          <button onClick={() => { setEditandoVistoria(vis.id); setFormVistoria({...vis, campos:vis.campos||{}}); setMostrarFormVistoria(true); setFotoAtiva(0); }}
-                            style={{ padding:'7px 12px', background:'#111', color:'#aaa', border:'1px solid #333', borderRadius:'8px', fontSize:'12px', cursor:'pointer' }}>✏️</button>
-                          {vis.telefone && (
-                            <a href={`https://wa.me/55${String(vis.telefone).replace(/\D/g,'')}?text=${encodeURIComponent('*Relatório de Serviço - '+vis.placa+'*\n\n'+vcfg.icon+' *'+vcfg.label+'*\nVeículo: '+vis.modelo+'\n\n'+(totalV>0?'💰 Total: R$ '+totalV.toFixed(2).replace('.',',')+'\n\n':'')+'_'+( dadosOficina?.nomeOficina||'')+'_')}`}
-                              target="_blank" rel="noreferrer"
-                              style={{ padding:'7px 12px', background:'#25D366', color:'black', borderRadius:'8px', fontWeight:'bold', fontSize:'11px', textDecoration:'none' }}>📲</a>
-                          )}
-                          <button onClick={async()=>{ if(window.confirm('Apagar esta O.S.?')){ await deleteDoc(doc(db,'oficinas',oficinaId,'vistorias',vis.id)); carregarVistorias(); }}}
-                            style={{ padding:'7px 12px', background:'transparent', color:'#333', border:'1px solid #222', borderRadius:'8px', fontSize:'12px', cursor:'pointer' }}>🗑️</button>
-                        </div>
-                      </div>
-
-                      {/* Badges de status */}
-                      <div style={{ display:'flex', gap:'8px', flexWrap:'wrap', marginBottom:'10px' }}>
-                        {totalV > 0 && <span style={{ background:'#0a1a0a', border:'1px solid #00E67633', borderRadius:'6px', padding:'3px 10px', color:'#00E676', fontSize:'11px', fontWeight:'bold' }}>💰 R$ {totalV.toFixed(2).replace('.',',')}</span>}
-                        {problemasCount > 0 && <span style={{ background:'#1a0000', border:'1px solid #ef444433', borderRadius:'6px', padding:'3px 10px', color:'#ef4444', fontSize:'11px', fontWeight:'bold' }}>⚠️ {problemasCount} item(ns) a atenção</span>}
-                        {vis.data_registro && <span style={{ background:'#111', border:'1px solid #1a1a1a', borderRadius:'6px', padding:'3px 10px', color:'#444', fontSize:'11px' }}>📅 {new Date(vis.data_registro).toLocaleDateString('pt-BR')}</span>}
-                      </div>
-
-                      {/* Itens com problemas */}
-                      {problemasCount > 0 && (
-                        <div style={{ background:'#0d0000', border:'1px solid #ef444422', borderRadius:'8px', padding:'10px 12px' }}>
-                          <p style={{ color:'#ef4444', fontSize:'10px', fontWeight:'bold', margin:'0 0 6px 0', letterSpacing:'1px' }}>⚠️ ITENS QUE PRECISAM DE ATENÇÃO</p>
-                          <div style={{ display:'flex', flexWrap:'wrap', gap:'6px' }}>
-                            {Object.entries(campos).filter(([,v])=>typeof v==='string'&&(v.includes('Atenção')||v.includes('Trocar'))).map(([k, v]) => {
-                              const allItens = vcfg.secoes.flatMap(s=>s.itens);
-                              const itemLabel = allItens.find(it=>it.key===k)?.label || k;
-                              return <span key={k} style={{ background:'#1a0000', border:'1px solid #ef444433', borderRadius:'5px', padding:'3px 8px', color:'#ef4444', fontSize:'11px' }}>{itemLabel}: {v}</span>;
-                            })}
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                );
-              })}
-
-              {/* PATRIMÔNIO compacto */}
-              <div style={{ marginTop: '30px', borderTop: '1px solid #111', paddingTop: '18px' }}>
-                <h4 style={{ color: '#333', margin: '0 0 12px 0', fontSize: '11px', letterSpacing: '2px' }}>🏢 PATRIMÔNIO / EQUIPAMENTOS</h4>
-                <div style={{ display: 'flex', gap: '10px', marginBottom: '12px', flexWrap: 'wrap' }}>
-                  <input type="text" value={equipamentoNome} onChange={e => setEquipamentoNome(e.target.value)} placeholder="Nome do Equipamento..." style={{ flex: 1, minWidth: '180px', padding: '10px', background: '#0a0a0a', border: '1px solid #1a1a1a', color: 'white', borderRadius: '8px', fontSize: '12px' }} />
-                  <label style={{ display:'flex', alignItems:'center', padding:'0 14px', background:'#0a0a0a', color:'#00E676', border:'1px dashed #00E67633', cursor:'pointer', borderRadius:'8px', fontWeight:'bold', fontSize:'11px' }}>
-                    📸<input type="file" accept="image/*" capture="environment" onChange={e=>{ const r=new FileReader(); r.onload=async()=>setEquipamentoFoto(await comprimirFoto(r.result,0.5)); r.readAsDataURL(e.target.files[0]); }} style={{ display:'none' }} />
-                  </label>
-                  <button onClick={handleSalvarEquipamento} style={{ padding:'10px 16px', background:'#111', color:'#666', border:'1px solid #222', fontWeight:'bold', borderRadius:'8px', cursor:'pointer', fontSize:'12px' }}>+ Salvar</button>
-                </div>
-                {equipamentoFoto && <div style={{ marginBottom:'10px', display:'flex', gap:'8px', alignItems:'center' }}><img src={equipamentoFoto} style={{ height:'50px', width:'50px', objectFit:'cover', borderRadius:'6px' }} /><button onClick={()=>setEquipamentoFoto(null)} style={{ background:'transparent', color:'#ef4444', border:'none', cursor:'pointer', fontSize:'11px' }}>Remover</button></div>}
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(110px, 1fr))', gap: '8px' }}>
-                  {listaEquipamentos.map(eq => (
-                    <div key={eq.id} style={{ background:'#0a0a0a', borderRadius:'8px', position:'relative', textAlign:'center', overflow:'hidden', border:'1px solid #111' }}>
-                      {eq.foto?<img src={eq.foto} style={{ width:'100%', height:'70px', objectFit:'cover' }} />:<div style={{ height:'70px', display:'flex', alignItems:'center', justifyContent:'center', color:'#222', fontSize:'10px' }}>Sem foto</div>}
-                      <p style={{ margin:'5px', fontWeight:'bold', fontSize:'10px', color:'#444' }}>{eq.nome}</p>
-                      <button onClick={()=>deletarDoc('oficina_equipamentos',eq.id,carregarEquipamentos)} style={{ position:'absolute', top:'3px', right:'3px', background:'#ef444422', color:'#ef4444', border:'none', borderRadius:'50%', width:'18px', height:'18px', cursor:'pointer', fontSize:'10px' }}>×</button>
-                    </div>
-                  ))}
-                </div>
-              </div>
             </div>
           );
         })()}
+
+        {/* ===== ABA PATRIMÔNIO / EQUIPAMENTOS ===== */}
+        {abaAtiva === 'patrimonio' && (
+          <div>
+            <div style={{ background: 'linear-gradient(135deg, #1a1400, #0d0d0d)', border: '1px solid #D4AF3744', borderRadius: '16px', padding: '20px', marginBottom: '20px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                <div style={{ width: '42px', height: '42px', background: '#D4AF3722', border: '2px solid #D4AF37', borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '22px' }}>🏢</div>
+                <div>
+                  <h2 style={{ color: 'white', margin: 0, fontSize: '18px', fontWeight: '900' }}>Gestão de <span style={{ color: '#D4AF37' }}>Desmanche</span></h2>
+                  <p style={{ color: '#555', margin: 0, fontSize: '12px' }}>Cadastre aqui as ferramentas grandes e equipamentos de valor que pertencem à oficina (Ex: Elevadores, Compressores, Scanners).</p>
+                </div>
+              </div>
+            </div>
+
+            {/* Formulário de cadastro */}
+            <div style={{ background: '#111', padding: '20px', borderRadius: '12px', border: '1px solid #D4AF3733', marginBottom: '24px' }}>
+              <label style={{ color: '#D4AF37', fontSize: '11px', fontWeight: 'bold', display: 'block', marginBottom: '12px', letterSpacing: '1px' }}>➕ NOVO EQUIPAMENTO</label>
+              <div style={{ display: 'flex', gap: '10px', marginBottom: '12px', flexWrap: 'wrap' }}>
+                <input
+                  type="text"
+                  value={equipamentoNome}
+                  onChange={e => setEquipamentoNome(e.target.value)}
+                  placeholder="Nome do Equipamento..."
+                  style={{ flex: 1, minWidth: '200px', padding: '14px', background: '#0a0a0a', border: '1px solid #333', color: 'white', borderRadius: '10px', fontSize: '14px' }}
+                />
+                <label style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '0 18px', background: '#0a0a0a', color: '#00E676', border: '1px dashed #00E67644', cursor: 'pointer', borderRadius: '10px', fontWeight: 'bold', fontSize: '12px' }}>
+                  📸 FOTO
+                  <input type="file" accept="image/*" capture="environment" onChange={e => { const r = new FileReader(); r.onload = async () => setEquipamentoFoto(await comprimirFoto(r.result, 0.5)); r.readAsDataURL(e.target.files[0]); }} style={{ display: 'none' }} />
+                </label>
+                <button onClick={handleSalvarEquipamento} style={{ padding: '14px 24px', background: '#D4AF37', color: 'black', border: 'none', fontWeight: 'bold', borderRadius: '10px', cursor: 'pointer', fontSize: '14px' }}>+ SALVAR</button>
+              </div>
+              {equipamentoFoto && (
+                <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                  <img src={equipamentoFoto} style={{ height: '60px', width: '60px', objectFit: 'cover', borderRadius: '8px', border: '1px solid #D4AF3744' }} />
+                  <button onClick={() => setEquipamentoFoto(null)} style={{ background: 'transparent', color: '#ef4444', border: '1px solid #ef444444', borderRadius: '6px', padding: '4px 10px', cursor: 'pointer', fontSize: '11px' }}>✕ Remover</button>
+                </div>
+              )}
+            </div>
+
+            {/* Lista de equipamentos */}
+            {listaEquipamentos.length === 0 ? (
+              <div style={{ background: '#0a0a0a', border: '1px dashed #D4AF3733', borderRadius: '16px', padding: '50px', textAlign: 'center' }}>
+                <p style={{ fontSize: '48px', margin: '0 0 10px 0' }}>🏢</p>
+                <p style={{ color: '#333', margin: 0, fontSize: '14px' }}>Nenhum equipamento cadastrado ainda.</p>
+              </div>
+            ) : (
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(150px, 1fr))', gap: '12px' }}>
+                {listaEquipamentos.map(eq => (
+                  <div key={eq.id} style={{ background: '#0a0a0a', borderRadius: '12px', position: 'relative', textAlign: 'center', overflow: 'hidden', border: '1px solid #D4AF3722' }}>
+                    {eq.foto
+                      ? <img src={eq.foto} style={{ width: '100%', height: '100px', objectFit: 'cover' }} />
+                      : <div style={{ height: '100px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#333', fontSize: '30px' }}>🔧</div>
+                    }
+                    <p style={{ margin: '8px 6px', fontWeight: 'bold', fontSize: '12px', color: '#D4AF37' }}>{eq.nome}</p>
+                    <button onClick={() => deletarDoc('oficina_equipamentos', eq.id, carregarEquipamentos)} style={{ position: 'absolute', top: '6px', right: '6px', background: '#ef444433', color: '#ef4444', border: 'none', borderRadius: '50%', width: '22px', height: '22px', cursor: 'pointer', fontSize: '12px', fontWeight: 'bold' }}>×</button>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
 
         {/* ===== LEADS / CLIENTES ===== */}
         {abaAtiva === 'leads' && temPermissao('os') && (() => {
@@ -5836,7 +5831,7 @@ export default function Admin() {
                   '📲 "Despachar Tarefa": envia a O.S. do cliente direto para o WhatsApp do mecânico.',
                   '🧰 Auditar Mala (IA): foto da caixa de ferramentas → IA verifica se está completa.',
                 ]},
-                { aba: 'patrimonio', icon: '🏢', titulo: 'PATRIMÔNIO - Bens e Equipamentos', conteudo: [
+                { aba: 'patrimonio', icon: '🔩', titulo: 'DESMANCHE - Bens e Equipamentos', conteudo: [
                   '👉 Registro visual do patrimônio da oficina.',
                   '📸 Cadastre equipamentos com foto (elevador, compressor, scanner, etc).',
                   '💼 Controle de investimento: valor e data de aquisição.',
