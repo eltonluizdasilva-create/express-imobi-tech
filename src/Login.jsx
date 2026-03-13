@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { db } from '../lib/firebase';
+import { db } from './lib/firebase';
 import { collectionGroup, query, where, getDocs } from 'firebase/firestore';
 
 export default function Login() {

@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { db } from '../lib/firebase'; 
+import { db } from './lib/firebase'; 
 import { collection, addDoc, deleteDoc, doc, onSnapshot, query, orderBy } from 'firebase/firestore'; 
-import { useOficina } from '../components/OficinaContext';
+import { useOficina } from "./components/OficinaContext";
 import { BarChart, Bar, XAxis, Tooltip, ResponsiveContainer, Cell } from 'recharts'; // 🔥 Importação do Gráfico
 
 export default function Financeiro() {

@@ -1,7 +1,7 @@
 /* eslint-disable no-unused-vars */
 import { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
-import { db } from '../lib/firebase';
+import { db } from './lib/firebase';
 import { doc, getDoc, collection, getDocs } from 'firebase/firestore';
 
 const MAIN_COLOR = "#FF0033";
@@ -175,6 +175,45 @@ ${SITE_LINK}`;
 
   return (
     <div style={{ minHeight: '100vh', background: 'black', color: 'white', paddingBottom: '40px', fontFamily: 'sans-serif' }}>
+
+      {/* ⚠️ AVISO TOPO — MECÂNICOS NÃO SE PERCAM */}
+      <div style={{
+        background: '#0d0d0d',
+        borderBottom: '2px solid #FF0033',
+        padding: '10px 16px',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        gap: '10px',
+        flexWrap: 'wrap',
+      }}>
+        <div>
+          <p style={{ margin: 0, color: '#FF0033', fontWeight: '900', fontSize: '11px', letterSpacing: '0.5px' }}>
+            📱 PORTAL DO CLIENTE
+          </p>
+          <p style={{ margin: '2px 0 0 0', color: '#666', fontSize: '10px' }}>
+            Aqui o cliente acompanha o serviço. Mecânico? Acesse ao lado →
+          </p>
+        </div>
+        <a
+          href="/admin"
+          style={{
+            background: 'linear-gradient(135deg, #FF0033, #cc0028)',
+            color: 'white',
+            padding: '9px 16px',
+            borderRadius: '8px',
+            fontWeight: '900',
+            fontSize: '12px',
+            textDecoration: 'none',
+            whiteSpace: 'nowrap',
+            letterSpacing: '0.5px',
+            boxShadow: '0 0 14px #FF003355',
+          }}
+        >
+          🔐 ÁREA DA OFICINA
+        </a>
+      </div>
+
       {/* HEADER */}
       <div style={{ background: `linear-gradient(135deg, ${MAIN_COLOR} 0%, #99001f 100%)`, padding: '30px 20px', textAlign: 'center', borderBottomLeftRadius: '30px', borderBottomRightRadius: '30px', boxShadow: `0 5px 20px ${MAIN_COLOR}44` }}>
         <h1 style={{ margin: '0 0 10px 0', fontSize: '24px', fontWeight: '900', textTransform: 'uppercase' }}>

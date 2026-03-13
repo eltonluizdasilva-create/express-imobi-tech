@@ -1,15 +1,20 @@
 /* eslint-disable react/prop-types */
 /* eslint-disable no-unused-vars */
 import React, { useState, useEffect, useRef, useMemo } from 'react';
-import { db } from '../lib/firebase';
+import { db } from './lib/firebase';
 import { collection, addDoc, getDocs, query, orderBy, where, deleteDoc, updateDoc, doc, setDoc, getDoc } from 'firebase/firestore';
 import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged, createUserWithEmailAndPassword } from "firebase/auth";
-import { useGemini } from '../hooks/useGemini';
-import { useOficina } from '../components/OficinaContext';
+import { useGemini } from './hooks/useGemini';
+import { useOficina } from './components/OficinaContext';
 import { BarChart, Bar, XAxis, Tooltip, ResponsiveContainer } from 'recharts';
 import Financeiro from './Financeiro';
 import Estoque from './Estoque';
 import LeadsPage from './LeadsPage';
+import LavaJato from './LavaJato';
+import NotaFiscal from './NotaFiscal';
+import ArCondicionado from './ArCondicionado';
+import Escapamento from './Escapamento';
+import Estetica from './Estetica';
 
 const MAIN_COLOR = "#FF0033";
 const GREEN_MONEY = "#00E676";
@@ -38,6 +43,9 @@ const TAB_COLORS = {
   financeiro:'#10b981',
   equipe:    '#6366f1',
   oficina:   '#8b5cf6',
+  motos:     '#f97316',
+  lataria:   '#ec4899',
+  amortecedor: '#eab308',
   leads:     '#25D366',
   assinatura:'#00E676',
   config:    '#94a3b8',
@@ -49,13 +57,19 @@ const TAB_COLORS = {
   injecao:   '#8b5cf6',
   patrimonio: '#D4AF37',
   master:    '#D4AF37',
+  eletrica:  '#facc15',
+  lavajato:  '#06b6d4',
+  nota_fiscal: '#00E676',
+  ar_condicionado: '#38bdf8',
+  escapamento: '#f97316',
+  estetica: '#a855f7',
 };
 const BLUE_INFO = '#3b82f6';
 
 // === ESTRUTURA PADRÃO DE PREÇOS DA EXPRESS AI ===
 const DEFAULT_PLANOS = {
-  mensal: { base: 89, clientes: 25, estoque: 25, retorno: 15, alinhamento: 30, pneus: 30, revisaoIa: 30, copiloto: 15, oficina: 35, injecao: 20, desmanche: 49 },
-  anual:  { base: 890, clientes: 250, estoque: 250, retorno: 150, alinhamento: 300, pneus: 300, revisaoIa: 300, copiloto: 150, oficina: 350, injecao: 200, desmanche: 490 },
+  mensal: { base: 89, clientes: 25, estoque: 25, retorno: 15, alinhamento: 30, pneus: 30, revisaoIa: 30, copiloto: 15, oficina: 35, injecao: 20, desmanche: 49, motos: 15, lataria: 15, amortecedor: 15, eletrica: 15, lavajato: 19, ar_condicionado: 19, escapamento: 15, estetica: 25 },
+  anual:  { base: 890, clientes: 250, estoque: 250, retorno: 150, alinhamento: 300, pneus: 300, revisaoIa: 300, copiloto: 150, oficina: 350, injecao: 200, desmanche: 490, motos: 150, lataria: 150, amortecedor: 150, eletrica: 150, lavajato: 190, ar_condicionado: 190, escapamento: 150, estetica: 250 },
   whatsapp: "5534999999999",
   descricaoBase: "Abertura de O.S. Geral e Controle Financeiro."
 };
@@ -428,12 +442,21 @@ function MasterPanel({ setPlanosGlobais }) {
     { key: 'visao_geral', label: '📊 Visão Geral' },
     { key: 'os', label: '🔧 O.S.' },
     { key: 'mecanica', label: '🏢 Mecânica' },
+    { key: 'motos', label: '🏍️ Motos' },
+    { key: 'lataria', label: '🚗 Lataria' },
+    { key: 'amortecedor', label: '🛢️ Amortecedor' },
+    { key: 'eletrica', label: '⚡ Elétrica' },
+    { key: 'lavajato', label: '🚿 Lava Jato' },
+    { key: 'ar_condicionado', label: '❄️ Ar-Condicionado' },
+    { key: 'escapamento', label: '🪛 Escapamento' },
+    { key: 'estetica', label: '🧴 Estética Automotiva' },
     { key: 'injecao', label: '⚡ Injeção' },
     { key: 'oleo', label: '🛢️ Óleo' },
     { key: 'alinhamento', label: '⚙️ Alinhamento' },
     { key: 'revisao', label: '🛡️ Revisão' },
     { key: 'pneus', label: '🛞 Pneus' },
     { key: 'copiloto', label: '🤖 Copiloto IA' },
+    { key: 'nota_fiscal', label: '🧾 Nota Fiscal' },
     { key: 'retorno', label: '🔄 Retorno' },
     { key: 'estoque', label: '📦 Estoque' },
     { key: 'financeiro', label: '💰 Financeiro' },
@@ -588,7 +611,15 @@ function MasterPanel({ setPlanosGlobais }) {
             { key: 'revisaoIa', label: 'Revisão Preventiva (IA)' },
             { key: 'copiloto', label: 'Copiloto Técnico (IA)' },
             { key: 'oficina', label: 'Módulo Oficina Mecânica' },
+            { key: 'motos', label: 'Aba Motos' },
+            { key: 'lataria', label: 'Aba Lataria & Acabamento' },
+            { key: 'amortecedor', label: 'Aba Amortecedores' },
             { key: 'injecao', label: 'Módulo Injeção Eletrônica' },
+            { key: 'eletrica', label: 'Aba Elétrica (Bateria, Ilum., Fiação, Fusíveis)' },
+            { key: 'lavajato', label: 'Lava Jato (Fila + O.S. Integrada)' },
+            { key: 'ar_condicionado', label: 'Ar-Condicionado (Lembrete automático 1 ano)' },
+            { key: 'escapamento', label: 'Escapamento (Silencioso, Catalisador, Flex)' },
+            { key: 'estetica', label: 'Estética Automotiva (Polimento, PPF, Envelopamento)' },
             { key: 'desmanche', label: 'Módulo Desmanche' }
         ].map(mod => (
           <div key={mod.key} style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1fr', gap: '10px', marginBottom: '8px' }}>
@@ -723,6 +754,7 @@ function MasterPanel({ setPlanosGlobais }) {
           </div>
         );
       })}
+
     </div>
   );
 }
@@ -730,7 +762,7 @@ function MasterPanel({ setPlanosGlobais }) {
 // ============================================================
 // ========== MÓDULO DE REVISÃO PREVENTIVA (IA) ===============
 // ============================================================
-const ModuloRevisao = ({ dadosOficina, papelLogado, oficinaId, osParaEditar, onCancelarEdicao, onSalvo }) => {
+const ModuloRevisao = ({ dadosOficina, papelLogado, oficinaId, osParaEditar, onCancelarEdicao, onSalvo, buscarPorPlaca }) => {
   const { analyzeImage } = useGemini();
   const [loadingIA, setLoadingIA] = useState(false);
   const [laudoFinal, setLaudoFinal] = useState('');
@@ -881,7 +913,7 @@ const ModuloRevisao = ({ dadosOficina, papelLogado, oficinaId, osParaEditar, onC
       )}
       {/* LINHA 1: PLACA, MODELO, KM */}
       <div style={{ display: 'flex', gap: '10px', marginBottom: '10px', flexWrap: 'wrap' }}>
-        <input type="text" value={placa} onChange={e => { setPlaca(normalizarPlaca(e.target.value)); setSalvoOS(false); }} placeholder="PLACA *" style={{ flex: 1, minWidth: '100px', padding: '12px', background: '#111', border: '1px solid #333', color: 'white', borderRadius: '8px' }} />
+        <input type="text" value={placa} onChange={e => { const p = normalizarPlaca(e.target.value); setPlaca(p); setSalvoOS(false); if (buscarPorPlaca) buscarPorPlaca(p, { setNome: v => { if (!cliente) setCliente(v); }, setTelefone: v => { if (!telefone) setTelefone(v); }, setModelo: v => { if (!modelo) setModelo(v); }, setKm: v => { if (!kmAtual) setKmAtual(v); } }); }} placeholder="PLACA *" style={{ flex: 1, minWidth: '100px', padding: '12px', background: '#111', border: '1px solid #333', color: 'white', borderRadius: '8px' }} />
         <input type="text" value={modelo} onChange={e => setModelo(e.target.value)} placeholder="MODELO" style={{ flex: 2, minWidth: '150px', padding: '12px', background: '#111', border: '1px solid #333', color: 'white', borderRadius: '8px' }} />
         <input type="number" value={kmAtual} onChange={e => setKmAtual(e.target.value)} placeholder="KM ATUAL *" style={{ flex: 1, minWidth: '100px', padding: '12px', background: '#001a05', border: '1px solid #00E676', color: '#00E676', borderRadius: '8px', fontWeight: 'bold' }} />
       </div>
@@ -995,7 +1027,7 @@ const TirePhotoCarousel = () => {
 // ============================================================
 // ========== MÓDULO DE PNEUS E BORRACHARIA (VENDAS/CONSERTOS) 
 // ============================================================
-const ModuloPneus = ({ dadosOficina, papelLogado, oficinaId, osParaEditar, onCancelarEdicao, onSalvo }) => {
+const ModuloPneus = ({ dadosOficina, papelLogado, oficinaId, osParaEditar, onCancelarEdicao, onSalvo, buscarPorPlaca }) => {
   const { analyzeImage } = useGemini();
   const [loading, setLoading] = useState(false);
   const [laudoPneu, setLaudoPneu] = useState('');
@@ -1148,7 +1180,7 @@ const ModuloPneus = ({ dadosOficina, papelLogado, oficinaId, osParaEditar, onCan
       
       {/* CAMPOS DO CLIENTE ADICIONADOS AQUI */}
       <div style={{ display: 'flex', gap: '10px', marginBottom: '20px', flexWrap: 'wrap' }}>
-        <input type="text" value={placa} onChange={e => setPlaca(normalizarPlaca(e.target.value))} placeholder="PLACA *" style={{ flex: 1, minWidth: '100px', padding: '12px', background: '#111', border: '1px solid #444', color: 'white', borderRadius: '8px', fontWeight: 'bold' }} />
+        <input type="text" value={placa} onChange={e => { const p = normalizarPlaca(e.target.value); setPlaca(p); if (buscarPorPlaca) buscarPorPlaca(p, { setNome: v => { if (!cliente) setCliente(v); }, setTelefone: v => { if (!telefone) setTelefone(v); }, setModelo: v => { if (!modelo) setModelo(v); } }); }} placeholder="PLACA *" style={{ flex: 1, minWidth: '100px', padding: '12px', background: '#111', border: '1px solid #444', color: 'white', borderRadius: '8px', fontWeight: 'bold' }} />
         <input type="text" value={modelo} onChange={e => setModelo(e.target.value)} placeholder="MODELO" style={{ flex: 2, minWidth: '150px', padding: '12px', background: '#111', border: '1px solid #444', color: 'white', borderRadius: '8px' }} />
         <input type="text" value={cliente} onChange={e => setCliente(e.target.value)} placeholder="NOME DO CLIENTE" style={{ flex: 2, minWidth: '150px', padding: '12px', background: '#111', border: '1px solid #444', color: 'white', borderRadius: '8px' }} />
         <input type="text" value={telefone} onChange={e => setTelefone(e.target.value.replace(/\D/g, ''))} placeholder="WHATSAPP" style={{ flex: 1, minWidth: '120px', padding: '12px', background: '#111', border: '1px solid #444', color: 'white', borderRadius: '8px' }} />
@@ -1283,118 +1315,272 @@ const ModuloPneus = ({ dadosOficina, papelLogado, oficinaId, osParaEditar, onCan
 // ============================================================
 // ========== MÓDULO DE COPILOTO TÉCNICO (IA) =================
 // ============================================================
-const CopilotoIA = ({ papelLogado, dadosOficina }) => {
-  const { analyzeImage } = useGemini();
-  const [pergunta, setPergunta] = useState('');
-  const [resposta, setResposta] = useState('');
-  const [pensando, setPensando] = useState(false);
-  const [escutando, setEscutando] = useState(false);
-  const [fotoAnexada, setFotoAnexada] = useState(null);
-  const [modoAtivo, setModoAtivo] = useState('texto'); // 'texto' | 'foto' | 'video'
+const CopilotoIA = ({ papelLogado, dadosOficina, setAbaAtiva, listaCarros }) => {
   const recognitionRef = useRef(null);
+
+  // ── Form de diagnóstico ──
+  const [marca,    setMarca]    = useState('');
+  const [modelo,   setModelo]   = useState('');
+  const [ano,      setAno]      = useState('');
+  const [motor,    setMotor]    = useState('');
+  const [sintoma,  setSintoma]  = useState('');
+  const [obd,      setObd]      = useState('');
+  const [escutando, setEscutando] = useState('');
+
+  // ── Prompt gerado ──
+  const [promptGerado, setPromptGerado] = useState('');
+  const [copiado,      setCopiado]      = useState(false);
+  const [mostrarGuia,  setMostrarGuia]  = useState(null); // 'camera' | 'foto' | 'texto'
 
   const temAcesso = papelLogado === 'master' || papelLogado === 'dono' || dadosOficina?.plano === 'pago' || dadosOficina?.plano === 'trial';
 
-  const ouvirVoz = () => {
-    if (!('webkitSpeechRecognition' in window)) return alert("Navegador não suporta voz.");
-    if (escutando) { recognitionRef.current?.stop(); setEscutando(false); return; }
+  const ouvirCampo = (setter) => {
+    if (!('webkitSpeechRecognition' in window)) return alert('Voz não suportada neste navegador.');
+    if (escutando) { recognitionRef.current?.stop(); setEscutando(''); return; }
     const rec = new window.webkitSpeechRecognition();
     rec.lang = 'pt-BR'; recognitionRef.current = rec;
-    rec.onstart = () => setEscutando(true);
-    rec.onresult = (e) => setPergunta(prev => prev + " " + e.results[0][0].transcript);
-    rec.onend = () => setEscutando(false);
+    rec.onstart = () => setEscutando(setter.name || 'on');
+    rec.onresult = (e) => setter(e.results[0][0].transcript);
+    rec.onend = () => setEscutando('');
     rec.start();
   };
 
-  const anexarFoto = (e) => {
-    const file = e.target.files[0]; if (!file) return;
-    const reader = new FileReader();
-    reader.onloadend = () => setFotoAnexada(reader.result);
-    reader.readAsDataURL(file);
+  const gerarPrompt = () => {
+    if (!sintoma && !obd) return alert('⚠️ Descreva o sintoma ou informe o código OBD!');
+    const veiculo = [marca, modelo, motor, ano].filter(Boolean).join(' ');
+    const p = `Você é um mecânico automotivo especialista sênior com 20 anos de experiência. Responda em português do Brasil de forma técnica, prática e direta.
+
+VEÍCULO: ${veiculo || 'não informado'}${obd ? `\nCÓDIGO OBD/DTC: ${obd}` : ''}
+SINTOMA / PROBLEMA: ${sintoma || 'ver código OBD'}
+
+Por favor, responda com:
+1️⃣ POSSÍVEIS CAUSAS (liste do mais ao menos provável)
+2️⃣ TESTES RECOMENDADOS (passo a passo prático)
+3️⃣ PEÇAS QUE PODEM ESTAR DEFEITUOSAS
+4️⃣ TEMPO MÉDIO DE REPARO
+5️⃣ VALOR MÉDIO DO SERVIÇO (peças + mão de obra, mercado brasileiro)
+6️⃣ ORDEM DE DIAGNÓSTICO (o que verificar primeiro para economizar tempo)
+
+Seja direto e prático. O mecânico está na oficina agora.`;
+    setPromptGerado(p);
+    setMostrarGuia(null);
+    setTimeout(() => document.getElementById('prompt-resultado')?.scrollIntoView({ behavior: 'smooth' }), 100);
   };
 
-  const perguntar = async () => {
-    if (!pergunta && !fotoAnexada) return;
-    setPensando(true);
-    setResposta('👨‍🔧 Analisando com IA...');
-    try {
-      const promptBase = `Você é um mecânico automotivo especialista sênior com 20 anos de experiência. Responda em português do Brasil de forma técnica, prática e direta. Use tópicos numerados quando útil. Se mencionar torques, especificações ou procedimentos, seja preciso.`;
-      const perguntaFinal = pergunta || 'Analise esta imagem e diga o que está errado no veículo.';
-      const res = await analyzeImage(`${promptBase}\n\nPERGUNTA DO MECÂNICO: ${perguntaFinal}`, fotoAnexada || null);
-      setResposta(res);
-    } catch (e) {
-      if (fotoAnexada) {
-        setResposta('❌ Análise de foto indisponível no momento.\n\n💡 **Alternativa:** Use o Gemini diretamente:\n1. Acesse gemini.google.com\n2. Clique em 📎 para anexar a foto\n3. Pergunte: "Analise este defeito automotivo"\n\nOu tente apenas com texto digitado (sem foto) que funciona normalmente.');
-      } else {
-        setResposta('❌ Erro ao consultar a IA. Verifique sua conexão e tente novamente.\n\nSe o erro persistir, use o botão "Vídeo no Gemini" para acessar a IA diretamente.');
-      }
-    }
-    setPensando(false);
+  const copiarPrompt = () => {
+    navigator.clipboard.writeText(promptGerado);
+    setCopiado(true);
+    setTimeout(() => setCopiado(false), 2500);
   };
 
-  const EXEMPLOS = [
-    { label: '🔴 Erro P0420', q: 'Qual o significado do código OBD2 P0420 e como diagnosticar passo a passo com multímetro?' },
-    { label: '🔩 Torque EA111', q: 'Qual a ordem e o torque de aperto do cabeçote do motor VW EA111 1.0/1.6?' },
-    { label: '⚙️ Ponto GM 1.4', q: 'Como marcar o ponto do sincronismo da correia dentada do motor GM 1.4 SPE/4? Quais as marcas de referência?' },
-    { label: '🔋 Bateria fraca', q: 'Carro não pega, bateria carregada. Quais os passos para diagnosticar o problema?' },
-    { label: '💨 Motor falhando', q: 'Motor falhando na lenta com código P0301. Qual o passo a passo para diagnosticar?' },
+  const abrirGeminiComPrompt = () => {
+    const url = `https://gemini.google.com/app?hl=pt-BR`;
+    window.open(url, '_blank');
+    setTimeout(() => copiarPrompt(), 300);
+  };
+
+  const criarOS = () => {
+    if (setAbaAtiva) setAbaAtiva('os');
+  };
+
+  const EXEMPLOS_RAPIDOS = [
+    { label: '💨 Falha na lenta',    marca:'', modelo:'', motor:'', ano:'', sintoma:'Motor falhando em marcha lenta, tremendo e apagando', obd:'' },
+    { label: '🔴 P0420',             marca:'', modelo:'', motor:'', ano:'', sintoma:'Luz do motor acesa', obd:'P0420' },
+    { label: '🛑 Não pega',          marca:'', modelo:'', motor:'', ano:'', sintoma:'Carro não pega, motor gira mas não pega', obd:'' },
+    { label: '🌡️ Superaquecendo',    marca:'', modelo:'', motor:'', ano:'', sintoma:'Temperatura subindo, água sumindo, fumaça branca', obd:'' },
+    { label: '🔋 Bateria ok, não pega', marca:'', modelo:'', motor:'', ano:'', sintoma:'Bateria nova e carregada mas carro não pega', obd:'' },
+    { label: '🔊 Barulho suspensão', marca:'', modelo:'', motor:'', ano:'', sintoma:'Barulho de estalos na suspensão dianteira ao passar em buracos', obd:'' },
   ];
 
-  if (!temAcesso) return (<div style={{ background: '#1a0000', border: '1px solid #ef4444', padding: '30px', borderRadius: '15px', textAlign: 'center' }}><h3 style={{ color: '#ef4444' }}>🔒 Módulo Premium</h3><p style={{ color: '#888' }}>O Copiloto Técnico IA é exclusivo para assinantes.</p></div>);
+  if (!temAcesso) return (
+    <div style={{ background: '#1a0000', border: '1px solid #ef4444', padding: '30px', borderRadius: '15px', textAlign: 'center' }}>
+      <h3 style={{ color: '#ef4444' }}>🔒 Módulo Premium</h3>
+      <p style={{ color: '#888' }}>O Copiloto Técnico IA é exclusivo para assinantes.</p>
+    </div>
+  );
 
   return (
-    <div style={{ background: '#0a0a0a', padding: '20px', borderRadius: '15px', border: `1px solid ${COPILOTO_COLOR}` }}>
-      <h2 style={{ color: COPILOTO_COLOR, marginBottom: '5px' }}>👨‍🔧 Copiloto Técnico — Como Usar o Gemini</h2>
-      <p style={{ color: '#888', fontSize: '13px', marginBottom: '20px' }}>Use o Gemini gratuitamente para diagnosticar defeitos em veículos. Siga o passo a passo abaixo:</p>
+    <div style={{ color: 'white', fontFamily: 'sans-serif' }}>
 
-      {/* PASSO A PASSO TEXTO / VOZ */}
-      <div style={{ background: '#0d0020', border: `2px solid ${COPILOTO_COLOR}`, borderRadius: '12px', padding: '20px', marginBottom: '16px' }}>
-        <h4 style={{ color: COPILOTO_COLOR, margin: '0 0 14px 0', fontSize: '14px' }}>⌨️ Diagnóstico por Texto ou Voz</h4>
-        {[
-          '1️⃣ Abra gemini.google.com no PC ou o app Gemini no celular',
-          '2️⃣ Digite ou dite a dúvida: marca, modelo, problema e código (ex: "Fiat Palio 1.0, erro P0420, catalisador")',
-          '3️⃣ Comece com: "Você é um mecânico automotivo especialista. Me ajude com este problema:"',
-          '4️⃣ O Gemini responde com diagnóstico, causas prováveis e passo a passo de reparo',
-          '5️⃣ Peça torques, especificações e procedimentos — ele responde com precisão técnica',
-        ].map((p, i) => (
-          <p key={i} style={{ color: '#ccc', fontSize: '13px', margin: '0 0 8px 0', padding: '8px 12px', background: '#1a0030', borderRadius: '8px', borderLeft: `3px solid ${COPILOTO_COLOR}` }}>{p}</p>
-        ))}
+      {/* ── HEADER ── */}
+      <div style={{ background: `linear-gradient(135deg, ${COPILOTO_COLOR}22, transparent)`, border: `1px solid ${COPILOTO_COLOR}44`, borderRadius: '14px', padding: '20px', marginBottom: '20px' }}>
+        <h2 style={{ margin: '0 0 4px', color: COPILOTO_COLOR, fontSize: '22px', fontWeight: '900' }}>🧠 Copiloto Técnico IA</h2>
+        <p style={{ margin: 0, color: '#666', fontSize: '13px' }}>Descreva o problema → sistema gera o diagnóstico técnico perfeito → abre no Gemini com 1 clique</p>
       </div>
 
-      {/* PASSO A PASSO FOTO */}
-      <div style={{ background: '#0d0020', border: `2px solid ${COPILOTO_COLOR}`, borderRadius: '12px', padding: '20px', marginBottom: '16px' }}>
-        <h4 style={{ color: COPILOTO_COLOR, margin: '0 0 14px 0', fontSize: '14px' }}>📸 Diagnóstico por Foto</h4>
-        {[
-          '1️⃣ Abra gemini.google.com no PC ou o app Gemini no celular',
-          '2️⃣ Clique no ícone 📎 (anexar) e selecione a foto da peça, defeito ou código no scanner',
-          '3️⃣ Digite: "Você é um mecânico especialista. Analise esta imagem e diga o que está errado"',
-          '4️⃣ O Gemini identifica peças danificadas, desgastes, vazamentos e codes DTC',
-        ].map((p, i) => (
-          <p key={i} style={{ color: '#ccc', fontSize: '13px', margin: '0 0 8px 0', padding: '8px 12px', background: '#1a0030', borderRadius: '8px', borderLeft: `3px solid ${COPILOTO_COLOR}` }}>{p}</p>
-        ))}
-      </div>
-
-      {/* PASSO A PASSO VÍDEO AO VIVO */}
-      <div style={{ background: '#0d0020', border: `2px solid ${COPILOTO_COLOR}`, borderRadius: '12px', padding: '20px', marginBottom: '20px' }}>
-        <h4 style={{ color: COPILOTO_COLOR, margin: '0 0 14px 0', fontSize: '14px' }}>🎥 Diagnóstico por Vídeo ao Vivo</h4>
-        {[
-          '1️⃣ Abra o app Gemini no celular (recurso disponível no app)',
-          '2️⃣ Toque no ícone de câmera 📹 para iniciar a análise ao vivo',
-          '3️⃣ Aponte a câmera para o defeito: barulho, vazamento, fumaça, peça vibrando',
-          '4️⃣ Diga: "Você é um mecânico especialista. O que está errado neste veículo?"',
-          '5️⃣ O Gemini analisa em tempo real e responde por áudio — ideal para ruídos e falhas intermitentes',
-        ].map((p, i) => (
-          <p key={i} style={{ color: '#ccc', fontSize: '13px', margin: '0 0 8px 0', padding: '8px 12px', background: '#1a0030', borderRadius: '8px', borderLeft: `3px solid ${COPILOTO_COLOR}` }}>{p}</p>
-        ))}
-        <div style={{ marginTop: '12px', background: '#1a1a00', border: '1px solid #eab308', borderRadius: '8px', padding: '10px' }}>
-          <p style={{ color: '#eab308', fontSize: '12px', margin: 0 }}>💡 <strong>Dica:</strong> Funciona muito bem para barulho na suspensão, motor falhando ao vivo, freios riscando e vazamentos.</p>
+      {/* ── EXEMPLOS RÁPIDOS ── */}
+      <div style={{ marginBottom: '20px' }}>
+        <p style={{ color: '#555', fontSize: '10px', fontWeight: 'bold', letterSpacing: '2px', margin: '0 0 8px' }}>⚡ EXEMPLOS RÁPIDOS</p>
+        <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
+          {EXEMPLOS_RAPIDOS.map((ex, i) => (
+            <button key={i} onClick={() => { setMarca(ex.marca); setModelo(ex.modelo); setMotor(ex.motor); setAno(ex.ano); setSintoma(ex.sintoma); setObd(ex.obd); setPromptGerado(''); }}
+              style={{ padding: '8px 12px', background: '#111', color: COPILOTO_COLOR, border: `1px solid ${COPILOTO_COLOR}44`, borderRadius: '20px', fontSize: '11px', fontWeight: 'bold', cursor: 'pointer', whiteSpace: 'nowrap' }}>
+              {ex.label}
+            </button>
+          ))}
         </div>
       </div>
 
-      <a href="https://gemini.google.com" target="_blank" rel="noopener noreferrer"
-        style={{ display: 'block', padding: '15px', background: COPILOTO_COLOR, color: 'black', borderRadius: '10px', textAlign: 'center', fontWeight: 'bold', textDecoration: 'none', fontSize: '15px' }}>
-        🚀 Abrir Gemini agora
-      </a>
+      {/* ── FORMULÁRIO ── */}
+      <div style={{ background: '#111', padding: '16px', borderRadius: '12px', marginBottom: '14px' }}>
+        <p style={{ color: COPILOTO_COLOR, fontSize: '11px', fontWeight: 'bold', letterSpacing: '1px', margin: '0 0 14px' }}>🚗 DADOS DO VEÍCULO (opcional, mas melhora o diagnóstico)</p>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', marginBottom: '10px' }}>
+          {[
+            { val: marca,  set: setMarca,  ph: 'MARCA (ex: Fiat)' },
+            { val: modelo, set: setModelo, ph: 'MODELO (ex: Palio)' },
+            { val: motor,  set: setMotor,  ph: 'MOTOR (ex: 1.0 Fire)' },
+            { val: ano,    set: setAno,    ph: 'ANO (ex: 2018)' },
+          ].map(({ val, set, ph }, i) => (
+            <input key={i} value={val} onChange={e => set(e.target.value)} placeholder={ph}
+              style={{ padding: '11px', background: '#0a0a0a', border: '1px solid #333', color: 'white', borderRadius: '8px', fontSize: '12px', boxSizing: 'border-box', width: '100%' }} />
+          ))}
+        </div>
+
+        {/* Código OBD */}
+        <div style={{ marginBottom: '12px' }}>
+          <p style={{ color: '#666', fontSize: '10px', fontWeight: 'bold', margin: '0 0 6px', letterSpacing: '1px' }}>🔴 CÓDIGO OBD/DTC (se tiver scanner)</p>
+          <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', marginBottom: '6px' }}>
+            {['P0420','P0300','P0301','P0171','P0442','P0128','B1000','C0035','U0100'].map(c => (
+              <button key={c} onClick={() => setObd(prev => prev ? prev + ', ' + c : c)}
+                style={{ padding: '5px 10px', background: obd.includes(c) ? '#1a0000' : '#0a0a0a', color: obd.includes(c) ? '#ef4444' : '#555', border: `1px solid ${obd.includes(c) ? '#ef4444' : '#2a2a2a'}`, borderRadius: '6px', fontSize: '11px', fontWeight: 'bold', cursor: 'pointer' }}>
+                {c}
+              </button>
+            ))}
+          </div>
+          <input value={obd} onChange={e => setObd(e.target.value)} placeholder="Ou digite o código manualmente (ex: P0420, P0300)"
+            style={{ width: '100%', padding: '11px', background: '#0a0a0a', border: `1px solid ${obd ? '#ef4444' : '#333'}`, color: '#ef4444', borderRadius: '8px', fontSize: '13px', fontWeight: 'bold', boxSizing: 'border-box' }} />
+        </div>
+
+        {/* Sintoma — campo principal */}
+        <div>
+          <p style={{ color: '#666', fontSize: '10px', fontWeight: 'bold', margin: '0 0 6px', letterSpacing: '1px' }}>🔧 SINTOMA / PROBLEMA * (obrigatório)</p>
+          <div style={{ display: 'flex', gap: '8px' }}>
+            <textarea value={sintoma} onChange={e => setSintoma(e.target.value)}
+              placeholder="Ex: motor falhando na lenta, tremendo, consumo alto, fumaça preta, barulho ao frear..."
+              rows={3} style={{ flex: 1, padding: '12px', background: '#0a0a0a', border: `1px solid ${sintoma ? COPILOTO_COLOR : '#333'}`, color: 'white', borderRadius: '8px', resize: 'vertical', fontSize: '13px', boxSizing: 'border-box' }} />
+            <button onClick={() => ouvirCampo(setSintoma)}
+              style={{ width: '50px', background: escutando ? '#ff003322' : '#1a0030', color: escutando ? '#ff0033' : COPILOTO_COLOR, border: `1px solid ${escutando ? '#ff0033' : COPILOTO_COLOR}`, borderRadius: '8px', fontSize: '22px', cursor: 'pointer', flexShrink: 0 }}>
+              {escutando ? '🔴' : '🎤'}
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {/* ── BOTÃO GERAR ── */}
+      <button onClick={gerarPrompt}
+        style={{ width: '100%', padding: '18px', background: `linear-gradient(135deg, ${COPILOTO_COLOR}, #7c3aed)`, color: 'white', border: 'none', borderRadius: '12px', fontSize: '17px', fontWeight: '900', cursor: 'pointer', marginBottom: '20px', letterSpacing: '0.5px' }}>
+        🧠 GERAR DIAGNÓSTICO TÉCNICO
+      </button>
+
+      {/* ── RESULTADO DO PROMPT ── */}
+      {promptGerado && (
+        <div id="prompt-resultado" style={{ marginBottom: '20px' }}>
+          <div style={{ background: '#0d0020', border: `2px solid ${COPILOTO_COLOR}`, borderRadius: '14px', padding: '20px', marginBottom: '16px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+              <p style={{ margin: 0, color: COPILOTO_COLOR, fontWeight: '900', fontSize: '14px' }}>✅ Diagnóstico técnico gerado!</p>
+              <button onClick={copiarPrompt} style={{ padding: '6px 14px', background: copiado ? '#00E67622' : '#1a0030', color: copiado ? '#00E676' : COPILOTO_COLOR, border: `1px solid ${copiado ? '#00E676' : COPILOTO_COLOR}`, borderRadius: '8px', fontSize: '11px', fontWeight: 'bold', cursor: 'pointer' }}>
+                {copiado ? '✅ Copiado!' : '📋 Copiar'}
+              </button>
+            </div>
+            <pre style={{ color: '#ccc', fontSize: '12px', whiteSpace: 'pre-wrap', lineHeight: '1.6', margin: 0, background: '#1a0030', padding: '14px', borderRadius: '8px' }}>
+              {promptGerado}
+            </pre>
+          </div>
+
+          {/* ── 3 BOTÕES DE AÇÃO ── */}
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', marginBottom: '10px' }}>
+            <button onClick={abrirGeminiComPrompt}
+              style={{ padding: '16px 12px', background: `linear-gradient(135deg, ${COPILOTO_COLOR}, #7c3aed)`, color: 'white', border: 'none', borderRadius: '12px', fontWeight: '900', fontSize: '14px', cursor: 'pointer', textAlign: 'center' }}>
+              🚀 Abrir no Gemini<br/><span style={{ fontSize: '10px', fontWeight: 'normal', opacity: 0.8 }}>prompt já copiado</span>
+            </button>
+            <button onClick={criarOS}
+              style={{ padding: '16px 12px', background: '#1a0000', color: '#FF0033', border: '2px solid #FF0033', borderRadius: '12px', fontWeight: '900', fontSize: '14px', cursor: 'pointer', textAlign: 'center' }}>
+              📋 Criar O.S.<br/><span style={{ fontSize: '10px', fontWeight: 'normal', opacity: 0.8 }}>com esses dados</span>
+            </button>
+          </div>
+
+          {/* ── GUIA DE USO DA CÂMERA ── */}
+          <div style={{ background: '#111', border: '1px solid #333', borderRadius: '12px', padding: '16px' }}>
+            <p style={{ color: '#888', fontSize: '12px', fontWeight: 'bold', margin: '0 0 12px', letterSpacing: '1px' }}>📱 COMO USAR NO GEMINI — ESCOLHA O MODO:</p>
+            <div style={{ display: 'flex', gap: '8px', marginBottom: '14px', flexWrap: 'wrap' }}>
+              {[
+                { key: 'camera', label: '📹 Câmera ao Vivo', desc: 'Melhor opção', cor: '#00E676' },
+                { key: 'foto',   label: '📸 Foto',           desc: 'Imagem estática', cor: '#38bdf8' },
+                { key: 'texto',  label: '⌨️ Só texto',       desc: 'Sem imagem', cor: COPILOTO_COLOR },
+              ].map(opt => (
+                <button key={opt.key} onClick={() => setMostrarGuia(mostrarGuia === opt.key ? null : opt.key)}
+                  style={{ flex: 1, minWidth: '90px', padding: '10px 8px', background: mostrarGuia === opt.key ? opt.cor + '22' : '#0a0a0a', color: mostrarGuia === opt.key ? opt.cor : '#666', border: `1px solid ${mostrarGuia === opt.key ? opt.cor : '#2a2a2a'}`, borderRadius: '10px', cursor: 'pointer', textAlign: 'center' }}>
+                  <span style={{ display: 'block', fontWeight: 'bold', fontSize: '12px' }}>{opt.label}</span>
+                  <span style={{ fontSize: '10px', opacity: 0.7 }}>{opt.desc}</span>
+                </button>
+              ))}
+            </div>
+
+            {/* GUIA CÂMERA AO VIVO */}
+            {mostrarGuia === 'camera' && (
+              <div style={{ background: '#001a0a', border: '1px solid #00E676', borderRadius: '10px', padding: '14px' }}>
+                <p style={{ color: '#00E676', fontWeight: '900', margin: '0 0 10px', fontSize: '13px' }}>📹 CÂMERA AO VIVO — Modo mais poderoso!</p>
+                {[
+                  '1️⃣ Abra o APP GEMINI no celular (não o site — precisa ser o app)',
+                  '2️⃣ Cole o prompt copiado no campo de texto',
+                  '3️⃣ Toque no ícone de câmera 📹 ao lado do microfone',
+                  '4️⃣ Aponte para a peça, código no scanner, barulho ou fumaça',
+                  '5️⃣ O Gemini vê em tempo real e responde por áudio',
+                ].map((p, i) => (
+                  <p key={i} style={{ color: '#ccc', fontSize: '12px', margin: '0 0 6px', padding: '8px 10px', background: '#002a10', borderRadius: '6px', borderLeft: '3px solid #00E676' }}>{p}</p>
+                ))}
+                <div style={{ background: '#001a0a', border: '1px solid #eab308', borderRadius: '8px', padding: '10px', marginTop: '10px' }}>
+                  <p style={{ color: '#eab308', fontSize: '11px', margin: 0 }}>💡 <strong>Dica:</strong> Ideal para barulhos, vibrações, fumaça, vazamentos e peças difíceis de fotografar. O Gemini analisa enquanto você aponta!</p>
+                </div>
+                <a href="https://play.google.com/store/apps/details?id=com.google.android.apps.bard" target="_blank" rel="noopener noreferrer"
+                  style={{ display: 'block', marginTop: '10px', padding: '10px', background: '#00E676', color: 'black', borderRadius: '8px', textAlign: 'center', fontWeight: 'bold', textDecoration: 'none', fontSize: '13px' }}>
+                  📥 Baixar App Gemini (Android)
+                </a>
+              </div>
+            )}
+
+            {/* GUIA FOTO */}
+            {mostrarGuia === 'foto' && (
+              <div style={{ background: '#001a1f', border: '1px solid #38bdf8', borderRadius: '10px', padding: '14px' }}>
+                <p style={{ color: '#38bdf8', fontWeight: '900', margin: '0 0 10px', fontSize: '13px' }}>📸 DIAGNÓSTICO POR FOTO</p>
+                {[
+                  '1️⃣ Abra gemini.google.com no celular ou PC',
+                  '2️⃣ Cole o prompt copiado no campo de texto',
+                  '3️⃣ Toque em 📎 (clipe/anexar) e selecione a foto',
+                  '4️⃣ Fotos úteis: peça danificada, código no scanner, vazamento, desgaste',
+                  '5️⃣ O Gemini analisa a imagem junto com o diagnóstico',
+                ].map((p, i) => (
+                  <p key={i} style={{ color: '#ccc', fontSize: '12px', margin: '0 0 6px', padding: '8px 10px', background: '#001a22', borderRadius: '6px', borderLeft: '3px solid #38bdf8' }}>{p}</p>
+                ))}
+                <div style={{ background: '#001a22', border: '1px solid #eab308', borderRadius: '8px', padding: '10px', marginTop: '10px' }}>
+                  <p style={{ color: '#eab308', fontSize: '11px', margin: 0 }}>💡 <strong>Dica:</strong> Fotografe o código que aparece no scanner, a peça desgastada ou o local do vazamento. O Gemini identifica com precisão!</p>
+                </div>
+              </div>
+            )}
+
+            {/* GUIA TEXTO */}
+            {mostrarGuia === 'texto' && (
+              <div style={{ background: '#0d0020', border: `1px solid ${COPILOTO_COLOR}`, borderRadius: '10px', padding: '14px' }}>
+                <p style={{ color: COPILOTO_COLOR, fontWeight: '900', margin: '0 0 10px', fontSize: '13px' }}>⌨️ SÓ TEXTO — Simples e eficaz</p>
+                {[
+                  '1️⃣ Abra gemini.google.com ou o app Gemini',
+                  '2️⃣ Cole o prompt que foi copiado automaticamente',
+                  '3️⃣ Envie — o Gemini já responde com o diagnóstico completo',
+                  '4️⃣ Peça mais detalhes: torques, procedimentos, especificações',
+                ].map((p, i) => (
+                  <p key={i} style={{ color: '#ccc', fontSize: '12px', margin: '0 0 6px', padding: '8px 10px', background: '#1a0030', borderRadius: '6px', borderLeft: `3px solid ${COPILOTO_COLOR}` }}>{p}</p>
+                ))}
+              </div>
+            )}
+
+            {/* Botão direto para Gemini */}
+            <a href="https://gemini.google.com" target="_blank" rel="noopener noreferrer"
+              style={{ display: 'block', marginTop: '14px', padding: '14px', background: `linear-gradient(135deg, ${COPILOTO_COLOR}, #7c3aed)`, color: 'white', borderRadius: '10px', textAlign: 'center', fontWeight: '900', textDecoration: 'none', fontSize: '14px' }}>
+              🚀 Abrir Gemini agora →
+            </a>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
@@ -1496,6 +1682,14 @@ const ModuloMeuPlano = ({ dadosOficina, planosSistema }) => {
           { id: 'revisaoIa', label: '+ Revisão Preventiva (IA)', desc: 'Gere laudos persuasivos usando voz e Inteligência Artificial.' },
           { id: 'copiloto', label: '+ Copiloto Técnico (IA)', desc: 'Consulte códigos de erro e manuais mecânicos na hora.' },
           { id: 'oficina', label: '+ Módulo Oficina Mecânica', desc: 'O.S. por serviço: Mecânica, Injeção, Motos, Lataria, Amortecedores.' },
+          { id: 'motos', label: '+ Aba Motos', desc: 'Checklist exclusivo para motocicletas como aba independente.' },
+          { id: 'lataria', label: '+ Aba Lataria & Acabamento', desc: 'Funilaria, pintura, vidros e interior como aba independente.' },
+          { id: 'amortecedor', label: '+ Aba Amortecedores', desc: 'Diagnóstico por posição (DE, DD, TE, TD) como aba independente.' },
+          { id: 'eletrica', label: '+ Aba Elétrica', desc: 'Bateria com garantia e lembrete, iluminação, fiação, fusíveis e elétrica geral.' },
+          { id: 'lavajato', label: '+ Lava Jato', desc: 'Fila de serviços, lavagens e O.S. integrada.' },
+          { id: 'ar_condicionado', label: '+ Ar-Condicionado', desc: 'Manutenção, higienização, recarga de gás com lembrete automático anual.' },
+          { id: 'escapamento', label: '+ Escapamento', desc: 'Reparo, silencioso, catalisador e flex.' },
+          { id: 'estetica', label: '+ Estética Automotiva', desc: 'Polimento, cristalização, PPF, envelopamento, fotos antes/depois.' },
           { id: 'injecao', label: '+ Módulo Injeção Eletrônica', desc: 'Diagnóstico e limpeza de injetores com checklist e fotos.' },
           { id: 'desmanche', label: '+ Módulo Desmanche', desc: 'Gestão de pátio, peças, clientes e rede de parceiros B2B.' },
         ].map(item => (
@@ -1653,7 +1847,7 @@ export default function Admin() {
   const [contratandoMkt, setContratandoMkt] = useState(null);
 
   // DESMANCHE
-  const [subAbaDesmanche, setSubAbaDesmanche] = useState('veiculos'); // veiculos | pecas | clientes | parceiros | busca_pecas
+  const [subAbaDesmanche, setSubAbaDesmanche] = useState('veiculos'); // veiculos | pecas | busca_pecas | parceiros
   const [buscaPecaVoz, setBuscaPecaVoz] = useState('');
   const [ouvindoBuscaPeca, setOuvindoBuscaPeca] = useState(false);
   const [patioSel, setPatioSel] = useState('Todos');
@@ -1768,6 +1962,30 @@ export default function Admin() {
   const fotosCarrosselOleoRef = useRef(null);
   const [fotoCarrosselIdx, setFotoCarrosselIdx] = useState(0);
   
+  // ===== ESTADOS ABA ELÉTRICA =====
+  const [subAbaEletrica, setSubAbaEletrica] = useState('bateria');
+  const [nomeClienteEletrica, setNomeClienteEletrica] = useState('');
+  const [placaEletrica, setPlacaEletrica] = useState('');
+  const [telefoneEletrica, setTelefoneEletrica] = useState('');
+  const [modeloEletrica, setModeloEletrica] = useState('');
+  const [valorPecasEletrica, setValorPecasEletrica] = useState('');
+  const [valorMaoObraEletrica, setValorMaoObraEletrica] = useState('');
+  const [obsEletrica, setObsEletrica] = useState('');
+  const [salvandoEletrica, setSalvandoEletrica] = useState(false);
+  const [salvoEletrica, setSalvoEletrica] = useState(false);
+  const [fotosEletrica, setFotosEletrica] = useState([]);
+  const [legendaFotoEletrica, setLegendaFotoEletrica] = useState('');
+  const [marcaBateria, setMarcaBateria] = useState('');
+  const [amperagemBateria, setAmperagemBateria] = useState('');
+  const [dataInstalacaoBateria, setDataInstalacaoBateria] = useState('');
+  const [garantiaMesesBateria, setGarantiaMesesBateria] = useState('12');
+  const [lampadas, setLampadas] = useState([]);
+  const [trechoFiacao, setTrechoFiacao] = useState('');
+  const [tipoFiacao, setTipoFiacao] = useState([]);
+  const [fusiveisTrocados, setFusiveisTrocados] = useState([]);
+  const [novoFusivel, setNovoFusivel] = useState({ local: '', amperagem: '', motivo: '' });
+  const [servicosEletrica, setServicosEletrica] = useState([]);
+
   // ===== ESTADOS ABA ALINHAMENTO =====
   const [servicosAlinhamento, setServicosAlinhamento] = useState([]);
   const [extrasAlinhamento, setExtrasAlinhamento] = useState([]);
@@ -2075,6 +2293,12 @@ export default function Admin() {
     if (papelLogado === 'dono') return true;
     if (!permissoesLogado) return true;
     if (aba === 'dashboard' || aba === 'ajuda' || aba === 'estrategia' || aba === 'revisao' || aba === 'pneus' || aba === 'copiloto' || aba === 'assinatura' || aba === 'marketing' || aba === 'desmanche' || aba === 'fornecedores' || aba === 'injecao') return true;
+    if (aba === 'motos' || aba === 'lataria' || aba === 'amortecedor') return permissoesLogado['oficina'] === true;
+    if (aba === 'eletrica') return permissoesLogado['eletrica'] === true;
+    if (aba === 'lavajato') return permissoesLogado['lavajato'] === true;
+    if (aba === 'ar_condicionado') return permissoesLogado['ar_condicionado'] === true;
+    if (aba === 'escapamento') return permissoesLogado['escapamento'] === true;
+    if (aba === 'estetica') return permissoesLogado['estetica'] === true;
     return permissoesLogado[aba] === true;
   };
 
@@ -2353,6 +2577,29 @@ export default function Admin() {
     });
     return { fDia, fSem, fMes };
   })();
+
+  // ── estado feedback auto-preenchimento ──
+  const [placaAutoFill, setPlacaAutoFill] = useState('');
+
+  // ===== AUTO-PREENCHIMENTO POR PLACA =====
+  // Busca a OS mais recente dessa placa e preenche nome, telefone e modelo
+  const buscarDadosPorPlaca = async (placaDigitada, callbacks) => {
+    const placaNorm = normalizarPlaca(placaDigitada);
+    if (placaNorm.length < 7) return; // aguarda placa completa (7 chars)
+    const match = listaCarros
+      .filter(o => normalizarPlaca(o.placa) === placaNorm)
+      .sort((a, b) => new Date(b.data_registro || 0) - new Date(a.data_registro || 0))[0];
+    if (match) {
+      if (callbacks.setNome)     callbacks.setNome(match.nomeCliente || '');
+      if (callbacks.setTelefone) callbacks.setTelefone(match.telefone || '');
+      if (callbacks.setModelo)   callbacks.setModelo(match.modelo || '');
+      if (callbacks.setKm)       callbacks.setKm(match.kmAtual || '');
+      if (callbacks.onFound)     callbacks.onFound(match);
+      setPlacaAutoFill(placaNorm);
+      setTimeout(() => setPlacaAutoFill(''), 4000);
+    }
+  };
+
   const formatarMoeda = (v) => Number(v).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
   const dadosGrafico = useMemo(() => {
     const ultimos7Dias = [];
@@ -2383,6 +2630,23 @@ export default function Admin() {
     });
   }, [listaCarros]);
   const estoqueCritico = useMemo(() => listaEstoque.filter(item => Number(item.qtd) <= 3 && Number(item.qtd) >= 0), [listaEstoque]);
+  const lembretesDebateria = useMemo(() => {
+    const hoje = new Date();
+    return listaCarros.filter(os => {
+      if (os.tipoServico !== 'eletrica' || os.subTipo !== 'bateria' || !os.dataVencimentoBateria) return false;
+      const venc = new Date(os.dataVencimentoBateria);
+      const diasAteVencer = Math.ceil((venc - hoje) / (1000 * 60 * 60 * 24));
+      return diasAteVencer <= 30 && diasAteVencer >= -30;
+    });
+  }, [listaCarros]);
+  const dispararLembreteBateria = (os) => {
+    const diasAteVencer = Math.ceil((new Date(os.dataVencimentoBateria) - new Date()) / (1000 * 60 * 60 * 24));
+    const veiculo = `${os.modelo || 'veículo'} (Placa: ${os.placa}) — Bateria ${os.marcaBateria || ''} ${os.amperagemBateria ? os.amperagemBateria + 'Ah' : ''}`;
+    const msg = diasAteVencer < 0
+      ? `Olá${os.nomeCliente ? ' *' + os.nomeCliente + '*' : ''}! ⚠️ A garantia da bateria do seu *${veiculo}* venceu. Passe na oficina para verificarmos! — ${config.nome || 'Oficina IA'}`
+      : `Olá${os.nomeCliente ? ' *' + os.nomeCliente + '*' : ''}! ⏰ A garantia da bateria do seu *${veiculo}* vence em *${diasAteVencer} dias*. Qualquer problema, pode trazer sem custo! — ${config.nome || 'Oficina IA'}`;
+    abrirWhatsApp(`https://wa.me/55${os.telefone?.replace(/\D/g, '')}?text=${encodeURIComponent(msg)}`);
+  };
   const dispararLembreteOleo = (os) => {
     const msg = `Olá${os.nomeCliente ? ' ' + os.nomeCliente : ''}! 👋 Aqui é da oficina ${config.nome}.\nPassando para avisar que já faz cerca de 6 meses desde a última manutenção do seu *${os.modelo}* (Placa: ${os.placa}).\nManter os serviços em dia evita danos ao veículo. Vamos agendar? 🚗`;
     abrirWhatsApp(`https://wa.me/55${os.telefone?.replace(/\D/g, '')}?text=${encodeURIComponent(msg)}`);
@@ -2409,6 +2673,55 @@ export default function Admin() {
       } catch { setKmAtual(''); } finally { setLendoKm(false); }
     };
     reader.readAsDataURL(file);
+  };
+
+  // ===== FUNÇÕES ABA ELÉTRICA =====
+  const salvarEletrica = async () => {
+    if (!placaEletrica || !telefoneEletrica) return alert('Placa e WhatsApp são obrigatórios!');
+    setSalvandoEletrica(true);
+    try {
+      let dataVencBateria = null;
+      if (subAbaEletrica === 'bateria' && dataInstalacaoBateria && garantiaMesesBateria) {
+        const base = new Date(dataInstalacaoBateria);
+        base.setMonth(base.getMonth() + Number(garantiaMesesBateria));
+        dataVencBateria = base.toISOString();
+      }
+      const checklistTexto = subAbaEletrica === 'bateria'
+        ? `Troca de Bateria ${marcaBateria ? '(' + marcaBateria + ')' : ''} ${amperagemBateria ? amperagemBateria + 'Ah' : ''}`
+        : subAbaEletrica === 'iluminacao' ? `Iluminação: ${lampadas.map(l => l.local).join(', ')}`
+        : subAbaEletrica === 'fiacao' ? `Fiação: ${trechoFiacao || tipoFiacao.join(', ')}`
+        : subAbaEletrica === 'fusiveis' ? `Fusíveis: ${fusiveisTrocados.map(f => f.local + ' ' + f.amperagem + 'A').join(', ')}`
+        : servicosEletrica.join(', ') || 'Elétrica Geral';
+      const osData = {
+        nomeCliente: nomeClienteEletrica, placa: normalizarPlaca(placaEletrica),
+        telefone: telefoneEletrica, modelo: modeloEletrica,
+        checklist: checklistTexto, observacoes: obsEletrica, detalhesPecas: obsEletrica,
+        valorPecas: Number(valorPecasEletrica) || 0, valorMaoObra: Number(valorMaoObraEletrica) || 0,
+        total: (Number(valorPecasEletrica) || 0) + (Number(valorMaoObraEletrica) || 0),
+        fotos: fotosEletrica, tipoServico: 'eletrica', subTipo: subAbaEletrica, origem: 'eletrica',
+        marcaBateria: marcaBateria || '', amperagemBateria: amperagemBateria || '',
+        dataInstalacaoBateria: dataInstalacaoBateria || '',
+        garantiaMesesBateria: Number(garantiaMesesBateria) || 12,
+        dataVencimentoBateria: dataVencBateria,
+        lampadas: lampadas || [], trechoFiacao: trechoFiacao || '',
+        tipoFiacao: tipoFiacao || [], fusiveisTrocados: fusiveisTrocados || [],
+        servicosEletrica: servicosEletrica || [],
+      };
+      if (osEditando && osEditando.tipoServico === 'eletrica') {
+        await updateDoc(doc(db, 'oficinas', oficinaId, 'os', osEditando.id), osData);
+        setOsEditando(null); alert('✅ O.S. Elétrica atualizada!');
+      } else {
+        await addDoc(collection(db, 'oficinas', oficinaId, 'os'), { ...osData, statusPagamento: 'pendente', data_registro: new Date().toISOString() });
+        setSalvoEletrica(true); setTimeout(() => setSalvoEletrica(false), 3000);
+      }
+      setNomeClienteEletrica(''); setPlacaEletrica(''); setTelefoneEletrica(''); setModeloEletrica('');
+      setValorPecasEletrica(''); setValorMaoObraEletrica(''); setObsEletrica(''); setFotosEletrica([]);
+      setMarcaBateria(''); setAmperagemBateria(''); setDataInstalacaoBateria(''); setGarantiaMesesBateria('12');
+      setLampadas([]); setTrechoFiacao(''); setTipoFiacao([]); setFusiveisTrocados([]); setServicosEletrica([]);
+      carregarOS();
+      setTimeout(() => setAbaAtiva('os'), 400);
+    } catch (e) { alert('Erro: ' + e.message); }
+    finally { setSalvandoEletrica(false); }
   };
 
   // ===== FUNÇÕES ABA ALINHAMENTO =====
@@ -2619,7 +2932,7 @@ export default function Admin() {
           `Olá${nomeCliente ? ' *' + nomeCliente + '*' : ''}! 👋\n\n` +
           `Seu *${modelo || 'veículo'}* (Placa *${placaFinal}*) foi registrado no nosso sistema com prontuário digital exclusivo.\n\n` +
           `🔑 *Seu acesso ao Portal do Cliente:*\n` +
-          `🔗 Link: https://oficina-express-ia.netlify.app/clientes\n` +
+          `🔗 Link: https://oficina.expresstech.com.br/clientes\n` +
           `📋 Placa: *${placaFinal}*\n` +
           `🔐 Senha: *${senhaPortal}*\n\n` +
           `*Por que vale guardar esse acesso?*\n\n` +
@@ -2668,7 +2981,8 @@ export default function Admin() {
       setEditandoVistoria(os.id);
       setMostrarFormVistoria(true);
       setOsEditando(os);
-      setAbaAtiva('oficina');
+      const abaDestino = ['motos','lataria','amortecedor'].includes(subAba) ? subAba : 'oficina';
+      setAbaAtiva(abaDestino);
       setTimeout(() => window.scrollTo({ top: 0, behavior: 'smooth' }), 100);
 
     } else if (tipo === 'injecao') {
@@ -2729,6 +3043,44 @@ export default function Admin() {
       // ===== PNEUS / BORRACHARIA =====
       setOsEditando(os);
       setAbaAtiva('pneus');
+      setTimeout(() => window.scrollTo({ top: 0, behavior: 'smooth' }), 100);
+
+    } else if (tipo === 'ar_condicionado') {
+      setOsEditando(os); setAbaAtiva('ar_condicionado');
+      setTimeout(() => window.scrollTo({ top: 0, behavior: 'smooth' }), 100);
+    } else if (tipo === 'escapamento') {
+      setOsEditando(os); setAbaAtiva('escapamento');
+      setTimeout(() => window.scrollTo({ top: 0, behavior: 'smooth' }), 100);
+    } else if (tipo === 'estetica') {
+      setOsEditando(os); setAbaAtiva('estetica');
+      setTimeout(() => window.scrollTo({ top: 0, behavior: 'smooth' }), 100);
+    } else if (tipo === 'lavajato') {
+      setOsEditando(os);
+      setAbaAtiva('lavajato');
+      setTimeout(() => window.scrollTo({ top: 0, behavior: 'smooth' }), 100);
+
+    } else if (tipo === 'eletrica') {
+      // ===== PREENCHE ABA ELÉTRICA =====
+      setSubAbaEletrica(os.subTipo || 'bateria');
+      setNomeClienteEletrica(os.nomeCliente || '');
+      setPlacaEletrica(normalizarPlaca(os.placa));
+      setTelefoneEletrica(os.telefone || '');
+      setModeloEletrica(os.modelo || '');
+      setValorPecasEletrica(String(os.valorPecas || ''));
+      setValorMaoObraEletrica(String(os.valorMaoObra || ''));
+      setObsEletrica(os.observacoes || os.detalhesPecas || '');
+      setFotosEletrica(os.fotos || []);
+      setMarcaBateria(os.marcaBateria || '');
+      setAmperagemBateria(os.amperagemBateria || '');
+      setDataInstalacaoBateria(os.dataInstalacaoBateria || '');
+      setGarantiaMesesBateria(String(os.garantiaMesesBateria || '12'));
+      setLampadas(os.lampadas || []);
+      setTrechoFiacao(os.trechoFiacao || '');
+      setTipoFiacao(os.tipoFiacao || []);
+      setFusiveisTrocados(os.fusiveisTrocados || []);
+      setServicosEletrica(os.servicosEletrica || []);
+      setOsEditando(os);
+      setAbaAtiva('eletrica');
       setTimeout(() => window.scrollTo({ top: 0, behavior: 'smooth' }), 100);
 
     } else {
@@ -2856,15 +3208,15 @@ export default function Admin() {
 
   // ✅ ABAS DISPONÍVEIS
   const ABAS_DISPONIVEIS = [
-    'dashboard', 'os', 'oficina', 'patrimonio', 'oleo', 'alinhamento', 'revisao', 'pneus', 'injecao', 'copiloto', 'retorno', 'estoque', 'financeiro', 'equipe',
+    'dashboard', 'os', 'oficina', 'motos', 'lataria', 'amortecedor', 'eletrica', 'lavajato', 'ar_condicionado', 'escapamento', 'estetica', 'patrimonio', 'oleo', 'alinhamento', 'revisao', 'pneus', 'injecao', 'copiloto', 'retorno', 'estoque', 'financeiro', 'nota_fiscal', 'equipe',
     'leads', 'assinatura', ...(papelLogado === 'master' ? ['master'] : []), 'config', 'estrategia', 'marketing', 'desmanche', 'fornecedores', 'ajuda'
   ].filter(aba => temPermissao(aba));
 
   const LABELS_ABAS = {
     dashboard: '📊 VISÃO GERAL', os: '🔧 O.S.', oleo: '🛢️ ÓLEO', alinhamento: '⚙️ ALINHAMENTO',
     revisao: '🛡️ REVISÃO', pneus: '🛞 PNEUS', injecao: '⚡ INJEÇÃO', copiloto: '👨‍🔧 COPILOTO', assinatura: '💎 MEU PLANO',
-    retorno: '🔄 RETORNO', estoque: 'ESTOQUE', financeiro: 'FINANCEIRO', equipe: '👥 EQUIPE',
-    oficina: '🏢 MECÂNICA', patrimonio: '🏢 PATRIMÔNIO', leads: '👥 CLIENTES', config: 'CONFIG', master: '👑 MASTER',
+    retorno: '🔄 RETORNO', estoque: 'ESTOQUE', financeiro: 'FINANCEIRO', nota_fiscal: '🧾 NOTA FISCAL', equipe: '👥 EQUIPE',
+    oficina: '🏢 MECÂNICA', motos: '🏍️ MOTOS', lataria: '🚗 LATARIA', amortecedor: '🛢️ AMORTECEDOR', eletrica: '⚡ ELÉTRICA', lavajato: '🚿 LAVA JATO', ar_condicionado: '❄️ AR-COND.', escapamento: '🪛 ESCAPAMENTO', estetica: '🧴 ESTÉTICA', patrimonio: '🏢 PATRIMÔNIO', leads: '👥 CLIENTES', config: 'CONFIG', master: '👑 MASTER',
     estrategia: '🚀 ESTRATÉGIA', marketing: '📣 MARKETING', desmanche: '🚗 DESMANCHE',
     fornecedores: '🔩 FORNECEDORES', ajuda: '💡 AJUDA'
   };
@@ -3006,18 +3358,83 @@ export default function Admin() {
         </div>
         <button onClick={fazerLogout} style={{ background: 'transparent', color: papelLogado === 'master' ? MASTER_COLOR : MAIN_COLOR, border: `1px solid ${papelLogado === 'master' ? MASTER_COLOR : MAIN_COLOR}`, padding: '10px 20px', borderRadius: '5px', cursor: 'pointer' }}>SAIR</button>
       </div>
-      <div className="scrollbar-hide" style={{ display: 'flex', gap: '10px', padding: '20px', background: '#0a0a0a', overflowX: 'auto', whiteSpace: 'nowrap', WebkitOverflowScrolling: 'touch' }}>
-        {ABAS_DISPONIVEIS.map(aba => (
-          <button key={aba} onClick={() => { setAbaAtiva(aba); if (aba === 'fornecedores') { carregarFornecedores(); marcarNotifLidas(); } }} style={{ minWidth: '120px', padding: '15px', background: abaAtiva === aba ? (TAB_COLORS[aba] || MAIN_COLOR) : '#222', color: abaAtiva === aba ? 'black' : 'white', border: 'none', borderRadius: '25px', fontWeight: 'bold', cursor: 'pointer', textTransform: 'uppercase', fontSize: '11px', position: 'relative' }}>
-            {LABELS_ABAS[aba]}
-            {aba === 'fornecedores' && notifDesmanche > 0 && (
-              <span style={{ position: 'absolute', top: '4px', right: '4px', background: '#ef4444', color: 'white', borderRadius: '50%', width: '18px', height: '18px', fontSize: '10px', fontWeight: '900', display: 'flex', alignItems: 'center', justifyContent: 'center', lineHeight: 1 }}>
-                {notifDesmanche > 9 ? '9+' : notifDesmanche}
-              </span>
-            )}
-          </button>
-        ))}
+      {/* ── OS DESTACADA ── */}
+      <div style={{ padding: '12px 20px', background: '#0a0a0a', borderBottom: '1px solid #1a1a1a' }}>
+        <button
+          onClick={() => setAbaAtiva('os')}
+          style={{
+            width: '100%', padding: '16px 24px', background: abaAtiva === 'os' ? '#FF0033' : '#1a0000',
+            color: abaAtiva === 'os' ? 'white' : '#FF0033', border: `2px solid ${abaAtiva === 'os' ? '#FF0033' : '#FF003366'}`,
+            borderRadius: '12px', fontWeight: '900', fontSize: '16px', cursor: 'pointer',
+            display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px',
+            letterSpacing: '1px', transition: 'all 0.2s',
+          }}>
+          📋 NOVA ORDEM DE SERVIÇO
+          {listaCarros.filter(o => o.statusPagamento === 'pendente').length > 0 && (
+            <span style={{ background: '#FF0033', color: 'white', borderRadius: '12px', padding: '2px 10px', fontSize: '12px', fontWeight: 'bold' }}>
+              {listaCarros.filter(o => o.statusPagamento === 'pendente').length} pendentes
+            </span>
+          )}
+        </button>
       </div>
+
+      {/* ── MENU AGRUPADO ── */}
+      <div style={{ background: '#0a0a0a', padding: '12px 20px 8px', borderBottom: '1px solid #1a1a1a' }}>
+
+        {/* GRUPO: SERVIÇOS MECÂNICOS */}
+        <p style={{ color: '#444', fontSize: '9px', fontWeight: 'bold', letterSpacing: '2px', margin: '0 0 6px', textTransform: 'uppercase' }}>⚙️ Serviços Mecânicos</p>
+        <div className="scrollbar-hide" style={{ display: 'flex', gap: '8px', overflowX: 'auto', marginBottom: '12px', paddingBottom: '4px' }}>
+          {['oficina','motos','lataria','amortecedor','injecao','eletrica','alinhamento','oleo','revisao','ar_condicionado','escapamento'].map(aba => (
+            <button key={aba} onClick={() => { setAbaAtiva(aba); if (aba === 'fornecedores') { carregarFornecedores(); marcarNotifLidas(); } }}
+              style={{ flexShrink: 0, padding: '9px 14px', background: abaAtiva === aba ? (TAB_COLORS[aba] || '#FF0033') : '#111', color: abaAtiva === aba ? 'black' : '#666', border: `1px solid ${abaAtiva === aba ? (TAB_COLORS[aba] || '#FF0033') : '#2a2a2a'}`, borderRadius: '20px', fontWeight: 'bold', fontSize: '11px', cursor: 'pointer', whiteSpace: 'nowrap', position: 'relative' }}>
+              {LABELS_ABAS[aba]}
+            </button>
+          ))}
+        </div>
+
+        {/* GRUPO: ESTÉTICA */}
+        <p style={{ color: '#444', fontSize: '9px', fontWeight: 'bold', letterSpacing: '2px', margin: '0 0 6px', textTransform: 'uppercase' }}>🧴 Estética</p>
+        <div className="scrollbar-hide" style={{ display: 'flex', gap: '8px', overflowX: 'auto', marginBottom: '12px', paddingBottom: '4px' }}>
+          {['lavajato','estetica'].map(aba => (
+            <button key={aba} onClick={() => setAbaAtiva(aba)}
+              style={{ flexShrink: 0, padding: '9px 14px', background: abaAtiva === aba ? (TAB_COLORS[aba] || '#FF0033') : '#111', color: abaAtiva === aba ? 'black' : '#666', border: `1px solid ${abaAtiva === aba ? (TAB_COLORS[aba] || '#FF0033') : '#2a2a2a'}`, borderRadius: '20px', fontWeight: 'bold', fontSize: '11px', cursor: 'pointer', whiteSpace: 'nowrap' }}>
+              {LABELS_ABAS[aba]}
+            </button>
+          ))}
+        </div>
+
+        {/* GRUPO: GESTÃO */}
+        <p style={{ color: '#444', fontSize: '9px', fontWeight: 'bold', letterSpacing: '2px', margin: '0 0 6px', textTransform: 'uppercase' }}>📋 Gestão</p>
+        <div className="scrollbar-hide" style={{ display: 'flex', gap: '8px', overflowX: 'auto', marginBottom: '12px', paddingBottom: '4px' }}>
+          {['dashboard','clientes','estoque','financeiro','nota_fiscal','retorno','leads','patrimonio','desmanche','fornecedores','pneus','copiloto'].map(aba => (
+            <button key={aba} onClick={() => { setAbaAtiva(aba); if (aba === 'fornecedores') { carregarFornecedores(); marcarNotifLidas(); } }}
+              style={{ flexShrink: 0, padding: '9px 14px', background: abaAtiva === aba ? (TAB_COLORS[aba] || '#FF0033') : '#111', color: abaAtiva === aba ? 'black' : '#666', border: `1px solid ${abaAtiva === aba ? (TAB_COLORS[aba] || '#FF0033') : '#2a2a2a'}`, borderRadius: '20px', fontWeight: 'bold', fontSize: '11px', cursor: 'pointer', whiteSpace: 'nowrap', position: 'relative' }}>
+              {LABELS_ABAS[aba]}
+              {aba === 'fornecedores' && notifDesmanche > 0 && (
+                <span style={{ position: 'absolute', top: '2px', right: '2px', background: '#ef4444', color: 'white', borderRadius: '50%', width: '14px', height: '14px', fontSize: '9px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 'bold' }}>
+                  {notifDesmanche > 9 ? '9+' : notifDesmanche}
+                </span>
+              )}
+            </button>
+          ))}
+        </div>
+
+        {/* GRUPO: SISTEMA (master/dono only) */}
+        {(papelLogado === 'dono' || papelLogado === 'master') && (
+          <>
+            <p style={{ color: '#444', fontSize: '9px', fontWeight: 'bold', letterSpacing: '2px', margin: '0 0 6px', textTransform: 'uppercase' }}>⚙️ Sistema</p>
+            <div className="scrollbar-hide" style={{ display: 'flex', gap: '8px', overflowX: 'auto', marginBottom: '8px', paddingBottom: '4px' }}>
+              {['config','equipe','assinatura','marketing','estrategia','ajuda',...(papelLogado==='master'?['master']:[])].map(aba => (
+                <button key={aba} onClick={() => setAbaAtiva(aba)}
+                  style={{ flexShrink: 0, padding: '9px 14px', background: abaAtiva === aba ? (TAB_COLORS[aba] || MASTER_COLOR) : '#111', color: abaAtiva === aba ? 'black' : '#666', border: `1px solid ${abaAtiva === aba ? (TAB_COLORS[aba] || MASTER_COLOR) : '#2a2a2a'}`, borderRadius: '20px', fontWeight: 'bold', fontSize: '11px', cursor: 'pointer', whiteSpace: 'nowrap' }}>
+                  {LABELS_ABAS[aba]}
+                </button>
+              ))}
+            </div>
+          </>
+        )}
+      </div>
+
 
       <div style={{ padding: '20px', maxWidth: '800px', margin: '0 auto' }}>
 
@@ -3137,6 +3554,29 @@ export default function Admin() {
                       <button onClick={() => dispararLembreteOleo(os)} style={{ width: '100%', padding: '10px', background: '#25D366', color: 'black', border: 'none', borderRadius: '5px', fontWeight: 'bold', fontSize: '11px', cursor: 'pointer' }}>💬 AVISAR NO ZAP</button>
                     </div>
                   ))}
+                </div>
+              </div>
+            )}
+            {lembretesDebateria.length > 0 && (
+              <div style={{ background: '#1a1500', border: '1px solid #facc1588', padding: '20px', borderRadius: '10px', marginBottom: '25px' }}>
+                <h3 style={{ color: '#facc15', margin: '0 0 10px 0' }}>🔋 GARANTIA DE BATERIA VENCENDO ({lembretesDebateria.length})</h3>
+                <p style={{ color: '#888', fontSize: '12px', marginBottom: '15px' }}>Avise o cliente antes de qualquer problema. Fidelização gratuita!</p>
+                <div style={{ display: 'flex', gap: '10px', overflowX: 'auto', paddingBottom: '10px' }} className="scrollbar-hide">
+                  {lembretesDebateria.map(os => {
+                    const diasAteVencer = Math.ceil((new Date(os.dataVencimentoBateria) - new Date()) / (1000 * 60 * 60 * 24));
+                    const venc = new Date(os.dataVencimentoBateria).toLocaleDateString('pt-BR');
+                    return (
+                      <div key={os.id} style={{ background: 'black', border: '1px solid #333', padding: '15px', borderRadius: '8px', minWidth: '210px' }}>
+                        <p style={{ fontWeight: 'bold', margin: '0 0 3px 0', fontSize: '13px' }}>{os.modelo}</p>
+                        <p style={{ color: '#888', margin: '0 0 3px 0', fontSize: '11px' }}>Placa: {os.placa}</p>
+                        <p style={{ color: '#facc15', margin: '0 0 3px 0', fontSize: '11px' }}>🔋 {os.marcaBateria || 'Bateria'} {os.amperagemBateria ? os.amperagemBateria + 'Ah' : ''}</p>
+                        <p style={{ color: diasAteVencer < 0 ? '#ef4444' : '#facc15', margin: '0 0 10px 0', fontSize: '11px', fontWeight: 'bold' }}>
+                          {diasAteVencer < 0 ? `⚠️ Venceu há ${Math.abs(diasAteVencer)}d` : `⏰ Vence em ${diasAteVencer}d (${venc})`}
+                        </p>
+                        <button onClick={() => dispararLembreteBateria(os)} style={{ width: '100%', padding: '10px', background: '#25D366', color: 'black', border: 'none', borderRadius: '5px', fontWeight: 'bold', fontSize: '11px', cursor: 'pointer' }}>💬 AVISAR NO ZAP</button>
+                      </div>
+                    );
+                  })}
                 </div>
               </div>
             )}
@@ -3320,6 +3760,21 @@ export default function Admin() {
                         if (tipo === 'moto') return (
                           <button onClick={() => abrirEdicao(os)} style={{ flex: 1, padding: '6px', background: '#1a0d00', color: '#f97316', border: '1px solid #f97316', borderRadius: '5px', cursor: 'pointer', fontSize: '11px', fontWeight: 'bold' }}>🏍️ Editar Moto</button>
                         );
+                        if (tipo === 'ar_condicionado') return (
+                          <button onClick={() => abrirEdicao(os)} style={{ flex: 1, padding: '6px', background: '#001a1f', color: '#38bdf8', border: '1px solid #38bdf8', borderRadius: '5px', cursor: 'pointer', fontSize: '11px', fontWeight: 'bold' }}>❄️ Editar AC</button>
+                        );
+                        if (tipo === 'escapamento') return (
+                          <button onClick={() => abrirEdicao(os)} style={{ flex: 1, padding: '6px', background: '#1a0800', color: '#f97316', border: '1px solid #f97316', borderRadius: '5px', cursor: 'pointer', fontSize: '11px', fontWeight: 'bold' }}>🪛 Editar Escapamento</button>
+                        );
+                        if (tipo === 'estetica') return (
+                          <button onClick={() => abrirEdicao(os)} style={{ flex: 1, padding: '6px', background: '#110022', color: '#a855f7', border: '1px solid #a855f7', borderRadius: '5px', cursor: 'pointer', fontSize: '11px', fontWeight: 'bold' }}>🧴 Editar Estética</button>
+                        );
+                        if (tipo === 'lavajato') return (
+                          <button onClick={() => abrirEdicao(os)} style={{ flex: 1, padding: '6px', background: '#001a1f', color: '#06b6d4', border: '1px solid #06b6d4', borderRadius: '5px', cursor: 'pointer', fontSize: '11px', fontWeight: 'bold' }}>🚿 Editar Lava Jato</button>
+                        );
+                        if (tipo === 'eletrica') return (
+                          <button onClick={() => abrirEdicao(os)} style={{ flex: 1, padding: '6px', background: '#1a1500', color: '#facc15', border: '1px solid #facc15', borderRadius: '5px', cursor: 'pointer', fontSize: '11px', fontWeight: 'bold' }}>⚡ Editar Elétrica</button>
+                        );
                         // Mecânica / Oficina: label específico por tipoServico
                         const labelMec = tipo === 'motos' ? '🏍️ Editar Moto' : tipo === 'lataria' ? '🚗 Editar Lataria' : tipo === 'amortecedor' ? '🛢️ Editar Amor.' : '🔧 Editar Mecânica';
                         const corMec = tipo === 'motos' ? '#f97316' : tipo === 'lataria' ? '#ec4899' : tipo === 'amortecedor' ? '#eab308' : '#8b5cf6';
@@ -3336,6 +3791,249 @@ export default function Admin() {
             ))}
           </div>
         )}
+
+
+
+
+                {/* ===== ABA LAVA JATO ===== */}
+        {abaAtiva === 'lavajato' && temPermissao('lavajato') && (
+          <LavaJato
+            setAbaAtiva={setAbaAtiva}
+            planosSistema={planosSistema}
+            carregarOS={carregarOS}
+          />
+        )}
+
+        {/* ===== ABA AR-CONDICIONADO ===== */}
+        {abaAtiva === 'ar_condicionado' && temPermissao('ar_condicionado') && <ArCondicionado />}
+
+        {/* ===== ABA ESCAPAMENTO ===== */}
+        {abaAtiva === 'escapamento' && temPermissao('escapamento') && <Escapamento />}
+
+        {/* ===== ABA ESTÉTICA ===== */}
+        {abaAtiva === 'estetica' && temPermissao('estetica') && <Estetica />}
+
+        {/* ===== ABA ELÉTRICA ===== */}
+        {abaAtiva === 'eletrica' && temPermissao('eletrica') && (() => {
+          const COR = '#facc15';
+          const SUB_ABAS = [
+            { key: 'bateria', label: '🔋 Bateria' },
+            { key: 'iluminacao', label: '💡 Iluminação' },
+            { key: 'fiacao', label: '🔌 Fiação' },
+            { key: 'fusiveis', label: '⚡ Fusíveis' },
+            { key: 'geral', label: '🔧 Geral' },
+          ];
+          const totalEletrica = (Number(valorPecasEletrica) || 0) + (Number(valorMaoObraEletrica) || 0);
+          let previewVencBateria = null;
+          if (dataInstalacaoBateria && garantiaMesesBateria) {
+            const d = new Date(dataInstalacaoBateria);
+            d.setMonth(d.getMonth() + Number(garantiaMesesBateria));
+            previewVencBateria = d.toLocaleDateString('pt-BR');
+          }
+          return (
+            <div>
+              <h2 style={{ color: COR, marginBottom: '12px' }}>⚡ Elétrica</h2>
+
+              {osEditando && osEditando.tipoServico === 'eletrica' && (
+                <div style={{ background: '#1a1500', border: `2px solid ${COR}`, borderRadius: '10px', padding: '12px 16px', marginBottom: '20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <span style={{ color: COR, fontWeight: 'bold', fontSize: '14px' }}>✏️ EDITANDO O.S. — {osEditando.placa}</span>
+                  <button onClick={() => { setOsEditando(null); setNomeClienteEletrica(''); setPlacaEletrica(''); setTelefoneEletrica(''); setModeloEletrica('');
+                    setValorPecasEletrica(''); setValorMaoObraEletrica(''); setObsEletrica(''); setFotosEletrica([]);
+                    setMarcaBateria(''); setAmperagemBateria(''); setDataInstalacaoBateria(''); setGarantiaMesesBateria('12');
+                    setLampadas([]); setTrechoFiacao(''); setTipoFiacao([]); setFusiveisTrocados([]); setServicosEletrica([]); }} style={{ background: 'transparent', color: '#888', border: '1px solid #444', padding: '5px 12px', borderRadius: '5px', cursor: 'pointer', fontSize: '12px' }}>✕ Cancelar</button>
+                </div>
+              )}
+
+              {/* Sub-abas */}
+              <div style={{ display: 'flex', gap: '8px', marginBottom: '20px', flexWrap: 'wrap' }}>
+                {SUB_ABAS.map(s => (
+                  <button key={s.key} onClick={() => setSubAbaEletrica(s.key)}
+                    style={{ padding: '10px 16px', background: subAbaEletrica === s.key ? COR : '#222', color: subAbaEletrica === s.key ? 'black' : '#888', border: 'none', borderRadius: '20px', fontWeight: 'bold', cursor: 'pointer', fontSize: '12px' }}>
+                    {s.label}
+                  </button>
+                ))}
+              </div>
+
+              {/* Dados do cliente */}
+              <div style={{ background: '#111', padding: '16px', borderRadius: '10px', marginBottom: '15px' }}>
+                <label style={{ color: COR, fontSize: '11px', fontWeight: 'bold', display: 'block', marginBottom: '10px' }}>👤 DADOS DO CLIENTE</label>
+                {[
+                  { val: nomeClienteEletrica, fn: setNomeClienteEletrica, ph: 'NOME DO CLIENTE' },
+                  { val: placaEletrica, fn: v => { const p = normalizarPlaca(v); setPlacaEletrica(p); buscarDadosPorPlaca(p, { setNome: setNomeClienteEletrica, setTelefone: setTelefoneEletrica, setModelo: setModeloEletrica }); }, ph: 'PLACA (ABC1234)' },
+                  { val: telefoneEletrica, fn: v => setTelefoneEletrica(v.replace(/\D/g,'')), ph: 'WHATSAPP', type: 'tel' },
+                  { val: modeloEletrica, fn: setModeloEletrica, ph: 'MODELO DO VEÍCULO' },
+                ].map(({ val, fn, ph, type }, i) => (
+                  <input key={i} type={type || 'text'} value={val} onChange={e => fn(e.target.value)} placeholder={ph}
+                    style={{ width: '100%', padding: '12px', background: '#0a0a0a', border: '1px solid #333', color: 'white', borderRadius: '6px', marginBottom: '8px', boxSizing: 'border-box' }} />
+                ))}
+              </div>
+
+              {/* BATERIA */}
+              {subAbaEletrica === 'bateria' && (
+                <div style={{ background: '#111', padding: '16px', borderRadius: '10px', marginBottom: '15px' }}>
+                  <label style={{ color: COR, fontSize: '11px', fontWeight: 'bold', display: 'block', marginBottom: '14px' }}>🔋 DADOS DA BATERIA</label>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', marginBottom: '10px' }}>
+                    {[
+                      { label: 'MARCA', val: marcaBateria, fn: setMarcaBateria, ph: 'Ex: Heliar, Moura...' },
+                      { label: 'AMPERAGEM (Ah)', val: amperagemBateria, fn: setAmperagemBateria, ph: 'Ex: 60, 70, 90...' },
+                    ].map(({ label, val, fn, ph }, i) => (
+                      <div key={i}>
+                        <label style={{ color: '#888', fontSize: '10px', display: 'block', marginBottom: '4px' }}>{label}</label>
+                        <input value={val} onChange={e => fn(e.target.value)} placeholder={ph} style={{ width: '100%', padding: '11px', background: '#0a0a0a', border: '1px solid #333', color: 'white', borderRadius: '6px', boxSizing: 'border-box' }} />
+                      </div>
+                    ))}
+                    <div>
+                      <label style={{ color: '#888', fontSize: '10px', display: 'block', marginBottom: '4px' }}>📅 DATA DE INSTALAÇÃO</label>
+                      <input type="date" value={dataInstalacaoBateria} onChange={e => setDataInstalacaoBateria(e.target.value)} style={{ width: '100%', padding: '11px', background: '#0a0a0a', border: '1px solid #333', color: 'white', borderRadius: '6px', boxSizing: 'border-box' }} />
+                    </div>
+                    <div>
+                      <label style={{ color: '#888', fontSize: '10px', display: 'block', marginBottom: '4px' }}>🛡️ GARANTIA</label>
+                      <select value={garantiaMesesBateria} onChange={e => setGarantiaMesesBateria(e.target.value)} style={{ width: '100%', padding: '11px', background: '#0a0a0a', border: '1px solid #333', color: 'white', borderRadius: '6px', boxSizing: 'border-box' }}>
+                        {[6,12,18,24,30,36,48].map(m => <option key={m} value={m}>{m} meses</option>)}
+                      </select>
+                    </div>
+                  </div>
+                  {previewVencBateria && (
+                    <div style={{ background: '#1a1a00', border: `1px solid ${COR}44`, borderRadius: '8px', padding: '12px', display: 'flex', alignItems: 'center', gap: '10px' }}>
+                      <span style={{ fontSize: '22px' }}>⏰</span>
+                      <div>
+                        <p style={{ color: COR, fontWeight: 'bold', margin: 0, fontSize: '13px' }}>Garantia vence em: {previewVencBateria}</p>
+                        <p style={{ color: '#888', fontSize: '11px', margin: '2px 0 0 0' }}>Lembrete automático no Dashboard quando próximo ao vencimento</p>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* ILUMINAÇÃO */}
+              {subAbaEletrica === 'iluminacao' && (
+                <div style={{ background: '#111', padding: '16px', borderRadius: '10px', marginBottom: '15px' }}>
+                  <label style={{ color: COR, fontSize: '11px', fontWeight: 'bold', display: 'block', marginBottom: '14px' }}>💡 LÂMPADAS TROCADAS</label>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', marginBottom: '12px' }}>
+                    {['Farol Direito','Farol Esquerdo','Milha Direita','Milha Esquerda','Lanterna Traseira D','Lanterna Traseira E','Luz de Placa','Luz de Freio','Luz de Ré','Luz Interna','Pisca Dianteiro D','Pisca Dianteiro E'].map(loc => {
+                      const item = lampadas.find(l => l.local === loc);
+                      return (
+                        <button key={loc} onClick={() => item ? setLampadas(p => p.filter(l => l.local !== loc)) : setLampadas(p => [...p, { local: loc, tipo: 'LED' }])}
+                          style={{ padding: '10px 8px', border: `2px solid ${item ? COR : '#333'}`, background: item ? COR + '22' : '#0a0a0a', color: item ? COR : '#666', borderRadius: '8px', fontWeight: 'bold', cursor: 'pointer', fontSize: '11px' }}>
+                          {item ? '✅ ' : ''}{loc}
+                        </button>
+                      );
+                    })}
+                  </div>
+                  {lampadas.length > 0 && lampadas.map((l, i) => (
+                    <div key={i} style={{ display: 'flex', gap: '8px', alignItems: 'center', marginBottom: '6px' }}>
+                      <span style={{ color: COR, fontSize: '12px', flex: 1 }}>{l.local}</span>
+                      <select value={l.tipo} onChange={e => setLampadas(p => p.map((x, idx) => idx === i ? { ...x, tipo: e.target.value } : x))} style={{ padding: '6px', background: '#0a0a0a', border: '1px solid #333', color: 'white', borderRadius: '5px' }}>
+                        {['LED','Halógena','Xenon','HID','Outra'].map(t => <option key={t}>{t}</option>)}
+                      </select>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {/* FIAÇÃO */}
+              {subAbaEletrica === 'fiacao' && (
+                <div style={{ background: '#111', padding: '16px', borderRadius: '10px', marginBottom: '15px' }}>
+                  <label style={{ color: COR, fontSize: '11px', fontWeight: 'bold', display: 'block', marginBottom: '14px' }}>🔌 FIAÇÃO ELÉTRICA</label>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', marginBottom: '14px' }}>
+                    {['Chicote Motor','Chicote Painel','Alternador','Bateria/Cabos','Porta/Vidro Elétrico','Travas Elétricas','Som/Central','Sensor de Estacionamento','Outro'].map(tipo => (
+                      <button key={tipo} onClick={() => setTipoFiacao(p => p.includes(tipo) ? p.filter(x => x !== tipo) : [...p, tipo])}
+                        style={{ padding: '10px 8px', border: `2px solid ${tipoFiacao.includes(tipo) ? COR : '#333'}`, background: tipoFiacao.includes(tipo) ? COR + '22' : '#0a0a0a', color: tipoFiacao.includes(tipo) ? COR : '#666', borderRadius: '8px', fontWeight: 'bold', cursor: 'pointer', fontSize: '11px' }}>
+                        {tipoFiacao.includes(tipo) ? '✅ ' : ''}{tipo}
+                      </button>
+                    ))}
+                  </div>
+                  <textarea value={trechoFiacao} onChange={e => setTrechoFiacao(e.target.value)} rows={3} placeholder="Descreva o trecho, problema e solução..." style={{ width: '100%', padding: '12px', background: '#0a0a0a', border: '1px solid #333', color: 'white', borderRadius: '6px', resize: 'vertical', boxSizing: 'border-box' }} />
+                </div>
+              )}
+
+              {/* FUSÍVEIS */}
+              {subAbaEletrica === 'fusiveis' && (
+                <div style={{ background: '#111', padding: '16px', borderRadius: '10px', marginBottom: '15px' }}>
+                  <label style={{ color: COR, fontSize: '11px', fontWeight: 'bold', display: 'block', marginBottom: '14px' }}>⚡ FUSÍVEIS TROCADOS</label>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '8px', marginBottom: '10px' }}>
+                    {[['local','Local/Circuito'],['amperagem','Amperagem'],['motivo','Motivo']].map(([key, ph]) => (
+                      <input key={key} value={novoFusivel[key]} onChange={e => setNovoFusivel(p => ({ ...p, [key]: e.target.value }))} placeholder={ph}
+                        style={{ padding: '10px', background: '#0a0a0a', border: '1px solid #444', color: 'white', borderRadius: '6px', boxSizing: 'border-box' }} />
+                    ))}
+                  </div>
+                  <button onClick={() => { if (!novoFusivel.local) return; setFusiveisTrocados(p => [...p, { ...novoFusivel }]); setNovoFusivel({ local: '', amperagem: '', motivo: '' }); }}
+                    style={{ width: '100%', padding: '10px', background: COR + '33', color: COR, border: `1px solid ${COR}`, borderRadius: '6px', fontWeight: 'bold', cursor: 'pointer', marginBottom: '12px' }}>+ Adicionar Fusível</button>
+                  {fusiveisTrocados.map((f, i) => (
+                    <div key={i} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '8px 12px', background: '#0a0a0a', borderRadius: '6px', marginBottom: '6px', border: '1px solid #222' }}>
+                      <span style={{ color: COR, fontSize: '12px' }}>⚡ {f.local} {f.amperagem ? '— ' + f.amperagem + 'A' : ''} {f.motivo ? '— ' + f.motivo : ''}</span>
+                      <button onClick={() => setFusiveisTrocados(p => p.filter((_, idx) => idx !== i))} style={{ background: 'red', color: 'white', border: 'none', borderRadius: '50%', width: '20px', height: '20px', cursor: 'pointer', fontSize: '12px' }}>×</button>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {/* GERAL */}
+              {subAbaEletrica === 'geral' && (
+                <div style={{ background: '#111', padding: '16px', borderRadius: '10px', marginBottom: '15px' }}>
+                  <label style={{ color: COR, fontSize: '11px', fontWeight: 'bold', display: 'block', marginBottom: '14px' }}>🔧 SERVIÇOS ELÉTRICOS GERAIS</label>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
+                    {['Alternador','Motor de Arranque','Regulador de Tensão','Sensor de O² (Sonda)','Sensor MAP/MAF','Injetor Elétrico','Bobina de Ignição','Módulo ECU','Alarme/Rastreador','Vidro Elétrico','Trava Elétrica','Ar Cond. Elétrico','Sonorização','Outro'].map(s => (
+                      <button key={s} onClick={() => setServicosEletrica(p => p.includes(s) ? p.filter(x => x !== s) : [...p, s])}
+                        style={{ padding: '10px 8px', border: `2px solid ${servicosEletrica.includes(s) ? COR : '#333'}`, background: servicosEletrica.includes(s) ? COR + '22' : '#0a0a0a', color: servicosEletrica.includes(s) ? COR : '#666', borderRadius: '8px', fontWeight: 'bold', cursor: 'pointer', fontSize: '11px', textAlign: 'left' }}>
+                        {servicosEletrica.includes(s) ? '✅ ' : ''}{s}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Observações */}
+              <div style={{ background: '#111', padding: '14px', borderRadius: '10px', marginBottom: '15px' }}>
+                <label style={{ color: '#888', fontSize: '11px', fontWeight: 'bold', display: 'block', marginBottom: '8px' }}>📝 OBSERVAÇÕES / DIAGNÓSTICO</label>
+                <textarea value={obsEletrica} onChange={e => setObsEletrica(e.target.value)} rows={3} placeholder="Diagnóstico, peças usadas, observações técnicas..." style={{ width: '100%', padding: '12px', background: '#0a0a0a', border: '1px solid #333', color: 'white', borderRadius: '6px', resize: 'vertical', boxSizing: 'border-box' }} />
+              </div>
+
+              {/* Fotos */}
+              <div style={{ background: '#111', padding: '14px', borderRadius: '10px', marginBottom: '15px' }}>
+                <label style={{ color: '#888', fontSize: '11px', fontWeight: 'bold', display: 'block', marginBottom: '10px' }}>📸 FOTOS ({fotosEletrica.length}/10)</label>
+                <input value={legendaFotoEletrica} onChange={e => setLegendaFotoEletrica(e.target.value)} placeholder="Legenda da foto..." style={{ width: '100%', padding: '10px', background: '#0a0a0a', border: '1px solid #333', color: 'white', borderRadius: '6px', marginBottom: '8px', boxSizing: 'border-box' }} />
+                <label style={{ display: 'block', padding: '12px', background: fotosEletrica.length >= 10 ? '#222' : '#1a1a00', border: `1px dashed ${fotosEletrica.length >= 10 ? '#444' : COR}`, borderRadius: '6px', textAlign: 'center', cursor: fotosEletrica.length >= 10 ? 'not-allowed' : 'pointer', color: fotosEletrica.length >= 10 ? '#555' : 'white', fontWeight: 'bold' }}>
+                  📷 {fotosEletrica.length >= 10 ? 'LIMITE ATINGIDO' : 'TIRAR FOTO'}
+                  <input type="file" accept="image/*" capture="environment" disabled={fotosEletrica.length >= 10} onChange={async e => {
+                    const f = e.target.files[0]; if (!f) return;
+                    const r = new FileReader(); r.onloadend = async () => { const c = await comprimirFoto(r.result); setFotosEletrica(p => [...p, { foto: c, legenda: legendaFotoEletrica, dataEnvio: new Date().toLocaleString('pt-BR') }]); setLegendaFotoEletrica(''); }; r.readAsDataURL(f);
+                  }} style={{ display: 'none' }} />
+                </label>
+                {fotosEletrica.length > 0 && (
+                  <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', marginTop: '10px' }}>
+                    {fotosEletrica.map((f, i) => (
+                      <div key={i} style={{ position: 'relative', width: '90px', borderRadius: '6px', overflow: 'hidden', border: '1px solid #333' }}>
+                        <img src={f.foto} alt={f.legenda} style={{ width: '90px', height: '90px', objectFit: 'cover' }} />
+                        <div style={{ background: 'rgba(0,0,0,0.85)', color: 'white', fontSize: '9px', padding: '3px', textAlign: 'center' }}>{f.legenda || 'Sem legenda'}</div>
+                        <button onClick={() => setFotosEletrica(p => p.filter((_, idx) => idx !== i))} style={{ position: 'absolute', top: '2px', right: '2px', background: 'red', color: 'white', border: 'none', borderRadius: '50%', width: '20px', height: '20px', cursor: 'pointer', fontSize: '12px' }}>×</button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {/* Valores */}
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', marginBottom: '15px' }}>
+                {[['💰 PEÇAS (R$)', valorPecasEletrica, setValorPecasEletrica], ['🔧 MÃO DE OBRA (R$)', valorMaoObraEletrica, setValorMaoObraEletrica]].map(([label, val, fn], i) => (
+                  <div key={i} style={{ background: '#111', padding: '14px', borderRadius: '10px' }}>
+                    <label style={{ color: '#888', fontSize: '11px', display: 'block', marginBottom: '6px' }}>{label}</label>
+                    <input type="number" value={val} onChange={e => fn(e.target.value)} placeholder="0,00" style={{ width: '100%', padding: '12px', background: '#0a0a0a', border: `1px solid ${COR}44`, color: COR, borderRadius: '6px', fontSize: '18px', fontWeight: 'bold', textAlign: 'center', boxSizing: 'border-box' }} />
+                  </div>
+                ))}
+              </div>
+              <div style={{ background: '#1a1500', border: `1px solid ${COR}44`, padding: '14px', borderRadius: '10px', marginBottom: '20px', textAlign: 'center' }}>
+                <span style={{ color: '#888', fontSize: '12px' }}>TOTAL: </span>
+                <strong style={{ color: COR, fontSize: '22px' }}>{totalEletrica.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</strong>
+              </div>
+
+              <button onClick={salvarEletrica} disabled={salvandoEletrica}
+                style={{ width: '100%', padding: '20px', background: salvandoEletrica ? '#333' : COR, color: 'black', border: 'none', borderRadius: '8px', fontSize: '18px', fontWeight: '900', cursor: 'pointer' }}>
+                {salvandoEletrica ? '⏳ SALVANDO...' : salvoEletrica ? '✅ SALVO NA O.S.!' : '💾 GERAR O.S. ELÉTRICA'}
+              </button>
+            </div>
+          );
+        })()}
 
         {/* ===== ABA ALINHAMENTO ===== */}
         {abaAtiva === 'alinhamento' && temPermissao('os') && (
@@ -3414,7 +4112,7 @@ export default function Admin() {
             <div style={{ background: '#111', padding: '15px', borderRadius: '10px', border: '1px solid #333', marginBottom: '20px' }}>
               <label style={{ fontSize: '11px', color: '#888', fontWeight: 'bold', display: 'block', marginBottom: '10px' }}>DADOS DO VEÍCULO / CLIENTE</label>
               <div style={{ display: 'flex', gap: '8px', marginBottom: '10px' }}>
-                  <input type="text" value={placaAlinhamento} onChange={e => setPlacaAlinhamento(normalizarPlaca(e.target.value))} placeholder="PLACA *" style={{ flex: 1, padding: '15px', background: '#000', border: '1px solid #444', color: 'white', borderRadius: '8px', fontWeight: 'bold', fontSize: '16px' }} />
+                  <input type="text" value={placaAlinhamento} onChange={e => { const p = normalizarPlaca(e.target.value); setPlacaAlinhamento(p); buscarDadosPorPlaca(p, { setNome: v => { if (!nomeClienteAlinhamento) setNomeClienteAlinhamento(v); }, setTelefone: v => { if (!telefoneAlinhamento) setTelefoneAlinhamento(v); }, setModelo: v => { if (!modeloAlinhamento) setModeloAlinhamento(v); } }); }} placeholder="PLACA *" style={{ flex: 1, padding: '15px', background: '#000', border: '1px solid #444', color: 'white', borderRadius: '8px', fontWeight: 'bold', fontSize: '16px' }} />
                   <button onClick={() => ouvirCampo('placaAlinhamento', setPlacaAlinhamento)} style={{ background: campoOuvindo === 'placaAlinhamento' ? ALINHAMENTO_COLOR : '#333', color: campoOuvindo === 'placaAlinhamento' ? 'black' : 'white', border: 'none', borderRadius: '8px', padding: '0 15px' }}>{campoOuvindo === 'placaAlinhamento' ? '🔴' : '🎤'}</button>
               </div>
               <div style={{ display: 'flex', gap: '8px', marginBottom: '10px' }}>
@@ -3547,7 +4245,7 @@ export default function Admin() {
             <div style={{ background: '#111', padding: '15px', borderRadius: '10px', border: '1px solid #333', marginBottom: '20px' }}>
               <label style={{ fontSize: '11px', color: '#888', fontWeight: 'bold', display: 'block', marginBottom: '10px' }}>DADOS DO VEÍCULO / CLIENTE</label>
               <div style={{ display: 'flex', gap: '8px', marginBottom: '10px' }}>
-                  <input type="text" value={placaOleo} onChange={e => setPlacaOleo(normalizarPlaca(e.target.value))} placeholder="PLACA *" style={{ flex: 1, padding: '15px', background: '#000', border: '1px solid #444', color: 'white', borderRadius: '8px', fontWeight: 'bold', fontSize: '16px' }} />
+                  <input type="text" value={placaOleo} onChange={e => { const p = normalizarPlaca(e.target.value); setPlacaOleo(p); buscarDadosPorPlaca(p, { setNome: v => { if (!nomeClienteOleo) setNomeClienteOleo(v); }, setTelefone: v => { if (!telefoneOleo) setTelefoneOleo(v); }, setModelo: v => { if (!modeloOleo) setModeloOleo(v); } }); }} placeholder="PLACA *" style={{ flex: 1, padding: '15px', background: '#000', border: '1px solid #444', color: 'white', borderRadius: '8px', fontWeight: 'bold', fontSize: '16px' }} />
                   <button onClick={() => ouvirCampo('placaOleo', setPlacaOleo)} style={{ background: campoOuvindo === 'placaOleo' ? MAIN_COLOR : '#333', color: 'white', border: 'none', borderRadius: '8px', padding: '0 15px' }}>{campoOuvindo === 'placaOleo' ? '🔴' : '🎤'}</button>
               </div>
               <div style={{ display: 'flex', gap: '8px', marginBottom: '10px' }}>
@@ -3626,7 +4324,7 @@ export default function Admin() {
             <div style={{ background: '#1a1500', border: `1px solid ${KM_COLOR}44`, borderRadius: '8px', padding: '10px 14px', marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px', fontSize: '12px', color: KM_COLOR }}>
               🔔 Lembrete automático será enviado ao cliente antes do agendamento
             </div>
-            <ModuloRevisao dadosOficina={dadosOficina} papelLogado={papelLogado} oficinaId={oficinaId} osParaEditar={(osEditando?.origem === 'revisao_preventiva' || osEditando?.tipoServico === 'revisao_preventiva') ? osEditando : null} onCancelarEdicao={() => setOsEditando(null)} onSalvo={(id, dados) => { setListaCarros(prev => [...prev.filter(o => o.id !== id), { id, ...dados }]); setOsEditando(null); carregarOS(); setTimeout(() => setAbaAtiva('os'), 500); }} />
+            <ModuloRevisao dadosOficina={dadosOficina} papelLogado={papelLogado} oficinaId={oficinaId} osParaEditar={(osEditando?.origem === 'revisao_preventiva' || osEditando?.tipoServico === 'revisao_preventiva') ? osEditando : null} onCancelarEdicao={() => setOsEditando(null)} onSalvo={(id, dados) => { setListaCarros(prev => [...prev.filter(o => o.id !== id), { id, ...dados }]); setOsEditando(null); carregarOS(); setTimeout(() => setAbaAtiva('os'), 500); }} buscarPorPlaca={buscarDadosPorPlaca} />
             {/* CALENDÁRIO DE AGENDAMENTO */}
             <div style={{ background: '#111', padding: '15px', borderRadius: '10px', border: `1px solid #3b82f644`, marginBottom: '16px', marginTop: '16px' }}>
               <label style={{ color: '#3b82f6', fontSize: '12px', fontWeight: 'bold', display: 'block', marginBottom: '10px' }}>📅 AGENDAR PRÓXIMA REVISÃO</label>
@@ -3682,7 +4380,7 @@ export default function Admin() {
 
         {/* ===== MÓDULO PNEUS E BORRACHARIA ===== */}
         {abaAtiva === 'pneus' && temPermissao('os') && (
-          <ModuloPneus dadosOficina={dadosOficina} papelLogado={papelLogado} oficinaId={oficinaId} osParaEditar={(osEditando?.tipoServico === 'borracharia' || osEditando?.tipoServico === 'pneus') ? osEditando : null} onCancelarEdicao={() => setOsEditando(null)} onSalvo={(id, dados) => { setListaCarros(prev => [...prev.filter(o => o.id !== id), { id, ...dados }]); setOsEditando(null); carregarOS(); setTimeout(() => setAbaAtiva('os'), 1500); }} />
+          <ModuloPneus dadosOficina={dadosOficina} papelLogado={papelLogado} oficinaId={oficinaId} osParaEditar={(osEditando?.tipoServico === 'borracharia' || osEditando?.tipoServico === 'pneus') ? osEditando : null} onCancelarEdicao={() => setOsEditando(null)} buscarPorPlaca={buscarDadosPorPlaca} onSalvo={(id, dados) => { setListaCarros(prev => [...prev.filter(o => o.id !== id), { id, ...dados }]); setOsEditando(null); carregarOS(); setTimeout(() => setAbaAtiva('os'), 1500); }} />
         )}
 
         {/* ===== ABA INJEÇÃO ELETRÔNICA ===== */}
@@ -3708,7 +4406,7 @@ export default function Admin() {
             <div style={{ background: '#111', padding: '15px', borderRadius: '10px', border: '1px solid #333', marginBottom: '16px' }}>
               <label style={{ color: '#888', fontSize: '11px', fontWeight: 'bold', display: 'block', marginBottom: '10px' }}>DADOS DO VEÍCULO / CLIENTE</label>
               <div style={{ display: 'flex', gap: '8px', marginBottom: '8px', flexWrap: 'wrap' }}>
-                <input value={placaInjecao} onChange={e => setPlacaInjecao(normalizarPlaca(e.target.value))} placeholder="PLACA *" style={{ flex: 1, minWidth: '100px', padding: '12px', background: '#0a0a0a', border: '1px solid #444', color: 'white', borderRadius: '8px', fontWeight: 'bold' }} />
+                <input value={placaInjecao} onChange={e => { const p = normalizarPlaca(e.target.value); setPlacaInjecao(p); buscarDadosPorPlaca(p, { setNome: v => { if (!clienteInjecao) setClienteInjecao(v); }, setTelefone: v => { if (!telefoneInjecao) setTelefoneInjecao(v); }, setModelo: v => { if (!modeloInjecao) setModeloInjecao(v); } }); }} placeholder="PLACA *" style={{ flex: 1, minWidth: '100px', padding: '12px', background: '#0a0a0a', border: '1px solid #444', color: 'white', borderRadius: '8px', fontWeight: 'bold' }} />
                 <input value={modeloInjecao} onChange={e => setModeloInjecao(e.target.value)} placeholder="Modelo" style={{ flex: 2, minWidth: '120px', padding: '12px', background: '#0a0a0a', border: '1px solid #444', color: 'white', borderRadius: '8px' }} />
                 <input value={kmInjecao} onChange={e => setKmInjecao(e.target.value)} placeholder="KM Atual" type="number" style={{ flex: 1, minWidth: '80px', padding: '12px', background: '#0a0a0a', border: '1px solid #444', color: KM_COLOR, borderRadius: '8px' }} />
               </div>
@@ -3913,7 +4611,7 @@ export default function Admin() {
 
         {/* ===== MÓDULO COPILOTO IA ===== */}
         {abaAtiva === 'copiloto' && temPermissao('os') && (
-          <CopilotoIA dadosOficina={dadosOficina} papelLogado={papelLogado} />
+          <CopilotoIA dadosOficina={dadosOficina} papelLogado={papelLogado} setAbaAtiva={setAbaAtiva} listaCarros={listaCarros} />
         )}
 
         {/* ===== MÓDULO ASSINATURA (MEU PLANO) ===== */}
@@ -3936,6 +4634,9 @@ export default function Admin() {
 
         {/* ===== FINANCEIRO ===== */}
         {abaAtiva === 'financeiro' && temPermissao('financeiro') && <Financeiro />}
+
+        {/* ===== ABA NOTA FISCAL ===== */}
+        {abaAtiva === 'nota_fiscal' && <NotaFiscal />}
 
         {/* ===== EQUIPE ===== */}
         {abaAtiva === 'equipe' && (papelLogado === 'dono' || papelLogado === 'master') && !membroAuditando && (
@@ -4038,8 +4739,12 @@ export default function Admin() {
         )}
 
         {/* ===== OFICINA ===== */}
-        {abaAtiva === 'oficina' && temPermissao('oficina') && (() => {
-          const COR = TAB_COLORS.oficina || '#8b5cf6';
+        {(abaAtiva === 'oficina' || abaAtiva === 'motos' || abaAtiva === 'lataria' || abaAtiva === 'amortecedor') && temPermissao('oficina') && (() => {
+          // Sync sub-aba with the main tab clicked
+          if (abaAtiva === 'motos' && subAbaOficina !== 'motos') setSubAbaOficina('motos');
+          if (abaAtiva === 'lataria' && subAbaOficina !== 'lataria') setSubAbaOficina('lataria');
+          if (abaAtiva === 'amortecedor' && subAbaOficina !== 'amortecedor') setSubAbaOficina('amortecedor');
+          const COR = TAB_COLORS[subAbaOficina] || TAB_COLORS.oficina || '#8b5cf6';
           const toBase64Of = file => new Promise((res,rej)=>{ const r=new FileReader(); r.onload=()=>res(r.result); r.onerror=rej; r.readAsDataURL(file); });
 
           // ──────────────────────────────────────────────
@@ -4229,7 +4934,15 @@ export default function Admin() {
                   </div>
                 </div>
                 <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-                  {Object.entries(CONFIGS_OFICINA).map(([key, c]) => (
+                  {Object.entries(CONFIGS_OFICINA)
+                    .filter(([key]) => {
+                      if (abaAtiva === 'oficina') return key === 'mecanica';
+                      if (abaAtiva === 'motos') return key === 'motos';
+                      if (abaAtiva === 'lataria') return key === 'lataria';
+                      if (abaAtiva === 'amortecedor') return key === 'amortecedor';
+                      return true;
+                    })
+                    .map(([key, c]) => (
                     <button key={key} onClick={() => { setSubAbaOficina(key); setMostrarFormVistoria(false); }}
                       style={{ padding: '8px 16px', background: subAbaOficina === key ? c.cor : '#111', color: subAbaOficina === key ? 'white' : '#666', border: `1px solid ${subAbaOficina === key ? c.cor : '#333'}`, borderRadius: '20px', fontWeight: 'bold', fontSize: '12px', cursor: 'pointer', transition: '0.2s' }}>
                       {c.icon} {c.label}
@@ -4287,7 +5000,17 @@ export default function Admin() {
                         ].map(({ key, label, ph, type }) => (
                           <div key={key}>
                             <label style={{ color: '#444', fontSize: '10px', fontWeight: 'bold', display: 'block', marginBottom: '4px', letterSpacing: '0.5px' }}>{label}</label>
-                            <input type={type||'text'} value={formVistoria[key]||''} onChange={e => setFormVistoria(p => ({...p, [key]: e.target.value}))}
+                            <input type={type||'text'} value={formVistoria[key]||''}
+                              onChange={e => {
+                                const val = key === 'placa' ? normalizarPlaca(e.target.value) : e.target.value;
+                                setFormVistoria(p => ({...p, [key]: val}));
+                                if (key === 'placa') buscarDadosPorPlaca(val, {
+                                  setNome:     v => setFormVistoria(p => ({...p, cliente: p.cliente || v})),
+                                  setTelefone: v => setFormVistoria(p => ({...p, telefone: p.telefone || v})),
+                                  setModelo:   v => setFormVistoria(p => ({...p, modelo: p.modelo || v})),
+                                  setKm:       v => setFormVistoria(p => ({...p, km: p.km || v})),
+                                });
+                              }}
                               placeholder={ph} style={{ width: '100%', padding: '10px 12px', background: '#111', border: `1px solid ${key==='placa'?cfg.cor+'55':'#222'}`, color: 'white', borderRadius: '8px', fontSize: '13px', boxSizing: 'border-box', fontWeight: key==='placa'?'bold':'normal', textTransform: key==='placa'?'uppercase':'none' }} />
                           </div>
                         ))}
@@ -4939,7 +5662,6 @@ export default function Admin() {
                   { key: 'veiculos', label: '🚗 Veículos', count: veiculosDesmanche.length },
                   { key: 'pecas', label: '🔩 Peças', count: pecasDisponiveis },
                   { key: 'busca_pecas', label: '🔍 Buscar Peças', count: null },
-                  { key: 'clientes', label: '👥 Clientes', count: null },
                   { key: 'parceiros', label: '🔧 Oficinas Parceiras', count: null },
                 ].map(({ key, label, count }) => (
                   <button key={key} onClick={() => setSubAbaDesmanche(key)}
@@ -5297,127 +6019,7 @@ export default function Admin() {
                 </div>
               )}
 
-              {/* ===== SUB-ABA: CLIENTES ===== */}
-              {subAbaDesmanche === 'clientes' && (
-                <div>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
-                    <h3 style={{ color: '#25D366', margin: 0 }}>👥 Clientes do Desmanche</h3>
-                    <button onClick={() => setMostrarFormClienteDes(true)}
-                      style={{ background: '#25D366', color: 'black', border: 'none', borderRadius: '8px', padding: '10px 16px', fontWeight: 'bold', fontSize: '13px', cursor: 'pointer' }}>
-                      + Novo Cliente
-                    </button>
-                  </div>
-
-                  {mostrarFormClienteDes && (
-                    <div style={{ background: '#111', border: '1px solid #25D36644', borderRadius: '14px', padding: '20px', marginBottom: '20px' }}>
-                      <h4 style={{ color: '#25D366', margin: '0 0 16px 0' }}>➕ Novo Cliente</h4>
-                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '12px' }}>
-                        {[
-                          { key: 'nome', placeholder: 'Nome completo', label: 'NOME *' },
-                          { key: 'telefone', placeholder: '(49) 99999-9999', label: 'WHATSAPP' },
-                          { key: 'veiculo', placeholder: 'Ex: Gol 2015, Civic 2018...', label: 'VEÍCULO' },
-                          { key: 'interesse', placeholder: 'Ex: Motor 1.0, Câmbio...', label: 'PEÇAS QUE BUSCA' },
-                        ].map(({ key, placeholder, label }) => (
-                          <div key={key}>
-                            <label style={{ color: '#666', fontSize: '10px', fontWeight: 'bold', display: 'block', marginBottom: '4px' }}>{label}</label>
-                            <input value={formClienteDes[key] || ''} onChange={e => setFormClienteDes(prev => ({ ...prev, [key]: e.target.value }))}
-                              placeholder={placeholder} style={{ width: '100%', padding: '12px', background: '#0a0a0a', border: '1px solid #333', color: 'white', borderRadius: '8px', fontSize: '13px', boxSizing: 'border-box' }} />
-                          </div>
-                        ))}
-                      </div>
-                      {/* OBSERVAÇÕES + MICROFONE */}
-                      <div style={{ marginBottom: '14px' }}>
-                        <label style={{ color: '#666', fontSize: '10px', fontWeight: 'bold', display: 'block', marginBottom: '4px' }}>📝 OBSERVAÇÕES</label>
-                        <div style={{ display: 'flex', gap: '8px' }}>
-                          <textarea value={formClienteDes.observacoes || ''} onChange={e => setFormClienteDes(prev => ({ ...prev, observacoes: e.target.value }))}
-                            placeholder="Anotações sobre o cliente, urgência, preferências..." rows={3}
-                            style={{ flex: 1, padding: '12px', background: '#0a0a0a', border: '1px solid #333', color: 'white', borderRadius: '8px', fontSize: '13px', resize: 'none' }} />
-                          <button onClick={() => {
-                            if (!('webkitSpeechRecognition' in window)) return alert('Use Chrome para voz.');
-                            const rec = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
-                            rec.lang = 'pt-BR'; rec.interimResults = false;
-                            rec.onresult = e => setFormClienteDes(prev => ({ ...prev, observacoes: (prev.observacoes ? prev.observacoes + ' ' : '') + e.results[0][0].transcript }));
-                            rec.start();
-                          }} style={{ background: '#333', color: 'white', border: 'none', borderRadius: '8px', padding: '0 14px', fontSize: '20px', cursor: 'pointer' }}>🎤</button>
-                        </div>
-                      </div>
-                      <div style={{ display: 'flex', gap: '10px' }}>
-                        <button onClick={salvarClienteDes} disabled={salvandoClienteDes}
-                          style={{ flex: 1, padding: '14px', background: salvandoClienteDes ? '#333' : '#25D366', color: 'black', border: 'none', borderRadius: '8px', fontWeight: 'bold', cursor: 'pointer' }}>
-                          {salvandoClienteDes ? '⏳...' : '💾 Salvar'}
-                        </button>
-                        <button onClick={() => setMostrarFormClienteDes(false)}
-                          style={{ padding: '14px 20px', background: 'transparent', color: '#888', border: '1px solid #333', borderRadius: '8px', cursor: 'pointer' }}>Cancelar</button>
-                      </div>
-                    </div>
-                  )}
-
-                  {/* ENVIAR CARRO PARA CLIENTE */}
-                  {clientesDes.length > 0 && veiculosDesmanche.length > 0 && (
-                    <div style={{ background: '#0a1a0a', border: '1px solid #25D36633', borderRadius: '12px', padding: '16px', marginBottom: '16px' }}>
-                      <p style={{ color: '#25D366', fontWeight: 'bold', fontSize: '13px', margin: '0 0 12px 0' }}>📲 Enviar chegada para cliente</p>
-                      <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
-                        <select value={clienteSelecionado?.id || ''} onChange={e => setClienteSelecionado(clientesDes.find(c => c.id === e.target.value) || null)}
-                          style={{ flex: 1, padding: '10px', background: '#111', border: '1px solid #333', color: 'white', borderRadius: '8px', fontSize: '13px' }}>
-                          <option value="">Selecionar cliente...</option>
-                          {clientesDes.map(c => <option key={c.id} value={c.id}>{c.nome} - {c.interesse || 'sem interesse cadastrado'}</option>)}
-                        </select>
-                        <select value={carroSelecionado} onChange={e => setCarroSelecionado(e.target.value)}
-                          style={{ flex: 1, padding: '10px', background: '#111', border: '1px solid #333', color: 'white', borderRadius: '8px', fontSize: '13px' }}>
-                          <option value="">Selecionar carro...</option>
-                          {veiculosDesmanche.map(v => <option key={v.id} value={v.id}>{v.modelo} {v.ano}</option>)}
-                        </select>
-                        <button
-                          onClick={() => {
-                            const carro = veiculosDesmanche.find(v => v.id === carroSelecionado);
-                            if (carro && clienteSelecionado) {
-                              const pecasDoCarroLocal = pecasDesmanche.filter(p => p.veiculoId === carro.id && p.status === 'disponivel');
-                              const listaPecas = pecasDoCarroLocal.map(p => `  • ${p.nome}${p.preco ? ` - R$ ${p.preco}` : ''}`).join('\n');
-                              const msg = encodeURIComponent(
-                                `Olá *${clienteSelecionado.nome}*! 👋\n\n` +
-                                `Temos um carro que pode te interessar:\n\n` +
-                                `🚗 *${carro.modelo} ${carro.ano || ''}* - ${carro.cor || ''}\n` +
-                                `📍 Pátio: ${carro.patio || 'Consultar'}\n\n` +
-                                `🔩 *Peças disponíveis:*\n${listaPecas || 'Consultar disponibilidade'}\n\n` +
-                                `${carro.detalhes ? `📝 ${carro.detalhes}\n\n` : ''}` +
-                                `Interesse? É só responder! ✅\n_${dadosOficina?.nomeOficina || 'Desmanche'}_`
-                              );
-                              const tel = String(clienteSelecionado.telefone || '').replace(/\D/g, '');
-                              if (tel) window.open(`https://wa.me/55${tel}?text=${msg}`, '_blank');
-                            } else { alert('Selecione cliente e carro!'); }
-                          }}
-                          style={{ background: '#25D366', color: 'black', border: 'none', borderRadius: '8px', padding: '10px 16px', fontWeight: 'bold', fontSize: '12px', cursor: 'pointer' }}>
-                          📲 Enviar
-                        </button>
-                      </div>
-                    </div>
-                  )}
-
-                  {clientesDes.length === 0 ? (
-                    <div style={{ background: '#111', border: '1px dashed #333', borderRadius: '14px', padding: '40px', textAlign: 'center' }}>
-                      <p style={{ fontSize: '40px', margin: '0 0 10px 0' }}>👥</p>
-                      <p style={{ color: '#555', margin: 0 }}>Nenhum cliente cadastrado ainda.</p>
-                    </div>
-                  ) : clientesDes.map(c => (
-                    <div key={c.id} style={{ background: '#111', border: '1px solid #25D36622', borderRadius: '12px', padding: '14px', marginBottom: '10px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '10px' }}>
-                      <div>
-                        <p style={{ color: 'white', fontWeight: 'bold', margin: '0 0 4px 0' }}>{c.nome}</p>
-                        <p style={{ color: '#666', fontSize: '12px', margin: '0 0 2px 0' }}>📱 {c.telefone} {c.veiculo ? `· 🚗 ${c.veiculo}` : ''}</p>
-                        {c.interesse && <p style={{ color: '#555', fontSize: '11px', margin: '0 0 2px 0' }}>🔍 {c.interesse}</p>}
-                        {c.observacoes && <p style={{ color: '#555', fontSize: '11px', margin: 0, fontStyle: 'italic' }}>📝 {c.observacoes}</p>}
-                      </div>
-                      {c.telefone && (
-                        <a href={`https://wa.me/55${String(c.telefone).replace(/\D/g, '')}`} target="_blank" rel="noreferrer"
-                          style={{ background: '#25D366', color: 'black', padding: '8px 14px', borderRadius: '8px', fontWeight: 'bold', fontSize: '12px', textDecoration: 'none' }}>
-                          📲 WhatsApp
-                        </a>
-                      )}
-                    </div>
-                  ))}
-                </div>
-              )}
-
-                            {/* ===== SUB-ABA: PARCEIROS ===== */}
+              {/* ===== SUB-ABA: PARCEIROS ===== */}
               {subAbaDesmanche === 'parceiros' && (
                 <div>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
@@ -5722,7 +6324,7 @@ export default function Admin() {
                   '🎤 Todos os campos aceitam ditado por voz (botão do microfone).',
                   '💾 Ao salvar, a O.S. entra no histórico e pode ser enviada ao cliente.',
                   '🔑 SENHA DO PORTAL DO CLIENTE: ao criar a O.S., defina uma senha de 4 dígitos para o cliente acompanhar o serviço.',
-                  '📱 O cliente acessa em oficina-express-ia.netlify.app → Portal Cliente → digita a Placa + a senha que você definiu.',
+                  '📱 O cliente acessa em oficina.expresstech.com.br → Portal Cliente → digita a Placa + a senha que você definiu.',
                   '⚠️ Dica: para óleo use ÓLEO, para alinhamento use ALINHAMENTO. Cada aba tem checklist específico!',
                 ]},
                 { aba: 'oficina', icon: '🏢', titulo: 'MECÂNICA - Checklist Profissional por Especialidade', conteudo: [
@@ -5734,6 +6336,51 @@ export default function Admin() {
                   '📷 Adicione fotos em cada O.S. para documentar o defeito.',
                   '💰 Campo de valor do serviço integrado com total automático.',
                   '✏️ Para editar uma O.S. já salva, clique em "✏️ Editar" na lista.',
+                ]},
+                { aba: 'motos', icon: '🏍️', titulo: 'MOTOS - Checklist Exclusivo para Motocicletas', conteudo: [
+                  '👉 Aba dedicada exclusivamente para O.S. de motocicletas.',
+                  '🔧 Motor: compressão, vazamentos, carburador/injeção.',
+                  '⛓️ Transmissão & Rodas: corrente/relação, pneus, rolamentos.',
+                  '🔴 Freios & Suspensão: freio dianteiro/traseiro, garfo, amortecedor traseiro.',
+                  '📷 Adicione fotos para documentar o estado da moto.',
+                  '💾 Ao salvar, a O.S. entra no histórico identificada como Motos.',
+                ]},
+                { aba: 'lataria', icon: '🚗', titulo: 'LATARIA - Funilaria, Pintura e Acabamento', conteudo: [
+                  '👉 Aba dedicada para serviços de lataria, pintura e acabamento.',
+                  '🔨 Funilaria & Pintura: amassados, oxidação, repintura, bolhas.',
+                  '🪟 Vidros & Acabamento: para-brisa, retrovisores, para-choques, borrachas.',
+                  '🛋️ Interior: bancos, painel, air bag, tapetes e forros.',
+                  '📷 Documente com fotos antes e depois do serviço.',
+                  '💾 Ao salvar, a O.S. entra no histórico identificada como Lataria.',
+                ]},
+                { aba: 'amortecedor', icon: '🛢️', titulo: 'AMORTECEDOR - Diagnóstico por Posição', conteudo: [
+                  '👉 Aba dedicada para diagnóstico e troca de amortecedores.',
+                  '🔍 Diagnóstico por posição: Dianteiro Esquerdo, Dianteiro Direito, Traseiro Esquerdo, Traseiro Direito.',
+                  '🚦 Status visual: ✅ OK / ⚠️ Atenção / ❌ Trocar — para cada posição.',
+                  '🌀 Componentes: molas, buchas barra estabilizadora, pontas de barra.',
+                  '📋 Teste de ressalto: registre o resultado do teste de oscilação.',
+                  '💾 Ao salvar, a O.S. entra no histórico identificada como Amortecedor.',
+                ]},
+                { aba: 'lavajato', icon: '🚿', titulo: 'LAVA JATO - Fila, Serviços e O.S. Integrada', conteudo: [
+                  '👉 Aba completa para gestão do lava jato com fila em tempo real e geração automática de O.S.',
+                  '🚿 FILA: visualize todos os veículos em atendimento com status colorido (Aguardando → Em Lavagem → Pronto → Entregue). Mude o status com 1 clique.',
+                  '➕ NOVO SERVIÇO: selecione os serviços realizados (Lavagem Simples, Completa, Polimento, Cristalização, Higienização Interna, Lavagem de Motor, Cera, Higienização do AC, Descontaminação, PPF), categoria do veículo, hora de entrada e valor.',
+                  '📋 HISTÓRICO: todos os veículos entregues com data, serviço e valor.',
+                  '💬 WhatsApp automático: botão para avisar o cliente que o veículo está pronto.',
+                  '📸 Fotos: registre até 10 fotos por serviço (antes/depois).',
+                  '✅ O.S. Integrada: ao salvar, gera automaticamente uma O.S. no histórico geral da oficina. Aparece na aba O.S. com tipo "Lava Jato".',
+                  '🔑 Ative o módulo em MEU PLANO → Lava Jato.',
+                ]},
+                { aba: 'eletrica', icon: '⚡', titulo: 'ELÉTRICA - Bateria, Iluminação, Fiação e Fusíveis', conteudo: [
+                  '👉 Aba completa para todos os serviços elétricos do veículo.',
+                  '🔋 BATERIA: registre marca, amperagem (Ah), data de instalação e garantia. O sistema calcula a data de vencimento e gera um lembrete automático no Dashboard quando estiver próxima.',
+                  '💡 ILUMINAÇÃO: selecione as lâmpadas trocadas por posição (farol, milha, lanterna, placa, freio...) e defina o tipo (LED, Halógena, Xenon).',
+                  '🔌 FIAÇÃO: marque o tipo do serviço (chicote, alternador, travas...) e descreva o problema e solução.',
+                  '⚡ FUSÍVEIS: registre cada fusível trocado com local, amperagem e motivo. Ideal para rastrear curtos recorrentes.',
+                  '🔧 GERAL: menu com os principais serviços elétricos (alternador, motor de arranque, ECU, sensores, alarme...). Selecione todos que foram feitos.',
+                  '📸 Fotos: documente com até 10 fotos por O.S.',
+                  '⏰ Lembrete automático: garantia da bateria a ≤30 dias do vencimento aparece como card no Dashboard com botão de WhatsApp.',
+                  '💾 Ao salvar, a O.S. elétrica entra no histórico com tipo identificado (Bateria, Iluminação, Fiação, Fusíveis ou Geral).',
                 ]},
                 { aba: 'injecao', icon: '⚡', titulo: 'INJEÇÃO - Diagnóstico Eletrônico Completo', conteudo: [
                   '👉 Módulo exclusivo para diagnóstico de injeção eletrônica.',
@@ -5788,6 +6435,14 @@ export default function Admin() {
                   '🎥 Modo Vídeo (Gemini ao vivo): abra o Gemini no celular, ative a câmera e aponte para o defeito em tempo real - barulho na suspensão, vazamento, motor falhando. A IA vê e responde pelo áudio!',
                   '💡 Exemplos rápidos: clique nos botões P0420, Torque EA111, Ponto GM 1.4 para preencher automaticamente.',
                   '⚡ Dica pro: para barulhos difíceis, use o Modo Vídeo. Já diagnosticamos vários defeitos que o scanner não pegava!',
+                ]},
+                { aba: 'nota_fiscal', icon: '🧾', titulo: 'NOTA FISCAL - Central de Emissão Fiscal', conteudo: [
+                  '👉 O Oficina IA organiza todos os dados da O.S. e gera o texto pronto para você colar no portal do governo em 30 segundos.',
+                  '🔧 NFS-e (Mão de Obra): nota vai para a Prefeitura da sua cidade. MEI usa o Portal Nacional nfse.gov.br ou o app NFS-e Mobile.',
+                  '🔩 NF-e (Peças): nota vai para a SEFAZ do seu Estado. MEI usa a Nota Fiscal Avulsa. ME/Simples precisa de Certificado Digital.',
+                  '⭐ REGRA DE OURO DO MEI: você NÃO é obrigado a emitir nota para pessoa física (CPF) — só para empresa (CNPJ) ou se o cliente pessoa física pedir.',
+                  '📋 Aba "Gerar Dados": preencha os campos da O.S. e copie o texto pronto para NFS-e e NF-e com 1 clique.',
+                  '🌐 Aba "Portais": links diretos para todos os sistemas do governo — NFS-e nacional, SEFAZ de cada Estado, app mobile e emissor gratuito do SEBRAE.',
                 ]},
                 { aba: 'retorno', icon: '🔄', titulo: 'RETORNO - Gestão de Vencimentos', conteudo: [
                   '👉 Fidelização automática. O sistema monitora todos os clientes.',

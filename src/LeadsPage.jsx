@@ -1,10 +1,10 @@
 /* eslint-disable react/prop-types */
 /* eslint-disable no-unused-vars */
 import React, { useState, useEffect, useMemo } from 'react';
-import { db } from '../lib/firebase';
+import { db } from './lib/firebase';
 import { collection, addDoc, getDocs, query, orderBy, deleteDoc, doc, updateDoc } from 'firebase/firestore';
-import { useGemini } from '../hooks/useGemini';
-import { useOficina } from '../components/OficinaContext';
+import { useGemini } from './hooks/useGemini';
+import { useOficina } from './components/OficinaContext';
 
 const COLUNAS = [
   { id: 'novo', titulo: 'NOVO', cor: '#3b82f6', icone: '🕹️' },

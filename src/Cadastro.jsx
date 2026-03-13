@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { getAuth, createUserWithEmailAndPassword } from 'firebase/auth';
-import { db } from '../lib/firebase';
+import { db } from './lib/firebase';
 import { doc, setDoc } from 'firebase/firestore';
 
 const SEU_WHATSAPP = '5534991439845';

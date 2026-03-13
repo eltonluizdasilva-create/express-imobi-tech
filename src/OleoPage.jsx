@@ -1,10 +1,10 @@
 /* eslint-disable react/prop-types */
 /* eslint-disable no-unused-vars */
 import React, { useState, useRef } from 'react';
-import { db } from '../lib/firebase';
+import { db } from './lib/firebase';
 import { collection, addDoc } from 'firebase/firestore';
-import { useGemini } from '../hooks/useGemini';
-import { useOficina } from '../components/OficinaContext';
+import { useGemini } from './hooks/useGemini';
+import { useOficina } from './components/OficinaContext';
 
 const MAIN_COLOR = "#FF0033";
 const KM_COLOR = "#eab308";

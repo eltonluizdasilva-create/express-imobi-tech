@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { db } from '../lib/firebase'; 
+import { db } from './lib/firebase'; 
 import { collection, addDoc, getDocs, updateDoc, doc } from 'firebase/firestore'; 
-import { useOficina } from '../components/OficinaContext';
+import { useOficina } from './components/OficinaContext';
 
 const APP_LINK = 'https://oficina.expresstech.com.br';
 const SITE_LINK = 'https://expresstech.com.br';

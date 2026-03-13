@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { db } from '../lib/firebase';
+import { db } from './lib/firebase';
 import { collection, addDoc, doc, deleteDoc, updateDoc, onSnapshot, query, orderBy } from 'firebase/firestore';
-import { useOficina } from '../components/OficinaContext';
-import { useGemini } from '../hooks/useGemini';
+import { useOficina } from "./components/OficinaContext";
+import { useGemini } from "./hooks/useGemini";
 
 export default function Estoque() {
   const { oficinaId } = useOficina() || {};
