@@ -3528,7 +3528,7 @@ _${nomeOf} — Sistema Oficina IA_ 🤖`;
                   letterSpacing: '0.5px',
                 }}
               >
-                {bloqueada && <span style={{ marginRight: '3px' }}>🔒</span>}
+
                 {LABELS_ABAS[aba]}
                 {badge && (
                   <span style={{ position: 'absolute', top: '1px', right: '2px', background: '#ef4444', color: 'white', borderRadius: '50%', width: '14px', height: '14px', fontSize: '9px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 'bold' }}>
