@@ -620,7 +620,7 @@ function MasterPanel({ setPlanosGlobais }) {
 
         <div style={{ marginBottom: '20px', background: '#0a0a0a', padding: '15px', borderRadius: '8px', border: '1px solid #333' }}>
           <label style={{ color: '#00E676', fontSize: '11px', fontWeight: 'bold', display: 'block', marginBottom: '5px' }}>📲 WHATSAPP DE VENDAS DA EXPRESS AI (Com DDD):</label>
-          <input type="text" value={planos.whatsapp} onChange={e => setPlanos({ ...planos, whatsapp: e.target.value.replace(/\D/g, '') })} placeholder="Ex: 5534999999999" style={{ width: '100%', padding: '12px', background: '#111', border: '1px solid #444', color: 'white', borderRadius: '5px' }} />
+          <input type="text" value={planos.whatsapp} onChange={e => setPlanos({ ...planos, whatsapp: e.target.value.replace(/\D/g, '') })} placeholder="5534991439845" style={{ width: '100%', padding: '12px', background: '#111', border: '1px solid #444', color: 'white', borderRadius: '5px' }} />
         </div>
 
         {/* --- INÍCIO DOS 4 PLANOS (START, PRO, BUSINESS, MASTER) --- */}
