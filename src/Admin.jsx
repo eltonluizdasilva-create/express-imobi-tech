@@ -17,6 +17,8 @@ import Escapamento from './Escapamento';
 import Estetica from './Estetica';
 import AbaEstrategia from "./pages/admin/Estrategia";
 import TarefaTab from './pages/admin/Tarefas';
+import AbaMarketing from './Marketing';
+import Desmanche from './Desmanche';
 
 const MAIN_COLOR = "#FF0033";
 const GREEN_MONEY = "#00E676";
@@ -430,20 +432,6 @@ function MasterPanel({ setPlanosGlobais }) {
   const [videosAjuda, setVideosAjuda] = useState({});
   const [salvandoVideos, setSalvandoVideos] = useState(false);
 
-  const SERVICOS_MARKETING_DEFAULT = [
-    { key: 'trafego_pago', icon: '🎯', nome: 'Tráfego Pago', desc: 'Anúncios no Google e Meta (Facebook/Instagram) para atrair clientes novos todos os dias. Você define o orçamento de mídia, nós cuidamos de tudo.', preco: '' },
-    { key: 'google_negocio', icon: '📍', nome: 'Google Meu Negócio', desc: 'Otimização do seu perfil no Google Maps. Quando alguém pesquisar "oficina perto de mim", sua oficina aparece em destaque.', preco: '' },
-    { key: 'site', icon: '🌐', nome: 'Criação de Site', desc: 'Site profissional com domínio, hospedagem e integração com WhatsApp. Passa credibilidade e funciona como vendedor 24h.', preco: '' },
-    { key: 'whatsapp_bot', icon: '🤖', nome: 'Automação de Atendimento', desc: 'Bot inteligente no WhatsApp que responde clientes automaticamente, agenda serviços e reativa clientes inativos - sem você fazer nada.', preco: '' },
-    { key: 'redes_sociais', icon: '📱', nome: 'Gestão de Redes Sociais', desc: 'Criação e publicação de posts no Instagram e Facebook. Conteúdo profissional que gera confiança e atrai clientes locais.', preco: '' },
-    { key: 'conteudo', icon: '🎨', nome: 'Criação de Conteúdo', desc: 'Artes, vídeos curtos e stories prontos para você publicar. Sua oficina com visual profissional sem precisar entender de design.', preco: '' },
-    { key: 'seo_local', icon: '🔍', nome: 'SEO Local', desc: 'Posicionamento orgânico nos buscadores. Apareça no Google quando clientes da sua cidade pesquisarem serviços que você oferece.', preco: '' },
-    { key: 'relatorio', icon: '📊', nome: 'Relatório Mensal', desc: 'Relatório completo de resultados: quantos clientes vieram do Google, do Instagram, quantos retornaram. Transparência total do investimento.', preco: '' },
-  ];
-
-  const [servicosMarketing, setServicosMarketing] = useState(SERVICOS_MARKETING_DEFAULT);
-  const [salvandoMarketing, setSalvandoMarketing] = useState(false);
-
   const ABAS_VIDEOS = [
     { key: 'visao_geral', label: '📊 Visão Geral' },
     { key: 'os', label: '🔧 O.S.' },
@@ -530,15 +518,6 @@ function MasterPanel({ setPlanosGlobais }) {
     finally { setSalvandoVideos(false); }
   };
 
-  const salvarMarketing = async () => {
-    setSalvandoMarketing(true);
-    try {
-      await setDoc(doc(db, 'oficinas', 'MASTER', 'configuracoes', 'marketing'), { servicos: servicosMarketing }, { merge: true });
-      alert('✅ Serviços e preços de marketing salvos! Já aparecem na aba Marketing de todas as oficinas.');
-    } catch (e) { alert('Erro: ' + e.message); }
-    finally { setSalvandoMarketing(false); }
-  };
-
   const toggleAtivo = async (oficina) => {
     try {
       const novoStatus = oficina.ativo === false ? true : false;
@@ -617,11 +596,6 @@ function MasterPanel({ setPlanosGlobais }) {
       <div style={{ background: '#111', padding: '20px', borderRadius: '10px', border: `1px solid ${MASTER_COLOR}`, marginBottom: '30px' }}>
         <h3 style={{ color: MASTER_COLOR, margin: '0 0 15px 0' }}>💲 Configuração de Planos e Módulos</h3>
         <p style={{ color: '#888', fontSize: '12px', marginBottom: '15px' }}>Defina os valores e quais módulos gastam a cota Premium dos clientes.</p>
-
-        <div style={{ marginBottom: '20px', background: '#0a0a0a', padding: '15px', borderRadius: '8px', border: '1px solid #333' }}>
-          <label style={{ color: '#00E676', fontSize: '11px', fontWeight: 'bold', display: 'block', marginBottom: '5px' }}>📲 WHATSAPP DE VENDAS DA EXPRESS AI (Com DDD):</label>
-          <input type="text" value={planos.whatsapp} onChange={e => setPlanos({ ...planos, whatsapp: e.target.value.replace(/\D/g, '') })} placeholder="5534991439845" style={{ width: '100%', padding: '12px', background: '#111', border: '1px solid #444', color: 'white', borderRadius: '5px' }} />
-        </div>
 
         {/* --- INÍCIO DOS 4 PLANOS (START, PRO, BUSINESS, MASTER) --- */}
         <h4 style={{ color: 'white', margin: '20px 0 10px 0', fontSize: '14px' }}>🏆 Planos Principais (Mensalidade)</h4>
@@ -872,7 +846,11 @@ const ModuloRevisao = ({ dadosOficina, papelLogado, oficinaId, osParaEditar, onC
   // ✅ NOVO: Salva a revisão como O.S. no Firebase
   const adicionarNaOS = async () => {
     if (!placa) return alert("⚠️ Preencha a PLACA para adicionar à O.S.!");
-    if (!oficinaId) return alert("⚠️ Erro: oficina não identificada.");
+    if (!oficinaId) {
+      console.log("Aguardando ID da oficina...");
+      setLoading(false);
+      return;
+    }
     setSalvandoOS(true);
     try {
       const itensProblema = Object.entries(checklist)
@@ -2369,7 +2347,7 @@ export default function Admin() {
   };
 
   const salvarParceiro = async () => {
-    if (!formParc.nome) return alert('⚠️ Preencha o nome da oficina!');
+    if (!formParc.nome) return alert('⚠️ Atenção: Preencha o nome do estabelecimento / Business Name!');
     setSalvandoParc(true);
     try {
       await addDoc(collection(db, 'oficinas', oficinaId, 'desmanche_parceiros'), { ...formParc, data_registro: new Date().toISOString() });
@@ -2414,87 +2392,6 @@ export default function Admin() {
     finally { setSalvandoPeca(false); }
   };
 
-  const venderPeca = async (peca) => {
-    if (!window.confirm(`Marcar "${peca.nome}" como VENDIDA por R$ ${peca.preco}?`)) return;
-    try {
-      await updateDoc(doc(db, 'oficinas', oficinaId, 'desmanche_pecas', peca.id), { status: 'vendida', data_venda: new Date().toISOString() });
-      await addDoc(collection(db, 'oficinas', oficinaId, 'financeiro'), {
-        tipo: 'entrada',
-        descricao: `🚗 Venda peça desmanche: ${peca.nome}${peca.veiculoNome ? ` (${peca.veiculoNome})` : ''}`,
-        valor: Number(peca.preco) || 0,
-        formaPagamento: 'desmanche',
-        data: new Date().toISOString(),
-        data_registro: new Date().toISOString(),
-      });
-      await carregarDesmanche();
-      await carregarFinanceiro();
-      alert(`✅ Peça vendida! Valor lançado automaticamente no Financeiro.`);
-    } catch (e) { alert('Erro: ' + e.message); }
-  };
-
-  // Carrega feed de desmanches parceiros - lê da coleção global pública
-  const carregarFornecedores = async () => {
-    if (!oficinaId) return;
-    setCarregandoFornecedores(true);
-    try {
-      // Notificações não lidas
-      try {
-        const notifSnap = await getDocs(query(
-          collection(db, 'oficinas', oficinaId, 'notificacoes_desmanche'),
-          where('lida', '==', false)
-        ));
-        setNotifDesmanche(notifSnap.size);
-      } catch { }
-
-      // Busca desmanches autorizados
-      const globalSnap = await getDocs(collection(db, 'desmanche_global'));
-      const todos = globalSnap.docs.map(d => ({ desmanchemId: d.id, ...d.data() }));
-      const autorizados = todos.filter(d =>
-        Array.isArray(d.parceiros_ids) && d.parceiros_ids.includes(oficinaId)
-      );
-      setFeedFornecedores(autorizados);
-
-      // Busca peças disponíveis desses desmanches
-      const todasPecas = [];
-      for (const des of autorizados) {
-        const pecasSnap = await getDocs(
-          query(collection(db, 'oficinas', des.desmanchemId, 'desmanche_pecas'),
-            where('status', '==', 'disponivel'))
-        );
-        pecasSnap.docs.forEach(d => todasPecas.push({
-          id: d.id, ...d.data(),
-          desmanchemNome: des.nomeOficina || 'Desmanche',
-          desmanchemTel: des.telefone || '',
-          desmanchemId: des.desmanchemId
-        }));
-      }
-      setPecasFornecedores(todasPecas);
-    } catch (e) { console.warn('carregarFornecedores:', e.message); }
-    finally { setCarregandoFornecedores(false); }
-  };
-
-  const marcarNotifLidas = async () => {
-    if (!oficinaId) return;
-    try {
-      const notifSnap = await getDocs(query(
-        collection(db, 'oficinas', oficinaId, 'notificacoes_desmanche'),
-        where('lida', '==', false)
-      ));
-      for (const d of notifSnap.docs) {
-        await updateDoc(doc(db, 'oficinas', oficinaId, 'notificacoes_desmanche', d.id), { lida: true });
-      }
-      setNotifDesmanche(0);
-    } catch { }
-  };
-  const carregarConfig = async () => {
-    if (!oficinaId) return;
-    try { const d = await getDoc(doc(db, "oficinas", oficinaId, "configuracoes", "geral")); if (d.exists()) setConfig(d.data()); } catch { }
-  };
-  const handleSalvarConfig = async () => {
-    if (!oficinaId) return;
-    await setDoc(doc(db, "oficinas", oficinaId, "configuracoes", "geral"), config, { merge: true });
-    alert("Configurações salvas com sucesso!");
-  };
   const carregarOS = async () => {
     if (!oficinaId) return;
     try {
@@ -2502,6 +2399,7 @@ export default function Admin() {
       setListaCarros(s.docs.map(d => ({ id: d.id, ...d.data() })));
     } catch (e) { console.warn('carregarOS:', e.message); }
   };
+
   const carregarEstoque = async () => {
     if (!oficinaId) return;
     try {
@@ -2509,57 +2407,7 @@ export default function Admin() {
       setListaEstoque(s.docs.map(d => ({ id: d.id, ...d.data() })));
     } catch (e) { console.warn('carregarEstoque:', e.message); }
   };
-  const carregarVistorias = async () => {
-    if (!oficinaId) return;
-    try {
-      const s = await getDocs(collection(db, 'oficinas', oficinaId, 'vistorias'));
-      setListaVistorias(s.docs.map(d => ({ id: d.id, ...d.data() })).sort((a, b) => (b.data_registro || '').localeCompare(a.data_registro || '')));
-    } catch { }
-  };
-  const salvarVistoria = async () => {
-    if (!formVistoria.placa) return alert('⚠️ Preencha a placa!');
-    setSalvandoVistoria(true);
-    try {
-      const dados = { ...formVistoria, data_registro: new Date().toISOString() };
-      if (editandoVistoria) {
-        await updateDoc(doc(db, 'oficinas', oficinaId, 'vistorias', editandoVistoria), dados);
-      } else {
-        await addDoc(collection(db, 'oficinas', oficinaId, 'vistorias'), dados);
-      }
-      setMostrarFormVistoria(false); setEditandoVistoria(null);
-      await carregarVistorias();
-    } catch (e) { alert('Erro: ' + e.message); }
-    finally { setSalvandoVistoria(false); }
-  };
-  const carregarFornecedoresLoja = async () => {
-    if (!oficinaId) return;
-    try {
-      const s = await getDocs(collection(db, 'oficinas', oficinaId, 'fornecedores'));
-      setListaFornecedores(s.docs.map(d => ({ id: d.id, ...d.data() })));
-    } catch { }
-  };
-  const salvarFornecedor = async () => {
-    if (!formFornecedor.nome) return alert('⚠️ Preencha o nome da loja!');
-    setSalvandoFornecedor(true);
-    try {
-      await addDoc(collection(db, 'oficinas', oficinaId, 'fornecedores'), { ...formFornecedor, data_registro: new Date().toISOString() });
-      setMostrarFormFornecedor(false);
-      setFormFornecedor({ nome: '', telefone: '', especialidade: '', cidade: '', contato: '', obs: '' });
-      await carregarFornecedoresLoja();
-    } catch (e) { alert('Erro: ' + e.message); }
-    finally { setSalvandoFornecedor(false); }
-  };
-  const excluirFornecedor = async (id) => {
-    if (!window.confirm('Remover este fornecedor?')) return;
-    try { await deleteDoc(doc(db, 'oficinas', oficinaId, 'fornecedores', id)); await carregarFornecedoresLoja(); } catch (e) { alert('Erro: ' + e.message); }
-  };
-  const carregarEquipamentos = async () => {
-    if (!oficinaId) return;
-    try {
-      const s = await getDocs(collection(db, "oficinas", oficinaId, "oficina_equipamentos"));
-      setListaEquipamentos(s.docs.map(d => ({ id: d.id, ...d.data() })));
-    } catch (e) { console.warn('carregarEquipamentos:', e.message); }
-  };
+
   const carregarFinanceiro = async () => {
     if (!oficinaId) return;
     try {
@@ -2567,6 +2415,23 @@ export default function Admin() {
       setListaFinanceiro(s.docs.map(d => ({ id: d.id, ...d.data() })));
     } catch (e) { console.warn('carregarFinanceiro:', e.message); }
   };
+
+  const carregarEquipamentos = async () => {
+    if (!oficinaId) return;
+    try {
+      const s = await getDocs(collection(db, "oficinas", oficinaId, "oficina_equipamentos"));
+      setListaEquipamentos(s.docs.map(d => ({ id: d.id, ...d.data() })));
+    } catch (e) { console.warn('carregarEquipamentos:', e.message); }
+  };
+
+  const carregarVistorias = async () => {
+    if (!oficinaId) return;
+    try {
+      const s = await getDocs(collection(db, 'oficinas', oficinaId, 'vistorias'));
+      setListaVistorias(s.docs.map(d => ({ id: d.id, ...d.data() })).sort((a, b) => (b.data_registro || '').localeCompare(a.data_registro || '')));
+    } catch { }
+  };
+
   const carregarUsuarios = async () => {
     if (!oficinaId) return;
     try {
@@ -2574,10 +2439,39 @@ export default function Admin() {
       setListaUsuarios(s.docs.map(d => ({ id: d.id, ...d.data() })).filter(u => u.papel !== 'dono'));
     } catch { }
   };
+
+  const carregarConfig = async () => {
+    if (!oficinaId) return;
+    try {
+      const d = await getDoc(doc(db, "oficinas", oficinaId, "configuracoes", "geral"));
+      if (d.exists()) setConfig(d.data());
+    } catch { }
+  };
+
+  const carregarFornecedoresLoja = async () => {
+    if (!oficinaId) return;
+    try {
+      const s = await getDocs(collection(db, 'oficinas', oficinaId, 'fornecedores'));
+      setListaFornecedores(s.docs.map(d => ({ id: d.id, ...d.data() })));
+    } catch { }
+  };
+
+  const excluirFornecedor = async (id) => {
+    if (!window.confirm('Remover este fornecedor?')) return;
+    try {
+      await deleteDoc(doc(db, 'oficinas', oficinaId, 'fornecedores', id));
+      await carregarFornecedoresLoja();
+    } catch (e) { alert('Erro: ' + e.message); }
+  };
+
   const deletarDoc = async (col, id, reload) => {
     if (!oficinaId) return;
-    if (confirm("Deseja realmente apagar permanentemente?")) { await deleteDoc(doc(db, "oficinas", oficinaId, col, id)); reload(); }
+    if (confirm("Deseja realmente apagar permanentemente?")) {
+      await deleteDoc(doc(db, "oficinas", oficinaId, col, id));
+      reload();
+    }
   };
+
   const financeiro = (() => {
     const hoje = new Date(); hoje.setHours(0, 0, 0, 0);
     const incSem = new Date(hoje); incSem.setDate(hoje.getDate() - hoje.getDay()); incSem.setHours(0, 0, 0, 0);
@@ -5440,102 +5334,16 @@ _${nomeOf} — Sistema Oficina IA_ 🤖`;
 
         {/* ===== MASTER ===== */}
         {abaAtiva === 'master' && papelLogado === 'master' && <MasterPanel setPlanosGlobais={setPlanosSistema} />}
+
         {/* ===== ESTRATÉGIA ===== */}
         {abaAtiva === 'estrategia' && (
-          <AbaEstrategia />
+          <AbaEstrategia oficinaId={oficinaId} />
         )}
+
         {/* ===== MARKETING ===== */}
-        {abaAtiva === 'marketing' && (() => {
-          const MKT_COLOR = '#a855f7';
-          const contratarServico = async (servico) => {
-            setContratandoMkt(servico.key);
-            try {
-              await addDoc(collection(db, 'oficinas', oficinaId, 'marketing_contratos'), {
-                servico: servico.key,
-                nomeServico: servico.nome,
-                preco: servico.preco,
-                nomeOficina: dadosOficina?.nomeOficina || '',
-                telefone: dadosOficina?.telefone || '',
-                status: 'solicitado',
-                data: new Date().toISOString(),
-              });
-              // Abre WhatsApp para o Master
-              const tel = '5549999999999'; // número do master - pode ser configurado
-              const msg = encodeURIComponent(
-                `🎯 *NOVA CONTRATAÇÃO DE MARKETING*\n\n` +
-                `Oficina: *${dadosOficina?.nomeOficina || 'Não identificada'}*\n` +
-                `Serviço: *${servico.icon} ${servico.nome}*\n` +
-                `Valor: *${servico.preco ? `R$ ${servico.preco}/mês` : 'Sob consulta'}*\n\n` +
-                `Por favor, entrar em contato para dar continuidade! ✅`
-              );
-              window.open(`https://wa.me/${tel}?text=${msg}`, '_blank');
-              alert(`✅ Solicitação enviada! Entraremos em contato em breve.`);
-            } catch (e) { alert('Erro ao registrar: ' + e.message); }
-            finally { setContratandoMkt(null); }
-          };
-
-          return (
-            <div>
-              {/* HERO */}
-              <div style={{ background: 'linear-gradient(135deg, #1a0a2e, #0d0d1a)', border: `1px solid ${MKT_COLOR}44`, borderRadius: '16px', padding: '30px', marginBottom: '30px', textAlign: 'center' }}>
-                <div style={{ fontSize: '40px', marginBottom: '10px' }}>📣</div>
-                <h2 style={{ color: 'white', margin: '0 0 8px 0', fontSize: '24px' }}>Oficina IA <span style={{ color: MKT_COLOR }}>Marketing</span></h2>
-                <p style={{ color: '#aaa', fontSize: '14px', margin: '0 0 6px 0', lineHeight: '1.6' }}>
-                  Mais clientes. Mais retornos. Mais faturamento.
-                </p>
-                <p style={{ color: '#666', fontSize: '12px', margin: 0 }}>
-                  Serviços de marketing digital especializados para oficinas mecânicas.
-                </p>
-              </div>
-
-              {/* CARDS À LA CARTE */}
-              <h3 style={{ color: MKT_COLOR, marginBottom: '16px', fontSize: '16px' }}>🛒 Serviços Disponíveis - Contrate o que você precisa</h3>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '14px', marginBottom: '30px' }}>
-                {(servicosMarketingAdmin.length > 0 ? servicosMarketingAdmin : [
-                  { key: 'trafego_pago', icon: '🎯', nome: 'Tráfego Pago', desc: 'Anúncios no Google e Meta para atrair clientes novos todos os dias.', preco: '' },
-                  { key: 'google_negocio', icon: '📍', nome: 'Google Meu Negócio', desc: 'Apareça em destaque quando alguém pesquisar "oficina perto de mim".', preco: '' },
-                  { key: 'site', icon: '🌐', nome: 'Criação de Site', desc: 'Site profissional que funciona como vendedor 24h.', preco: '' },
-                  { key: 'whatsapp_bot', icon: '🤖', nome: 'Automação de Atendimento', desc: 'Bot inteligente que responde e agenda clientes automaticamente.', preco: '' },
-                  { key: 'redes_sociais', icon: '📱', nome: 'Gestão de Redes Sociais', desc: 'Posts profissionais no Instagram e Facebook da sua oficina.', preco: '' },
-                  { key: 'conteudo', icon: '🎨', nome: 'Criação de Conteúdo', desc: 'Artes, vídeos e stories prontos para publicar.', preco: '' },
-                  { key: 'seo_local', icon: '🔍', nome: 'SEO Local', desc: 'Apareça no Google organicamente para clientes da sua cidade.', preco: '' },
-                  { key: 'relatorio', icon: '📊', nome: 'Relatório Mensal', desc: 'Resultados completos do seu investimento em marketing.', preco: '' },
-                ]).map(servico => (
-                  <div key={servico.key} style={{ background: '#0f0f1a', border: `1px solid ${MKT_COLOR}33`, borderRadius: '14px', padding: '20px', display: 'flex', gap: '16px', alignItems: 'flex-start' }}>
-                    <span style={{ fontSize: '28px', flexShrink: 0 }}>{servico.icon}</span>
-                    <div style={{ flex: 1 }}>
-                      <h4 style={{ color: 'white', margin: '0 0 6px 0', fontSize: '16px' }}>{servico.nome}</h4>
-                      <p style={{ color: '#888', fontSize: '13px', margin: '0 0 14px 0', lineHeight: '1.5' }}>{servico.desc}</p>
-                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '10px' }}>
-                        <div>
-                          {servico.preco
-                            ? <span style={{ color: MKT_COLOR, fontSize: '20px', fontWeight: '900' }}>R$ {servico.preco}<span style={{ color: '#666', fontSize: '12px', fontWeight: 'normal' }}>/mês</span></span>
-                            : <span style={{ color: '#666', fontSize: '13px', fontStyle: 'italic' }}>Sob consulta</span>
-                          }
-                        </div>
-                        <button
-                          onClick={() => contratarServico(servico)}
-                          disabled={contratandoMkt === servico.key}
-                          style={{ background: contratandoMkt === servico.key ? '#333' : MKT_COLOR, color: 'white', border: 'none', borderRadius: '8px', padding: '10px 20px', fontWeight: 'bold', fontSize: '13px', cursor: 'pointer' }}
-                        >
-                          {contratandoMkt === servico.key ? '⏳ Enviando...' : '🚀 Contratar'}
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-
-              {/* RODAPÉ */}
-              <div style={{ background: '#111', border: '1px solid #222', borderRadius: '12px', padding: '20px', textAlign: 'center' }}>
-                <p style={{ color: '#666', fontSize: '12px', margin: 0, lineHeight: '1.6' }}>
-                  Ao clicar em <strong style={{ color: MKT_COLOR }}>Contratar</strong>, sua solicitação é registrada e entraremos em contato pelo WhatsApp em até 24h úteis para iniciar o serviço. 🚀
-                </p>
-              </div>
-            </div>
-          );
-        })()}
-
+        {abaAtiva === 'marketing' && (
+          <AbaMarketing oficinaId={oficinaId} dadosOficina={dadosOficina} />
+        )}
 
         {/* ===== LIGHTBOX ZOOM FOTOS ===== */}
         {lightboxAberto && (
@@ -5553,812 +5361,27 @@ _${nomeOf} — Sistema Oficina IA_ 🤖`;
           </div>
         )}
 
-        {/* ===== DESMANCHE ===== */}
-        {abaAtiva === 'desmanche' && (() => {
-          const COR = '#ef4444';
-          const COR2 = '#f97316';
+        {/* ===== ECO PARTS & RECYCLING (ANTIGO DESMANCHE) ===== */}
+        {abaAtiva === 'desmanche' && (
+          <Desmanche
+            oficinaId={oficinaId}
+            dadosOficina={dadosOficina}
+            db={db}
+            carregarFinanceiro={carregarFinanceiro}
+            setLightboxFotos={setLightboxFotos}
+            setLightboxIdx={setLightboxIdx}
+            setLightboxAberto={setLightboxAberto}
+          />
+        )}
 
-          // ---- helpers de imagem ----
-          const toBase64 = file => new Promise((res, rej) => {
-            const r = new FileReader();
-            r.onload = () => res(r.result);
-            r.onerror = rej;
-            r.readAsDataURL(file);
-          });
-
-          const tirarFotosDesmanche = async (setter, fotoKey) => {
-            const input = document.createElement('input');
-            input.type = 'file'; input.accept = 'image/*'; input.multiple = true;
-            input.onchange = async e => {
-              const files = Array.from(e.target.files);
-              const b64s = await Promise.all(files.map(toBase64));
-              setter(prev => ({ ...prev, [fotoKey]: [...(prev[fotoKey] || []), ...b64s] }));
-            };
-            input.click();
-          };
-
-          // ---- voz ----
-          const iniciarVozDesmanche = (setter, fieldKey, setOuvindo) => {
-            if (!('webkitSpeechRecognition' in window)) return alert('Use Chrome para voz.');
-            const rec = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
-            rec.lang = 'pt-BR'; rec.interimResults = false;
-            recDesRef.current = rec;
-            rec.onstart = () => setOuvindo(true);
-            rec.onresult = e => setter(prev => ({ ...prev, [fieldKey]: (prev[fieldKey] ? prev[fieldKey] + ' ' : '') + e.results[0][0].transcript }));
-            rec.onerror = () => setOuvindo(false);
-            rec.onend = () => setOuvindo(false);
-            rec.start();
-          };
-
-          // ---- publicar e avisar oficinas ----
-          const publicarChegada = async (carro) => {
-            if (!window.confirm(`Publicar "${carro.modelo}" e avisar oficinas parceiras?`)) return;
-            try {
-              // Busca parceiros cadastrados
-              const parcSnap = await getDocs(collection(db, 'oficinas', oficinaId, 'desmanche_parceiros'));
-              const parceiros = parcSnap.docs.map(d => d.data());
-              const parceiros_ids = parcSnap.docs.map(d => d.data().oficinaId).filter(Boolean);
-
-              // Busca peças do carro
-              const pecasDoCarroSnap = await getDocs(query(collection(db, 'oficinas', oficinaId, 'desmanche_pecas'), where('veiculoId', '==', carro.id)));
-              const pecasNomes = pecasDoCarroSnap.docs.map(d => d.data().nome).join(', ');
-
-              // Busca veículos já publicados para não sobrescrever
-              const globalSnap = await getDoc(doc(db, 'desmanche_global', oficinaId));
-              const jaPublicados = globalSnap.exists() ? (globalSnap.data().veiculos_publicados || []) : [];
-              const jaExiste = jaPublicados.find(v => v.id === carro.id);
-              const carroPublicado = {
-                id: carro.id, modelo: carro.modelo, ano: carro.ano, cor: carro.cor,
-                patio: carro.patio, detalhes: carro.detalhes, fotos: (carro.fotos || []).slice(0, 10),
-                data_publicacao: new Date().toISOString(),
-              };
-              const novosVeiculos = jaExiste
-                ? jaPublicados.map(v => v.id === carro.id ? carroPublicado : v)
-                : [...jaPublicados, carroPublicado];
-
-              // Salva no desmanche_global - feed público para oficinas parceiras
-              await setDoc(doc(db, 'desmanche_global', oficinaId), {
-                nomeOficina: dadosOficina?.nomeOficina || 'Desmanche',
-                telefone: dadosOficina?.telefone || '',
-                parceiros_ids,
-                veiculos_publicados: novosVeiculos,
-                ultima_atualizacao: new Date().toISOString(),
-              }, { merge: false });
-
-              // Cria notificação para cada oficina parceira no Firebase
-              for (const parc of parcSnap.docs) {
-                const parcData = parc.data();
-                if (parcData.oficinaId) {
-                  await addDoc(collection(db, 'oficinas', parcData.oficinaId, 'notificacoes_desmanche'), {
-                    tipo: 'nova_chegada',
-                    desmanchemId: oficinaId,
-                    desmanchemNome: dadosOficina?.nomeOficina || 'Desmanche',
-                    modelo: carro.modelo, ano: carro.ano, fotos: (carro.fotos || []).slice(0, 1),
-                    lida: false,
-                    data: new Date().toISOString(),
-                  });
-                }
-              }
-
-              // Marca carro como publicado
-              await updateDoc(doc(db, 'oficinas', oficinaId, 'desmanche_veiculos', carro.id), {
-                publicado: true, data_publicacao: new Date().toISOString()
-              });
-
-              // Avisa parceiros por WhatsApp
-              const msg = encodeURIComponent(
-                `🚗 *NOVA CHEGADA - ${dadosOficina?.nomeOficina || 'Desmanche'}*\n\n` +
-                `Carro: *${carro.modelo} ${carro.ano || ''}* - ${carro.cor || ''}\n` +
-                `Pátio: ${carro.patio || 'A definir'}\n` +
-                `Peças disponíveis: ${pecasNomes || 'Ver no app'}\n\n` +
-                `${carro.detalhes ? `📝 ${carro.detalhes}\n\n` : ''}` +
-                `Acesse o app Oficina IA → aba 🔩 FORNECEDORES para ver fotos e catálogo completo!\n` +
-                `Interesse? Responda esta mensagem! ✅`
-              );
-              let enviados = 0;
-              for (const p of parceiros) {
-                const tel = String(p.telefone || '').replace(/\D/g, '');
-                if (tel) { window.open(`https://wa.me/55${tel}?text=${msg}`, '_blank'); enviados++; await new Promise(r => setTimeout(r, 800)); }
-              }
-              await carregarDesmanche();
-              alert(`✅ Publicado no feed das oficinas parceiras! WhatsApp aberto para ${enviados} oficina(s).`);
-            } catch (e) { alert('Erro: ' + e.message); }
-          };
-
-          // ---- compartilhar com cliente ----
-          const compartilharCliente = (carro, cliente) => {
-            const pecasDoCarroLocal = pecasDesmanche.filter(p => p.veiculoId === carro.id && p.status === 'disponivel');
-            const listaPecas = pecasDoCarroLocal.map(p => `  • ${p.nome}${p.preco ? ` - R$ ${p.preco}` : ''}`).join('\n');
-            const msg = encodeURIComponent(
-              `Olá *${cliente.nome}*! 👋\n\n` +
-              `Temos um carro que pode te interessar:\n\n` +
-              `🚗 *${carro.modelo} ${carro.ano || ''}* - ${carro.cor || ''}\n` +
-              `📍 Pátio: ${carro.patio || 'Consultar'}\n\n` +
-              `🔩 *Peças disponíveis:*\n${listaPecas || 'Consultar disponibilidade'}\n\n` +
-              `${carro.detalhes ? `📝 ${carro.detalhes}\n\n` : ''}` +
-              `Interesse? É só responder! ✅\n_${dadosOficina?.nomeOficina || 'Desmanche'}_`
-            );
-            const tel = String(cliente.telefone || '').replace(/\D/g, '');
-            if (tel) window.open(`https://wa.me/55${tel}?text=${msg}`, '_blank');
-          };
-
-          // ---- resumo financeiro ----
-          const totalInvestido = veiculosDesmanche.reduce((s, v) => s + (Number(v.valorLeilao) || 0), 0);
-          const totalVendas = pecasDesmanche.filter(p => p.status === 'vendida').reduce((s, p) => s + (Number(p.preco) || 0), 0);
-          const pecasDisponiveis = pecasDesmanche.filter(p => p.status === 'disponivel').length;
-          const pecasVendidas = pecasDesmanche.filter(p => p.status === 'vendida').length;
-
-          const pecasFiltradas = pecasDesmanche.filter(p => {
-            const buscaOk = !buscaPeca || p.nome?.toLowerCase().includes(buscaPeca.toLowerCase()) || p.veiculoNome?.toLowerCase().includes(buscaPeca.toLowerCase()) || p.codigo?.toLowerCase().includes(buscaPeca.toLowerCase());
-            const statusOk = filtroStatus === 'todos' || p.status === filtroStatus;
-            return buscaOk && statusOk;
-          });
-
-          return (
-            <div>
-              {/* HEADER */}
-              <div style={{ background: `linear-gradient(135deg, #1a0000, #0d0d0d)`, border: `1px solid ${COR}44`, borderRadius: '16px', padding: '25px', marginBottom: '25px' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '15px' }}>
-                  <div>
-                    <h2 style={{ color: 'white', margin: '0 0 4px 0', fontSize: '22px' }}>🚗 <span style={{ color: COR }}>Desmanche</span></h2>
-                    <p style={{ color: '#666', fontSize: '12px', margin: 0 }}>Gestão de veículos, peças e clientes</p>
-                  </div>
-                  <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
-                    {[
-                      { label: 'Investido', valor: `R$ ${totalInvestido.toLocaleString('pt-BR')}`, cor: '#ef4444' },
-                      { label: 'Vendido', valor: `R$ ${totalVendas.toLocaleString('pt-BR')}`, cor: '#00E676' },
-                      { label: 'Lucro', valor: `R$ ${(totalVendas - totalInvestido).toLocaleString('pt-BR')}`, cor: totalVendas >= totalInvestido ? '#00E676' : '#ef4444' },
-                    ].map(({ label, valor, cor }) => (
-                      <div key={label} style={{ background: '#111', border: `1px solid ${cor}33`, borderRadius: '10px', padding: '10px 16px', textAlign: 'center' }}>
-                        <p style={{ color: '#666', fontSize: '10px', margin: '0 0 2px 0', fontWeight: 'bold' }}>{label}</p>
-                        <p style={{ color: cor, fontSize: '16px', fontWeight: '900', margin: 0 }}>{valor}</p>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              </div>
-
-              {/* SUB-ABAS */}
-              <div style={{ display: 'flex', gap: '8px', marginBottom: '25px', overflowX: 'auto', paddingBottom: '4px' }}>
-                {[
-                  { key: 'veiculos', label: '🚗 Veículos', count: veiculosDesmanche.length },
-                  { key: 'pecas', label: '🔩 Peças', count: pecasDisponiveis },
-                  { key: 'busca_pecas', label: '🔍 Buscar Peças', count: null },
-                  { key: 'parceiros', label: '🔧 Oficinas Parceiras', count: null },
-                ].map(({ key, label, count }) => (
-                  <button key={key} onClick={() => setSubAbaDesmanche(key)}
-                    style={{ padding: '10px 18px', background: subAbaDesmanche === key ? COR : '#1a1a1a', color: subAbaDesmanche === key ? 'white' : '#888', border: `1px solid ${subAbaDesmanche === key ? COR : '#333'}`, borderRadius: '20px', fontWeight: 'bold', fontSize: '12px', cursor: 'pointer', whiteSpace: 'nowrap' }}>
-                    {label}{count !== null ? ` (${count})` : ''}
-                  </button>
-                ))}
-              </div>
-
-              {/* ===== SUB-ABA: VEÍCULOS ===== */}
-              {subAbaDesmanche === 'veiculos' && (
-                <div>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
-                    <h3 style={{ color: COR, margin: 0 }}>🚗 Veículos no Desmanche</h3>
-                    <button onClick={() => { setMostrarFormVeiculo(true); setEditandoVeiculo(null); setFormVeiculo({ modelo: '', ano: '', cor: '', valorLeilao: '', procedencia: '', patio: '', detalhes: '', fotos: [], status: 'em_desmonte' }); }}
-                      style={{ background: COR, color: 'white', border: 'none', borderRadius: '8px', padding: '10px 16px', fontWeight: 'bold', fontSize: '13px', cursor: 'pointer' }}>
-                      + Novo Veículo
-                    </button>
-                  </div>
-
-                  {/* FORM VEÍCULO */}
-                  {mostrarFormVeiculo && (
-                    <div style={{ background: '#111', border: `1px solid ${COR}44`, borderRadius: '14px', padding: '20px', marginBottom: '20px' }}>
-                      <h4 style={{ color: COR, margin: '0 0 16px 0' }}>{editandoVeiculo ? '✏️ Editar Veículo' : '➕ Novo Veículo'}</h4>
-                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '12px' }}>
-                        {[
-                          { key: 'modelo', placeholder: 'Modelo (Ex: Gol 1.0)', label: 'MODELO *' },
-                          { key: 'ano', placeholder: 'Ex: 2018', label: 'ANO' },
-                          { key: 'cor', placeholder: 'Ex: Prata', label: 'COR' },
-                          { key: 'valorLeilao', placeholder: '0,00', label: 'VALOR PAGO (R$)', type: 'number' },
-                          { key: 'procedencia', placeholder: 'Ex: Leilão Detran SP', label: 'PROCEDÊNCIA' },
-                          { key: 'patio', placeholder: 'Selecionar', label: 'PÁTIO', tipo: 'patio' },
-                        ].map(({ key, placeholder, label, type, tipo }) => (
-                          <div key={key}>
-                            <label style={{ color: '#666', fontSize: '10px', fontWeight: 'bold', display: 'block', marginBottom: '4px' }}>{label}</label>
-                            {tipo === 'patio' ? (
-                              <select value={formVeiculo[key] || ''} onChange={e => setFormVeiculo(prev => ({ ...prev, [key]: e.target.value }))}
-                                style={{ width: '100%', padding: '12px', background: '#0a0a0a', border: '1px solid #333', color: formVeiculo[key] ? 'white' : '#555', borderRadius: '8px', fontSize: '13px', boxSizing: 'border-box' }}>
-                                <option value="">Selecionar pátio...</option>
-                                <option value="Pátio 1">📍 Pátio 1</option>
-                                <option value="Pátio 2">📍 Pátio 2</option>
-                                <option value="Pátio 3">📍 Pátio 3</option>
-                                <option value="Pátio 4">📍 Pátio 4</option>
-                                <option value="Pátio 5">📍 Pátio 5</option>
-                              </select>
-                            ) : (
-                              <input type={type || 'text'} value={formVeiculo[key] || ''} onChange={e => setFormVeiculo(prev => ({ ...prev, [key]: e.target.value }))}
-                                placeholder={placeholder} style={{ width: '100%', padding: '12px', background: '#0a0a0a', border: '1px solid #333', color: 'white', borderRadius: '8px', fontSize: '13px', boxSizing: 'border-box' }} />
-                            )}
-                          </div>
-                        ))}
-                      </div>
-
-                      {/* DETALHES + MIC */}
-                      <div style={{ marginBottom: '12px' }}>
-                        <label style={{ color: '#666', fontSize: '10px', fontWeight: 'bold', display: 'block', marginBottom: '4px' }}>📝 DETALHES / ESTADO DO VEÍCULO</label>
-                        <div style={{ display: 'flex', gap: '8px' }}>
-                          <textarea value={formVeiculo.detalhes || ''} onChange={e => setFormVeiculo(prev => ({ ...prev, detalhes: e.target.value }))}
-                            placeholder="Descreva o estado geral, peças disponíveis, observações..." rows={3}
-                            style={{ flex: 1, padding: '12px', background: '#0a0a0a', border: '1px solid #333', color: 'white', borderRadius: '8px', fontSize: '13px', resize: 'none' }} />
-                          <button onClick={() => iniciarVozDesmanche(setFormVeiculo, 'detalhes', setOuvindoObsVeiculo)}
-                            style={{ background: ouvindoObsVeiculo ? '#ef4444' : '#333', color: 'white', border: 'none', borderRadius: '8px', padding: '0 14px', fontSize: '20px', cursor: 'pointer' }}>
-                            {ouvindoObsVeiculo ? '🔴' : '🎤'}
-                          </button>
-                        </div>
-                      </div>
-
-                      {/* FOTOS CARROSSEL */}
-                      <div style={{ marginBottom: '16px' }}>
-                        <label style={{ color: '#666', fontSize: '10px', fontWeight: 'bold', display: 'block', marginBottom: '8px' }}>📸 FOTOS DO VEÍCULO</label>
-                        <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', alignItems: 'center' }}>
-                          {(formVeiculo.fotos || []).map((foto, i) => (
-                            <div key={i} style={{ position: 'relative' }}>
-                              <img src={foto} style={{ width: '80px', height: '80px', objectFit: 'cover', borderRadius: '8px', border: '1px solid #333' }} />
-                              <button onClick={() => setFormVeiculo(prev => ({ ...prev, fotos: prev.fotos.filter((_, idx) => idx !== i) }))}
-                                style={{ position: 'absolute', top: '-6px', right: '-6px', background: '#ef4444', color: 'white', border: 'none', borderRadius: '50%', width: '20px', height: '20px', cursor: 'pointer', fontSize: '11px', fontWeight: 'bold' }}>×</button>
-                            </div>
-                          ))}
-                          <button onClick={() => tirarFotosDesmanche(setFormVeiculo, 'fotos')}
-                            style={{ width: '80px', height: '80px', background: '#1a1a1a', border: `2px dashed ${COR}`, borderRadius: '8px', color: COR, fontSize: '24px', cursor: 'pointer' }}>+</button>
-                        </div>
-                        <p style={{ color: '#555', fontSize: '11px', margin: '6px 0 0 0' }}>Selecione várias fotos de uma vez. Deslize para ver todas.</p>
-                      </div>
-
-                      {/* STATUS */}
-                      <div style={{ marginBottom: '16px' }}>
-                        <label style={{ color: '#666', fontSize: '10px', fontWeight: 'bold', display: 'block', marginBottom: '8px' }}>STATUS</label>
-                        <div style={{ display: 'flex', gap: '8px' }}>
-                          {[{ key: 'em_desmonte', label: '🔧 Em desmonte' }, { key: 'desmontado', label: '✅ Desmontado' }, { key: 'encerrado', label: '📦 Encerrado' }].map(s => (
-                            <button key={s.key} onClick={() => setFormVeiculo(prev => ({ ...prev, status: s.key }))}
-                              style={{ padding: '8px 14px', background: formVeiculo.status === s.key ? COR : '#1a1a1a', color: formVeiculo.status === s.key ? 'white' : '#888', border: `1px solid ${formVeiculo.status === s.key ? COR : '#333'}`, borderRadius: '8px', fontSize: '12px', cursor: 'pointer' }}>
-                              {s.label}
-                            </button>
-                          ))}
-                        </div>
-                      </div>
-
-                      <div style={{ display: 'flex', gap: '10px' }}>
-                        <button onClick={salvarVeiculo} disabled={salvandoVeiculo}
-                          style={{ flex: 1, padding: '14px', background: salvandoVeiculo ? '#333' : COR, color: 'white', border: 'none', borderRadius: '8px', fontWeight: 'bold', cursor: 'pointer' }}>
-                          {salvandoVeiculo ? '⏳ Salvando...' : '💾 Salvar Veículo'}
-                        </button>
-                        <button onClick={() => setMostrarFormVeiculo(false)}
-                          style={{ padding: '14px 20px', background: 'transparent', color: '#888', border: '1px solid #333', borderRadius: '8px', cursor: 'pointer' }}>
-                          Cancelar
-                        </button>
-                      </div>
-                    </div>
-                  )}
-
-                  {/* LISTA DE VEÍCULOS */}
-                  {carregandoDesmanche ? (
-                    <p style={{ color: '#555', textAlign: 'center', padding: '40px' }}>⏳ Carregando...</p>
-                  ) : veiculosDesmanche.length === 0 ? (
-                    <div style={{ background: '#111', border: '1px dashed #333', borderRadius: '14px', padding: '40px', textAlign: 'center' }}>
-                      <p style={{ fontSize: '40px', margin: '0 0 10px 0' }}>🚗</p>
-                      <p style={{ color: '#555', margin: 0 }}>Nenhum veículo cadastrado ainda.<br />Clique em "+ Novo Veículo" para começar.</p>
-                    </div>
-                  ) : veiculosDesmanche.map(carro => {
-                    const pecasCarro = pecasDesmanche.filter(p => p.veiculoId === carro.id);
-                    const disponiveis = pecasCarro.filter(p => p.status === 'disponivel').length;
-                    const vendidas = pecasCarro.filter(p => p.status === 'vendida').length;
-                    const faturado = pecasCarro.filter(p => p.status === 'vendida').reduce((s, p) => s + (Number(p.preco) || 0), 0);
-                    const statusCor = { em_desmonte: '#f97316', desmontado: '#00E676', encerrado: '#666' };
-                    return (
-                      <div key={carro.id} style={{ background: '#111', border: `1px solid ${carro.publicado ? '#00E67644' : '#333'}`, borderRadius: '14px', marginBottom: '14px', overflow: 'hidden' }}>
-                        {/* CARROSSEL DE FOTOS com ZOOM */}
-                        {(carro.fotos || []).length > 0 && (
-                          <div style={{ position: 'relative' }}>
-                            <div style={{ display: 'flex', overflowX: 'auto', gap: '4px', background: '#0a0a0a' }}>
-                              {carro.fotos.map((foto, i) => (
-                                <div key={i} style={{ position: 'relative', flexShrink: 0 }}>
-                                  <img src={foto} style={{ height: '160px', width: '220px', objectFit: 'cover', flexShrink: 0, cursor: 'zoom-in', transition: 'opacity 0.15s' }}
-                                    onClick={() => { setLightboxFotos(carro.fotos); setLightboxIdx(i); setLightboxAberto(true); }}
-                                    onMouseOver={e => e.target.style.opacity = '0.85'}
-                                    onMouseOut={e => e.target.style.opacity = '1'}
-                                  />
-                                  <div style={{ position: 'absolute', bottom: '6px', right: '6px', background: 'rgba(0,0,0,0.7)', borderRadius: '4px', padding: '2px 6px', fontSize: '11px', color: 'white', pointerEvents: 'none' }}>🔍</div>
-                                </div>
-                              ))}
-                            </div>
-                            <p style={{ color: '#555', fontSize: '10px', padding: '4px 8px', background: '#0a0a0a', margin: 0 }}>Clique nas fotos para ampliar com zoom</p>
-                          </div>
-                        )}
-                        <div style={{ padding: '16px' }}>
-                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '8px', marginBottom: '10px' }}>
-                            <div>
-                              <h4 style={{ color: 'white', margin: '0 0 4px 0', fontSize: '17px' }}>{carro.modelo} {carro.ano}</h4>
-                              <p style={{ color: '#666', fontSize: '12px', margin: 0 }}>🎨 {carro.cor} · 📍 {carro.patio || 'Pátio não definido'} · 🏷️ {carro.procedencia || '-'}</p>
-                            </div>
-                            <span style={{ background: statusCor[carro.status] + '22', color: statusCor[carro.status], border: `1px solid ${statusCor[carro.status]}44`, padding: '4px 10px', borderRadius: '10px', fontSize: '11px', fontWeight: 'bold' }}>
-                              {carro.status === 'em_desmonte' ? '🔧 Em desmonte' : carro.status === 'desmontado' ? '✅ Desmontado' : '📦 Encerrado'}
-                            </span>
-                          </div>
-
-                          {carro.detalhes && (
-                            <p style={{ color: '#aaa', fontSize: '13px', background: '#0a0a0a', padding: '10px', borderRadius: '8px', margin: '0 0 12px 0', lineHeight: '1.5' }}>📝 {carro.detalhes}</p>
-                          )}
-
-                          {/* STATS DE PEÇAS */}
-                          <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap', marginBottom: '14px' }}>
-                            {[
-                              { label: 'Pago', valor: `R$ ${Number(carro.valorLeilao || 0).toLocaleString('pt-BR')}`, cor: '#ef4444' },
-                              { label: 'Peças disp.', valor: disponiveis, cor: '#00E676' },
-                              { label: 'Vendidas', valor: vendidas, cor: '#f97316' },
-                              { label: 'Faturado', valor: `R$ ${faturado.toLocaleString('pt-BR')}`, cor: '#00E676' },
-                            ].map(({ label, valor, cor }) => (
-                              <div key={label} style={{ background: '#0a0a0a', border: `1px solid ${cor}22`, borderRadius: '8px', padding: '8px 12px', textAlign: 'center' }}>
-                                <p style={{ color: '#555', fontSize: '10px', margin: '0 0 2px 0' }}>{label}</p>
-                                <p style={{ color: cor, fontSize: '14px', fontWeight: '900', margin: 0 }}>{valor}</p>
-                              </div>
-                            ))}
-                          </div>
-
-                          {/* AÇÕES */}
-                          <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-                            <button onClick={() => { setSubAbaDesmanche('pecas'); setFormPeca(prev => ({ ...prev, veiculoId: carro.id, veiculoNome: `${carro.modelo} ${carro.ano}` })); setMostrarFormPeca(true); }}
-                              style={{ padding: '8px 14px', background: '#1a1a1a', color: '#00E676', border: '1px solid #00E67644', borderRadius: '8px', fontSize: '12px', fontWeight: 'bold', cursor: 'pointer' }}>
-                              + Peça
-                            </button>
-                            <button onClick={() => publicarChegada(carro)}
-                              style={{ padding: '8px 14px', background: carro.publicado ? '#1a3a1a' : '#1a1a1a', color: carro.publicado ? '#00E676' : '#25D366', border: `1px solid ${carro.publicado ? '#00E67644' : '#25D36644'}`, borderRadius: '8px', fontSize: '12px', fontWeight: 'bold', cursor: 'pointer' }}>
-                              {carro.publicado ? '✅ Publicado' : '📣 Avisar Oficinas'}
-                            </button>
-                            <button onClick={() => { setEditandoVeiculo(carro.id); setFormVeiculo({ ...carro }); setMostrarFormVeiculo(true); }}
-                              style={{ padding: '8px 14px', background: '#1a1a1a', color: '#888', border: '1px solid #333', borderRadius: '8px', fontSize: '12px', cursor: 'pointer' }}>
-                              ✏️ Editar
-                            </button>
-                          </div>
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              )}
-
-              {/* ===== SUB-ABA: PEÇAS ===== */}
-              {subAbaDesmanche === 'pecas' && (
-                <div>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px', flexWrap: 'wrap', gap: '10px' }}>
-                    <h3 style={{ color: COR2, margin: 0 }}>🔩 Peças Cadastradas</h3>
-                    <div style={{ display: 'flex', gap: '8px' }}>
-                      <span style={{ background: '#00E67622', color: '#00E676', border: '1px solid #00E67644', padding: '6px 12px', borderRadius: '8px', fontSize: '12px', fontWeight: 'bold' }}>
-                        {pecasDisponiveis} disponíveis
-                      </span>
-                      <span style={{ background: '#66666622', color: '#888', border: '1px solid #33333344', padding: '6px 12px', borderRadius: '8px', fontSize: '12px' }}>
-                        {pecasVendidas} vendidas
-                      </span>
-                      <button onClick={() => { setMostrarFormPeca(true); setEditandoPeca(null); setFormPeca({ nome: '', veiculoId: '', veiculoNome: '', preco: '', condicao: 'otima', codigo: '', prateleira: '', fotos: [], status: 'disponivel' }); }}
-                        style={{ background: COR2, color: 'white', border: 'none', borderRadius: '8px', padding: '8px 16px', fontWeight: 'bold', fontSize: '12px', cursor: 'pointer' }}>
-                        + Nova Peça
-                      </button>
-                    </div>
-                  </div>
-
-                  {/* BUSCA + FILTRO */}
-                  <div style={{ display: 'flex', gap: '10px', marginBottom: '16px', flexWrap: 'wrap' }}>
-                    <input value={buscaPeca} onChange={e => setBuscaPeca(e.target.value)} placeholder="🔍 Buscar peça, veículo ou código..."
-                      style={{ flex: 1, padding: '12px', background: '#111', border: '1px solid #333', color: 'white', borderRadius: '8px', fontSize: '13px', minWidth: '200px' }} />
-                    <select value={filtroStatus} onChange={e => setFiltroStatus(e.target.value)}
-                      style={{ padding: '12px', background: '#111', border: '1px solid #333', color: 'white', borderRadius: '8px', fontSize: '13px' }}>
-                      <option value="todos">Todos</option>
-                      <option value="disponivel">Disponíveis</option>
-                      <option value="reservada">Reservadas</option>
-                      <option value="vendida">Vendidas</option>
-                    </select>
-                  </div>
-
-                  {/* FORM PEÇA */}
-                  {mostrarFormPeca && (
-                    <div style={{ background: '#111', border: `1px solid ${COR2}44`, borderRadius: '14px', padding: '20px', marginBottom: '20px' }}>
-                      <h4 style={{ color: COR2, margin: '0 0 16px 0' }}>{editandoPeca ? '✏️ Editar Peça' : '➕ Nova Peça'}</h4>
-                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '12px' }}>
-                        {[
-                          { key: 'nome', placeholder: 'Ex: Motor 1.0 completo', label: 'NOME DA PEÇA *' },
-                          { key: 'preco', placeholder: '0,00', label: 'PREÇO DE VENDA (R$)', type: 'number' },
-                          { key: 'codigo', placeholder: 'Ex: MOT-001', label: 'CÓDIGO / REFERÊNCIA' },
-                          { key: 'prateleira', placeholder: 'Ex: Galpão A, Prateleira 3', label: 'LOCALIZAÇÃO NO ESTOQUE' },
-                        ].map(({ key, placeholder, label, type }) => (
-                          <div key={key}>
-                            <label style={{ color: '#666', fontSize: '10px', fontWeight: 'bold', display: 'block', marginBottom: '4px' }}>{label}</label>
-                            <input type={type || 'text'} value={formPeca[key] || ''} onChange={e => setFormPeca(prev => ({ ...prev, [key]: e.target.value }))}
-                              placeholder={placeholder} style={{ width: '100%', padding: '12px', background: '#0a0a0a', border: '1px solid #333', color: 'white', borderRadius: '8px', fontSize: '13px', boxSizing: 'border-box' }} />
-                          </div>
-                        ))}
-                      </div>
-
-                      {/* VEÍCULO DE ORIGEM */}
-                      <div style={{ marginBottom: '12px' }}>
-                        <label style={{ color: '#666', fontSize: '10px', fontWeight: 'bold', display: 'block', marginBottom: '4px' }}>VEÍCULO DE ORIGEM</label>
-                        <select value={formPeca.veiculoId} onChange={e => { const v = veiculosDesmanche.find(v => v.id === e.target.value); setFormPeca(prev => ({ ...prev, veiculoId: e.target.value, veiculoNome: v ? `${v.modelo} ${v.ano}` : '' })); }}
-                          style={{ width: '100%', padding: '12px', background: '#0a0a0a', border: '1px solid #333', color: 'white', borderRadius: '8px', fontSize: '13px' }}>
-                          <option value="">Selecionar veículo...</option>
-                          {veiculosDesmanche.map(v => <option key={v.id} value={v.id}>{v.modelo} {v.ano} - {v.cor}</option>)}
-                        </select>
-                      </div>
-
-                      {/* CONDIÇÃO */}
-                      <div style={{ marginBottom: '12px' }}>
-                        <label style={{ color: '#666', fontSize: '10px', fontWeight: 'bold', display: 'block', marginBottom: '8px' }}>CONDIÇÃO</label>
-                        <div style={{ display: 'flex', gap: '8px' }}>
-                          {[{ key: 'otima', label: '⭐ Ótima', cor: '#00E676' }, { key: 'boa', label: '👍 Boa', cor: '#f97316' }, { key: 'regular', label: '⚠️ Regular', cor: '#ef4444' }].map(c => (
-                            <button key={c.key} onClick={() => setFormPeca(prev => ({ ...prev, condicao: c.key }))}
-                              style={{ padding: '8px 14px', background: formPeca.condicao === c.key ? c.cor + '33' : '#1a1a1a', color: formPeca.condicao === c.key ? c.cor : '#888', border: `1px solid ${formPeca.condicao === c.key ? c.cor : '#333'}`, borderRadius: '8px', fontSize: '12px', cursor: 'pointer' }}>
-                              {c.label}
-                            </button>
-                          ))}
-                        </div>
-                      </div>
-
-                      {/* FOTOS DA PEÇA */}
-                      <div style={{ marginBottom: '16px' }}>
-                        <label style={{ color: '#666', fontSize: '10px', fontWeight: 'bold', display: 'block', marginBottom: '8px' }}>📸 FOTOS DA PEÇA</label>
-                        <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', alignItems: 'center' }}>
-                          {(formPeca.fotos || []).map((foto, i) => (
-                            <div key={i} style={{ position: 'relative' }}>
-                              <img src={foto} style={{ width: '80px', height: '80px', objectFit: 'cover', borderRadius: '8px', border: '1px solid #333' }} />
-                              <button onClick={() => setFormPeca(prev => ({ ...prev, fotos: prev.fotos.filter((_, idx) => idx !== i) }))}
-                                style={{ position: 'absolute', top: '-6px', right: '-6px', background: '#ef4444', color: 'white', border: 'none', borderRadius: '50%', width: '20px', height: '20px', cursor: 'pointer', fontSize: '11px', fontWeight: 'bold' }}>×</button>
-                            </div>
-                          ))}
-                          <button onClick={() => tirarFotosDesmanche(setFormPeca, 'fotos')}
-                            style={{ width: '80px', height: '80px', background: '#1a1a1a', border: `2px dashed ${COR2}`, borderRadius: '8px', color: COR2, fontSize: '24px', cursor: 'pointer' }}>+</button>
-                        </div>
-                      </div>
-
-                      <div style={{ display: 'flex', gap: '10px' }}>
-                        <button onClick={salvarPeca} disabled={salvandoPeca}
-                          style={{ flex: 1, padding: '14px', background: salvandoPeca ? '#333' : COR2, color: 'white', border: 'none', borderRadius: '8px', fontWeight: 'bold', cursor: 'pointer' }}>
-                          {salvandoPeca ? '⏳ Salvando...' : '💾 Salvar Peça'}
-                        </button>
-                        <button onClick={() => setMostrarFormPeca(false)}
-                          style={{ padding: '14px 20px', background: 'transparent', color: '#888', border: '1px solid #333', borderRadius: '8px', cursor: 'pointer' }}>
-                          Cancelar
-                        </button>
-                      </div>
-                    </div>
-                  )}
-
-                  {/* LISTA DE PEÇAS */}
-                  {pecasFiltradas.length === 0 ? (
-                    <div style={{ background: '#111', border: '1px dashed #333', borderRadius: '14px', padding: '40px', textAlign: 'center' }}>
-                      <p style={{ fontSize: '40px', margin: '0 0 10px 0' }}>🔩</p>
-                      <p style={{ color: '#555', margin: 0 }}>Nenhuma peça encontrada.</p>
-                    </div>
-                  ) : (
-                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '14px' }}>
-                      {pecasFiltradas.map(peca => {
-                        const condCor = { otima: '#00E676', boa: '#f97316', regular: '#ef4444' };
-                        const statCor = { disponivel: '#00E676', reservada: '#f97316', vendida: '#666' };
-                        return (
-                          <div key={peca.id} style={{ background: '#111', border: `1px solid ${statCor[peca.status]}33`, borderRadius: '12px', overflow: 'hidden' }}>
-                            {/* CARROSSEL MINI com zoom */}
-                            {(peca.fotos || []).length > 0 && (
-                              <div style={{ display: 'flex', overflowX: 'auto', background: '#0a0a0a' }}>
-                                {peca.fotos.map((foto, i) => (
-                                  <div key={i} style={{ position: 'relative', flexShrink: 0 }}>
-                                    <img src={foto} style={{ height: '130px', width: '180px', objectFit: 'cover', cursor: 'zoom-in' }}
-                                      onClick={() => { setLightboxFotos(peca.fotos); setLightboxIdx(i); setLightboxAberto(true); }}
-                                    />
-                                    <div style={{ position: 'absolute', bottom: '4px', right: '4px', background: 'rgba(0,0,0,0.7)', borderRadius: '3px', padding: '1px 5px', fontSize: '10px', color: 'white', pointerEvents: 'none' }}>🔍</div>
-                                  </div>
-                                ))}
-                              </div>
-                            )}
-                            <div style={{ padding: '14px' }}>
-                              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '8px' }}>
-                                <h5 style={{ color: 'white', margin: 0, fontSize: '15px' }}>{peca.nome}</h5>
-                                <span style={{ background: statCor[peca.status] + '22', color: statCor[peca.status], border: `1px solid ${statCor[peca.status]}44`, padding: '2px 8px', borderRadius: '8px', fontSize: '10px', fontWeight: 'bold', whiteSpace: 'nowrap' }}>
-                                  {peca.status === 'disponivel' ? '✅ Disponível' : peca.status === 'reservada' ? '⏳ Reservada' : '📦 Vendida'}
-                                </span>
-                              </div>
-                              <p style={{ color: '#666', fontSize: '11px', margin: '0 0 6px 0' }}>
-                                🚗 {peca.veiculoNome || '-'} · <span style={{ color: condCor[peca.condicao] }}>{'⭐ boa regular'.split(' ')[['otima', 'boa', 'regular'].indexOf(peca.condicao)]} {peca.condicao}</span>
-                              </p>
-                              {peca.prateleira && <p style={{ color: '#555', fontSize: '11px', margin: '0 0 6px 0' }}>📦 {peca.prateleira}</p>}
-                              {peca.codigo && <p style={{ color: '#555', fontSize: '11px', margin: '0 0 10px 0' }}>🏷️ {peca.codigo}</p>}
-                              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '8px' }}>
-                                <span style={{ color: '#00E676', fontSize: '20px', fontWeight: '900' }}>
-                                  {peca.preco ? `R$ ${Number(peca.preco).toLocaleString('pt-BR')}` : 'Sob consulta'}
-                                </span>
-                                {peca.status === 'disponivel' && (
-                                  <button onClick={() => venderPeca(peca)}
-                                    style={{ background: '#00E676', color: 'black', border: 'none', borderRadius: '8px', padding: '8px 14px', fontWeight: 'bold', fontSize: '12px', cursor: 'pointer' }}>
-                                    ✅ Vender
-                                  </button>
-                                )}
-                              </div>
-                            </div>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  )}
-                </div>
-              )}
-
-              {/* ===== SUB-ABA: PARCEIROS ===== */}
-              {subAbaDesmanche === 'parceiros' && (
-                <div>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
-                    <h3 style={{ color: '#06b6d4', margin: 0 }}>🔧 Oficinas Parceiras</h3>
-                    <button onClick={() => setMostrarFormParc(true)}
-                      style={{ background: '#06b6d4', color: 'black', border: 'none', borderRadius: '8px', padding: '10px 16px', fontWeight: 'bold', fontSize: '13px', cursor: 'pointer' }}>
-                      + Nova Oficina
-                    </button>
-                  </div>
-                  <div style={{ background: '#0a1a1a', border: '1px solid #06b6d433', borderRadius: '12px', padding: '14px', marginBottom: '16px' }}>
-                    <p style={{ color: '#06b6d4', fontSize: '13px', margin: 0, lineHeight: '1.6' }}>
-                      🔧 As oficinas cadastradas aqui recebem WhatsApp automático toda vez que você publicar uma nova chegada de veículo.
-                    </p>
-                  </div>
-
-                  {mostrarFormParc && (
-                    <div style={{ background: '#111', border: '1px solid #06b6d444', borderRadius: '14px', padding: '20px', marginBottom: '20px' }}>
-                      <h4 style={{ color: '#06b6d4', margin: '0 0 16px 0' }}>➕ Nova Oficina Parceira</h4>
-                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '14px' }}>
-                        {[{ key: 'nome', placeholder: 'Nome da Oficina', label: 'OFICINA *' }, { key: 'telefone', placeholder: '(49) 99999-9999', label: 'WHATSAPP' }, { key: 'cidade', placeholder: 'Ex: Chapecó - SC', label: 'CIDADE' }, { key: 'responsavel', placeholder: 'Nome do contato', label: 'RESPONSÁVEL' }].map(({ key, placeholder, label }) => (
-                          <div key={key}>
-                            <label style={{ color: '#666', fontSize: '10px', fontWeight: 'bold', display: 'block', marginBottom: '4px' }}>{label}</label>
-                            <input value={formParc[key]} onChange={e => setFormParc(prev => ({ ...prev, [key]: e.target.value }))}
-                              placeholder={placeholder} style={{ width: '100%', padding: '12px', background: '#0a0a0a', border: '1px solid #333', color: 'white', borderRadius: '8px', fontSize: '13px', boxSizing: 'border-box' }} />
-                          </div>
-                        ))}
-                      </div>
-                      <div style={{ display: 'flex', gap: '10px' }}>
-                        <button onClick={salvarParceiro} disabled={salvandoParc}
-                          style={{ flex: 1, padding: '14px', background: salvandoParc ? '#333' : '#06b6d4', color: 'black', border: 'none', borderRadius: '8px', fontWeight: 'bold', cursor: 'pointer' }}>
-                          {salvandoParc ? '⏳...' : '💾 Salvar Parceiro'}
-                        </button>
-                        <button onClick={() => setMostrarFormParc(false)}
-                          style={{ padding: '14px 20px', background: 'transparent', color: '#888', border: '1px solid #333', borderRadius: '8px', cursor: 'pointer' }}>Cancelar</button>
-                      </div>
-                    </div>
-                  )}
-
-                  {parceiros.length === 0 ? (
-                    <div style={{ background: '#111', border: '1px dashed #333', borderRadius: '14px', padding: '40px', textAlign: 'center' }}>
-                      <p style={{ fontSize: '40px', margin: '0 0 10px 0' }}>🔧</p>
-                      <p style={{ color: '#555', margin: 0 }}>Nenhuma oficina parceira ainda.<br />Adicione as oficinas que devem receber alertas de novas chegadas.</p>
-                    </div>
-                  ) : parceiros.map(p => (
-                    <div key={p.id} style={{ background: '#111', border: '1px solid #06b6d422', borderRadius: '12px', padding: '14px', marginBottom: '10px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '10px' }}>
-                      <div>
-                        <p style={{ color: 'white', fontWeight: 'bold', margin: '0 0 4px 0' }}>🔧 {p.nome}</p>
-                        <p style={{ color: '#666', fontSize: '12px', margin: 0 }}>📱 {p.telefone} · 📍 {p.cidade} {p.responsavel ? `· 👤 ${p.responsavel}` : ''}</p>
-                      </div>
-                      {p.telefone && (
-                        <a href={`https://wa.me/55${String(p.telefone).replace(/\D/g, '')}`} target="_blank" rel="noreferrer"
-                          style={{ background: '#25D366', color: 'black', padding: '8px 14px', borderRadius: '8px', fontWeight: 'bold', fontSize: '12px', textDecoration: 'none' }}>
-                          📲 WhatsApp
-                        </a>
-                      )}
-                    </div>
-                  ))}
-                </div>
-              )}
-
-              {/* ===== SUB-ABA: BUSCAR PEÇAS ===== */}
-              {subAbaDesmanche === 'busca_pecas' && (() => {
-                const iniciarVozBusca = () => {
-                  if (!('webkitSpeechRecognition' in window)) return alert('Use Chrome para voz.');
-                  const rec = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
-                  rec.lang = 'pt-BR'; rec.interimResults = false;
-                  setOuvindoBuscaPeca(true);
-                  rec.onresult = e => setBuscaPecaVoz(prev => (prev + ' ' + e.results[0][0].transcript).trim());
-                  rec.onerror = () => setOuvindoBuscaPeca(false);
-                  rec.onend = () => setOuvindoBuscaPeca(false);
-                  rec.start();
-                };
-
-                const termoBusca = (buscaPecaVoz || '').toLowerCase().trim();
-                const pecasFiltradas = pecasDesmanche.filter(p => {
-                  if (!termoBusca) return true;
-                  return (
-                    p.nome?.toLowerCase().includes(termoBusca) ||
-                    p.codigo?.toLowerCase().includes(termoBusca) ||
-                    p.veiculoNome?.toLowerCase().includes(termoBusca) ||
-                    p.prateleira?.toLowerCase().includes(termoBusca) ||
-                    p.condicao?.toLowerCase().includes(termoBusca)
-                  );
-                });
-
-                const patioFiltro = ['Todos', 'Pátio 1', 'Pátio 2', 'Pátio 3', 'Pátio 4', 'Pátio 5'];
-                const pecasPorPatio = pecasFiltradas.filter(p => {
-                  if (patioSel === 'Todos') return true;
-                  const veiculo = veiculosDesmanche.find(v => v.id === p.veiculoId);
-                  return veiculo?.patio === patioSel;
-                });
-
-                return (
-                  <div>
-                    <h3 style={{ color: COR, margin: '0 0 16px 0' }}>🔍 Buscar Peças no Desmanche</h3>
-
-                    {/* Campo de busca + voz */}
-                    <div style={{ display: 'flex', gap: '8px', marginBottom: '12px' }}>
-                      <input
-                        value={buscaPecaVoz}
-                        onChange={e => setBuscaPecaVoz(e.target.value)}
-                        placeholder="Digite o nome da peça, código, veículo..."
-                        style={{ flex: 1, padding: '14px', background: '#111', border: `2px solid ${COR}55`, color: 'white', borderRadius: '10px', fontSize: '14px' }}
-                      />
-                      <button onClick={iniciarVozBusca}
-                        style={{ background: ouvindoBuscaPeca ? '#ef4444' : '#1a1a1a', color: 'white', border: `1px solid ${ouvindoBuscaPeca ? '#ef4444' : '#333'}`, borderRadius: '10px', padding: '0 18px', fontSize: '22px', cursor: 'pointer', minWidth: '56px' }}>
-                        {ouvindoBuscaPeca ? '🔴' : '🎤'}
-                      </button>
-                      {buscaPecaVoz && (
-                        <button onClick={() => setBuscaPecaVoz('')}
-                          style={{ background: '#1a1a1a', color: '#888', border: '1px solid #333', borderRadius: '10px', padding: '0 14px', fontSize: '13px', cursor: 'pointer' }}>
-                          ✕ Limpar
-                        </button>
-                      )}
-                    </div>
-
-                    {/* Filtro por pátio */}
-                    <div style={{ display: 'flex', gap: '6px', marginBottom: '16px', flexWrap: 'wrap' }}>
-                      {patioFiltro.map(p => (
-                        <button key={p} onClick={() => setPatioSel(p)}
-                          style={{ padding: '6px 12px', background: patioSel === p ? COR : '#111', color: patioSel === p ? 'white' : '#666', border: `1px solid ${patioSel === p ? COR : '#333'}`, borderRadius: '16px', fontSize: '11px', fontWeight: 'bold', cursor: 'pointer' }}>
-                          {p === 'Todos' ? '📦 Todos' : `📍 ${p}`}
-                        </button>
-                      ))}
-                    </div>
-
-                    {/* Resultado */}
-                    <p style={{ color: '#444', fontSize: '11px', margin: '0 0 12px 0' }}>
-                      {termoBusca || patioSel !== 'Todos'
-                        ? `${pecasPorPatio.length} peça(s) encontrada(s)${termoBusca ? ` para "${buscaPecaVoz}"` : ''}${patioSel !== 'Todos' ? ` no ${patioSel}` : ''}`
-                        : `Total: ${pecasDesmanche.length} peça(s) cadastrada(s)`}
-                    </p>
-
-                    {pecasPorPatio.length === 0 ? (
-                      <div style={{ background: '#111', border: '1px dashed #222', borderRadius: '14px', padding: '40px', textAlign: 'center' }}>
-                        <p style={{ fontSize: '36px', margin: '0 0 8px 0' }}>🔍</p>
-                        <p style={{ color: '#444', margin: 0, fontSize: '13px' }}>
-                          {termoBusca ? `Nenhuma peça encontrada para "${buscaPecaVoz}".` : 'Nenhuma peça cadastrada ainda.'}<br />
-                          {!termoBusca && 'Cadastre peças na sub-aba 🔩 Peças.'}
-                        </p>
-                      </div>
-                    ) : pecasPorPatio.map(p => {
-                      const veic = veiculosDesmanche.find(v => v.id === p.veiculoId);
-                      const corCond = p.condicao === 'otima' ? '#00E676' : p.condicao === 'boa' ? '#eab308' : p.condicao === 'regular' ? '#f97316' : '#ef4444';
-                      return (
-                        <div key={p.id} style={{ background: '#111', border: `1px solid ${COR}22`, borderRadius: '12px', marginBottom: '10px', overflow: 'hidden' }}>
-                          <div style={{ display: 'flex', gap: '0' }}>
-                            {/* Foto */}
-                            {(p.fotos || p.foto) ? (
-                              <img src={(p.fotos && p.fotos[0]) || p.foto} style={{ width: '90px', height: '90px', objectFit: 'cover', flexShrink: 0 }} />
-                            ) : (
-                              <div style={{ width: '90px', height: '90px', background: '#0a0a0a', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, color: '#333', fontSize: '28px' }}>🔩</div>
-                            )}
-                            <div style={{ padding: '10px 14px', flex: 1 }}>
-                              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '8px' }}>
-                                <div>
-                                  <p style={{ color: 'white', fontWeight: 'bold', margin: '0 0 3px 0', fontSize: '14px' }}>{p.nome}</p>
-                                  {p.veiculoNome && <p style={{ color: '#666', fontSize: '11px', margin: '0 0 3px 0' }}>🚗 {p.veiculoNome}</p>}
-                                  <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', marginTop: '4px' }}>
-                                    {p.codigo && <span style={{ background: '#1a1a1a', border: '1px solid #333', color: '#888', padding: '2px 7px', borderRadius: '5px', fontSize: '10px' }}>#{p.codigo}</span>}
-                                    {p.prateleira && <span style={{ background: '#1a1a1a', border: '1px solid #333', color: '#888', padding: '2px 7px', borderRadius: '5px', fontSize: '10px' }}>📦 {p.prateleira}</span>}
-                                    {veic?.patio && <span style={{ background: '#1a0000', border: `1px solid ${COR}33`, color: COR, padding: '2px 7px', borderRadius: '5px', fontSize: '10px' }}>📍 {veic.patio}</span>}
-                                    <span style={{ background: corCond + '22', border: `1px solid ${corCond}44`, color: corCond, padding: '2px 7px', borderRadius: '5px', fontSize: '10px', fontWeight: 'bold', textTransform: 'capitalize' }}>{p.condicao || 'ótima'}</span>
-                                  </div>
-                                </div>
-                                <div style={{ textAlign: 'right', flexShrink: 0 }}>
-                                  <p style={{ color: '#00E676', fontWeight: 'bold', margin: '0 0 6px 0', fontSize: '15px' }}>R$ {parseFloat(p.preco || 0).toFixed(2).replace('.', ',')}</p>
-                                  <span style={{ background: p.status === 'vendida' ? '#1a1a1a' : '#0a1a0a', border: `1px solid ${p.status === 'vendida' ? '#333' : '#00E67644'}`, color: p.status === 'vendida' ? '#555' : '#00E676', padding: '2px 8px', borderRadius: '5px', fontSize: '10px', fontWeight: 'bold' }}>
-                                    {p.status === 'vendida' ? 'VENDIDA' : 'DISPONÍVEL'}
-                                  </span>
-                                </div>
-                              </div>
-                            </div>
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                );
-              })()}
-
-            </div>
-          );
-        })()}
-
-        {/* ===== FORNECEDORES - visão da oficina ===== */}
-        {abaAtiva === 'fornecedores' && (() => {
-          const COR = '#f97316';
-          return (
-            <div>
-              <div style={{ background: 'linear-gradient(135deg, #1a0d00, #0d0d0d)', border: `1px solid ${COR}44`, borderRadius: '16px', padding: '22px', marginBottom: '22px' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px' }}>
-                  <div>
-                    <h2 style={{ color: 'white', margin: '0 0 4px 0' }}>🏪 <span style={{ color: COR }}>Fornecedores</span> - Lojas de Peças</h2>
-                    <p style={{ color: '#666', fontSize: '12px', margin: 0 }}>Lojas parceiras para pedido de peças novas via WhatsApp</p>
-                  </div>
-                  <button onClick={() => { setMostrarFormFornecedor(true); setFormFornecedor({ nome: '', telefone: '', especialidade: '', cidade: '', contato: '', obs: '' }); }}
-                    style={{ background: COR, color: 'white', border: 'none', borderRadius: '8px', padding: '12px 20px', fontWeight: 'bold', fontSize: '13px', cursor: 'pointer' }}>
-                    + Novo Fornecedor
-                  </button>
-                </div>
-              </div>
-              {mostrarFormFornecedor && (
-                <div style={{ background: '#111', border: `1px solid ${COR}44`, borderRadius: '14px', padding: '20px', marginBottom: '20px' }}>
-                  <h4 style={{ color: COR, margin: '0 0 16px 0' }}>➕ Novo Fornecedor</h4>
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '14px' }}>
-                    {[
-                      { key: 'nome', label: 'NOME DA LOJA *', placeholder: 'Ex: Peças Boa Vista' },
-                      { key: 'telefone', label: 'WHATSAPP / TELEFONE', placeholder: '(49) 99999-9999' },
-                      { key: 'especialidade', label: 'ESPECIALIDADE', placeholder: 'Ex: Elétrica, Suspensão, Geral...' },
-                      { key: 'cidade', label: 'CIDADE', placeholder: 'Ex: Chapecó - SC' },
-                      { key: 'contato', label: 'NOME DO CONTATO', placeholder: 'Ex: João' },
-                      { key: 'obs', label: 'OBSERVAÇÕES', placeholder: 'Prazo, desconto, condições...' },
-                    ].map(({ key, label, placeholder }) => (
-                      <div key={key}>
-                        <label style={{ color: '#666', fontSize: '10px', fontWeight: 'bold', display: 'block', marginBottom: '4px' }}>{label}</label>
-                        <input value={formFornecedor[key] || ''} onChange={e => setFormFornecedor(p => ({ ...p, [key]: e.target.value }))}
-                          placeholder={placeholder} style={{ width: '100%', padding: '11px', background: '#0a0a0a', border: '1px solid #333', color: 'white', borderRadius: '8px', fontSize: '13px', boxSizing: 'border-box' }} />
-                      </div>
-                    ))}
-                  </div>
-                  <div style={{ display: 'flex', gap: '10px' }}>
-                    <button onClick={salvarFornecedor} disabled={salvandoFornecedor}
-                      style={{ flex: 1, padding: '14px', background: salvandoFornecedor ? '#333' : COR, color: 'white', border: 'none', borderRadius: '8px', fontWeight: 'bold', cursor: 'pointer' }}>
-                      {salvandoFornecedor ? '⏳ Salvando...' : '💾 Salvar'}
-                    </button>
-                    <button onClick={() => setMostrarFormFornecedor(false)}
-                      style={{ padding: '14px 20px', background: 'transparent', color: '#888', border: '1px solid #333', borderRadius: '8px', cursor: 'pointer' }}>Cancelar</button>
-                  </div>
-                </div>
-              )}
-              <input value={buscaFornecedor} onChange={e => setBuscaFornecedor(e.target.value)}
-                placeholder="🔍 Buscar fornecedor, especialidade ou cidade..."
-                style={{ width: '100%', padding: '12px', background: '#111', border: `1px solid ${COR}33`, color: 'white', borderRadius: '10px', fontSize: '13px', marginBottom: '16px', boxSizing: 'border-box' }} />
-              {listaFornecedores.length === 0 ? (
-                <div style={{ background: '#111', border: '1px dashed #333', borderRadius: '14px', padding: '50px', textAlign: 'center' }}>
-                  <p style={{ fontSize: '40px', margin: '0 0 10px 0' }}>🏪</p>
-                  <p style={{ color: '#555', margin: 0 }}>Nenhum fornecedor cadastrado ainda.<br />Adicione as lojas de peças que você compra.</p>
-                </div>
-              ) : listaFornecedores
-                .filter(f => !buscaFornecedor || f.nome?.toLowerCase().includes(buscaFornecedor.toLowerCase()) || f.especialidade?.toLowerCase().includes(buscaFornecedor.toLowerCase()) || f.cidade?.toLowerCase().includes(buscaFornecedor.toLowerCase()))
-                .map(f => (
-                  <div key={f.id} style={{ background: '#111', border: `1px solid ${COR}22`, borderRadius: '12px', padding: '16px', marginBottom: '12px' }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '12px' }}>
-                      <div style={{ flex: 1 }}>
-                        <p style={{ color: 'white', fontWeight: 'bold', margin: '0 0 4px 0', fontSize: '16px' }}>🏪 {f.nome}</p>
-                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', marginBottom: '6px' }}>
-                          {f.especialidade && <span style={{ background: COR + '22', color: COR, border: `1px solid ${COR}44`, padding: '2px 8px', borderRadius: '6px', fontSize: '11px', fontWeight: 'bold' }}>{f.especialidade}</span>}
-                          {f.cidade && <span style={{ color: '#666', fontSize: '12px' }}>📍 {f.cidade}</span>}
-                          {f.contato && <span style={{ color: '#666', fontSize: '12px' }}>👤 {f.contato}</span>}
-                        </div>
-                        {f.telefone && <p style={{ color: '#aaa', fontSize: '13px', margin: '0 0 4px 0' }}>📱 <strong style={{ color: 'white' }}>{f.telefone}</strong></p>}
-                        {f.obs && <p style={{ color: '#555', fontSize: '11px', margin: 0, fontStyle: 'italic' }}>📝 {f.obs}</p>}
-                      </div>
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                        {f.telefone && (
-                          <>
-                            <a href={`https://wa.me/55${String(f.telefone).replace(/\D/g, '')}?text=${encodeURIComponent('Olá *' + (f.contato || f.nome) + '*! 🔧\n\nSou da *' + (dadosOficina?.nomeOficina || 'Oficina') + '* e preciso de um orçamento:\n\nPeça: \nVeículo: \nQuantidade: \n\nAguardo retorno! ✅')}`}
-                              target="_blank" rel="noreferrer"
-                              style={{ background: '#25D366', color: 'black', padding: '10px 16px', borderRadius: '8px', fontWeight: 'bold', fontSize: '12px', textDecoration: 'none', textAlign: 'center' }}>
-                              📲 Pedir Orçamento
-                            </a>
-                            <a href={`tel:${String(f.telefone).replace(/\D/g, '')}`}
-                              style={{ background: '#1a1a1a', color: '#aaa', border: '1px solid #333', padding: '8px 16px', borderRadius: '8px', fontWeight: 'bold', fontSize: '12px', textDecoration: 'none', textAlign: 'center' }}>
-                              📞 Ligar
-                            </a>
-                          </>
-                        )}
-                        <button onClick={() => excluirFornecedor(f.id)}
-                          style={{ background: 'transparent', color: '#444', border: '1px solid #333', borderRadius: '8px', padding: '6px', fontSize: '12px', cursor: 'pointer' }}>🗑️</button>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-            </div>
-          );
-        })()}
+        {/* ===== FORNECEDORES B2B ===== */}
+        {abaAtiva === 'fornecedores' && (
+          <AbaFornecedores
+            oficinaId={oficinaId}
+            dadosOficina={dadosOficina}
+            db={db}
+          />
+        )}
 
         {/* ===== AJUDA ===== */}
         {abaAtiva === 'ajuda' && (
