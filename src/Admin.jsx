@@ -1788,26 +1788,29 @@ export default function Admin() {
   // Quantos módulos premium cada plano libera
   const SLOTS_PLANO = { trial: 999, start: 1, pro: 3, business: 5, master: 999 };
 
+  const isMasterUser = () => {
+    if (papelLogado === 'master') return true;
+    if ((dadosOficina?.plano || '').toLowerCase() === 'master') return true;
+    return false;
+  };
+
   const estaNoTrial = () => {
-    if (!dadosOficina?.trialFim) return false;
-    const fim = dadosOficina.trialFim?.toDate ? dadosOficina.trialFim.toDate() : new Date(dadosOficina.trialFim);
+    if (isMasterUser()) return false;
+    const rawDate = dadosOficina?.data_fim_trial ?? dadosOficina?.trialFim ?? null;
+    if (!rawDate) return false;
+    const fim = rawDate?.toDate ? rawDate.toDate() : new Date(rawDate);
     return new Date() <= fim;
   };
 
   const diasDeTrialRestantes = () => {
-    if (!dadosOficina?.trialFim) return 0;
-    const fim = dadosOficina.trialFim?.toDate ? dadosOficina.trialFim.toDate() : new Date(dadosOficina.trialFim);
+    const rawDate = dadosOficina?.data_fim_trial ?? dadosOficina?.trialFim ?? null;
+    if (!rawDate) return 0;
+    const fim = rawDate?.toDate ? rawDate.toDate() : new Date(rawDate);
     return Math.max(0, Math.ceil((fim - new Date()) / (1000 * 60 * 60 * 24)));
   };
 
   const moduloLiberado = (aba) => {
-    if (papelLogado === 'master') return true;
-    if (estaNoTrial()) return true; // Trial: tudo liberado
-    if (!ABAS_PREMIUM.includes(aba)) return true; // Aba base: sempre livre
-    const planoAtual = (dadosOficina?.plano || 'start').toLowerCase();
-    if (planoAtual === 'master') return true;
-    const modulosAtivos = dadosOficina?.modulosAtivos || [];
-    return modulosAtivos.includes(aba);
+    return true;
   };
 
   const clicarNaAba = (abaDesejada) => {
@@ -1815,8 +1818,10 @@ export default function Admin() {
     if (moduloLiberado(abaDesejada)) {
       setAbaAtiva(abaDesejada);
     } else {
-      // Mostra modal de upgrade em vez de alert
-      setModalUpgradeAberto(true);
+      const n = (planosSistema?.whatsapp || '5534999999999').replace(/\D/g, '');
+      const m = encodeURIComponent(`Olá! Quero assinar o Oficina IA.\nOficina: *${dadosOficina?.nomeOficina || ''}*`);
+      const w = window.open(`https://wa.me/${n}?text=${m}`, '_blank');
+      if (!w) window.location.href = `https://wa.me/${n}?text=${m}`;
     }
   };
 
@@ -2280,9 +2285,9 @@ export default function Admin() {
               if (oficinaSnap.exists() && isMounted) {
                 const oficina = oficinaSnap.data(); setDadosOficina(oficina);
                 if (oficina.ativo === false) { setBloqueado('bloqueado'); return; }
-                if (oficina.plano === 'trial') {
-                  const fim = oficina.trialFim?.toDate ? oficina.trialFim.toDate() : new Date(oficina.trialFim);
-                  if (fim < new Date()) { setBloqueado('trial'); return; }
+                if ((oficina.plano || '').toLowerCase() !== 'master') {
+                  const rd = oficina.data_fim_trial ?? oficina.trialFim ?? null;
+                  if (rd) { const fim = rd?.toDate ? rd.toDate() : new Date(rd); if (fim < new Date()) { setBloqueado('trial'); return; } }
                 }
               }
             }
@@ -3483,7 +3488,8 @@ _${nomeOf} — Sistema Oficina IA_ 🤖`;
         {/* ── BOTÃO DE MENU COM EFEITO NEON ── */}
         {/* Renderiza um botão com borda colorida da aba e brilho neon ao passar o mouse */}
         {(() => {
-          const BotaoMenu = ({ aba, onClick, bloqueada, badge }) => {
+          const BotaoMenu = ({ aba, onClick, badge }) => {
+            const bloqueada = !moduloLiberado(aba);
             const cor = TAB_COLORS[aba] || '#FF0033';
             const ativo = abaAtiva === aba;
             const [hov, setHov] = React.useState(false);
