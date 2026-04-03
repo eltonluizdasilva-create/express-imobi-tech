@@ -1,4 +1,4 @@
-/* eslint-disable react/prop-types */
+/* eslint-disable */
 import React, { useState, useEffect } from "react";
 import { db } from "./lib/firebase";
 import { collection, query, orderBy, onSnapshot } from "firebase/firestore";

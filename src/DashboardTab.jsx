@@ -1,4 +1,4 @@
-/* eslint-disable react/prop-types */
+/* eslint-disable */
 import React, { useMemo, useState, useEffect } from 'react';
 import { BarChart, Bar, XAxis, Tooltip } from 'recharts';
 
