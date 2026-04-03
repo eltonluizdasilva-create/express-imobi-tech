@@ -17,7 +17,7 @@ import Mecanica from './components/Mecanica';
 import LatariaModulo from './components/Lataria';
 import AmortecedorModulo from './components/Amortecedor';
 import MotoModulo from './components/Motos';
-import PneusModulo from './components/Pneus';
+import Pneus from './components/Pneus';
 import OleoModulo from './components/Oleo';
 import AlinhamentoModulo from './components/Alinhamento';
 import EletricaModulo from './Eletrica';
@@ -305,11 +305,11 @@ export default function Admin() {
       ar_condicionado: 'Ar-Condicionado', pneus: 'Pneus', escapamento: 'Escapamento',
       estetica: 'Estética', desmanche: 'Desmanche', lavajato: 'Lava Jato',
     };
-    return { 
-      tipo, 
-      abaDestino, 
-      titulo: titulos[tipo] || 'Mecânica', 
-      editor: resolverEditorDaOS(tipo) 
+    return {
+      tipo,
+      abaDestino,
+      titulo: titulos[tipo] || 'Mecânica',
+      editor: resolverEditorDaOS(tipo)
     };
   }, [osEmEdicao]);
 
@@ -674,7 +674,7 @@ export default function Admin() {
     'dashboard', 'os', 'mecanica', 'hibrido', 'eletrico', 'moto', 'lataria', 'amortecedor', 'injecao',
     'oleo', 'alinhamento', 'eletrica', 'revisao', 'ar_condicionado', 'pneus', 'desmanche', 'escapamento', 'estetica',
     'lavajato', 'copiloto', 'secretaria', 'administrador', 'contador',
-    'mercadolivre', 'mercado_livre', 'financeiro', 'estoque', 'leads', 'historico', 
+    'mercadolivre', 'mercado_livre', 'financeiro', 'estoque', 'leads', 'historico',
     'tarefa', 'notafiscal', 'retorno', 'patrimonio', 'fornecedores',
     'equipe', 'marketing', 'config', 'master', 'meuplano', 'estrategia', 'ajuda',
   ].filter(aba => temPermissao(aba));
@@ -859,7 +859,7 @@ export default function Admin() {
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
           <button onClick={toggleTema} style={{ background: t.bgCardAlt, color: t.texto, border: `2px solid ${t.border}`, padding: '8px 16px', borderRadius: '30px', fontWeight: '800', fontSize: '12px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px', transition: 'all 0.2s' }}>
-              {t.iconeToggle} {t.labelToggle}
+            {t.iconeToggle} {t.labelToggle}
           </button>
           <button onClick={fazerLogout} style={{ background: 'transparent', color: papelLogado === 'master' ? MASTER : MAIN, border: `1px solid ${papelLogado === 'master' ? MASTER : MAIN}`, padding: '8px 16px', borderRadius: '5px', cursor: 'pointer', fontSize: '13px', fontWeight: 'bold' }}>SAIR</button>
         </div>
@@ -888,9 +888,9 @@ export default function Admin() {
 
         {/* BUSCA RÁPIDA (PLACA) ABAIXO DA NOVA O.S. */}
         <div style={{ marginTop: '12px', position: 'relative' }}>
-          <input 
-            type="text" 
-            placeholder="🔍 Busca Rápida (Placa)..." 
+          <input
+            type="text"
+            placeholder="🔍 Busca Rápida (Placa)..."
             value={busca}
             onChange={(e) => {
               const val = normalizarPlaca(e.target.value);
@@ -899,10 +899,10 @@ export default function Admin() {
                 setAbaAtiva('os'); // Abre a lista de O.S. ou histórico se preferir
               }
             }}
-            style={{ 
-              width: '100%', padding: '14px 20px', background: t.bgCard, border: `2px solid ${t.border}`, 
-              borderRadius: '12px', color: t.texto, fontSize: '14px', outline: 'none' 
-            }} 
+            style={{
+              width: '100%', padding: '14px 20px', background: t.bgCard, border: `2px solid ${t.border}`,
+              borderRadius: '12px', color: t.texto, fontSize: '14px', outline: 'none'
+            }}
           />
         </div>
       </div>
@@ -1490,7 +1490,7 @@ export default function Admin() {
             listaCarros={listaCarros}
           />
         )}
-        
+
         {/* SECRETÁRIA IA */}
         {abaAtiva === 'secretaria' && (
           <Secretaria />
@@ -1588,7 +1588,7 @@ export default function Admin() {
 
         {/* MASTER PANEL */}
         {abaAtiva === 'master' && (
-          <MasterPanel 
+          <MasterPanel
             setPlanosGlobais={setPlanosSistema}
           />
         )}
@@ -1600,7 +1600,7 @@ export default function Admin() {
 
         {/* NOTA FISCAL */}
         {abaAtiva === 'notafiscal' && (
-          <NotaFiscal 
+          <NotaFiscal
             oficinaId={oficinaId}
             papelLogado={papelLogado}
             dadosOficina={dadosOficina}
@@ -1609,7 +1609,7 @@ export default function Admin() {
 
         {/* RETORNO */}
         {abaAtiva === 'retorno' && (
-          <GestaoRetorno 
+          <GestaoRetorno
             oficinaId={oficinaId}
             listaCarros={listaCarros}
             setListaCarros={setListaCarros}
@@ -1620,14 +1620,14 @@ export default function Admin() {
 
         {/* PATRIMÔNIO */}
         {abaAtiva === 'patrimonio' && (
-          <OficinaPatrimonio 
+          <OficinaPatrimonio
             oficinaId={oficinaId}
           />
         )}
 
         {/* FORNECEDORES */}
         {abaAtiva === 'fornecedores' && (
-          <Fornecedores 
+          <Fornecedores
             oficinaId={oficinaId}
             db={db}
           />
@@ -1635,14 +1635,14 @@ export default function Admin() {
 
         {/* ESTRATÉGIA */}
         {abaAtiva === 'estrategia' && (
-          <AbaEstrategia 
+          <AbaEstrategia
             oficinaId={oficinaId}
           />
         )}
 
         {/* AJUDA */}
         {abaAtiva === 'ajuda' && (
-          <Ajuda 
+          <Ajuda
             ajudaItens={AJUDA_ITENS}
             tabColors={TAB_COLORS}
             videosAjudaAdmin={videosAjudaAdmin}
@@ -1651,7 +1651,7 @@ export default function Admin() {
 
       </div>
 
-      <QuickActions 
+      <QuickActions
         oficinaId={oficinaId}
         GREEN_MONEY={GREEN}
         modalTarefaAberto={modalTarefaAberto}
