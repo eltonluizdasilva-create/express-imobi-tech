@@ -1,5 +1,7 @@
 /* eslint-disable no-unused-vars */
 import React, { useState } from 'react';
+import { db, auth } from './lib/firebase'; // Verifique se o caminho do firebase está correto
+import { collection, query, where, getDocs } from 'firebase/firestore';
 
 const COR = '#00E676';
 const COR2 = '#00b85c';
@@ -12,26 +14,26 @@ export default function NotaFiscal() {
   const [subAba, setSubAba] = useState('guia');
 
   // ── Gerador de texto ──
-  const [nomeCliente,  setNomeCliente]  = useState('');
-  const [documento,    setDocumento]    = useState('');
-  const [placa,        setPlaca]        = useState('');
-  const [modeloCarro,  setModeloCarro]  = useState('');
-  const [numeroOS,     setNumeroOS]     = useState('');
-  const [servicos,     setServicos]     = useState('');
+  const [nomeCliente, setNomeCliente] = useState('');
+  const [documento, setDocumento] = useState('');
+  const [placa, setPlaca] = useState('');
+  const [modeloCarro, setModeloCarro] = useState('');
+  const [numeroOS, setNumeroOS] = useState('');
+  const [servicos, setServicos] = useState('');
   const [valorServico, setValorServico] = useState('');
-  const [pecas,        setPecas]        = useState('');
-  const [valorPecas,   setValorPecas]   = useState('');
+  const [pecas, setPecas] = useState('');
+  const [valorPecas, setValorPecas] = useState('');
 
   const [copiadoNFS, setCopiadoNFS] = useState(false);
   const [copiadoNFe, setCopiadoNFe] = useState(false);
 
   const clienteDoc = documento.trim() || 'Consumidor Final';
   const formatMoeda = (v) => {
-    const n = parseFloat((v||'').replace(',','.'));
-    return isNaN(n) ? 'R$ 0,00' : n.toLocaleString('pt-BR',{style:'currency',currency:'BRL'});
+    const n = parseFloat(String(v || '').replace(',', '.'));
+    return isNaN(n) ? 'R$ 0,00' : n.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
   };
 
-  const textoNFSe = `DADOS PARA NFS-e (Mão de Obra)
+  const textoNFSe = `=== DADOS PARA NFS-e NACIONAL ===
 ─────────────────────────────
 Cliente: ${nomeCliente || 'CONSUMIDOR FINAL'}
 Documento: ${clienteDoc}
@@ -43,9 +45,9 @@ ${servicos || '–'}
 
 Valor do Serviço: ${formatMoeda(valorServico)}
 ─────────────────────────────
-Emita no portal da Prefeitura (NFS-e)`;
+Padrão Aprovado 2026 - Emissão Portal Nacional`;
 
-  const textoNFe = `DADOS PARA NF-e (Peças e Fluidos)
+  const textoNFe = `=== DADOS PARA NF-e (Peças) ===
 ─────────────────────────────
 Cliente: ${nomeCliente || 'CONSUMIDOR FINAL'}
 Documento: ${clienteDoc}
@@ -57,7 +59,7 @@ ${pecas || '–'}
 
 Valor Total: ${formatMoeda(valorPecas)}
 ─────────────────────────────
-Emita na SEFAZ do seu Estado`;
+Emissão SEFAZ Estadual`;
 
   const copiar = (texto, setCopied) => {
     navigator.clipboard.writeText(texto);
@@ -65,25 +67,69 @@ Emita na SEFAZ do seu Estado`;
     setTimeout(() => setCopied(false), 2500);
   };
 
+  // ── FUNÇÃO DE BUSCA AUTOMÁTICA DA O.S. PELA PLACA ──
+  const buscarDadosPorPlaca = async (placaBuscada) => {
+    const placaLimpa = placaBuscada.toUpperCase().trim();
+    if (placaLimpa.length < 7) return;
+
+    try {
+      const oficinaId = auth.currentUser?.uid;
+      if (!oficinaId) {
+        alert("Sessão expirada. Atualize a página.");
+        return;
+      }
+
+      const q = query(collection(db, 'oficinas', oficinaId, 'os'), where('placa', '==', placaLimpa));
+      const snap = await getDocs(q);
+
+      if (!snap.empty) {
+        const list = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+        list.sort((a, b) => new Date(b.data_registro || 0) - new Date(a.data_registro || 0));
+        const os = list[0]; // Pega a O.S. mais recente
+
+        // Preenche os campos automaticamente no React
+        setNomeCliente(os.nomeCliente || '');
+        setModeloCarro(os.modelo || '');
+        setNumeroOS(os.id.slice(0, 6).toUpperCase());
+        setServicos(os.checklist || os.observacoes || 'Serviços mecânicos gerais');
+        setValorServico(os.valorMaoObra || '0');
+        setPecas(os.detalhesPecas || 'Peças aplicadas na manutenção');
+        setValorPecas(os.valorPecas || '0');
+
+        alert('✅ Dados da última O.S. importados com sucesso!');
+      } else {
+        alert('⚠️ Nenhuma O.S. encontrada para esta placa.');
+      }
+    } catch (err) {
+      console.error(err);
+      alert('Erro de conexão ao buscar a placa.');
+    }
+  };
+
   // ─────────────────────────────────────────
   return (
     <div style={{ color: 'white', fontFamily: 'sans-serif' }}>
 
-      {/* HEADER */}
+      {/* HEADER 2026 */}
       <div style={{ background: `linear-gradient(135deg, ${COR}18, transparent)`, border: `1px solid ${COR}44`, borderRadius: '14px', padding: '20px', marginBottom: '20px' }}>
-        <h2 style={{ margin: '0 0 4px', color: COR, fontSize: '22px', fontWeight: '900' }}>🧾 Central de Emissão Fiscal</h2>
-        <p style={{ margin: 0, color: '#666', fontSize: '13px' }}>O Oficina IA organiza toda a sua gestão. Use esses dados prontos para emitir a nota oficial no portal do governo em menos de 1 minuto.</p>
+        <h2 style={{ margin: '0 0 10px', color: COR, fontSize: '22px', fontWeight: '900', display: 'flex', alignItems: 'center', gap: '10px' }}>
+          🧾 Central de Emissão Fiscal
+          <span style={{ background: COR, color: 'black', fontSize: '10px', padding: '4px 8px', borderRadius: '6px', textTransform: 'uppercase', letterSpacing: '1px' }}>Padrão Nacional 2026</span>
+        </h2>
+        <p style={{ margin: 0, color: '#ccc', fontSize: '13px', lineHeight: '1.5' }}>
+          <strong>Antecipe-se à lei:</strong> A partir de 1º de janeiro de 2026, a NFS-e será obrigatória e padronizada nacionalmente. O Oficina IA já formata os dados da sua O.S. prontos para o <strong style={{ color: INFO }}>Emissor Nacional (gov.br)</strong>.
+        </p>
       </div>
 
       {/* SUB-ABAS */}
       <div style={{ display: 'flex', gap: '8px', marginBottom: '20px', flexWrap: 'wrap' }}>
         {[
-          { key: 'guia',    label: '📖 Guia Prático' },
-          { key: 'gerar',   label: '📋 Gerar Dados da Nota' },
+          { key: 'guia', label: '📖 Guia Prático' },
+          { key: 'gerar', label: '📋 Gerar Dados da Nota' },
           { key: 'portais', label: '🌐 Portais Oficiais' },
         ].map(s => (
           <button key={s.key} onClick={() => setSubAba(s.key)}
-            style={{ padding: '10px 20px', background: subAba === s.key ? COR : '#1a1a1a', color: subAba === s.key ? 'black' : '#888', border: `1px solid ${subAba === s.key ? COR : '#333'}`, borderRadius: '20px', fontWeight: 'bold', fontSize: '13px', cursor: 'pointer' }}>
+            style={{ padding: '10px 20px', background: subAba === s.key ? COR : '#1a1a1a', color: subAba === s.key ? 'black' : '#888', border: `1px solid ${subAba === s.key ? COR : '#333'}`, borderRadius: '20px', fontWeight: 'bold', fontSize: '13px', cursor: 'pointer', transition: '0.2s' }}>
             {s.label}
           </button>
         ))}
@@ -91,7 +137,7 @@ Emita na SEFAZ do seu Estado`;
 
       {/* ══════════ ABA: GUIA ══════════ */}
       {subAba === 'guia' && (
-        <div>
+        <div className="animate-fade-in">
 
           {/* BLOCO 1: Entendendo */}
           <div style={{ background: '#111', border: `1px solid ${COR}33`, borderRadius: '14px', padding: '20px', marginBottom: '16px' }}>
@@ -102,7 +148,7 @@ Emita na SEFAZ do seu Estado`;
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', marginBottom: '16px' }}>
               <div style={{ background: '#001a0a', border: `2px solid ${COR}`, borderRadius: '12px', padding: '16px' }}>
                 <p style={{ margin: '0 0 6px', color: COR, fontWeight: '900', fontSize: '14px' }}>🔧 Mão de Obra</p>
-                <p style={{ margin: '0 0 6px', color: '#aaa', fontSize: '12px' }}>Nota: <strong style={{ color: 'white' }}>NFS-e</strong></p>
+                <p style={{ margin: '0 0 6px', color: '#aaa', fontSize: '12px' }}>Nota: <strong style={{ color: 'white' }}>NFS-e (Padrão Nacional)</strong></p>
                 <p style={{ margin: 0, color: '#666', fontSize: '11px' }}>Imposto vai para a <strong style={{ color: WARN }}>Prefeitura</strong> da sua cidade</p>
               </div>
               <div style={{ background: '#001a1f', border: `2px solid ${INFO}`, borderRadius: '12px', padding: '16px' }}>
@@ -130,50 +176,45 @@ Emita na SEFAZ do seu Estado`;
             <div style={{ background: '#0d0020', border: `1px solid ${ROXO}`, borderRadius: '10px', padding: '14px' }}>
               <p style={{ color: ROXO, fontWeight: '900', margin: '0 0 8px', fontSize: '13px' }}>👤 E quando o cliente não tem CPF/CNPJ?</p>
               <p style={{ color: '#ccc', fontSize: '13px', margin: 0, lineHeight: '1.6' }}>
-                Sem problema! Use <strong style={{ color: 'white' }}>CONSUMIDOR FINAL</strong> no campo de cliente. A maioria das prefeituras e a SEFAZ aceitam isso normalmente para valores mais baixos.<br /><br />
-                <span style={{ color: '#666', fontSize: '11px' }}>Acima de R$ 500 algumas prefeituras exigem CPF — consulte seu contador.</span>
+                Sem problema! Use <strong style={{ color: 'white' }}>CONSUMIDOR FINAL</strong> no campo de cliente. A maioria das prefeituras e a SEFAZ aceitam isso normalmente para valores mais baixos.
               </p>
             </div>
           </div>
 
-            {/* REGRA DE OURO MEI */}
-            <div style={{ background: 'linear-gradient(135deg, #1a1400, #0a0a00)', border: `2px solid ${WARN}`, borderRadius: '14px', padding: '20px', marginBottom: '16px' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '12px' }}>
-                <span style={{ fontSize: '28px' }}>⭐</span>
-                <div>
-                  <p style={{ margin: 0, color: WARN, fontWeight: '900', fontSize: '15px' }}>Regra de Ouro do MEI</p>
-                  <p style={{ margin: 0, color: '#666', fontSize: '11px' }}>Informação que tira um peso enorme das costas do mecânico</p>
-                </div>
+          {/* REGRA DE OURO MEI */}
+          <div style={{ background: 'linear-gradient(135deg, #1a1400, #0a0a00)', border: `2px solid ${WARN}`, borderRadius: '14px', padding: '20px', marginBottom: '16px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '12px' }}>
+              <span style={{ fontSize: '28px' }}>⭐</span>
+              <div>
+                <p style={{ margin: 0, color: WARN, fontWeight: '900', fontSize: '15px' }}>Regra de Ouro do MEI</p>
+                <p style={{ margin: 0, color: '#666', fontSize: '11px' }}>Informação que tira um peso enorme das costas do mecânico</p>
               </div>
-              <div style={{ background: '#0a0800', borderRadius: '10px', padding: '14px', marginBottom: '10px' }}>
-                <p style={{ color: '#ccc', fontSize: '13px', lineHeight: '1.7', margin: 0 }}>
-                  Por lei, o <strong style={{ color: WARN }}>MEI não é obrigado a emitir nota fiscal para pessoa física (CPF)</strong> — apenas para pessoa jurídica (CNPJ), a não ser que o cliente pessoa física exija a nota.
-                </p>
-              </div>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                {[
-                  { icon: '✅', text: 'Cliente com CNPJ (empresa) → nota obrigatória', cor: COR },
-                  { icon: '⚠️', text: 'Cliente com CPF (pessoa física) → só se ele pedir', cor: WARN },
-                  { icon: '💡', text: 'Se o cliente não pedir, você não é obrigado a emitir', cor: '#38bdf8' },
-                ].map((item, i) => (
-                  <div key={i} style={{ display: 'flex', alignItems: 'flex-start', gap: '10px', padding: '10px 12px', background: '#111', borderRadius: '8px', borderLeft: `3px solid ${item.cor}` }}>
-                    <span style={{ fontSize: '16px', flexShrink: 0 }}>{item.icon}</span>
-                    <p style={{ margin: 0, color: '#ccc', fontSize: '12px', lineHeight: '1.5' }}>{item.text}</p>
-                  </div>
-                ))}
-              </div>
-              <p style={{ color: '#444', fontSize: '10px', margin: '12px 0 0', lineHeight: '1.5' }}>
-                📌 Fonte: Lei Complementar 123/2006, Art. 26 §2º. Consulte seu contador para casos específicos.
+            </div>
+            <div style={{ background: '#0a0800', borderRadius: '10px', padding: '14px', marginBottom: '10px' }}>
+              <p style={{ color: '#ccc', fontSize: '13px', lineHeight: '1.7', margin: 0 }}>
+                Por lei, o <strong style={{ color: WARN }}>MEI não é obrigado a emitir nota fiscal para pessoa física (CPF)</strong> — apenas para pessoa jurídica (CNPJ), a não ser que o cliente pessoa física exija a nota.
               </p>
             </div>
-
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+              {[
+                { icon: '✅', text: 'Cliente com CNPJ (empresa) → nota obrigatória', cor: COR },
+                { icon: '⚠️', text: 'Cliente com CPF (pessoa física) → só se ele pedir', cor: WARN },
+                { icon: '💡', text: 'Se o cliente não pedir, você não é obrigado a emitir', cor: '#38bdf8' },
+              ].map((item, i) => (
+                <div key={i} style={{ display: 'flex', alignItems: 'flex-start', gap: '10px', padding: '10px 12px', background: '#111', borderRadius: '8px', borderLeft: `3px solid ${item.cor}` }}>
+                  <span style={{ fontSize: '16px', flexShrink: 0 }}>{item.icon}</span>
+                  <p style={{ margin: 0, color: '#ccc', fontSize: '12px', lineHeight: '1.5' }}>{item.text}</p>
+                </div>
+              ))}
+            </div>
+          </div>
 
           <div style={{ background: '#111', border: '1px solid #333', borderRadius: '14px', padding: '20px', marginBottom: '16px' }}>
             <h3 style={{ color: 'white', margin: '0 0 14px', fontSize: '16px' }}>🚀 Como Emitir — Escolha o tipo da sua empresa:</h3>
             <div style={{ display: 'flex', gap: '10px', marginBottom: '16px' }}>
               {[
                 { key: 'mei', label: '⚙️ MEI', desc: 'Microempreendedor Individual' },
-                { key: 'me',  label: '🏢 ME/Simples', desc: 'Microempresa / Simples Nacional' },
+                { key: 'me', label: '🏢 ME/Simples', desc: 'Microempresa / Simples Nacional' },
               ].map(t => (
                 <button key={t.key} onClick={() => setTipoEmpresa(tipoEmpresa === t.key ? '' : t.key)}
                   style={{ flex: 1, padding: '14px 10px', background: tipoEmpresa === t.key ? COR + '22' : '#0a0a0a', color: tipoEmpresa === t.key ? COR : '#666', border: `2px solid ${tipoEmpresa === t.key ? COR : '#333'}`, borderRadius: '12px', cursor: 'pointer', fontWeight: 'bold', fontSize: '13px', textAlign: 'center' }}>
@@ -185,12 +226,12 @@ Emita na SEFAZ do seu Estado`;
 
             {/* MEI */}
             {tipoEmpresa === 'mei' && (
-              <div>
+              <div className="animate-fade-in">
                 <div style={{ background: '#001a0a', border: `1px solid ${COR}`, borderRadius: '10px', padding: '16px', marginBottom: '10px' }}>
                   <p style={{ color: COR, fontWeight: '900', margin: '0 0 10px', fontSize: '13px' }}>🔧 MEI — Mão de Obra (NFS-e)</p>
                   {[
                     '1️⃣ O governo unificou a nota de serviço do MEI — é totalmente GRATUITO',
-                    '2️⃣ Acesse o Portal Nacional da NFS-e (nfse.gov.br) ou baixe o app "NFS-e Mobile"',
+                    '2️⃣ Acesse o Portal Nacional da NFS-e (gov.br/nfse) ou baixe o app "NFS-e Mobile"',
                     '3️⃣ Use os dados da O.S. do Oficina IA (aba "Gerar Dados da Nota" ao lado)',
                     '4️⃣ Cole no portal, descreva o serviço e emita',
                   ].map((p, i) => (
@@ -213,12 +254,12 @@ Emita na SEFAZ do seu Estado`;
 
             {/* ME */}
             {tipoEmpresa === 'me' && (
-              <div>
+              <div className="animate-fade-in">
                 <div style={{ background: '#001a0a', border: `1px solid ${COR}`, borderRadius: '10px', padding: '16px', marginBottom: '10px' }}>
-                  <p style={{ color: COR, fontWeight: '900', margin: '0 0 10px', fontSize: '13px' }}>🔧 ME/Simples — Mão de Obra (NFS-e)</p>
+                  <p style={{ color: COR, fontWeight: '900', margin: '0 0 10px', fontSize: '13px' }}>🔧 ME/Simples — Mão de Obra (NFS-e Nacional)</p>
                   {[
-                    '1️⃣ Acesse o portal da Prefeitura da sua cidade (cada cidade tem o seu)',
-                    '2️⃣ Procure por "Nota Fiscal de Serviços Eletrônica" ou "NFS-e"',
+                    '1️⃣ Com a lei de 2026, você também deverá usar o Portal Nacional ou sistema integrado',
+                    '2️⃣ Acesse o Portal Nacional NFS-e ou o sistema da sua Prefeitura (se ainda vigente)',
                     '3️⃣ Use os dados da O.S. gerados aqui no Oficina IA',
                     '4️⃣ Descreva o serviço (ex: Troca de óleo + filtro + alinhamento)',
                   ].map((p, i) => (
@@ -235,9 +276,6 @@ Emita na SEFAZ do seu Estado`;
                   ].map((p, i) => (
                     <p key={i} style={{ margin: '0 0 6px', color: '#ccc', fontSize: '12px', padding: '8px 10px', background: '#001a22', borderRadius: '6px', borderLeft: `3px solid ${INFO}` }}>{p}</p>
                   ))}
-                  <div style={{ marginTop: '10px', background: '#1a1a00', border: `1px solid ${WARN}`, borderRadius: '8px', padding: '10px' }}>
-                    <p style={{ color: WARN, fontSize: '11px', margin: 0 }}>💡 <strong>Dica:</strong> O Sebrae oferece cursos gratuitos online de emissão de NF-e para mecânicos e oficinas.</p>
-                  </div>
                 </div>
               </div>
             )}
@@ -246,85 +284,88 @@ Emita na SEFAZ do seu Estado`;
               <p style={{ color: '#444', fontSize: '13px', textAlign: 'center', margin: '10px 0' }}>👆 Selecione o tipo da sua empresa para ver o passo a passo</p>
             )}
           </div>
-
-          {/* BLOCO 3: Disclaimer */}
-          <div style={{ background: '#1a1a1a', border: '1px solid #333', borderRadius: '12px', padding: '16px' }}>
-            <p style={{ color: '#555', fontSize: '10px', fontWeight: 'bold', letterSpacing: '2px', margin: '0 0 8px' }}>🔒 TERMO DE RESPONSABILIDADE</p>
-            <p style={{ color: '#555', fontSize: '12px', lineHeight: '1.6', margin: 0 }}>
-              O <strong style={{ color: '#777' }}>Oficina IA</strong> é um sistema de gestão gerencial. O cupom de Ordem de Serviço gerado pelo sistema serve para controle interno, conferência do cliente e garantia, mas <strong style={{ color: '#777' }}>não substitui a Nota Fiscal Oficial</strong> (NF-e / NFS-e). A emissão dos documentos fiscais nos portais do governo é de responsabilidade exclusiva do estabelecimento prestador do serviço.
-            </p>
-          </div>
         </div>
       )}
 
       {/* ══════════ ABA: GERAR DADOS ══════════ */}
       {subAba === 'gerar' && (
-        <div>
-          <div style={{ background: '#0d0020', border: `1px solid ${ROXO}33`, borderRadius: '12px', padding: '14px', marginBottom: '16px' }}>
-            <p style={{ color: ROXO, fontSize: '12px', margin: 0 }}>💡 Preencha os dados abaixo (ou copie da sua O.S.) → o sistema monta o texto pronto para colar no portal da Prefeitura e na SEFAZ.</p>
+        <div className="animate-fade-in">
+          <div style={{ background: '#1a0525', border: `1px solid ${ROXO}55`, borderRadius: '12px', padding: '16px', marginBottom: '20px', display: 'flex', alignItems: 'center', gap: '12px', boxShadow: '0 4px 15px rgba(168,85,247,0.1)' }}>
+            <span style={{ fontSize: '24px' }}>🤖</span>
+            <p style={{ color: '#c4b5fd', fontSize: '12px', margin: 0, fontWeight: 'bold' }}>AUTOMAÇÃO IA: Digite a placa e clique na lupa (ou aperte Enter). O sistema buscará os dados da última O.S. automaticamente!</p>
           </div>
 
           {/* Campos */}
-          <div style={{ background: '#111', padding: '16px', borderRadius: '12px', marginBottom: '14px' }}>
-            <p style={{ color: '#666', fontSize: '10px', fontWeight: 'bold', letterSpacing: '1px', margin: '0 0 12px' }}>👤 DADOS DO CLIENTE</p>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
-              <input value={nomeCliente} onChange={e => setNomeCliente(e.target.value)} placeholder="Nome do cliente (ou deixe vazio = Consumidor Final)"
-                style={{ padding: '11px', background: '#0a0a0a', border: '1px solid #333', color: 'white', borderRadius: '8px', fontSize: '12px', boxSizing: 'border-box', width: '100%', gridColumn: '1 / -1' }} />
-              <input value={documento} onChange={e => setDocumento(e.target.value)} placeholder="CPF ou CNPJ (opcional)"
-                style={{ padding: '11px', background: '#0a0a0a', border: `1px solid ${documento ? ROXO : '#333'}`, color: ROXO, borderRadius: '8px', fontSize: '12px', boxSizing: 'border-box', width: '100%' }} />
-              <div style={{ padding: '11px', background: '#0a0a0a', border: '1px dashed #333', borderRadius: '8px', display: 'flex', alignItems: 'center' }}>
-                <span style={{ color: '#444', fontSize: '11px' }}>{documento ? '' : '→ Sem doc: usa "Consumidor Final"'}</span>
-              </div>
-            </div>
-          </div>
+          <div style={{ background: '#0a0a0a', padding: '20px', borderRadius: '16px', marginBottom: '20px', border: '1px solid #222', boxShadow: '0 10px 30px rgba(0,0,0,0.5)', position: 'relative', overflow: 'hidden' }}>
+            <div style={{ position: 'absolute', top: 0, left: 0, width: '4px', height: '100%', background: ROXO }}></div>
 
-          <div style={{ background: '#111', padding: '16px', borderRadius: '12px', marginBottom: '14px' }}>
-            <p style={{ color: '#666', fontSize: '10px', fontWeight: 'bold', letterSpacing: '1px', margin: '0 0 12px' }}>🚗 DADOS DO VEÍCULO / OS</p>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
-              <input value={placa} onChange={e => setPlaca(e.target.value.toUpperCase())} placeholder="PLACA"
-                style={{ padding: '11px', background: '#0a0a0a', border: `1px solid ${COR}44`, color: COR, borderRadius: '8px', fontSize: '13px', fontWeight: 'bold', boxSizing: 'border-box', width: '100%' }} />
-              <input value={modeloCarro} onChange={e => setModeloCarro(e.target.value)} placeholder="Modelo (ex: Fiat Palio 1.0)"
-                style={{ padding: '11px', background: '#0a0a0a', border: '1px solid #333', color: 'white', borderRadius: '8px', fontSize: '12px', boxSizing: 'border-box', width: '100%' }} />
-              <input value={numeroOS} onChange={e => setNumeroOS(e.target.value.toUpperCase())} placeholder="Número da O.S. (ex: AB1234)"
-                style={{ padding: '11px', background: '#0a0a0a', border: '1px solid #333', color: WARN, borderRadius: '8px', fontSize: '12px', fontWeight: 'bold', boxSizing: 'border-box', width: '100%' }} />
+            <p style={{ color: ROXO, fontSize: '10px', fontWeight: '900', letterSpacing: '1.5px', margin: '0 0 16px' }}>CARREGAR DADOS DA O.S.</p>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '12px', marginBottom: '16px' }}>
+
+              {/* CAMPO DA PLACA COM BOTÃO DE LUPA EMBUTIDO */}
+              <div style={{ position: 'relative', width: '100%' }}>
+                <input value={placa}
+                  onChange={e => setPlaca(e.target.value.toUpperCase())}
+                  onBlur={(e) => buscarDadosPorPlaca(e.target.value)}
+                  onKeyDown={(e) => { if (e.key === 'Enter') buscarDadosPorPlaca(e.target.value); }}
+                  placeholder="PLACA (Ex: ABC1234)"
+                  style={{ padding: '16px', paddingRight: '48px', background: '#111', border: `1px solid ${ROXO}88`, color: 'white', borderRadius: '12px', fontSize: '14px', fontWeight: 'bold', boxSizing: 'border-box', width: '100%', boxShadow: `0 0 15px ${ROXO}22` }} />
+
+                <button
+                  onClick={() => buscarDadosPorPlaca(placa)}
+                  title="Buscar O.S."
+                  style={{ position: 'absolute', right: '8px', top: '50%', transform: 'translateY(-50%)', background: ROXO, border: 'none', borderRadius: '8px', width: '36px', height: '36px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', boxShadow: '0 2px 5px rgba(0,0,0,0.3)' }}>
+                  🔍
+                </button>
+              </div>
+
+              <input value={modeloCarro} onChange={e => setModeloCarro(e.target.value)} placeholder="Modelo (ex: Gol 1.0)"
+                style={{ padding: '16px', background: '#111', border: '1px solid #333', color: 'white', borderRadius: '12px', fontSize: '14px', boxSizing: 'border-box', width: '100%' }} />
+
+              <input value={numeroOS} onChange={e => setNumeroOS(e.target.value.toUpperCase())} placeholder="Nº da O.S. (ex: AB1234)"
+                style={{ padding: '16px', background: '#111', border: '1px solid #333', color: 'white', borderRadius: '12px', fontSize: '14px', boxSizing: 'border-box', width: '100%' }} />
+            </div>
+
+            <p style={{ color: '#666', fontSize: '10px', fontWeight: 'bold', letterSpacing: '1px', margin: '20px 0 12px', borderTop: '1px solid #222', paddingTop: '20px' }}>👤 DADOS DO CLIENTE</p>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+              <input value={nomeCliente} onChange={e => setNomeCliente(e.target.value)} placeholder="Nome do cliente (ou Consumidor Final)"
+                style={{ padding: '14px', background: '#111', border: '1px solid #333', color: 'white', borderRadius: '12px', fontSize: '13px', boxSizing: 'border-box', width: '100%' }} />
+              <input value={documento} onChange={e => setDocumento(e.target.value)} placeholder="CPF ou CNPJ (opcional)"
+                style={{ padding: '14px', background: '#111', border: '1px solid #333', color: 'white', borderRadius: '12px', fontSize: '13px', boxSizing: 'border-box', width: '100%' }} />
             </div>
           </div>
 
           {/* NFS-e — Serviço */}
-          <div style={{ background: '#001a0a', border: `2px solid ${COR}`, borderRadius: '12px', padding: '16px', marginBottom: '14px' }}>
-            <p style={{ color: COR, fontWeight: '900', margin: '0 0 12px', fontSize: '14px' }}>🔧 NFS-e — Mão de Obra</p>
+          <div style={{ background: '#0a0a0a', border: `1px solid ${COR}55`, borderRadius: '16px', padding: '24px', marginBottom: '20px', position: 'relative', overflow: 'hidden' }}>
+            <div style={{ position: 'absolute', top: 0, right: 0, background: COR, color: 'black', fontSize: '9px', fontWeight: '900', padding: '6px 12px', borderBottomLeftRadius: '12px', letterSpacing: '1px' }}>PORTAL NACIONAL 2026</div>
+            <p style={{ color: COR, fontWeight: '900', margin: '0 0 16px', fontSize: '15px' }}>🔧 NFS-e — Mão de Obra</p>
             <textarea value={servicos} onChange={e => setServicos(e.target.value)}
-              placeholder="Ex: Troca de óleo + filtro de óleo&#10;Alinhamento e balanceamento&#10;Troca de velas"
-              rows={3} style={{ width: '100%', padding: '11px', background: '#0a0a0a', border: '1px solid #333', color: 'white', borderRadius: '8px', resize: 'vertical', fontSize: '12px', boxSizing: 'border-box', marginBottom: '10px' }} />
+              placeholder="Ex: Troca de óleo + filtro de óleo&#10;Alinhamento e balanceamento"
+              rows={3} style={{ width: '100%', padding: '16px', background: '#111', border: '1px solid #333', color: 'white', borderRadius: '12px', resize: 'vertical', fontSize: '13px', boxSizing: 'border-box', marginBottom: '12px' }} />
             <input value={valorServico} onChange={e => setValorServico(e.target.value)} placeholder="Valor da Mão de Obra (ex: 350)"
-              type="number" style={{ width: '100%', padding: '12px', background: '#0a0a0a', border: `1px solid ${COR}44`, color: COR, borderRadius: '8px', fontSize: '20px', fontWeight: '900', textAlign: 'center', boxSizing: 'border-box', marginBottom: '12px' }} />
+              type="number" style={{ width: '100%', padding: '20px', background: '#050505', border: `1px solid ${COR}44`, color: COR, borderRadius: '12px', fontSize: '24px', fontWeight: '900', textAlign: 'center', boxSizing: 'border-box', marginBottom: '20px' }} />
 
             {/* Preview NFS-e */}
-            <pre style={{ background: '#002a10', border: `1px solid ${COR}33`, borderRadius: '8px', padding: '12px', color: '#aaa', fontSize: '11px', whiteSpace: 'pre-wrap', lineHeight: '1.6', margin: '0 0 12px' }}>
-              {textoNFSe}
-            </pre>
             <button onClick={() => copiar(textoNFSe, setCopiadoNFS)}
-              style={{ width: '100%', padding: '14px', background: copiadoNFS ? COR : COR + '22', color: copiadoNFS ? 'black' : COR, border: `1px solid ${COR}`, borderRadius: '10px', fontWeight: '900', fontSize: '14px', cursor: 'pointer' }}>
-              {copiadoNFS ? '✅ Copiado! Cole no portal da Prefeitura' : '📋 COPIAR TEXTO DA NFS-e'}
+              style={{ width: '100%', padding: '18px', background: copiadoNFS ? COR : COR + '11', color: copiadoNFS ? 'black' : COR, border: `1px solid ${COR}`, borderRadius: '12px', fontWeight: '900', fontSize: '14px', cursor: 'pointer', transition: 'all 0.3s', textTransform: 'uppercase', letterSpacing: '1px' }}>
+              {copiadoNFS ? '✅ Copiado! Cole no Emissor Nacional' : '📄 Copiar Texto Pronto para NFS-e'}
             </button>
           </div>
 
           {/* NF-e — Peças */}
-          <div style={{ background: '#001a1f', border: `2px solid ${INFO}`, borderRadius: '12px', padding: '16px', marginBottom: '14px' }}>
-            <p style={{ color: INFO, fontWeight: '900', margin: '0 0 12px', fontSize: '14px' }}>🔩 NF-e — Peças e Fluidos</p>
+          <div style={{ background: '#0a0a0a', border: `1px solid ${INFO}55`, borderRadius: '16px', padding: '24px', marginBottom: '20px', position: 'relative', overflow: 'hidden' }}>
+            <div style={{ position: 'absolute', top: 0, right: 0, background: INFO, color: 'black', fontSize: '9px', fontWeight: '900', padding: '6px 12px', borderBottomLeftRadius: '12px', letterSpacing: '1px' }}>SEFAZ ESTADUAL</div>
+            <p style={{ color: INFO, fontWeight: '900', margin: '0 0 16px', fontSize: '15px' }}>📦 NF-e — Peças e Fluidos</p>
             <textarea value={pecas} onChange={e => setPecas(e.target.value)}
-              placeholder="Ex: 1x Óleo 5W30 Castrol – R$89,00&#10;1x Filtro de óleo – R$35,00&#10;4x Velas NGK – R$120,00"
-              rows={4} style={{ width: '100%', padding: '11px', background: '#0a0a0a', border: '1px solid #333', color: 'white', borderRadius: '8px', resize: 'vertical', fontSize: '12px', boxSizing: 'border-box', marginBottom: '10px' }} />
+              placeholder="Ex: 1x Óleo 5W30 Castrol – R$89,00&#10;1x Filtro de óleo – R$35,00"
+              rows={4} style={{ width: '100%', padding: '16px', background: '#111', border: '1px solid #333', color: 'white', borderRadius: '12px', resize: 'vertical', fontSize: '13px', boxSizing: 'border-box', marginBottom: '12px' }} />
             <input value={valorPecas} onChange={e => setValorPecas(e.target.value)} placeholder="Valor total das Peças (ex: 244)"
-              type="number" style={{ width: '100%', padding: '12px', background: '#0a0a0a', border: `1px solid ${INFO}44`, color: INFO, borderRadius: '8px', fontSize: '20px', fontWeight: '900', textAlign: 'center', boxSizing: 'border-box', marginBottom: '12px' }} />
+              type="number" style={{ width: '100%', padding: '20px', background: '#050505', border: `1px solid ${INFO}44`, color: INFO, borderRadius: '12px', fontSize: '24px', fontWeight: '900', textAlign: 'center', boxSizing: 'border-box', marginBottom: '20px' }} />
 
             {/* Preview NF-e */}
-            <pre style={{ background: '#001a22', border: `1px solid ${INFO}33`, borderRadius: '8px', padding: '12px', color: '#aaa', fontSize: '11px', whiteSpace: 'pre-wrap', lineHeight: '1.6', margin: '0 0 12px' }}>
-              {textoNFe}
-            </pre>
             <button onClick={() => copiar(textoNFe, setCopiadoNFe)}
-              style={{ width: '100%', padding: '14px', background: copiadoNFe ? INFO : INFO + '22', color: copiadoNFe ? 'black' : INFO, border: `1px solid ${INFO}`, borderRadius: '10px', fontWeight: '900', fontSize: '14px', cursor: 'pointer' }}>
-              {copiadoNFe ? '✅ Copiado! Cole na SEFAZ' : '📋 COPIAR TEXTO DA NF-e'}
+              style={{ width: '100%', padding: '18px', background: copiadoNFe ? INFO : INFO + '11', color: copiadoNFe ? 'black' : INFO, border: `1px solid ${INFO}`, borderRadius: '12px', fontWeight: '900', fontSize: '14px', cursor: 'pointer', transition: 'all 0.3s', textTransform: 'uppercase', letterSpacing: '1px' }}>
+              {copiadoNFe ? '✅ Copiado! Cole na SEFAZ' : '📦 Copiar Texto Pronto para NF-e'}
             </button>
           </div>
         </div>
@@ -332,12 +373,12 @@ Emita na SEFAZ do seu Estado`;
 
       {/* ══════════ ABA: PORTAIS ══════════ */}
       {subAba === 'portais' && (
-        <div>
+        <div className="animate-fade-in">
           <div style={{ background: '#111', border: '1px solid #333', borderRadius: '14px', padding: '20px', marginBottom: '14px' }}>
-            <h3 style={{ color: COR, margin: '0 0 16px', fontSize: '15px' }}>🟢 NFS-e — Mão de Obra (Prefeitura)</h3>
+            <h3 style={{ color: COR, margin: '0 0 16px', fontSize: '15px' }}>🟢 NFS-e — Mão de Obra</h3>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
               {[
-                { label: '🌐 Portal Nacional NFS-e (MEI)', url: 'https://www.nfse.gov.br', desc: 'Para MEI — gratuito e federal' },
+                { label: '🌐 Portal Nacional NFS-e (gov.br)', url: 'https://www.gov.br/nfse/pt-br', desc: 'Emissor Padrão Nacional (Obrigatório em 2026)' },
                 { label: '📱 App NFS-e Mobile (Android)', url: 'https://play.google.com/store/search?q=nfse+mobile', desc: 'Emita pelo celular' },
                 { label: '📱 App NFS-e Mobile (iOS)', url: 'https://apps.apple.com/br/app/nfs-e-mobile/id1090373239', desc: 'Emita pelo celular' },
               ].map((item, i) => (
@@ -350,9 +391,6 @@ Emita na SEFAZ do seu Estado`;
                   <span style={{ color: COR, fontSize: '18px' }}>→</span>
                 </a>
               ))}
-              <div style={{ background: '#1a1a00', border: `1px solid ${WARN}`, borderRadius: '10px', padding: '12px' }}>
-                <p style={{ color: WARN, fontSize: '12px', margin: 0 }}>⚠️ <strong>Para ME/Simples:</strong> procure o portal da Prefeitura da sua cidade. Cada prefeitura tem o seu sistema. Pesquise: <em>"NFS-e Prefeitura de [sua cidade]"</em></p>
-              </div>
             </div>
           </div>
 
@@ -362,12 +400,7 @@ Emita na SEFAZ do seu Estado`;
               {[
                 { label: '🌐 SEFAZ Nacional — Consulta', url: 'https://www.nfe.fazenda.gov.br', desc: 'Portal federal da NF-e' },
                 { label: '💻 Emissor Gratuito SEBRAE', url: 'https://www.sebrae.com.br/sites/PortalSebrae/bis/emissao-de-nota-fiscal-eletronica', desc: 'Emissor NF-e gratuito para ME/MEI' },
-                { label: '🌐 SEFAZ SP', url: 'https://www.fazenda.sp.gov.br', desc: 'São Paulo' },
                 { label: '🌐 SEFAZ MG', url: 'https://www.fazenda.mg.gov.br', desc: 'Minas Gerais' },
-                { label: '🌐 SEFAZ RJ', url: 'https://www.fazenda.rj.gov.br', desc: 'Rio de Janeiro' },
-                { label: '🌐 SEFAZ RS', url: 'https://www.sefaz.rs.gov.br', desc: 'Rio Grande do Sul' },
-                { label: '🌐 SEFAZ PR', url: 'https://www.fazenda.pr.gov.br', desc: 'Paraná' },
-                { label: '🌐 SEFAZ BA', url: 'https://www.sefaz.ba.gov.br', desc: 'Bahia' },
               ].map((item, i) => (
                 <a key={i} href={item.url} target="_blank" rel="noopener noreferrer"
                   style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px 14px', background: '#001a1f', border: `1px solid ${INFO}22`, borderRadius: '10px', textDecoration: 'none' }}>
@@ -380,14 +413,9 @@ Emita na SEFAZ do seu Estado`;
               ))}
             </div>
           </div>
-
-          {/* Disclaimer */}
-          <div style={{ background: '#1a1a1a', border: '1px solid #2a2a2a', borderRadius: '10px', padding: '14px' }}>
-            <p style={{ color: '#444', fontSize: '10px', fontWeight: 'bold', letterSpacing: '2px', margin: '0 0 6px' }}>🔒 AVISO LEGAL</p>
-            <p style={{ color: '#444', fontSize: '11px', lineHeight: '1.5', margin: 0 }}>Os links acima são portais oficiais do governo brasileiro. O Oficina IA não tem vínculo com esses órgãos. Em caso de dúvidas fiscais, consulte seu contador.</p>
-          </div>
         </div>
       )}
     </div>
+
   );
 }

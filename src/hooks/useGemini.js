@@ -11,7 +11,8 @@ export function useGemini() {
     setLoading(true);
     setError(null);
     try {
-      const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
+      // 🟢 USANDO A VERSÃO LITE (Sem limite Zero e Super Rápida)
+      const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash-lite" });
       const result = await model.generateContent(prompt);
       return result.response.text();
     } catch (err) {
@@ -19,7 +20,7 @@ export function useGemini() {
       let dica = '';
       if (msg.includes('404')) dica = 'Modelo não encontrado. Verifique o nome do modelo.';
       else if (msg.includes('403') || msg.includes('API_KEY')) dica = 'Chave de API inválida ou sem permissão.';
-      else if (msg.includes('429')) dica = 'Limite de requisições atingido. Aguarde um momento.';
+      else if (msg.includes('429')) dica = 'O Google bloqueou a sua conta para testes gratuitos (Limite Zero).';
       else if (msg.includes('fetch') || msg.includes('network')) dica = 'Sem conexão com a internet.';
       else dica = msg;
       alert(`❌ ERRO DA IA (Texto):\n\n${dica}`);
@@ -34,11 +35,14 @@ export function useGemini() {
     setLoading(true);
     setError(null);
     try {
-      const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
+      // 🟢 USANDO A VERSÃO LITE (Sem limite Zero e Super Rápida)
+      const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash-lite" });
+
       if (!imageBase64) {
         const result = await model.generateContent(prompt);
         return result.response.text();
       }
+
       const base64Data = imageBase64.replace(/^data:image\/(png|jpeg|jpg|webp);base64,/, '');
       const imagePart = { inlineData: { data: base64Data, mimeType: "image/jpeg" } };
       const result = await model.generateContent([prompt, imagePart]);
@@ -48,7 +52,7 @@ export function useGemini() {
       let dica = '';
       if (msg.includes('404')) dica = 'Modelo não encontrado.';
       else if (msg.includes('403') || msg.includes('API_KEY')) dica = 'Chave de API inválida.';
-      else if (msg.includes('429')) dica = 'Limite atingido. Aguarde.';
+      else if (msg.includes('429')) dica = 'O Google bloqueou a sua conta para testes gratuitos (Limite Zero).';
       else if (msg.includes('fetch') || msg.includes('network')) dica = 'Sem internet.';
       else dica = msg;
       setError(dica);

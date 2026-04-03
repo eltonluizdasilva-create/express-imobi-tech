@@ -8,3 +8,18 @@ body {
   margin: 0;
   font-family: sans-serif;
 }
+
+/* Efeito Premium nos Botões */
+.nav-button-premium {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+}
+
+.nav-button-premium:hover, .nav-button-premium:active {
+  transform: translateY(-2px) scale(1.02);
+  box-shadow: 0 0 15px var(--glow-color, rgba(255,255,255,0.3));
+  filter: brightness(1.2);
+}
+
+.nav-button-premium:active {
+  transform: translateY(0) scale(0.98);
+}
