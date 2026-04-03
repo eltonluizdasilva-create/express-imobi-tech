@@ -14,7 +14,7 @@ import { temAcessoModulo } from './components/admin/helpers';
 import { Zap, ClipboardList, Wallet, Target } from 'lucide-react';
 
 // --- MÓDULOS NA RAIZ (CONFORME SUA BARRA LATERAL) ---
-import Mecanica from './components/mecanica';
+import Mecanica from './components/Mecanica';
 import LatariaModulo from './Lataria';
 import AmortecedorModulo from './Amortecedor';
 import MotoModulo from './Motos';
