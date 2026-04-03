@@ -268,9 +268,9 @@ export default function EscapamentoModulo({ oficinaId, osParaEditar, onCancelar,
       {success && (
         <div className="fixed bottom-12 left-1/2 -translate-x-1/2 bg-green-600 px-12 py-6 rounded-full shadow-2xl animate-bounce flex items-center gap-4 z-[210] font-black uppercase text-xl text-white">
           <CheckCircle size={32} /> Serviço de Escapamento Salvo!
-=======
-/* eslint-disable no-unused-vars */
-import React, {useState, useEffect, useMemo} from 'react';
+
+          /* eslint-disable no-unused-vars */
+          import React, {useState, useEffect, useMemo} from 'react';
           import {db} from './lib/firebase';
           import {collection, addDoc, getDocs, updateDoc, doc} from 'firebase/firestore';
           import {useOficina} from './components/OficinaContext';
@@ -557,6 +557,6 @@ const comprimirFoto = (b,q=0.5) => new Promise(res=>{
           );
 
 }
-=======
+
 }
 

@@ -242,9 +242,9 @@ export default function EsteticaModulo({ oficinaId, osParaEditar, onCancelar, on
               CRIAR O.S. AGORA <ArrowRight size={30} />
             </button>
           </div>
-=======
+
 /* eslint-disable no-unused-vars */
-import React, {useState, useEffect, useMemo} from 'react';
+          import React, {useState, useEffect, useMemo} from 'react';
           import {db} from './lib/firebase';
           import {collection, addDoc, getDocs, updateDoc, doc} from 'firebase/firestore';
           import {useOficina} from './components/OficinaContext';
@@ -557,6 +557,6 @@ const comprimirFoto = (b,q=0.5) => new Promise(res=>{
           );
 
 }
-=======
+
 }
 
