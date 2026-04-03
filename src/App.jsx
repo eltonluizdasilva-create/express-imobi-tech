@@ -13,7 +13,6 @@ import Sobre from "./Sobre";
 import Cadastro from "./Cadastro";
 
 import AdminNovo from './AdminNovo';
-import Admin from "./Admin"; // Mantido caso queira acessar a versão antiga em alguma rota
 
 import LeadsPage from "./LeadsPage";
 import Historico from "./Historico";
@@ -63,7 +62,6 @@ function AppRoutes() {
         {/* 🟢 ADMIN CORRIGIDO (DIRECIONANDO PARA O NOVO PAINEL) */}
         <Route path="/admin" element={<AdminNovo />} />
         <Route path="/admin2" element={<AdminNovo />} />
-        <Route path="/admin-antigo" element={<Admin />} /> {/* Rota de backup */}
 
         {/* ABA MARKETING */}
         <Route path="/marketing" element={<Marketing />} />
