@@ -6,11 +6,7 @@ import { useOficina } from './OficinaContext';
 export default function LeadButton() {
   const { oficinaId } = useOficina() || {};
   const [aberto, setAberto] = useState(false);
-<<<<<<< HEAD
 
-=======
-  
->>>>>>> 5b7369d8d985c6de92b8b5f85688ef797a80d8c3
   // Campos do formulário
   const [nome, setNome] = useState('');
   const [telefone, setTelefone] = useState('');
@@ -24,11 +20,7 @@ export default function LeadButton() {
 
   const ouvirCampo = (nomeCampo, setFuncaoEstado) => {
     if (!('webkitSpeechRecognition' in window)) return alert("Seu navegador não suporta gravação de voz. Use Chrome ou Edge.");
-<<<<<<< HEAD
 
-=======
-    
->>>>>>> 5b7369d8d985c6de92b8b5f85688ef797a80d8c3
     // Se clicar no mesmo botão que já está a gravar, ele para.
     if (campoOuvindo === nomeCampo) {
       if (recognitionRef.current) recognitionRef.current.stop();
@@ -45,17 +37,10 @@ export default function LeadButton() {
     recognitionRef.current = recognition;
 
     recognition.onstart = () => setCampoOuvindo(nomeCampo);
-<<<<<<< HEAD
 
     recognition.onresult = (event) => {
       const texto = event.results[0][0].transcript;
 
-=======
-    
-    recognition.onresult = (event) => {
-      const texto = event.results[0][0].transcript;
-      
->>>>>>> 5b7369d8d985c6de92b8b5f85688ef797a80d8c3
       // Regras de formatação específicas por campo
       if (nomeCampo === 'telefone') {
         setFuncaoEstado(texto.replace(/\D/g, ''));
@@ -69,11 +54,7 @@ export default function LeadButton() {
 
     recognition.onerror = () => setCampoOuvindo(null);
     recognition.onend = () => setCampoOuvindo(null);
-<<<<<<< HEAD
 
-=======
-    
->>>>>>> 5b7369d8d985c6de92b8b5f85688ef797a80d8c3
     recognition.start();
   };
 
@@ -92,11 +73,7 @@ export default function LeadButton() {
       alert("✅ Lead salvo com sucesso!");
       setNome(''); setTelefone(''); setCarro(''); setProblema('');
       setAberto(false);
-<<<<<<< HEAD
 
-=======
-      
->>>>>>> 5b7369d8d985c6de92b8b5f85688ef797a80d8c3
       // Tenta recarregar a página de Leads se o usuário estiver nela
       if (window.location.pathname.includes('/leads')) {
         window.location.reload();
@@ -109,23 +86,12 @@ export default function LeadButton() {
   };
 
   // Se não tiver oficina (não logado), esconde o botão
-<<<<<<< HEAD
   if (!oficinaId) return null;
-
-  // 🛑 GOLPE FINAL: ISSO DESLIGA O BOTÃO DA TELA PARA SEMPRE
-  return null;
-=======
-  if (!oficinaId) return null; 
->>>>>>> 5b7369d8d985c6de92b8b5f85688ef797a80d8c3
 
   return (
     <>
       {/* BOTÃO FLUTUANTE */}
-<<<<<<< HEAD
       <button
-=======
-      <button 
->>>>>>> 5b7369d8d985c6de92b8b5f85688ef797a80d8c3
         onClick={() => setAberto(true)}
         style={{ position: 'fixed', bottom: '80px', right: '20px', background: '#00E676', color: 'black', width: '60px', height: '60px', borderRadius: '30px', border: 'none', boxShadow: '0 5px 15px rgba(0,230,118,0.4)', fontSize: '24px', cursor: 'pointer', zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
       >
@@ -136,15 +102,9 @@ export default function LeadButton() {
       {aberto && (
         <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.8)', zIndex: 10000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px' }}>
           <div style={{ background: '#111', width: '100%', maxWidth: '400px', borderRadius: '15px', padding: '25px', border: '2px solid #00E676', position: 'relative', boxShadow: '0 10px 40px rgba(0,230,118,0.2)' }}>
-<<<<<<< HEAD
 
             <button onClick={() => setAberto(false)} style={{ position: 'absolute', top: '15px', right: '15px', background: 'transparent', border: 'none', color: '#888', fontSize: '20px', cursor: 'pointer' }}>✖</button>
 
-=======
-            
-            <button onClick={() => setAberto(false)} style={{ position: 'absolute', top: '15px', right: '15px', background: 'transparent', border: 'none', color: '#888', fontSize: '20px', cursor: 'pointer' }}>✖</button>
-            
->>>>>>> 5b7369d8d985c6de92b8b5f85688ef797a80d8c3
             <h3 style={{ margin: '0 0 20px 0', color: '#00E676', textAlign: 'center', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px' }}>
               ⚡ Novo Lead Rápido
             </h3>

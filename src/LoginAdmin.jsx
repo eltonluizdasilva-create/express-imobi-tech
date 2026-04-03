@@ -1,17 +1,10 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-<<<<<<< HEAD
 import { db, auth } from './lib/firebase'; // 🔥 Importante: Garanta que o 'db' está exportado no seu firebase.js
 
 // Importações necessárias para a trava de segurança
 import { signInWithEmailAndPassword, GoogleAuthProvider, signInWithPopup, signOut } from 'firebase/auth';
 import { collectionGroup, collection, query, where, getDocs } from 'firebase/firestore';
-=======
-import { auth } from './lib/firebase';
-
-// Verifique se o caminho do firebase está correto para o seu projeto
-import { signInWithEmailAndPassword, GoogleAuthProvider, signInWithPopup } from 'firebase/auth';
->>>>>>> 5b7369d8d985c6de92b8b5f85688ef797a80d8c3
 
 export default function LoginAdmin() {
   const [email, setEmail] = useState('');
@@ -20,7 +13,6 @@ export default function LoginAdmin() {
   const [carregando, setCarregando] = useState(false);
   const navigate = useNavigate();
 
-<<<<<<< HEAD
   // Função para verificar se o e-mail está autorizado no sistema
   const verificarAutorizacao = async (emailUsuario) => {
     const emailNormalizado = emailUsuario.toLowerCase().trim();
@@ -50,13 +42,10 @@ export default function LoginAdmin() {
     }
   };
 
-=======
->>>>>>> 5b7369d8d985c6de92b8b5f85688ef797a80d8c3
   const loginComEmail = async (e) => {
     e.preventDefault();
     setCarregando(true);
     setErro('');
-<<<<<<< HEAD
 
     try {
       // 1. Autenticação de senha
@@ -71,10 +60,6 @@ export default function LoginAdmin() {
         return;
       }
 
-=======
-    try {
-      await signInWithEmailAndPassword(auth, email, senha);
->>>>>>> 5b7369d8d985c6de92b8b5f85688ef797a80d8c3
       navigate('/admin');
     } catch (error) {
       console.error("Erro no login:", error);
@@ -88,7 +73,6 @@ export default function LoginAdmin() {
     setErro('');
     const provider = new GoogleAuthProvider();
     try {
-<<<<<<< HEAD
       const result = await signInWithPopup(auth, provider);
 
       // Mesma trava de segurança para o Google
@@ -100,9 +84,6 @@ export default function LoginAdmin() {
         return;
       }
 
-=======
-      await signInWithPopup(auth, provider);
->>>>>>> 5b7369d8d985c6de92b8b5f85688ef797a80d8c3
       navigate('/admin');
     } catch (error) {
       console.error("Erro no login com Google:", error);
@@ -124,11 +105,7 @@ export default function LoginAdmin() {
 
         {/* MENSAGEM DE ERRO */}
         {erro && (
-<<<<<<< HEAD
           <div className="bg-red-900/20 text-red-500 p-3 rounded-lg mb-6 text-sm text-center border border-red-900/50 animate-pulse">
-=======
-          <div className="bg-red-900/20 text-red-500 p-3 rounded-lg mb-6 text-sm text-center border border-red-900/50">
->>>>>>> 5b7369d8d985c6de92b8b5f85688ef797a80d8c3
             {erro}
           </div>
         )}
@@ -137,11 +114,7 @@ export default function LoginAdmin() {
         <form onSubmit={loginComEmail} className="space-y-4">
           <div>
             <label className="text-red-600 text-[11px] font-bold tracking-widest uppercase mb-2 flex items-center gap-2">
-<<<<<<< HEAD
               📧 E-MAIL AUTORIZADO
-=======
-              📧 E-MAIL
->>>>>>> 5b7369d8d985c6de92b8b5f85688ef797a80d8c3
             </label>
             <input
               type="email"
@@ -170,28 +143,16 @@ export default function LoginAdmin() {
             disabled={carregando}
             className="w-full bg-red-600 hover:bg-red-700 text-white font-bold py-4 rounded-xl transition-colors text-sm tracking-widest mt-6 shadow-[0_0_15px_rgba(220,38,38,0.3)]"
           >
-<<<<<<< HEAD
             {carregando ? '⏳ VERIFICANDO...' : 'ENTRAR'}
           </button>
         </form>
 
-=======
-            {carregando ? '⏳ ENTRANDO...' : 'ENTRAR'}
-          </button>
-        </form>
-
-        {/* DIVISÓRIA */}
->>>>>>> 5b7369d8d985c6de92b8b5f85688ef797a80d8c3
         <div className="flex items-center my-6">
           <div className="flex-1 h-[1px] bg-neutral-800"></div>
           <span className="text-neutral-500 text-[10px] font-bold px-4 tracking-widest uppercase">Ou</span>
           <div className="flex-1 h-[1px] bg-neutral-800"></div>
         </div>
 
-<<<<<<< HEAD
-=======
-        {/* BOTÃO GOOGLE */}
->>>>>>> 5b7369d8d985c6de92b8b5f85688ef797a80d8c3
         <button
           onClick={loginComGoogle}
           type="button"
@@ -201,81 +162,34 @@ export default function LoginAdmin() {
           ENTRAR COM O GOOGLE
         </button>
 
-<<<<<<< HEAD
-=======
-        {/* LINK CADASTRO */}
->>>>>>> 5b7369d8d985c6de92b8b5f85688ef797a80d8c3
         <p className="text-center text-gray-600 text-[10px] mt-6">
           Não tem conta?{' '}
           <a href="/cadastro" className="text-red-500 hover:text-red-400 font-bold transition-colors">
             Cadastre sua oficina grátis
           </a>
         </p>
-<<<<<<< HEAD
 
         <div className="mt-8 pt-6 border-t border-neutral-900/50 text-center">
-            <a 
-              href="/portal2" 
-              className="text-gray-500 hover:text-blue-400 text-[11px] font-bold tracking-widest transition-colors flex items-center justify-center gap-2"
-            >
-              ← VOLTAR AO PORTAL DO CLIENTE
-            </a>
+          <a
+            href="/portal2"
+            className="text-gray-500 hover:text-blue-400 text-[11px] font-bold tracking-widest transition-colors flex items-center justify-center gap-2"
+          >
+            ← VOLTAR AO PORTAL DO CLIENTE
+          </a>
         </div>
       </div>
 
-      {/* VÍDEO TUTORIAL */}
-=======
-      </div>
-
-      {/* BOTAO VÍDEO TUTORIAL FLUTUANTE ABAIXO DO QUADRO DE LOGIN */}
->>>>>>> 5b7369d8d985c6de92b8b5f85688ef797a80d8c3
       <a
         href="https://youtu.be/u5ufl4IrzlA"
         target="_blank"
         rel="noopener noreferrer"
-<<<<<<< HEAD
         className="flex items-center justify-center gap-[10px] px-[24px] py-[12px] rounded-[30px] border border-[#ef4444] text-[#ef4444] font-bold text-[12px] tracking-[1px] hover:bg-[#ef4444] hover:text-white transition-all shadow-[0_4px_20px_rgba(239,68,68,0.2)] bg-gradient-to-right from-[#111] to-[#1a0505]"
-=======
-        style={{
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          gap: '10px',
-          padding: '12px 24px',
-          background: 'linear-gradient(to right, #111, #1a0505)',
-          border: '1px solid #ef4444',
-          borderRadius: '30px',
-          color: '#ef4444',
-          textDecoration: 'none',
-          fontSize: '12px',
-          fontWeight: 'bold',
-          letterSpacing: '1px',
-          transition: 'all 0.3s ease',
-          boxShadow: '0 4px 20px rgba(239, 68, 68, 0.2)'
-        }}
-        onMouseOver={e => {
-          e.currentTarget.style.background = '#ef4444';
-          e.currentTarget.style.color = 'white';
-          e.currentTarget.style.transform = 'translateY(-2px)';
-          e.currentTarget.style.boxShadow = '0 6px 25px rgba(239, 68, 68, 0.4)';
-        }}
-        onMouseOut={e => {
-          e.currentTarget.style.background = 'linear-gradient(to right, #111, #1a0505)';
-          e.currentTarget.style.color = '#ef4444';
-          e.currentTarget.style.transform = 'translateY(0)';
-          e.currentTarget.style.boxShadow = '0 4px 20px rgba(239, 68, 68, 0.2)';
-        }}
->>>>>>> 5b7369d8d985c6de92b8b5f85688ef797a80d8c3
       >
         <svg viewBox="0 0 24 24" fill="currentColor" width="20" height="20">
           <path d="M19.615 3.184c-3.604-.246-11.631-.245-15.23 0-3.897.266-4.356 2.62-4.385 8.816.029 6.185.484 8.549 4.385 8.816 3.6.245 11.626.246 15.23 0 3.897-.266 4.356-2.62 4.385-8.816-.029-6.185-.484-8.549-4.385-8.816zm-10.615 12.816v-8l8 3.993-8 4.007z" />
         </svg>
         COMO USAR O SISTEMA
       </a>
-<<<<<<< HEAD
-=======
-
->>>>>>> 5b7369d8d985c6de92b8b5f85688ef797a80d8c3
     </div>
   );
 }
