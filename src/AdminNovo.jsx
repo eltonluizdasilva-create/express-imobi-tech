@@ -14,7 +14,7 @@ import { temAcessoModulo } from './components/admin/helpers';
 import { Zap, ClipboardList, Wallet, Target } from 'lucide-react';
 
 // --- MÓDULOS NA RAIZ (CONFORME SUA BARRA LATERAL) ---
-import Mecanica from './Mecanica';
+import Mecanica from './components/Mecanica';
 import LatariaModulo from './Lataria';
 import AmortecedorModulo from './Amortecedor';
 import MotoModulo from './Motos';
@@ -54,7 +54,7 @@ import OficinaPatrimonio from './components/OficinaPatrimonio';
 import Fornecedores from './components/Fornecedores';
 import Ajuda from './components/Ajuda';
 import MasterPanel from './components/MasterPanel';
-import QuickActions from './components/QuickActions';
+import QuickActions from './QuickActions';
 const AJUDA_ITENS = [
   { aba: 'dashboard', icon: '📊', titulo: 'Visão Geral & Dashboard', conteudo: ['Acompanhe faturamento, número de O.S. e ticket médio.', 'Visualize o status das ordens de serviço em tempo real.', 'Monitore metas financeiras e desempenho da equipe.'] },
   { aba: 'os', icon: '📝', titulo: 'Abertura de O.S. (Triagem)', conteudo: ['Inicie o atendimento clicando em "Nova O.S." ou use a Busca Rápida.', 'Preencha os dados do cliente e veículo (use o microfone se disponível).', 'Encaminhe para o setor técnico desejado (Mecânica, Óleo, Alinhamento, etc).'] },
