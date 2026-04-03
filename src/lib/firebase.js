@@ -1,7 +1,11 @@
 import { initializeApp } from 'firebase/app';
 import { getFirestore } from 'firebase/firestore';
 import { getStorage } from 'firebase/storage';
+<<<<<<< HEAD
 import { getAuth } from 'firebase/auth';
+=======
+import { getAuth } from 'firebase/auth'; // 🟢 Faltava esta linha!
+>>>>>>> 5b7369d8d985c6de92b8b5f85688ef797a80d8c3
 
 const firebaseConfig = {
   apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
