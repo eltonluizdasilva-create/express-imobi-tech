@@ -17,7 +17,7 @@ import Mecanica from './components/Mecanica';
 import LatariaModulo from './components/Lataria';
 import AmortecedorModulo from './components/Amortecedor';
 import MotoModulo from './components/Motos';
-import Pneus from './components/Pneus';
+import Pneus from './components/pneus';
 import OleoModulo from './components/Oleo';
 import AlinhamentoModulo from './components/Alinhamento';
 import EletricaModulo from './Eletrica';
