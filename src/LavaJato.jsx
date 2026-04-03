@@ -210,9 +210,9 @@ export default function LavaJatoModulo({ oficinaId, osParaEditar, onCancelar, on
       {success && (
         <div className="fixed bottom-20 left-1/2 -translate-x-1/2 bg-green-600 px-16 py-8 rounded-full shadow-[0_0_50px_rgba(22,163,74,0.5)] animate-bounce flex items-center gap-6 z-[600] font-black uppercase text-2xl text-white border-4 border-white/30">
           <CheckCircle size={45} /> CARRO NA FILA COM SUCESSO!
-=======
-/* eslint-disable no-unused-vars */
-import React, {useState, useEffect, useMemo} from 'react';
+
+          /* eslint-disable no-unused-vars */
+          import React, {useState, useEffect, useMemo} from 'react';
           import {db} from './lib/firebase';
           import {collection, addDoc, getDocs, updateDoc, deleteDoc, doc} from 'firebase/firestore';
           import {useOficina} from "./components/OficinaContext"
@@ -770,7 +770,7 @@ const comprimirFoto = (base64, qualidade = 0.5) =>
                     ))}
                   </div>
                 )}
->>>>>>> 5b7369d8d985c6de92b8b5f85688ef797a80d8c3
+
               </div>
             )}
           </div>

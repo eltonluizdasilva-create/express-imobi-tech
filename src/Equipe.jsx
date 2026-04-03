@@ -29,7 +29,7 @@ export default function Equipe() {
 
   // Estados do Formulário
   const [nome, setNome] = useState('');
->>>>>>> 5b7369d8d985c6de92b8b5f85688ef797a80d8c3
+
   const [cargo, setCargo] = useState('Mecânico');
   const [whatsapp, setWhatsapp] = useState('');
 
@@ -48,7 +48,7 @@ export default function Equipe() {
   const [osSelecionada, setOsSelecionada] = useState('');
 
   // 1. Carregar Equipe em Tempo Real
->>>>>>> 5b7369d8d985c6de92b8b5f85688ef797a80d8c3
+
   useEffect(() => {
     if (!oficinaId) return;
     const q = query(collection(db, "oficinas", oficinaId, "equipe"));
@@ -140,7 +140,7 @@ export default function Equipe() {
   // 4. Excluir Membro
   const handleExcluir = async (id) => {
     if (window.confirm("Deseja realmente remover este membro da equipe?")) {
->>>>>>> 5b7369d8d985c6de92b8b5f85688ef797a80d8c3
+
       await deleteDoc(doc(db, "oficinas", oficinaId, "equipe", id));
     }
   };
@@ -228,11 +228,11 @@ export default function Equipe() {
       if (membro.cargo === 'Mecânico') {
       const linkIA = `https://www.youtube.com/results?search_query=como+instalar+${encodeURIComponent(os.pecasDescricao)}+${encodeURIComponent(os.modelo)}`;
       mensagem = `${saudacao}Temos um serviço para você!\n\n🚗 *Veículo:* ${os.modelo}\n🏷️ *Placa:* ${os.placa || 'Sem placa'}\n🛠️ *Problema Relatado:* ${os.diagnostico || 'Verificar'}\n\n🤖 *Dica da IA para o serviço:* ${linkIA}`;
-    
+
     } else if (membro.cargo === 'Secretária') {
       const linkPagamento = os.celular ? `wa.me/55${os.celular}` : 'Nenhum WhatsApp cadastrado para este cliente.';
       mensagem = `${saudacao}A O.S. do ${os.modelo} está pronta para faturamento.\n\n👤 *Cliente:* ${os.cliente || 'Não informado'}\n💰 *Valor Total:* R$ ${Number(os.total || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}\n\n📲 *WhatsApp do Cliente:* ${linkPagamento}\nPor favor, faça a cobrança.`;
-    
+
     } else if (membro.cargo === 'Estoque') {
         mensagem = `${saudacao}Precisamos de peças para uma O.S.!\n\n🚗 *Veículo:* ${os.modelo} (Placa: ${os.placa || 'Sem placa'})\n📦 *Peças necessárias:* ${os.pecasDescricao || 'Nenhuma peça especificada na O.S.'}\n\nPor favor, separe os itens e dê baixa no sistema.`;
     }
@@ -336,7 +336,7 @@ export default function Equipe() {
           )}
         </div>
 
->>>>>>> 5b7369d8d985c6de92b8b5f85688ef797a80d8c3
+
       </div>
       );
 }

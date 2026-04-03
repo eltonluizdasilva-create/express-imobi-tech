@@ -550,7 +550,7 @@ const comprimirFoto = (b,q=0.5) => new Promise(res=>{
                     ))}
                   </div>
                 )}
->>>>>>> 5b7369d8d985c6de92b8b5f85688ef797a80d8c3
+
               </div>
             )}
           </div>
@@ -559,4 +559,4 @@ const comprimirFoto = (b,q=0.5) => new Promise(res=>{
 }
 =======
 }
->>>>>>> 5b7369d8d985c6de92b8b5f85688ef797a80d8c3
+
