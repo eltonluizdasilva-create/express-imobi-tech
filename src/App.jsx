@@ -10,10 +10,8 @@ import Layout from "./components/Layout";
 import Home from "./Home";
 import Servicos from "./Servicos";
 import Sobre from "./Sobre";
-import Cadastro from "./Cadastro";
-
 import AdminNovo from './AdminNovo';
-
+import Cadastro from "./Cadastro";
 import LeadsPage from "./LeadsPage";
 import Historico from "./Historico";
 import OleoPage from "./OleoPage";
@@ -22,16 +20,15 @@ import Login from "./Login";
 import LoginAdmin from "./LoginAdmin";
 import Marketing from "./Marketing";
 
-// 🟢 IMPORT DO NOVO PORTAL DO CLIENTE 
-// (Se der erro de import, mude para "./pages/admin/PortalCliente")
+// 🟢 IMPORT DO NOVO PORTAL DO CLIENTE
 import PortalCliente from "./PortalCliente";
 
 function AppRoutes() {
   const location = useLocation();
 
   // Lógica do menu inferior (Layout)
-  // Adicionamos as rotas onde o menu NÃO deve aparecer (array unificado e limpo)
-  const rotasSemMenu = [
+  // Adicionamos as rotas onde o menu NÃO deve aparecer
+  const mostrarMenuInferior = ![
     '/',
     '/site',
     '/cadastro',
@@ -41,11 +38,7 @@ function AppRoutes() {
     '/portal',
     '/portal2',
     '/login'
-  ];
-
-  const mostrarMenuInferior =
-    !rotasSemMenu.includes(location.pathname) &&
-    !location.pathname.startsWith('/status/');
+  ].includes(location.pathname) && !location.pathname.startsWith('/status/');
 
   return (
     <>
@@ -59,7 +52,7 @@ function AppRoutes() {
         <Route path="/login" element={<Login />} />
         <Route path="/login-admin" element={<LoginAdmin />} />
 
-        {/* 🟢 ADMIN CORRIGIDO (DIRECIONANDO PARA O NOVO PAINEL) */}
+        {/* 🟢 ADMIN CORRIGIDO (PARA ABRIR DIRETO SEM TELA PRETA) */}
         <Route path="/admin" element={<AdminNovo />} />
         <Route path="/admin2" element={<AdminNovo />} />
 
@@ -82,14 +75,11 @@ function AppRoutes() {
         <Route path="/leads" element={<LeadsPage />} />
 
         {/* ÁREA MASTER PROTEGIDA */}
-        <Route
-          path="/master"
-          element={
-            <ProtectedRouteMaster>
-              <AdminNovo />
-            </ProtectedRouteMaster>
-          }
-        />
+        <Route path="/master" element={
+          <ProtectedRouteMaster>
+            <AdminNovo />
+          </ProtectedRouteMaster>
+        } />
       </Routes>
 
       {/* O componente Layout é o seu menu inferior com botões */}

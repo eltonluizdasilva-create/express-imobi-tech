@@ -3,6 +3,8 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { db } from './lib/firebase';
 import { collection, addDoc, getDocs, query, orderBy, where, updateDoc, doc, getDoc, deleteDoc } from 'firebase/firestore';
 import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged } from 'firebase/auth';
+
+// Componentes de Interface e Admin
 import { COLORS, TAB_COLORS, normalizarPlaca, formatarMoeda } from './components/admin/constants';
 import Dashboard, { TEMAS } from './DashboardTab';
 import OSModulo from './components/admin/OS';
@@ -10,24 +12,22 @@ import ListaOS from './components/admin/ListaOS';
 import SpeechTextarea from './components/admin/SpeechTextarea';
 import { temAcessoModulo } from './components/admin/helpers';
 import { Zap, ClipboardList, Wallet, Target } from 'lucide-react';
-import HibridoEV from './HibridoEV'; // Ou ./VeiculoEletrico se preferir o outro
-import InjecaoModulo from './components/Injecao'; // Note que este está na pasta components
-import VeiculoEletrico from './VeiculoEletrico';
-import Mecanica from './components/Mecanica';
-import LatariaModulo from './components/Lataria';
-import AmortecedorModulo from './components/Amortecedor';
-import MotoModulo from './components/Motos';
-import Pneus from './components/pneus';
-import OleoModulo from './components/Oleo';
-import AlinhamentoModulo from './components/Alinhamento';
+
+// --- MÓDULOS NA RAIZ (CONFORME SUA BARRA LATERAL) ---
+import Mecanica from './Mecanica';
+import LatariaModulo from './Lataria';
+import AmortecedorModulo from './Amortecedor';
+import MotoModulo from './Motos';
+import Pneus from './pneus'; // 'p' minúsculo conforme vimos na pasta
+import OleoModulo from './Oleo';
 import EletricaModulo from './Eletrica';
-import RevisaoModulo from './components/ModuloRevisao';
 import ArCondicionado from './ArCondicionado';
 import Escapamento from './Escapamento';
 import Estetica from './Estetica';
 import LavaJato from './LavaJato';
 import Desmanche from './Desmanche';
-import CopilotoModulo from './components/copiloto';
+import VeiculoEletrico from './VeiculoEletrico';
+import HibridoEV from './HibridoEV';
 import MarketingModulo from './Marketing';
 import Financeiro from './Financeiro';
 import Estoque from './Estoque';
@@ -37,19 +37,24 @@ import Equipe from './Equipe';
 import ConfiguracoesPage from './Configuracoes';
 import ModuloMeuPlano from './ModuloMeuPlano';
 import MercadoLivre from './Mercadolivre';
+import TarefaTab from './Tarefas';
+import NotaFiscal from './NotaFiscal';
+import AbaEstrategia from './Estrategia';
+
+// --- MÓDULOS DENTRO DE /COMPONENTS ---
+import InjecaoModulo from './components/Injecao';
+import AlinhamentoModulo from './components/Alinhamento';
+import RevisaoModulo from './components/ModuloRevisao';
+import CopilotoModulo from './components/copiloto';
 import Secretaria from './components/Secretaria';
 import Administrador from './components/Administrador';
 import Contador from './components/Contador';
-import TarefaTab from './Tarefas';
-import NotaFiscal from './NotaFiscal';
 import GestaoRetorno from './components/GestaoRetorno';
 import OficinaPatrimonio from './components/OficinaPatrimonio';
 import Fornecedores from './components/Fornecedores';
-import AbaEstrategia from './Estrategia';
 import Ajuda from './components/Ajuda';
 import MasterPanel from './components/MasterPanel';
 import QuickActions from './components/QuickActions';
-
 const AJUDA_ITENS = [
   { aba: 'dashboard', icon: '📊', titulo: 'Visão Geral & Dashboard', conteudo: ['Acompanhe faturamento, número de O.S. e ticket médio.', 'Visualize o status das ordens de serviço em tempo real.', 'Monitore metas financeiras e desempenho da equipe.'] },
   { aba: 'os', icon: '📝', titulo: 'Abertura de O.S. (Triagem)', conteudo: ['Inicie o atendimento clicando em "Nova O.S." ou use a Busca Rápida.', 'Preencha os dados do cliente e veículo (use o microfone se disponível).', 'Encaminhe para o setor técnico desejado (Mecânica, Óleo, Alinhamento, etc).'] },
