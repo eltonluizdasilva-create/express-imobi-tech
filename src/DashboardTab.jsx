@@ -168,7 +168,7 @@ export default function DashboardTab({
                     <BotaoAcao label="Nova O.S." cor={MAIN_COLOR} icone="📄" t={t} onClick={onNovaOS} tamanho="lg" />
                     <BotaoAcao label="Financeiro" cor={GREEN_MONEY} icone="💰" t={t} onClick={onFinanceiro} />
                     <BotaoAcao label="Estoque" cor={KM_COLOR} icone="📦" t={t} onClick={onEstoque} />
-<<<<<<< HEAD
+
 =======
                     <div style={{ width: '1px', height: '36px', background: t.border }} />
                     <button onClick={onToggleTema} style={{ background: t.bgCardAlt, color: t.texto, border: `2px solid ${t.border}`, padding: '10px 18px', borderRadius: '30px', fontWeight: '800', fontSize: '12px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px', transition: 'all 0.2s' }}>

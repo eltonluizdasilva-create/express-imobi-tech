@@ -1,7 +1,7 @@
 import React from "react";
 import { BrowserRouter as Router, Routes, Route, useLocation } from "react-router-dom";
 
-<<<<<<< HEAD
+
 // IMPORTANTE: Caminhos apontando para a pasta atual (./) ou components
 =======
 // IMPORTANTE: Agora os caminhos apontam diretamente para a pasta atual (./)
@@ -14,7 +14,7 @@ import Layout from "./components/Layout";
 import Home from "./Home";
 import Servicos from "./Servicos";
 import Sobre from "./Sobre";
-<<<<<<< HEAD
+
 import AdminNovo from './AdminNovo';
 =======
 import Admin from "./Admin";
@@ -28,7 +28,7 @@ import Login from "./Login";
 import LoginAdmin from "./LoginAdmin";
 import Marketing from "./Marketing";
 
-<<<<<<< HEAD
+
 // 🟢 IMPORT DO NOVO PORTAL DO CLIENTE
 import PortalCliente from "./PortalCliente";
 =======
@@ -39,7 +39,7 @@ import PortalCliente from "./pages/admin/PortalCliente";
 function AppRoutes() {
   const location = useLocation();
 
-<<<<<<< HEAD
+
   // Lógica do menu inferior (Layout)
   // Adicionamos as rotas onde o menu NÃO deve aparecer
   const mostrarMenuInferior = ![
@@ -55,7 +55,7 @@ function AppRoutes() {
     '/sobre',
     '/login-admin',
     '/portal',
-<<<<<<< HEAD
+
     '/portal2',
     '/login'
 =======
@@ -66,7 +66,7 @@ function AppRoutes() {
   return (
     <>
       <Routes>
-<<<<<<< HEAD
+
         {/* 🟢 PORTAL DO CLIENTE - PÁGINA PRINCIPAL E VARIANTES */}
         <Route path="/" element={<PortalCliente />} />
         <Route path="/portal" element={<PortalCliente />} />
@@ -99,7 +99,7 @@ function AppRoutes() {
         {/* ABA MARKETING */}
         <Route path="/marketing" element={<Marketing />} />
 
-<<<<<<< HEAD
+
         {/* SITE INSTITUCIONAL */}
 =======
         {/* SITE */}
@@ -109,7 +109,7 @@ function AppRoutes() {
         <Route path="/sobre" element={<Sobre />} />
         <Route path="/cadastro" element={<Cadastro />} />
 
-<<<<<<< HEAD
+
         {/* STATUS DA OS (PÁGINA DO CLIENTE) */}
         <Route path="/status/:oficinaId/:osId" element={<StatusOS />} />
 
@@ -125,35 +125,35 @@ function AppRoutes() {
         <Route path="/os" element={<OSPage />} />
         <Route path="/leads" element={<LeadsPage />} />
 
-<<<<<<< HEAD
+
         {/* ÁREA MASTER PROTEGIDA */}
         <Route path="/master" element={
           <ProtectedRouteMaster>
             <AdminNovo />
 =======
         <Route path="/master" element={
-          <ProtectedRouteMaster>
-            <Admin />
+              <ProtectedRouteMaster>
+                <Admin />
 >>>>>>> 5b7369d8d985c6de92b8b5f85688ef797a80d8c3
-          </ProtectedRouteMaster>
-        } />
-      </Routes>
+              </ProtectedRouteMaster>
+            } />
+          </Routes>
 
-<<<<<<< HEAD
+
       {/* O componente Layout é o seu menu inferior com botões */}
 =======
 >>>>>>> 5b7369d8d985c6de92b8b5f85688ef797a80d8c3
-      {mostrarMenuInferior && <Layout />}
+          {mostrarMenuInferior && <Layout />}
     </>
-  );
+      );
 }
 
-export default function App() {
+      export default function App() {
   return (
-    <OficinaProvider>
-      <Router>
-        <AppRoutes />
-      </Router>
-    </OficinaProvider>
-  );
+      <OficinaProvider>
+        <Router>
+          <AppRoutes />
+        </Router>
+      </OficinaProvider>
+      );
 }
