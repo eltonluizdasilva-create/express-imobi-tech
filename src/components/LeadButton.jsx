@@ -90,13 +90,6 @@ export default function LeadButton() {
 
   return (
     <>
-      {/* BOTÃO FLUTUANTE */}
-      <button
-        onClick={() => setAberto(true)}
-        style={{ position: 'fixed', bottom: '80px', right: '20px', background: '#00E676', color: 'black', width: '60px', height: '60px', borderRadius: '30px', border: 'none', boxShadow: '0 5px 15px rgba(0,230,118,0.4)', fontSize: '24px', cursor: 'pointer', zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
-      >
-        ⚡
-      </button>
 
       {/* MODAL DO LEAD RÁPIDO */}
       {aberto && (

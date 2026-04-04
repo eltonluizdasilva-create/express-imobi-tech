@@ -11,14 +11,14 @@ import OSModulo from './components/admin/OS';
 import ListaOS from './components/admin/ListaOS';
 import SpeechTextarea from './components/admin/SpeechTextarea';
 import { temAcessoModulo } from './components/admin/helpers';
-import { Zap, ClipboardList, Wallet, Target } from 'lucide-react';
+import { Zap, ClipboardList, Wallet, Target, Lock } from 'lucide-react';
 
 // --- 1. MÓDULOS NA PASTA COMPONENTS (Lidos da sua foto) ---
 import Mecanica from './components/Mecanica';
 import LatariaModulo from './components/Lataria';
 import AmortecedorModulo from './components/Amortecedor';
 import MotoModulo from './components/Motos';
-import Pneus from './components/pneus';
+import PneusModulo from './components/pneus';
 import OleoModulo from './components/Oleo';
 import InjecaoModulo from './components/Injecao';
 import AlinhamentoModulo from './components/Alinhamento';
@@ -136,6 +136,7 @@ export default function Admin() {
   const [leadProblema, setLeadProblema] = useState('');
   const [leadSalvando, setLeadSalvando] = useState(false);
   const [leadCampoOuvindo, setLeadCampoOuvindo] = useState(null);
+  const [toastModuloBloqueado, setToastModuloBloqueado] = useState(null);
 
   // --- ESTADO PARA AJUDA DINÂMICA ---
   const [videosAjudaAdmin, setVideosAjudaAdmin] = useState({});
@@ -259,7 +260,7 @@ export default function Admin() {
       amortecedor: 'amortecedor', injecao: 'injecao',
       eletrica: 'eletrica', oleo: 'oleo', alinhamento: 'alinhamento',
       revisao: 'revisao', lavajato: 'lavajato',
-      ar_condicionado: 'ar_condicionado', pneus: 'pneus', escapamento: 'escapamento',
+      ar_condicionado: 'ar_condicionado', pneus: 'pneus', pneu: 'pneus', escapamento: 'escapamento',
       estetica: 'estetica', desmanche: 'desmanche',
     };
     return map[tipo] || 'mecanica';
@@ -603,6 +604,18 @@ export default function Admin() {
     return permissoesLogado[aba] === true;
   };
 
+  const moduloLiberado = (aba) => {
+    const modulosAtivos = dadosOficina?.modulos_ativos || [];
+    if (papelLogado === 'master') return true;
+    if (modulosAtivos.length === 0) return true;
+    return modulosAtivos.includes(aba);
+  };
+
+  const lidarModuloBloqueado = (aba) => {
+    setToastModuloBloqueado(aba);
+    setTimeout(() => setToastModuloBloqueado(null), 3000);
+  };
+
   const verificarSenha = async () => {
     try {
       await signInWithEmailAndPassword(getAuth(), emailInput, senhaInput);
@@ -614,7 +627,13 @@ export default function Admin() {
 
   const fazerLogout = () => {
     signOut(getAuth()).then(() => {
-      window.location.href = 'http://localhost:5174/portal2';
+      setLogado(false);
+      setPapelLogado(null);
+      setPermissoesLogado(null);
+      setDadosOficina(null);
+      setEmailInput('');
+      setSenhaInput('');
+      setErroLogin('');
     });
   };
 
@@ -859,14 +878,17 @@ export default function Admin() {
       {/* Header */}
       <div style={{ background: t.bgCard, padding: '15px 20px', borderBottom: `2px solid ${papelLogado === 'master' ? MASTER : MAIN}`, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <div>
-          <h1 style={{ margin: 0, fontSize: '20px' }}>EXPRESS <span style={{ color: papelLogado === 'master' ? MASTER : MAIN }}>AUTO TECH</span></h1>
+          <h1 style={{ margin: 0, fontSize: '16px', lineHeight: '1.2' }}>
+            EXPRESS<br />
+            <span style={{ color: papelLogado === 'master' ? MASTER : MAIN }}>AUTO<br />TECH</span>
+          </h1>
           {papelLogado === 'master' && <span style={{ color: MASTER, fontSize: '11px', fontWeight: 'bold' }}>👑 MASTER</span>}
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
           <button onClick={toggleTema} style={{ background: t.bgCardAlt, color: t.texto, border: `2px solid ${t.border}`, padding: '8px 16px', borderRadius: '30px', fontWeight: '800', fontSize: '12px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px', transition: 'all 0.2s' }}>
             {t.iconeToggle} {t.labelToggle}
           </button>
-          <button onClick={fazerLogout} style={{ background: 'transparent', color: papelLogado === 'master' ? MASTER : MAIN, border: `1px solid ${papelLogado === 'master' ? MASTER : MAIN}`, padding: '8px 16px', borderRadius: '5px', cursor: 'pointer', fontSize: '13px', fontWeight: 'bold' }}>SAIR</button>
+          <button onClick={fazerLogout} style={{ background: 'transparent', color: papelLogado === 'master' ? MASTER : MAIN, border: `2px solid ${papelLogado === 'master' ? MASTER : MAIN}`, padding: '8px 20px', borderRadius: '30px', cursor: 'pointer', fontSize: '13px', fontWeight: 'bold', boxShadow: `0 0 10px ${papelLogado === 'master' ? MASTER : MAIN}44`, transition: 'all 0.2s' }}>SAIR</button>
         </div>
       </div>
 
@@ -922,17 +944,19 @@ export default function Admin() {
             .filter(aba => abasDisponiveis.includes(aba))
             .map(aba => {
               const corAba = TAB_COLORS[aba] || MAIN;
+              const liberado = moduloLiberado(aba);
               return (
-                <button key={aba} onClick={() => setAbaAtiva(aba)}
+                <button key={aba} onClick={() => !liberado ? lidarModuloBloqueado(aba) : setAbaAtiva(aba)}
                   className="nav-button-premium"
                   style={{
                     flexShrink: 0, padding: '8px 14px',
                     background: abaAtiva === aba ? `${corAba}22` : t.bgCard,
-                    color: abaAtiva === aba ? corAba : `${corAba}aa`,
+                    color: !liberado ? '#555' : (abaAtiva === aba ? corAba : `${corAba}aa`),
                     border: `1px solid ${abaAtiva === aba ? corAba : `${corAba}44`}`,
                     borderRadius: '20px', fontWeight: '900', fontSize: '11px', cursor: 'pointer', whiteSpace: 'nowrap',
                     '--glow-color': corAba
                   }}>
+                  {!liberado && <Lock size={10} style={{ display: 'inline', marginRight: '4px', opacity: 0.6 }} />}
                   {LABELS_ABAS[aba]}
                 </button>
               );
@@ -946,17 +970,19 @@ export default function Admin() {
             .filter(aba => abasDisponiveis.includes(aba))
             .map(aba => {
               const corAba = TAB_COLORS[aba] || MAIN;
+              const liberado = moduloLiberado(aba);
               return (
-                <button key={aba} onClick={() => setAbaAtiva(aba)}
+                <button key={aba} onClick={() => !liberado ? lidarModuloBloqueado(aba) : setAbaAtiva(aba)}
                   className="nav-button-premium"
                   style={{
                     flexShrink: 0, padding: '10px 18px',
                     background: abaAtiva === aba ? `${corAba}22` : t.bgCard,
-                    color: abaAtiva === aba ? corAba : `${corAba}aa`,
+                    color: !liberado ? '#555' : (abaAtiva === aba ? corAba : `${corAba}aa`),
                     border: `1px solid ${abaAtiva === aba ? corAba : `${corAba}44`}`,
                     borderRadius: '20px', fontWeight: '900', fontSize: '12px', cursor: 'pointer', whiteSpace: 'nowrap',
                     '--glow-color': corAba
                   }}>
+                  {!liberado && <Lock size={10} style={{ display: 'inline', marginRight: '4px', opacity: 0.6 }} />}
                   {LABELS_ABAS[aba]}
                 </button>
               );
@@ -967,20 +993,22 @@ export default function Admin() {
         <p style={{ color: t.textoTer, fontSize: '9px', fontWeight: 'bold', letterSpacing: '2px', margin: '0 0 6px', textTransform: 'uppercase' }}>📋 Gestão</p>
         <div style={{ display: 'flex', gap: '8px', overflowX: 'auto', marginBottom: '12px', paddingBottom: '4px' }}>
           {['dashboard', 'estoque', 'financeiro', 'tarefa', 'notafiscal', 'retorno', 'leads', 'patrimonio', 'fornecedores', 'historico']
-            .filter(aba => abasDisponiveis.includes(aba))
+            .filter(aba => abasDisponiveis.includes(aba) && (aba !== 'dashboard' || papelLogado === 'dono'))
             .map(aba => {
               const corAba = TAB_COLORS[aba] || MAIN;
+              const liberado = moduloLiberado(aba);
               return (
-                <button key={aba} onClick={() => setAbaAtiva(aba)}
+                <button key={aba} onClick={() => !liberado ? lidarModuloBloqueado(aba) : setAbaAtiva(aba)}
                   className="nav-button-premium"
                   style={{
                     flexShrink: 0, padding: '10px 18px',
                     background: abaAtiva === aba ? `${corAba}22` : t.bgCard,
-                    color: abaAtiva === aba ? corAba : `${corAba}aa`,
+                    color: !liberado ? '#555' : (abaAtiva === aba ? corAba : `${corAba}aa`),
                     border: `1px solid ${abaAtiva === aba ? corAba : `${corAba}44`}`,
                     borderRadius: '20px', fontWeight: '900', fontSize: '12px', cursor: 'pointer', whiteSpace: 'nowrap',
                     '--glow-color': corAba
                   }}>
+                  {!liberado && <Lock size={10} style={{ display: 'inline', marginRight: '4px', opacity: 0.6 }} />}
                   {LABELS_ABAS[aba]}
                 </button>
               );
@@ -992,21 +1020,23 @@ export default function Admin() {
           <>
             <p style={{ color: t.textoTer, fontSize: '9px', fontWeight: 'bold', letterSpacing: '2px', margin: '0 0 6px', textTransform: 'uppercase' }}>⚙️ Sistema</p>
             <div style={{ display: 'flex', gap: '8px', overflowX: 'auto', marginBottom: '8px', paddingBottom: '4px' }}>
-              {['master', 'meuplano', 'config', 'equipe', 'marketing', 'estrategia', 'ajuda']
-                .filter(aba => abasDisponiveis.includes(aba))
+              {['meuplano', 'config', 'equipe', 'marketing', 'estrategia', 'ajuda', 'master']
+                .filter(aba => abasDisponiveis.includes(aba) && (aba !== 'master' || papelLogado === 'master'))
                 .map(aba => {
                   const corAba = TAB_COLORS[aba] || MASTER;
+                  const liberado = moduloLiberado(aba);
                   return (
-                    <button key={aba} onClick={() => setAbaAtiva(aba)}
+                    <button key={aba} onClick={() => !liberado ? lidarModuloBloqueado(aba) : setAbaAtiva(aba)}
                       className="nav-button-premium"
                       style={{
                         flexShrink: 0, padding: '10px 18px',
                         background: abaAtiva === aba ? `${corAba}22` : t.bgCard,
-                        color: abaAtiva === aba ? corAba : `${corAba}aa`,
+                        color: !liberado ? '#555' : (abaAtiva === aba ? corAba : `${corAba}aa`),
                         border: `1px solid ${abaAtiva === aba ? corAba : `${corAba}44`}`,
                         borderRadius: '20px', fontWeight: '900', fontSize: '12px', cursor: 'pointer', whiteSpace: 'nowrap',
                         '--glow-color': corAba
                       }}>
+                      {!liberado && <Lock size={10} style={{ display: 'inline', marginRight: '4px', opacity: 0.6 }} />}
                       {LABELS_ABAS[aba]}
                     </button>
                   );
@@ -1046,6 +1076,7 @@ export default function Admin() {
             onEstoque={() => setAbaAtiva('estoque')}
             onLancarDespesa={() => setAbaAtiva('financeiro')}
             onAgendarRevisao={() => setAbaAtiva('revisao')}
+            oficinaId={oficinaId}
           />
         )}
 
@@ -1350,7 +1381,7 @@ export default function Admin() {
             onSalvo={carregarOS}
             buscarDadosPorPlaca={buscarDadosPorPlaca}
             osParaEditar={osEditando}
-            onCancelar={fecharEdicao}
+            onCancelar={() => setAbaAtiva('os')}
             dadosOficina={dadosOficina}
             papelLogado={papelLogado}
             permissoesLogado={permissoesLogado}
@@ -1435,7 +1466,7 @@ export default function Admin() {
             onSalvo={carregarOS}
             buscarPorPlaca={buscarDadosPorPlaca}
             osParaEditar={osEditando}
-            onCancelarEdicao={fecharEdicao}
+            onCancelar={() => setAbaAtiva('os')}
             dadosOficina={dadosOficina}
             papelLogado={papelLogado}
             irParaNovaOS={irParaNovaOS}
@@ -1696,6 +1727,25 @@ export default function Admin() {
         carregarFinanceiro={carregarFinanceiro}
         setAbaAtiva={setAbaAtiva}
       />
+
+      {/* TOAST MÓDULO BLOQUEADO */}
+      {toastModuloBloqueado && (
+        <div style={{
+          position: 'fixed', bottom: '30px', left: '50%', transform: 'translateX(-50%)',
+          background: '#111', border: `1px solid ${MAIN}`, borderRadius: '12px',
+          padding: '16px 24px', zIndex: 9999, display: 'flex', alignItems: 'center', gap: '12px',
+          boxShadow: `0 0 30px ${MAIN}44`, maxWidth: '400px', width: '90%'
+        }}>
+          <div style={{ width: '36px', height: '36px', background: `${MAIN}22`, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+            <Lock size={16} color={MAIN} />
+          </div>
+          <div style={{ flex: 1 }}>
+            <p style={{ color: MAIN, fontWeight: 'bold', fontSize: '13px', margin: 0 }}>Módulo Premium</p>
+            <p style={{ color: '#888', fontSize: '11px', margin: '2px 0 0 0' }}>Acesse a aba <strong style={{ color: 'white' }}>Meu Plano</strong> para liberar.</p>
+          </div>
+          <button onClick={() => setToastModuloBloqueado(null)} style={{ background: 'transparent', border: 'none', color: '#555', cursor: 'pointer', fontSize: '16px', padding: '0', flexShrink: 0 }}>✕</button>
+        </div>
+      )}
     </div>
   );
 }

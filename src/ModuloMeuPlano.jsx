@@ -1,10 +1,12 @@
 import React, { useState, useEffect } from 'react';
+import { Lock } from 'lucide-react';
 
 const GREEN_MONEY = "#00E676";
 const MAIN_COLOR = "#FF0033";
 
 export default function ModuloMeuPlano({ dadosOficina, planosSistema }) {
-    const [ciclo, setCiclo] = useState('mensal'); // 'mensal' ou 'anual'
+    const [ciclo, setCiclo] = useState('mensal');
+    const [modalPremium, setModalPremium] = useState(null);
 
     // LÊ AS CONFIGURAÇÕES DO PAINEL MASTER EM TEMPO REAL
     const premiumMods = planosSistema?.premiumMods || [];
@@ -112,72 +114,124 @@ export default function ModuloMeuPlano({ dadosOficina, planosSistema }) {
         window.open(`https://wa.me/${numeroExpressAI}?text=${encodeURIComponent(msg)}`, '_blank');
     };
 
-    return (
-        <div style={{ background: '#0a0a0a', padding: '20px', borderRadius: '15px', border: `1px solid ${corDestaque}`, transition: 'all 0.3s' }}>
-            <div style={{ textAlign: 'center', marginBottom: '30px' }}>
-                <h2 style={{ color: corDestaque, margin: '0 0 10px 0', transition: 'color 0.3s' }}>🧩 Monte a sua Exp Auto Tech</h2>
-                <p style={{ color: '#888', fontSize: '14px' }}>Escolha os módulos premium que você precisa e veja o plano se ajustar automaticamente!</p>
-            </div>
+    const solicitarUpgrade = () => {
+        const nomesModsExtras = TODOS_MODULOS.filter(m => premiumMods.includes(m.id) && modulos[m.id]).map(m => m.label);
+        if (modulos.pacote_ia) nomesModsExtras.push('PACOTE PRIME IA');
 
-            <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '30px' }}>
-                <div style={{ background: '#111', borderRadius: '30px', border: '1px solid #333', display: 'flex', padding: '5px' }}>
-                    <button onClick={() => setCiclo('mensal')} style={{ padding: '10px 30px', borderRadius: '25px', border: 'none', background: ciclo === 'mensal' ? corDestaque : 'transparent', color: ciclo === 'mensal' ? (modulos.pacote_ia ? 'white' : 'black') : '#888', fontWeight: 'bold', cursor: 'pointer', transition: '0.3s' }}>MENSAL</button>
-                    <button onClick={() => setCiclo('anual')} style={{ padding: '10px 30px', borderRadius: '25px', border: 'none', background: ciclo === 'anual' ? corDestaque : 'transparent', color: ciclo === 'anual' ? (modulos.pacote_ia ? 'white' : 'black') : '#888', fontWeight: 'bold', cursor: 'pointer', transition: '0.3s', position: 'relative' }}>
-                        ANUAL<span style={{ position: 'absolute', top: '-10px', right: '-10px', background: MAIN_COLOR, color: 'white', fontSize: '9px', padding: '2px 6px', borderRadius: '10px' }}>15% OFF</span>
+        const oficinaNome = dadosOficina?.nome || 'Oficina não informada';
+        const planoAtual = dadosOficina?.plano || nomePlano;
+        const extraStr = nomesModsExtras.length > 0 ? `\n✅ *Módulos Extras:* ${nomesModsExtras.join(', ')}` : '\n✅ *Nenhum módulo extra selecionado.';
+
+        const msg = `🚀 *SOLICITAR UPGRADE DE PLANO*\n\n🏪 *Oficina:* ${oficinaNome}\n📦 *Plano Atual:* ${planoAtual}\n📦 *Plano Desejado:* ${nomePlano}\n🔄 *Ciclo:* ${ciclo.toUpperCase()}${extraStr}\n💰 *Valor Total:* R$ ${total.toLocaleString('pt-BR')}${ciclo === 'anual' ? '/mês (anual)' : '/mês'}\n\nGostaria de solicitar o upgrade!`;
+
+        const numeroExpressAI = planosSistema?.whatsapp || "5534991439845";
+        window.open(`https://wa.me/${numeroExpressAI}?text=${encodeURIComponent(msg)}`, '_blank');
+    };
+
+    const handleModuloBloqueado = (item) => {
+        setModalPremium(item);
+    };
+
+    return (
+        <>
+            <div style={{ background: '#0a0a0a', padding: '20px', borderRadius: '15px', border: `1px solid ${corDestaque}`, transition: 'all 0.3s' }}>
+                <div style={{ textAlign: 'center', marginBottom: '30px' }}>
+                    <h2 style={{ color: corDestaque, margin: '0 0 10px 0', transition: 'color 0.3s' }}>🧩 Monte a sua Exp Auto Tech</h2>
+                    <p style={{ color: '#888', fontSize: '14px' }}>Escolha os módulos premium que você precisa e veja o plano se ajustar automaticamente!</p>
+                </div>
+
+                <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '30px' }}>
+                    <div style={{ background: '#111', borderRadius: '30px', border: '1px solid #333', display: 'flex', padding: '5px' }}>
+                        <button onClick={() => setCiclo('mensal')} style={{ padding: '10px 30px', borderRadius: '25px', border: 'none', background: ciclo === 'mensal' ? corDestaque : 'transparent', color: ciclo === 'mensal' ? (modulos.pacote_ia ? 'white' : 'black') : '#888', fontWeight: 'bold', cursor: 'pointer', transition: '0.3s' }}>MENSAL</button>
+                        <button onClick={() => setCiclo('anual')} style={{ padding: '10px 30px', borderRadius: '25px', border: 'none', background: ciclo === 'anual' ? corDestaque : 'transparent', color: ciclo === 'anual' ? (modulos.pacote_ia ? 'white' : 'black') : '#888', fontWeight: 'bold', cursor: 'pointer', transition: '0.3s', position: 'relative' }}>
+                            ANUAL<span style={{ position: 'absolute', top: '-10px', right: '-10px', background: MAIN_COLOR, color: 'white', fontSize: '9px', padding: '2px 6px', borderRadius: '10px' }}>15% OFF</span>
+                        </button>
+                    </div>
+                </div>
+
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '15px', marginBottom: '30px' }}>
+
+                    {/* CABEÇALHO DA LISTA */}
+                    <div style={{ padding: '10px', background: '#1a1a1a', borderRadius: '8px', borderLeft: `4px solid ${corDestaque}`, transition: 'all 0.3s' }}>
+                        <p style={{ margin: 0, color: 'white', fontSize: '14px', fontWeight: 'bold' }}>Plano Atual: <span style={{ color: corDestaque }}>{nomePlano}</span> {!modulos.pacote_ia && `(${qtdPremiumSelecionados} Premium selecionados)`}</p>
+                    </div>
+
+                    {/* LISTAGEM DE MÓDULOS */}
+                    {TODOS_MODULOS.map(item => {
+                        const isPremiumItem = premiumMods.includes(item.id);
+                        const isFixo = !isPremiumItem && item.id !== 'pacote_ia' && item.id !== 'base';
+                        const isChecked = modulos[item.id];
+                        const isIa = item.id === 'pacote_ia';
+                        const corDoItem = isIa ? '#a855f7' : GREEN_MONEY;
+                        const modulosAtivos = dadosOficina?.modulos_ativos || [];
+
+                        const itemLiberado = modulosAtivos.includes(item.id) || modulosAtivos.length === 0;
+
+                        return (
+                            <div key={item.id} onClick={() => {
+                                if (isFixo || item.id === 'base') return;
+                                if (!itemLiberado) { handleModuloBloqueado(item); return; }
+                                toggleModulo(item.id);
+                            }} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: isChecked ? (isFixo || item.id === 'base' ? '#111' : (isIa ? '#1a0033' : '#001a05')) : '#0a0a0a', padding: '15px 20px', borderRadius: '10px', border: `1px solid ${isChecked ? (isFixo || item.id === 'base' ? '#333' : corDoItem) : '#222'}`, cursor: (isFixo || item.id === 'base' || !itemLiberado) ? 'not-allowed' : 'pointer', transition: '0.2s', opacity: (!itemLiberado && !isChecked) ? 0.5 : 1 }}>
+                                <div>
+                                    <h4 style={{ margin: '0 0 5px 0', color: isChecked ? ((isFixo || item.id === 'base') ? '#ccc' : corDoItem) : 'white', display: 'flex', alignItems: 'center', gap: '10px' }}>
+                                        <input type="checkbox" checked={isChecked} readOnly style={{ transform: 'scale(1.5)', cursor: 'not-allowed', accentColor: corDoItem }} />
+                                        {item.label}
+                                    </h4>
+                                    <p style={{ margin: 0, color: '#888', fontSize: '12px', paddingLeft: '25px' }}>{item.desc}</p>
+                                </div>
+                                <div style={{ textAlign: 'right' }}>
+                                    <div style={{ fontWeight: 'bold', color: isChecked ? ((isFixo || item.id === 'base') ? '#555' : (isIa ? 'white' : GREEN_MONEY)) : '#555', fontSize: '12px', background: (isFixo || item.id === 'base') ? '#222' : (isChecked && isIa ? '#a855f7' : 'transparent'), padding: '4px 8px', borderRadius: '4px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                        {!itemLiberado && !isFixo && item.id !== 'base' ? <Lock size={12} /> : null}
+                                        {(isFixo || item.id === 'base') ? '📌 INCLUSO' : (isChecked ? (isIa ? '⭐ ATIVA PRIME' : '✅ ATIVADO') : (!itemLiberado ? '🔒 BLOQUEADO' : '+ 1 COTA'))}
+                                    </div>
+                                </div>
+                            </div>
+                        );
+                    })}
+                </div>
+
+                {/* CAIXA DE TOTAL */}
+                <div style={{ background: '#1a1a00', border: `2px dashed ${corDestaque}`, padding: '25px', borderRadius: '10px', textAlign: 'center', transition: 'all 0.3s' }}>
+                    <p style={{ margin: '0 0 5px 0', color: '#888', fontSize: '14px', textTransform: 'uppercase' }}>Valor do Pacote <strong style={{ color: 'white' }}>{nomePlano}</strong> ({ciclo === 'mensal' ? 'mensal' : 'anual - 15% OFF'})</p>
+
+                    {ciclo === 'anual' && (
+                        <p style={{ color: '#888', fontSize: '12px', margin: '0 0 5px 0' }}>
+                            <s style={{ color: '#555' }}>R$ {(totalMensal * 12).toLocaleString('pt-BR')}/ano</s> ➔ com 15% de desconto
+                        </p>
+                    )}
+
+                    <h1 style={{ margin: '0 0 20px 0', color: corDestaque, fontSize: '40px', transition: 'color 0.3s' }}>R$ {total.toLocaleString('pt-BR')} <span style={{ fontSize: '16px' }}>{ciclo === 'mensal' ? '/mês' : '/ano'}</span></h1>
+
+                    <button onClick={solicitarUpgrade} style={{ width: '100%', padding: '20px', background: corDestaque, color: modulos.pacote_ia ? 'white' : 'black', border: 'none', borderRadius: '8px', fontWeight: '900', fontSize: '18px', cursor: 'pointer', boxShadow: `0 5px 20px ${corDestaque}44`, transition: 'all 0.3s', marginBottom: '10px' }}>
+                        🚀 SOLICITAR UPGRADE
+                    </button>
+                    <button onClick={enviarWhatsAppDeVenda} style={{ width: '100%', padding: '15px', background: 'transparent', color: '#888', border: '1px solid #333', borderRadius: '8px', fontWeight: 'bold', fontSize: '14px', cursor: 'pointer', transition: 'all 0.3s' }}>
+                        💬 Falar com Express AI
                     </button>
                 </div>
             </div>
 
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '15px', marginBottom: '30px' }}>
-
-                {/* CABEÇALHO DA LISTA */}
-                <div style={{ padding: '10px', background: '#1a1a1a', borderRadius: '8px', borderLeft: `4px solid ${corDestaque}`, transition: 'all 0.3s' }}>
-                    <p style={{ margin: 0, color: 'white', fontSize: '14px', fontWeight: 'bold' }}>Plano Atual: <span style={{ color: corDestaque }}>{nomePlano}</span> {!modulos.pacote_ia && `(${qtdPremiumSelecionados} Premium selecionados)`}</p>
-                </div>
-
-                {/* LISTAGEM DE MÓDULOS */}
-                {TODOS_MODULOS.map(item => {
-                    const isPremiumItem = premiumMods.includes(item.id);
-                    const isFixo = !isPremiumItem && item.id !== 'pacote_ia' && item.id !== 'base';
-                    const isChecked = modulos[item.id];
-                    const isIa = item.id === 'pacote_ia';
-                    const corDoItem = isIa ? '#a855f7' : GREEN_MONEY;
-
-                    return (
-                        <div key={item.id} onClick={() => toggleModulo(item.id)} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: isChecked ? (isFixo || item.id === 'base' ? '#111' : (isIa ? '#1a0033' : '#001a05')) : '#0a0a0a', padding: '15px 20px', borderRadius: '10px', border: `1px solid ${isChecked ? (isFixo || item.id === 'base' ? '#333' : corDoItem) : '#222'}`, cursor: (isFixo || item.id === 'base') ? 'not-allowed' : 'pointer', transition: '0.2s', opacity: (isFixo || item.id === 'base') ? 0.7 : 1 }}>
-                            <div>
-                                <h4 style={{ margin: '0 0 5px 0', color: isChecked ? ((isFixo || item.id === 'base') ? '#ccc' : corDoItem) : 'white', display: 'flex', alignItems: 'center', gap: '10px' }}>
-                                    <input type="checkbox" checked={isChecked} readOnly style={{ transform: 'scale(1.5)', cursor: (isFixo || item.id === 'base') ? 'not-allowed' : 'pointer', accentColor: corDoItem }} />
-                                    {item.label}
-                                </h4>
-                                <p style={{ margin: 0, color: '#888', fontSize: '12px', paddingLeft: '25px' }}>{item.desc}</p>
-                            </div>
-                            <div style={{ textAlign: 'right' }}>
-                                <div style={{ fontWeight: 'bold', color: isChecked ? ((isFixo || item.id === 'base') ? '#555' : (isIa ? 'white' : GREEN_MONEY)) : '#555', fontSize: '12px', background: (isFixo || item.id === 'base') ? '#222' : (isChecked && isIa ? '#a855f7' : 'transparent'), padding: '4px 8px', borderRadius: '4px' }}>
-                                    {(isFixo || item.id === 'base') ? '📌 INCLUSO' : (isChecked ? (isIa ? '⭐ ATIVA PRIME' : '✅ ATIVADO') : '+ 1 COTA')}
-                                </div>
-                            </div>
+            {/* MODAL MÓDULO BLOQUEADO */}
+            {modalPremium && (
+                <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.85)', zIndex: 999, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px' }} onClick={() => setModalPremium(null)}>
+                    <div style={{ background: '#111', border: `1px solid ${MAIN_COLOR}`, borderRadius: '20px', padding: '40px', maxWidth: '450px', width: '100%', textAlign: 'center' }} onClick={e => e.stopPropagation()}>
+                        <div style={{ width: '60px', height: '60px', background: `${MAIN_COLOR}22`, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 20px' }}>
+                            <Lock size={28} color={MAIN_COLOR} />
                         </div>
-                    );
-                })}
-            </div>
-
-            {/* CAIXA DE TOTAL */}
-            <div style={{ background: '#1a1a00', border: `2px dashed ${corDestaque}`, padding: '25px', borderRadius: '10px', textAlign: 'center', transition: 'all 0.3s' }}>
-                <p style={{ margin: '0 0 5px 0', color: '#888', fontSize: '14px', textTransform: 'uppercase' }}>Valor do Pacote <strong style={{ color: 'white' }}>{nomePlano}</strong> ({ciclo === 'mensal' ? 'mensal' : 'anual - 15% OFF'})</p>
-
-                {ciclo === 'anual' && (
-                    <p style={{ color: '#888', fontSize: '12px', margin: '0 0 5px 0' }}>
-                        <s style={{ color: '#555' }}>R$ {(totalMensal * 12).toLocaleString('pt-BR')}/ano</s> ➔ com 15% de desconto
-                    </p>
-                )}
-
-                <h1 style={{ margin: '0 0 20px 0', color: corDestaque, fontSize: '40px', transition: 'color 0.3s' }}>R$ {total.toLocaleString('pt-BR')} <span style={{ fontSize: '16px' }}>{ciclo === 'mensal' ? '/mês' : '/ano'}</span></h1>
-
-                <button onClick={enviarWhatsAppDeVenda} style={{ width: '100%', padding: '20px', background: corDestaque, color: modulos.pacote_ia ? 'white' : 'black', border: 'none', borderRadius: '8px', fontWeight: '900', fontSize: '18px', cursor: 'pointer', boxShadow: `0 5px 20px ${corDestaque}44`, transition: 'all 0.3s' }}>
-                    💬 CHAMAR EXPRESS AI PARA ASSINAR
-                </button>
-            </div>
-        </div>
+                        <h3 style={{ color: MAIN_COLOR, margin: '0 0 10px 0', fontSize: '20px' }}>Módulo Premium</h3>
+                        <p style={{ color: '#888', margin: '0 0 25px 0', lineHeight: '1.6' }}>
+                            O módulo <strong style={{ color: 'white' }}>{modalPremium.label}</strong> faz parte do seu plano ativo, mas ainda não foi desbloqueado na sua conta.
+                        </p>
+                        <button onClick={() => { setModalPremium(null); solicitarUpgrade(); }} style={{ width: '100%', padding: '15px', background: MAIN_COLOR, color: 'white', border: 'none', borderRadius: '8px', fontWeight: 'bold', fontSize: '16px', cursor: 'pointer', marginBottom: '10px' }}>
+                            🚀 Solicitar Desbloqueio
+                        </button>
+                        <button onClick={() => setModalPremium(null)} style={{ width: '100%', padding: '12px', background: 'transparent', color: '#888', border: '1px solid #333', borderRadius: '8px', fontWeight: 'bold', cursor: 'pointer' }}>
+                            Fechar
+                        </button>
+                    </div>
+                </div>
+            )}
+        </>
     );
 }

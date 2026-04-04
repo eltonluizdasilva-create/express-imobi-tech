@@ -1,7 +1,7 @@
 /* eslint-disable react/prop-types */
 import React, { useState, useEffect } from "react";
 import { db } from "../lib/firebase";
-import { doc, getDoc, updateDoc } from "firebase/firestore";
+import { doc, getDoc, updateDoc, collection, getDocs } from "firebase/firestore";
 import {
     Bot, Sparkles, MessageSquare, PhoneCall, Calculator,
     CalendarClock, Send, Copy, CheckCircle, Clock, Star,
@@ -28,7 +28,13 @@ export default function Secretaria({ oficinaId }) {
 
     const [copied, setCopied] = useState(false);
 
-    // Busca o link do Google da oficina
+    // Estados dos Novos Painéis
+    const [loading, setLoading] = useState(true);
+    const [alertasJuridicos, setAlertasJuridicos] = useState({ semFoto: 0, semAssinatura: 0 });
+    const [alertasContabeis, setAlertasContabeis] = useState({ osInadimplentes: 0, valorPendente: 0, nfPendente: 0 });
+    const [alertasSecretaria, setAlertasSecretaria] = useState({ orcamentosPerdidosCount: 0, valorPerdido: 0 });
+
+    // Busca dados
     useEffect(() => {
         const fetchConfig = async () => {
             if (!oficinaId) return;
@@ -40,6 +46,60 @@ export default function Secretaria({ oficinaId }) {
             }
         };
         fetchConfig();
+
+        const buscarDadosEstrategicos = async () => {
+            if (!oficinaId) {
+                setLoading(false);
+                return;
+            }
+            setLoading(true);
+            try {
+                const osRef = collection(db, "oficinas", oficinaId, "os");
+                const querySnapshot = await getDocs(osRef);
+
+                let contSemFoto = 0;
+                let contSemAssinatura = 0;
+                let contInadimplentes = 0;
+                let somaValorPendente = 0;
+                let contNfPendente = 0;
+
+                let contOrcamentos = 0;
+                let somaValorOrcamentoPerdido = 0;
+
+                const trintaDiasAtras = new Date();
+                trintaDiasAtras.setDate(trintaDiasAtras.getDate() - 30);
+
+                querySnapshot.forEach((doc) => {
+                    const os = doc.data();
+                    if (!os.fotos || os.fotos.length === 0) contSemFoto++;
+                    if (!os.assinatura) contSemAssinatura++;
+                    if (os.statusPagamento === 'pendente' || os.status === 'pendente') {
+                        contInadimplentes++;
+                        somaValorPendente += (Number(os.total) || 0);
+                        let dataOS = null;
+                        if (os.data_registro && typeof os.data_registro.toDate === 'function') {
+                            dataOS = os.data_registro.toDate();
+                        } else if (os.data_registro) {
+                            dataOS = new Date(os.data_registro);
+                        }
+                        if (dataOS && dataOS >= trintaDiasAtras) {
+                            contOrcamentos++;
+                            somaValorOrcamentoPerdido += (Number(os.total) || 0);
+                        }
+                    }
+                    if (!os.nfEmitida) contNfPendente++;
+                });
+
+                setAlertasJuridicos({ semFoto: contSemFoto, semAssinatura: contSemAssinatura });
+                setAlertasContabeis({ osInadimplentes: contInadimplentes, valorPendente: somaValorPendente, nfPendente: contNfPendente });
+                setAlertasSecretaria({ orcamentosPerdidosCount: contOrcamentos, valorPerdido: somaValorOrcamentoPerdido });
+                setLoading(false);
+            } catch (error) {
+                console.error("Erro ao auditar dados:", error);
+                setLoading(false);
+            }
+        };
+        buscarDadosEstrategicos();
     }, [oficinaId]);
 
     const salvarGoogleLink = async () => {
@@ -48,7 +108,6 @@ export default function Secretaria({ oficinaId }) {
         setIsEditingLink(false);
     };
 
-    // Microfone para o Polidor
     const toggleMic = () => {
         const Recognition = window.SpeechRecognition || window.webkitSpeechRecognition;
         if (!Recognition) return alert("Microfone não suportado.");
@@ -62,7 +121,6 @@ export default function Secretaria({ oficinaId }) {
         }
     };
 
-    // Lógica do Polidor (IA Simulada)
     const handleGerarMensagem = () => {
         if (!promptTexto.trim()) return;
         setIsGenerating(true);
@@ -73,16 +131,28 @@ export default function Secretaria({ oficinaId }) {
         }, 1200);
     };
 
-    // Lógica do NPS (Pesquisa de Satisfação)
     const enviarNPS = () => {
         if (!nomeCliente || !veiculoCliente) return alert("Preencha o nome e o veículo para gerar o NPS.");
         const msg = `Olá, ${nomeCliente}! 🌟\n\nO que achou do serviço realizado no seu ${veiculoCliente}? Sua opinião é muito importante para nós!\n\nPoderia nos avaliar com 5 estrelas no Google? Leva menos de 30 segundos e ajuda muito a nossa oficina:\n👉 ${googleLink || 'Link do Google'}\n\nMuito obrigado! 👊`;
         window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(msg)}`, '_blank');
     };
 
+    const alertarEquipe = () => {
+        const texto = encodeURIComponent(`🚨 *ALERTA ESTRATÉGICO DA DIREÇÃO* 🚨\n\nPessoal, o nosso sistema detectou:\n📸 ${alertasJuridicos.semFoto} serviços finalizados sem foto.\n✍️ ${alertasJuridicos.semAssinatura} serviços sem assinatura.\n\nPor favor, atenção aos procedimentos no pátio para evitarmos problemas jurídicos!`);
+        window.open(`https://wa.me/?text=${texto}`, '_blank');
+    };
+
+    const cobrarInadimplentes = () => {
+        alert(`💰 Iniciando processo de recuperação de R$ ${alertasContabeis.valorPendente.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}...\n\n(Aba de cobrança em desenvolvimento)`);
+    };
+
+    const recontatarOrcamentos = () => {
+        alert(`📞 Acionando Secretária Digital para recuperar R$ ${alertasSecretaria.valorPerdido.toLocaleString('pt-BR', { minimumFractionDigits: 2 })} em orçamentos não aprovados...`);
+    };
+
     return (
         <div className="bg-black min-h-screen text-zinc-100 p-4 md:p-8 pb-40">
-            <div className="max-w-5xl mx-auto">
+            <div className="max-w-6xl mx-auto">
 
                 {/* HEADER */}
                 <div className="bg-gradient-to-r from-pink-600 to-rose-500 rounded-[2rem] p-8 mb-10 shadow-[0_0_40px_rgba(219,39,119,0.3)] flex flex-col md:flex-row items-center justify-between gap-6">
@@ -98,6 +168,32 @@ export default function Secretaria({ oficinaId }) {
                         </div>
                     </div>
                 </div>
+
+                {/* PAINÉIS ESTRATÉGICOS */}
+                {loading ? (
+                    <div className="text-center py-10 text-pink-500 font-black animate-pulse">Carregando auditoria...</div>
+                ) : (
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-10">
+                        {/* PROTEÇÃO JURÍDICA */}
+                        <div className="bg-zinc-900 border border-red-500 rounded-3xl p-6 shadow-xl">
+                            <h3 className="text-red-500 font-bold mb-4">⚖️ Proteção Jurídica</h3>
+                            <p className="text-xs text-zinc-400 mb-4">Fotos: {alertasJuridicos.semFoto} | Assinaturas: {alertasJuridicos.semAssinatura}</p>
+                            <button onClick={alertarEquipe} className="w-full py-2 bg-red-900/30 border border-red-500 text-red-500 rounded-xl">Alertar Equipe</button>
+                        </div>
+                        {/* CAIXA & DEVEDORES */}
+                        <div className="bg-zinc-900 border border-blue-500 rounded-3xl p-6 shadow-xl">
+                            <h3 className="text-blue-500 font-bold mb-4">🧾 Caixa & Devedores</h3>
+                            <p className="text-xs text-zinc-400 mb-4">R$ {alertasContabeis.valorPendente.toLocaleString('pt-BR')}</p>
+                            <button onClick={cobrarInadimplentes} className="w-full py-2 bg-blue-900/30 border border-blue-500 text-blue-500 rounded-xl">Cobrar</button>
+                        </div>
+                        {/* SECRETÁRIA DIGITAL */}
+                        <div className="bg-zinc-900 border border-green-500 rounded-3xl p-6 shadow-xl">
+                            <h3 className="text-green-500 font-bold mb-4">📞 Secretária Digital</h3>
+                            <p className="text-xs text-zinc-400 mb-4">R$ {alertasSecretaria.valorPerdido.toLocaleString('pt-BR')}</p>
+                            <button onClick={recontatarOrcamentos} className="w-full py-2 bg-green-900/30 border border-green-500 text-green-500 rounded-xl">Recontatar</button>
+                        </div>
+                    </div>
+                )}
 
                 {/* ⚙️ CONFIGURAÇÃO DO GOOGLE REVIEWS */}
                 <div className="bg-pink-900/20 border border-pink-500/30 rounded-[2rem] p-6 mb-8">
@@ -175,22 +271,6 @@ export default function Secretaria({ oficinaId }) {
                         </button>
                     </div>
 
-                </div>
-
-                {/* 🚀 ROADMAP */}
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-8 opacity-50">
-                    <div className="bg-zinc-900/40 p-4 rounded-2xl border border-zinc-800 flex items-center gap-4">
-                        <PhoneCall size={20} className="text-zinc-500" />
-                        <span className="text-[10px] font-black text-zinc-500 uppercase tracking-tighter">Voz Inteligente (Breve)</span>
-                    </div>
-                    <div className="bg-zinc-900/40 p-4 rounded-2xl border border-zinc-800 flex items-center gap-4">
-                        <Calculator size={20} className="text-zinc-500" />
-                        <span className="text-[10px] font-black text-zinc-500 uppercase tracking-tighter">Orçamentos Automáticos (Breve)</span>
-                    </div>
-                    <div className="bg-zinc-900/40 p-4 rounded-2xl border border-zinc-800 flex items-center gap-4">
-                        <CalendarClock size={20} className="text-zinc-500" />
-                        <span className="text-[10px] font-black text-zinc-500 uppercase tracking-tighter">Agendamento Bot (Breve)</span>
-                    </div>
                 </div>
 
             </div>

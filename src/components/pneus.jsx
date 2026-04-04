@@ -134,7 +134,10 @@ export default function PneusModulo({ oficinaId, osParaEditar, onCancelar, onSal
         data_atualizacao: new Date().toISOString()
       });
       setSuccess(true); if (onSalvo) onSalvo(); setTimeout(onCancelar, 1500);
-    } catch (e) { console.error(e); } finally { setLoading(false); }
+    } catch (e) {
+      console.error(e);
+      alert('Erro ao salvar: ' + e.message);
+    } finally { setLoading(false); }
   };
 
   return (

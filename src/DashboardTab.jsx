@@ -1,6 +1,8 @@
 /* eslint-disable */
 import React, { useMemo, useState, useEffect } from 'react';
 import { BarChart, Bar, XAxis, Tooltip } from 'recharts';
+import { useNavigate } from 'react-router-dom';
+import { getAuth } from 'firebase/auth';
 
 export const TEMAS = {
     escuro: {
@@ -127,12 +129,24 @@ export default function DashboardTab({
     lembretesDeOleo = [], lembretesDebateria = [],
     estoqueCritico = [], dadosGrafico = [],
     tema = 'escuro', onToggleTema = () => { },
-    // Props de navegação — conectadas ao Admin
+    oficinaId = '',
     onNovaOS = () => { }, onBuscarCliente = () => { },
     onFinanceiro = () => { }, onEstoque = () => { },
     onLancarDespesa = () => { }, onAgendarRevisao = () => { },
 }) {
     const t = TEMAS[tema];
+    const navigate = useNavigate();
+
+    useEffect(() => {
+        const auth = getAuth();
+        const checkOwner = async () => {
+            const user = auth.currentUser;
+            if (user && oficinaId && user.uid !== oficinaId) {
+                navigate('/');
+            }
+        };
+        checkOwner();
+    }, [oficinaId, navigate]);
 
     const financeiro = useMemo(() => {
         const hoje = new Date(); hoje.setHours(0, 0, 0, 0);
@@ -168,8 +182,6 @@ export default function DashboardTab({
                     <BotaoAcao label="Nova O.S." cor={MAIN_COLOR} icone="📄" t={t} onClick={onNovaOS} tamanho="lg" />
                     <BotaoAcao label="Financeiro" cor={GREEN_MONEY} icone="💰" t={t} onClick={onFinanceiro} />
                     <BotaoAcao label="Estoque" cor={KM_COLOR} icone="📦" t={t} onClick={onEstoque} />
-
-
                 </div>
             </div>
 

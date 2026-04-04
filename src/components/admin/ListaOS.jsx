@@ -46,6 +46,7 @@ export default function ListaOS({ listaCarros, onEditar, onDeletar, onWhatsApp, 
       injecao: '🛠️ Injeção',
       alinhamento: '⚙️ Alinhamento',
       oleo: '🛢️ Óleo',
+      pneus: '🛞 Pneus',
       revisao: '🛡️ Revisão',
       lavajato: '🚿 Lava Jato',
       recepcao: '📋 Recepção',
@@ -57,6 +58,7 @@ export default function ListaOS({ listaCarros, onEditar, onDeletar, onWhatsApp, 
     const tipo = (os?.tipo || os?.tipoServico || '').toLowerCase();
 
     if (tipo === 'oleo') return '🛢️ Editar Óleo';
+    if (tipo === 'pneus') return '🛞 Editar Pneu';
     if (tipo === 'alinhamento') return '⚙️ Editar Alinh.';
     if (tipo === 'eletrica') return '⚡ Editar Elétrica';
     if (tipo === 'revisao') return '🛡️ Editar Revisão';
@@ -87,7 +89,7 @@ export default function ListaOS({ listaCarros, onEditar, onDeletar, onWhatsApp, 
   };
 
   const abrirRecibo = (os) => {
-    const link = `${APP_BASE_URL}/status/${oficinaId || ''}/${os.id}`;
+    const link = `${APP_BASE_URL}/recibo/${oficinaId || ''}/${os.id}`;
     window.open(link, '_blank');
   };
 
@@ -149,24 +151,24 @@ export default function ListaOS({ listaCarros, onEditar, onDeletar, onWhatsApp, 
       </div>
 
       <div style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
-            {osFiltradas.length === 0 ? (
-              <div style={{ textAlign: 'center', padding: '40px', color: '#444' }}>Nenhuma O.S. encontrada.</div>
-            ) : (
-              osFiltradas.map((os) => {
+        {osFiltradas.length === 0 ? (
+          <div style={{ textAlign: 'center', padding: '40px', color: '#444' }}>Nenhuma O.S. encontrada.</div>
+        ) : (
+          osFiltradas.map((os) => {
             const servico = getEstiloServico(os.tipo || os.tipoServico);
             const pago = os.statusPagamento === 'pago';
 
             return (
-                    <div
-                      key={os.id}
-                      style={{
-                        background: '#111',
-                        borderRadius: '16px',
-                        border: '1px solid #232323',
-                        padding: '14px',
-                        boxShadow: '0 10px 26px rgba(0,0,0,0.26)',
-                      }}
-                    >
+              <div
+                key={os.id}
+                style={{
+                  background: '#111',
+                  borderRadius: '16px',
+                  border: '1px solid #232323',
+                  padding: '14px',
+                  boxShadow: '0 10px 26px rgba(0,0,0,0.26)',
+                }}
+              >
                 <div style={{ display: 'grid', gridTemplateColumns: '1.1fr 1fr', gap: '14px', alignItems: 'stretch' }}>
                   <div>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap', marginBottom: '8px' }}>
@@ -203,20 +205,20 @@ export default function ListaOS({ listaCarros, onEditar, onDeletar, onWhatsApp, 
                     </p>
                   </div>
 
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                      <button
-                        onClick={() => onWhatsApp?.(os, 'link')}
-                        style={{ padding: '9px 12px', background: '#22c55e', color: 'black', border: 'none', borderRadius: '6px', cursor: 'pointer', fontSize: '11px', fontWeight: '900' }}
-                      >
-                        💬 ENVIAR PORTAL AO CLIENTE
-                      </button>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                    <button
+                      onClick={() => onWhatsApp?.(os, 'link')}
+                      style={{ padding: '9px 12px', background: '#22c55e', color: 'black', border: 'none', borderRadius: '6px', cursor: 'pointer', fontSize: '11px', fontWeight: '900' }}
+                    >
+                      💬 ENVIAR PORTAL AO CLIENTE
+                    </button>
 
-                      <button
-                        onClick={() => onMercadoClick?.(os)}
-                        className="bg-zinc-800 hover:bg-zinc-700 text-zinc-300 font-black text-[10px] uppercase tracking-widest py-3 rounded-xl flex items-center justify-center gap-2"
-                      >
-                        <ShoppingCart size={16} /> COMPRAR PEÇAS
-                      </button>
+                    <button
+                      onClick={() => onMercadoClick?.(os)}
+                      className="bg-zinc-800 hover:bg-zinc-700 text-zinc-300 font-black text-[10px] uppercase tracking-widest py-3 rounded-xl flex items-center justify-center gap-2"
+                    >
+                      <ShoppingCart size={16} /> COMPRAR PEÇAS
+                    </button>
 
                     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '6px' }}>
                       <button
