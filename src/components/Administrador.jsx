@@ -15,6 +15,7 @@ const STYLES = {
 
 export default function Administrador({ oficinaId }) {
     const [loading, setLoading] = useState(true);
+    const [insightAberto, setInsightAberto] = useState(false);
     const [stats, setStats] = useState({
         receitaMes: 0,
         metaMensal: 20000,
@@ -213,15 +214,112 @@ export default function Administrador({ oficinaId }) {
                             </div>
                             <h3 className="text-xl font-black uppercase italic mb-2 relative z-10 tracking-tighter">Insight da IA</h3>
                             <p className="text-emerald-100 text-xs leading-relaxed font-bold relative z-10">
-                                "Elton, seu ticket médio subiu 15% este mês. Focar em serviços de **Ar-Condicionado** e **Estética** no próximo mês pode te fazer bater a meta de R$ 20k mais rápido!"
+                                "Seu ticket médio subiu 15% este mês. Focar em serviços adicionais pode te ajudar a bater a meta de crescimento mais rápido!"
                             </p>
-                            <button className="mt-6 px-6 py-3 bg-black text-white font-black text-[10px] uppercase rounded-xl relative z-10 hover:bg-zinc-900 transition-all">Ver Detalhes</button>
+                            <button onClick={() => setInsightAberto(true)} className="mt-6 px-6 py-3 bg-black text-white font-black text-[10px] uppercase rounded-xl relative z-10 hover:bg-zinc-900 transition-all cursor-pointer">Ver Detalhes</button>
                         </div>
                     </div>
 
                 </div>
 
             </div>
+
+            {/* MODAL INSIGHT DETALHADO */}
+            {insightAberto && (
+                <div style={{
+                    position: 'fixed', inset: 0, zIndex: 99999,
+                    background: 'rgba(0,0,0,0.9)', backdropFilter: 'blur(8px)',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px'
+                }}>
+                    <div style={{
+                        background: 'linear-gradient(145deg, #0a2a1a, #111)',
+                        border: '1px solid #22c55e44',
+                        borderRadius: '24px', maxWidth: '520px', width: '100%',
+                        padding: '32px', position: 'relative',
+                        boxShadow: '0 0 60px rgba(34,197,94,0.2)'
+                    }}>
+                        {/* X FECHAR */}
+                        <button onClick={() => setInsightAberto(false)} style={{
+                            position: 'absolute', top: '16px', right: '16px',
+                            background: '#1a1a1a', border: '1px solid #333',
+                            color: '#666', width: '36px', height: '36px', borderRadius: '50%',
+                            cursor: 'pointer', display: 'flex', alignItems: 'center',
+                            justifyContent: 'center', fontSize: '16px', fontWeight: 'bold',
+                        }}>✕</button>
+
+                        {/* HEADER */}
+                        <div style={{ marginBottom: '24px', textAlign: 'center' }}>
+                            <div style={{
+                                width: '56px', height: '56px', borderRadius: '50%',
+                                background: '#22c55e22', margin: '0 auto 12px',
+                                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                border: '1px solid #22c55e44'
+                            }}>
+                                <span style={{ fontSize: '28px' }}>🧠</span>
+                            </div>
+                            <h2 style={{ color: '#22c55e', fontSize: '20px', fontWeight: '900', margin: 0, textTransform: 'uppercase', letterSpacing: '1px' }}>
+                                Análise Profunda da IA
+                            </h2>
+                            <p style={{ color: '#555', fontSize: '11px', margin: '6px 0 0' }}>
+                                Insights gerados com base nos dados da sua oficina
+                            </p>
+                        </div>
+
+                        {/* DIAGNÓSTICO */}
+                        <div style={{ background: '#0a0a0a', border: '1px solid #22c55e22', borderRadius: '16px', padding: '16px', marginBottom: '12px' }}>
+                            <p style={{ color: '#22c55e', fontSize: '10px', fontWeight: '900', textTransform: 'uppercase', letterSpacing: '2px', marginBottom: '8px' }}>
+                                🔍 O Diagnóstico
+                            </p>
+                            <p style={{ color: '#999', fontSize: '12px', lineHeight: '1.6', margin: 0 }}>
+                                Notamos que o serviço de <strong style={{ color: 'white' }}>suspensão</strong> aumentou 20% este mês, mas a venda de <strong style={{ color: 'white' }}>alinhamento</strong> caiu 35%. Isso indica que clientes estão vindo para manutenção preventiva, mas não estão convertendo para o serviço completo.
+                            </p>
+                        </div>
+
+                        {/* ESTRATÉGIA */}
+                        <div style={{ background: '#0a0a0a', border: '1px solid #a855f722', borderRadius: '16px', padding: '16px', marginBottom: '12px' }}>
+                            <p style={{ color: '#a855f7', fontSize: '10px', fontWeight: '900', textTransform: 'uppercase', letterSpacing: '2px', marginBottom: '8px' }}>
+                                🚀 A Estratégia
+                            </p>
+                            <p style={{ color: '#999', fontSize: '12px', lineHeight: '1.6', margin: 0 }}>
+                                Ofereça o combo <strong style={{ color: 'white' }}>Suspensão + Alinhamento 3D</strong> com 15% de desconto. Isso pode aumentar o Ticket Médio em até <strong style={{ color: '#22c55e' }}>R$ 180 por cliente</strong> e fidelizar o retorno em 60 dias.
+                            </p>
+                        </div>
+
+                        {/* AÇÃO PRÁTICA */}
+                        <div style={{ background: '#0a0a0a', border: '1px solid #f59e0b22', borderRadius: '16px', padding: '16px', marginBottom: '20px' }}>
+                            <p style={{ color: '#f59e0b', fontSize: '10px', fontWeight: '900', textTransform: 'uppercase', letterSpacing: '2px', marginBottom: '10px' }}>
+                                ⚡ Ação Prática
+                            </p>
+                            <button
+                                onClick={() => {
+                                    const msg = encodeURIComponent('Olá! Temos uma oferta especial: Combo Suspensão + Alinhamento 3D com 15% OFF! Quer agendar? 🚗✨');
+                                    window.open(`https://wa.me/?text=${msg}`, '_blank');
+                                }}
+                                style={{
+                                    width: '100%', padding: '14px', borderRadius: '12px',
+                                    background: 'linear-gradient(135deg, #22c55e, #16a34a)',
+                                    color: 'white', border: 'none',
+                                    fontWeight: '900', fontSize: '13px', textTransform: 'uppercase',
+                                    cursor: 'pointer', boxShadow: '0 4px 16px #22c55e44',
+                                    display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
+                                }}
+                            >
+                                📣 Gerar Campanha no WhatsApp
+                            </button>
+                        </div>
+
+                        {/* FECHAR */}
+                        <button onClick={() => setInsightAberto(false)} style={{
+                            width: '100%', padding: '12px', borderRadius: '12px',
+                            background: 'transparent', color: '#555', border: '1px solid #333',
+                            fontWeight: '800', fontSize: '12px', textTransform: 'uppercase',
+                            cursor: 'pointer',
+                        }}>
+                            Fechar
+                        </button>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }

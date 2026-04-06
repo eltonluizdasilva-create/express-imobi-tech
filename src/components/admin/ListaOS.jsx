@@ -2,6 +2,9 @@
 import React, { useMemo, useState } from 'react';
 import { ShoppingCart } from 'lucide-react';
 import { COLORS, TAB_COLORS, formatarData, formatarMoeda } from './constants';
+import { doc, getDoc } from 'firebase/firestore';
+import { db } from '../../lib/firebase';
+import { jsPDF } from 'jspdf';
 
 const { MAIN, GREEN, BLUE_INFO } = COLORS;
 const APP_BASE_URL = 'https://oficina.expresstech.com.br';
@@ -41,7 +44,7 @@ export default function ListaOS({ listaCarros, onEditar, onDeletar, onWhatsApp, 
       eletrica: '⚡ Elétrica',
       hibrido: '🔋 Híbrido',
       moto: '🏍️ Moto',
-      lataria: '🚗 Lataria',
+      funilaria: '🚗 Funilaria',
       amortecedor: '🧰 Amortecedor',
       injecao: '🛠️ Injeção',
       alinhamento: '⚙️ Alinhamento',
@@ -65,7 +68,7 @@ export default function ListaOS({ listaCarros, onEditar, onDeletar, onWhatsApp, 
     if (tipo === 'lavajato') return '🚿 Editar Lava Jato';
     if (tipo === 'moto') return '🏍️ Editar Moto';
     if (tipo === 'hibrido') return '🔋 Editar Híbrido';
-    if (tipo === 'lataria') return '🚗 Editar Lataria';
+    if (tipo === 'funilaria') return '🚗 Editar Funilaria';
     if (tipo === 'amortecedor') return '🧰 Editar Amort.';
     if (tipo === 'injecao') return '🛠️ Editar Injeção';
 
@@ -88,9 +91,169 @@ export default function ListaOS({ listaCarros, onEditar, onDeletar, onWhatsApp, 
     alert('📋 Link do laudo copiado!');
   };
 
-  const abrirRecibo = (os) => {
-    const link = `${APP_BASE_URL}/recibo/${oficinaId || ''}/${os.id}`;
-    window.open(link, '_blank');
+  const gerarReciboPDF = async (os) => {
+    if (!oficinaId) return;
+    try {
+      const [configSnap, osSnap] = await Promise.all([
+        getDoc(doc(db, 'oficinas', oficinaId)),
+        getDoc(doc(db, 'oficinas', oficinaId, 'os', os.id)),
+      ]);
+      const cfg = configSnap.exists() ? configSnap.data() : {};
+      const dados = osSnap.exists() ? osSnap.data() : {};
+
+      const doc_ = new jsPDF({ unit: 'mm', format: 'a5', orientation: 'portrait' });
+      const W = 148;
+      const H = 210;
+      const ML = 15;
+      const MR = 15;
+      const MX = ML;
+      const MW = W - ML - MR;
+      let y = 15;
+
+      doc_.setFont('helvetica', 'bold');
+      doc_.setFontSize(16);
+      doc_.setTextColor(20, 20, 20);
+      const nomeOficina = cfg.nome || 'Oficina';
+      doc_.text(nomeOficina.toUpperCase(), W / 2, y, { align: 'center' });
+      y += 6;
+
+      doc_.setFont('helvetica', 'normal');
+      doc_.setFontSize(8);
+      doc_.setTextColor(80, 80, 80);
+      if (cfg.cnpj) { doc_.text(`CNPJ: ${cfg.cnpj}`, W / 2, y, { align: 'center' }); y += 4; }
+      if (cfg.endereco) { doc_.text(cfg.endereco, W / 2, y, { align: 'center' }); y += 4; }
+      if (cfg.telefone) { doc_.text(`TEL: ${cfg.telefone}`, W / 2, y, { align: 'center' }); y += 4; }
+
+      y += 2;
+      doc_.setDrawColor(180, 180, 180);
+      doc_.setLineWidth(0.3);
+      doc_.line(ML, y, W - MR, y);
+      y += 6;
+
+      doc_.setFont('helvetica', 'bold');
+      doc_.setFontSize(13);
+      doc_.setTextColor(255, 0, 51);
+      doc_.text(`ORDEM DE SERVICO #${(os.id || '').slice(-5).toUpperCase()}`, W / 2, y, { align: 'center' });
+      y += 7;
+
+      doc_.setFont('helvetica', 'normal');
+      doc_.setFontSize(8);
+      doc_.setTextColor(80, 80, 80);
+      const dataStr = String(dados.data || '').split(',')[0] || '';
+      doc_.text(`Data: ${dataStr}`, ML, y); y += 5;
+
+      y += 2;
+      doc_.setDrawColor(200, 200, 200);
+      doc_.line(ML, y, W - MR, y);
+      y += 5;
+
+      doc_.setFont('helvetica', 'bold');
+      doc_.setFontSize(9);
+      doc_.setTextColor(40, 40, 40);
+      const campos = [
+        ['CLIENTE', (dados.nomeCliente || 'N/A').toUpperCase()],
+        ['PLACA', (dados.placa || '').toUpperCase()],
+        ['VEICULO', dados.modelo || ''],
+        ['KM', dados.kmAtual ? `${Number(dados.kmAtual).toLocaleString('pt-BR')} km` : ''],
+      ].filter(([, v]) => v);
+      campos.forEach(([label, valor]) => {
+        doc_.setFont('helvetica', 'bold');
+        doc_.setTextColor(120, 120, 120);
+        doc_.setFontSize(8);
+        doc_.text(`${label}:`, ML, y);
+        doc_.setFont('helvetica', 'bold');
+        doc_.setTextColor(20, 20, 20);
+        doc_.setFontSize(9);
+        doc_.text(valor, ML + 22, y);
+        y += 5;
+      });
+
+      y += 3;
+      doc_.setDrawColor(200, 200, 200);
+      doc_.line(ML, y, W - MR, y);
+      y += 5;
+
+      doc_.setFont('helvetica', 'bold');
+      doc_.setFontSize(8);
+      doc_.setTextColor(100, 100, 100);
+      doc_.text('SERVICO / DEFEITO:', ML, y); y += 4;
+      doc_.setFont('helvetica', 'normal');
+      doc_.setTextColor(30, 30, 30);
+      doc_.setFontSize(8);
+      const servicoTexto = dados.checklist || 'Nenhum';
+      const linhasServico = doc_.splitTextToSize(servicoTexto, MW);
+      doc_.text(linhasServico, ML, y);
+      y += linhasServico.length * 4 + 3;
+
+      if (dados.detalhesPecas) {
+        doc_.setFont('helvetica', 'bold');
+        doc_.setFontSize(8);
+        doc_.setTextColor(100, 100, 100);
+        doc_.text('PECAS UTILIZADAS:', ML, y); y += 4;
+        doc_.setFont('helvetica', 'normal');
+        doc_.setTextColor(30, 30, 30);
+        doc_.setFontSize(8);
+        const pecasTexto = dados.detalhesPecas;
+        const linhasPecas = doc_.splitTextToSize(pecasTexto, MW);
+        doc_.text(linhasPecas, ML, y);
+        y += linhasPecas.length * 4 + 3;
+      }
+
+      y += 3;
+      doc_.setDrawColor(20, 20, 20);
+      doc_.line(ML, y, W - MR, y);
+      y += 6;
+
+      doc_.setFont('helvetica', 'bold');
+      doc_.setFontSize(10);
+      doc_.setTextColor(80, 80, 80);
+      doc_.text('VALOR TOTAL:', ML, y);
+      doc_.setFont('helvetica', 'bold');
+      doc_.setFontSize(16);
+      doc_.setTextColor(0, 100, 0);
+      doc_.text(
+        dados.total ? Number(dados.total).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }) : 'R$ 0,00',
+        W - MR,
+        y,
+        { align: 'right' }
+      );
+      y += 10;
+
+      doc_.setDrawColor(200, 200, 200);
+      doc_.line(ML, y, W - MR, y);
+      y += 5;
+
+      if (cfg.pixKey) {
+        doc_.setFont('helvetica', 'bold');
+        doc_.setFontSize(8);
+        doc_.setTextColor(30, 30, 30);
+        doc_.text('PAGAMENTO VIA PIX:', ML, y); y += 4;
+        doc_.setFont('helvetica', 'bold');
+        doc_.setFontSize(9);
+        doc_.setTextColor(0, 0, 0);
+        doc_.text(cfg.pixKey, W / 2, y, { align: 'center' }); y += 8;
+      }
+
+      if (cfg.garantia) {
+        doc_.setFont('helvetica', 'normal');
+        doc_.setFontSize(7);
+        doc_.setTextColor(100, 100, 100);
+        const garantiaTexto = doc_.splitTextToSize(`Garantia: ${cfg.garantia}`, MW);
+        doc_.text(garantiaTexto, ML, y);
+        y += garantiaTexto.length * 3 + 3;
+      }
+
+      y += 3;
+      doc_.setFont('helvetica', 'bold');
+      doc_.setFontSize(8);
+      doc_.setTextColor(100, 100, 100);
+      doc_.text('OFICINA IA — Express Tech', W / 2, H - 10, { align: 'center' });
+
+      window.open(doc_.output('bloburl'), '_blank');
+    } catch (err) {
+      console.error('Erro ao gerar PDF:', err);
+      alert('Erro ao gerar o recibo PDF.');
+    }
   };
 
   return (
@@ -271,7 +434,7 @@ export default function ListaOS({ listaCarros, onEditar, onDeletar, onWhatsApp, 
                         {pago ? '🔒 Bloqueado' : getLabelEditar(os)}
                       </button>
                       <button
-                        onClick={() => abrirRecibo(os)}
+                        onClick={() => gerarReciboPDF(os)}
                         style={{ padding: '8px 6px', background: '#5b5b5b', color: 'white', border: 'none', borderRadius: '6px', cursor: 'pointer', fontSize: '10px', fontWeight: '900' }}
                       >
                         🧾 Recibo PDF

@@ -6,6 +6,8 @@ const QuickActions = ({
     modalTarefaAberto, setModalTarefaAberto,
     tarefaRapidaTitulo, setTarefaRapidaTitulo,
     tarefaRapidaDesc, setTarefaRapidaDesc,
+    tarefaRapidaData, setTarefaRapidaData,
+    tarefaRapidaHora, setTarefaRapidaHora,
     salvarTarefaRapida, salvandoTarefaRapida,
     modalFinanceiroAberto, setModalFinanceiroAberto,
     finTipo, setFinTipo,
@@ -105,7 +107,7 @@ const QuickActions = ({
                         />
 
                         <label style={{ color: '#666', fontSize: '10px', fontWeight: '900', display: 'block', marginBottom: '8px', letterSpacing: '1.5px', textTransform: 'uppercase' }}>Detalhes / Observações</label>
-                        <div style={{ display: 'flex', gap: '10px', marginBottom: '25px' }}>
+                        <div style={{ display: 'flex', gap: '10px', marginBottom: '16px' }}>
                             <textarea
                                 value={tarefaRapidaDesc}
                                 onChange={e => setTarefaRapidaDesc(e.target.value)}
@@ -114,6 +116,27 @@ const QuickActions = ({
                                 style={{ flex: 1, padding: '16px', background: '#0a0a0a', border: '1px solid #222', color: 'white', borderRadius: '12px', fontSize: '15px', resize: 'none', boxSizing: 'border-box', outline: 'none' }}
                             />
                             <button style={{ width: '50px', background: '#222', border: 'none', borderRadius: '12px', color: '#10b981', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>🎤</button>
+                        </div>
+
+                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', marginBottom: '20px' }}>
+                            <div>
+                                <label style={{ color: '#666', fontSize: '10px', fontWeight: '900', display: 'block', marginBottom: '6px', letterSpacing: '1.5px', textTransform: 'uppercase' }}>📅 Data</label>
+                                <input
+                                    type="date"
+                                    value={tarefaRapidaData}
+                                    onChange={e => setTarefaRapidaData(e.target.value)}
+                                    style={{ width: '100%', padding: '12px', background: '#0a0a0a', border: '1px solid #222', color: 'white', borderRadius: '10px', fontSize: '13px', boxSizing: 'border-box', outline: 'none' }}
+                                />
+                            </div>
+                            <div>
+                                <label style={{ color: '#666', fontSize: '10px', fontWeight: '900', display: 'block', marginBottom: '6px', letterSpacing: '1.5px', textTransform: 'uppercase' }}>🕐 Hora</label>
+                                <input
+                                    type="time"
+                                    value={tarefaRapidaHora}
+                                    onChange={e => setTarefaRapidaHora(e.target.value)}
+                                    style={{ width: '100%', padding: '12px', background: '#0a0a0a', border: '1px solid #222', color: 'white', borderRadius: '10px', fontSize: '13px', boxSizing: 'border-box', outline: 'none' }}
+                                />
+                            </div>
                         </div>
 
                         <button
@@ -156,9 +179,10 @@ const QuickActions = ({
                         <div style={{ position: 'relative', marginBottom: '20px' }}>
                             <span style={{ position: 'absolute', left: '20px', top: '50%', transform: 'translateY(-50%)', color: '#f59e0b', fontWeight: '900' }}>R$</span>
                             <input
-                                type="number"
+                                type="text"
+                                inputMode="decimal"
                                 value={finValor}
-                                onChange={e => setFinValor(e.target.value)}
+                                onChange={e => { console.log('[FinValor onChange]', e.target.value); setFinValor(e.target.value); }}
                                 placeholder="0,00"
                                 style={{ width: '100%', padding: '20px 20px 20px 50px', background: '#0a0a0a', border: '1px solid #222', color: '#f59e0b', borderRadius: '12px', fontSize: '32px', fontWeight: '900', boxSizing: 'border-box', outline: 'none' }}
                             />
@@ -173,7 +197,11 @@ const QuickActions = ({
                         </select>
 
                         <button
-                            onClick={salvarFinanceiroRapido}
+                            onClick={() => {
+                              console.log('[QA Fin] Clicou salvar! finSalvando:', finSalvando, 'finDesc:', finDesc, 'finValor:', finValor, 'finTipo:', finTipo);
+                              if (!finDesc || !finValor) { alert('Preencha descrição e valor!'); return; }
+                              salvarFinanceiroRapido();
+                            }}
                             disabled={finSalvando || !finDesc || !finValor}
                             className="nav-button-premium"
                             style={{ width: '100%', padding: '18px', background: '#f59e0b', color: 'black', border: 'none', borderRadius: '12px', fontWeight: '900', fontSize: '14px', cursor: 'pointer', letterSpacing: '1px', '--glow-color': '#f59e0b' }}

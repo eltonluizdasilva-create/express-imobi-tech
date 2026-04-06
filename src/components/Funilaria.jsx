@@ -34,7 +34,7 @@ const StatusSelector = ({ label, value, onChange }) => (
   </div>
 );
 
-export default function LatariaModulo({
+export default function FunilariaModulo({
   oficinaId, osParaEditar, onCancelar, onSalvo, setAbaAtiva, irParaNovaOS
 }) {
   const [loading, setLoading] = useState(false);
@@ -43,9 +43,9 @@ export default function LatariaModulo({
 
   const [pecas, setPecas] = useState('0,00');
   const [maoDeObra, setMaoDeObra] = useState('0,00');
-  const [obsLataria, setObsLataria] = useState('');
+  const [obsFunilaria, setObsFunilaria] = useState('');
   const [checklist, setChecklist] = useState({
-    // Lataria
+    // Funilaria
     amassados: 'OK', oxidacao: 'OK', pintura: 'OK', repintura: 'OK',
     // Acabamento
     vidros: 'OK', retrovisores: 'OK', parachoques: 'OK', borrachas: 'OK',
@@ -57,8 +57,8 @@ export default function LatariaModulo({
     if (osParaEditar) {
       setPecas(osParaEditar.valorPecas?.toString().replace('.', ',') || '0,00');
       setMaoDeObra(osParaEditar.valorMaoObra?.toString().replace('.', ',') || '0,00');
-      setObsLataria(osParaEditar.observacaoLataria || '');
-      if (osParaEditar.checklistLataria) setChecklist(osParaEditar.checklistLataria);
+      setObsFunilaria(osParaEditar.observacaoFunilaria || '');
+      if (osParaEditar.checklistFunilaria) setChecklist(osParaEditar.checklistFunilaria);
     }
   }, [osParaEditar]);
 
@@ -73,12 +73,12 @@ export default function LatariaModulo({
       const vPecas = parseFloat(pecas.replace(',', '.')) || 0;
       const vMao = parseFloat(maoDeObra.replace(',', '.')) || 0;
       await updateDoc(doc(db, 'oficinas', oficinaId, 'os', osParaEditar.id), {
-        tipoServico: 'lataria',
+        tipoServico: 'funilaria',
         valorPecas: vPecas,
         valorMaoObra: vMao,
         total: vPecas + vMao,
-        observacaoLataria: obsLataria,
-        checklistLataria: checklist,
+        observacaoFunilaria: obsFunilaria,
+        checklistFunilaria: checklist,
         data_atualizacao: new Date().toISOString()
       });
       setSuccess(true);
@@ -136,23 +136,23 @@ export default function LatariaModulo({
               <Palette className="text-white" size={32} />
             </div>
             <div>
-              <h1 className="text-3xl font-black text-white uppercase tracking-tighter">Laudo de Lataria</h1>
+              <h1 className="text-3xl font-black text-white uppercase tracking-tighter">Laudo de Funilaria</h1>
               <p className="text-zinc-500 text-sm">Inspeção detalhada de chaparia e acabamento</p>
             </div>
           </div>
           <button onClick={onCancelar} className="p-3 bg-zinc-900 rounded-xl border border-zinc-800 hover:bg-zinc-800"><X size={24} /></button>
         </div>
 
-        {/* 1. Diagnóstico Lataria */}
+        {/* 1. Diagnóstico Funilaria */}
         <div className={STYLES.card}>
-          <h2 className="text-red-600 font-black flex items-center gap-2 mb-6 uppercase tracking-widest text-[10px] border-l-2 border-red-600 pl-3">🛠️ Lataria & Pintura</h2>
+          <h2 className="text-red-600 font-black flex items-center gap-2 mb-6 uppercase tracking-widest text-[10px] border-l-2 border-red-600 pl-3">🛠️ Funilaria & Pintura</h2>
           <div className="bg-zinc-900/60 rounded-2xl border border-zinc-800 overflow-hidden mb-6">
             <StatusSelector label="Amassados / Cortes / Lanternagem" value={checklist.amassados} onChange={v => setChecklist({ ...checklist, amassados: v })} />
             <StatusSelector label="Oxidação / Ferrugem / Corrosão" value={checklist.oxidacao} onChange={v => setChecklist({ ...checklist, oxidacao: v })} />
             <StatusSelector label="Estado da Pintura (Queimada/Fosca)" value={checklist.pintura} onChange={v => setChecklist({ ...checklist, pintura: v })} />
             <StatusSelector label="Área de Repintura / Massa / Bolhas" value={checklist.repintura} onChange={v => setChecklist({ ...checklist, repintura: v })} />
           </div>
-          <textarea value={obsLataria} onChange={e => setObsLataria(e.target.value)} placeholder="Detalhes técnicos da lataria..." className={STYLES.input + " min-h-[100px]"} />
+          <textarea value={obsFunilaria} onChange={e => setObsFunilaria(e.target.value)} placeholder="Detalhes técnicos da funilaria..." className={STYLES.input + " min-h-[100px]"} />
         </div>
 
         {/* 2. Acabamento (Restaurado) */}
@@ -189,7 +189,7 @@ export default function LatariaModulo({
               <input value={maoDeObra} onChange={e => setMaoDeObra(e.target.value)} className="w-full p-4 bg-zinc-900 border border-zinc-800 rounded-xl outline-none text-center font-mono text-xl text-white" />
             </div>
             <div className="bg-green-950/20 border border-green-500/30 p-5 rounded-2xl flex flex-col items-center">
-              <span className="text-[10px] text-green-500 font-bold mb-2 uppercase">Total Lataria</span>
+              <span className="text-[10px] text-green-500 font-bold mb-2 uppercase">Total Funilaria</span>
               <span className="text-3xl font-black text-green-500">R$ {(parseFloat(pecas.replace(',', '.')) + parseFloat(maoDeObra.replace(',', '.')) || 0).toFixed(2)}</span>
             </div>
           </div>

@@ -84,68 +84,7 @@ const AbaMarketing = () => {
         ))}
       </div>
 
-      {/* 🤖 SEÇÃO: O FUTURO - ESCALABILIDADE GLOBAL */}
-      <div style={{ marginTop: '60px', borderTop: '2px solid #333', paddingTop: '40px' }}>
-        <h2 style={{ color: '#ff3333', fontSize: '26px', marginBottom: '30px', textAlign: 'center', textTransform: 'uppercase', letterSpacing: '2px' }}>
-          🌐 ROADMAP GLOBAL: EXPRESS AI TECH
-        </h2>
 
-        <div style={{
-          background: 'rgba(255, 51, 51, 0.05)',
-          border: '1px solid #ff3333',
-          borderRadius: '20px',
-          padding: '40px',
-          boxShadow: '0 0 30px rgba(255, 51, 51, 0.15)',
-          position: 'relative',
-          overflow: 'hidden'
-        }}>
-          {/* Efeito de fundo para dar profundidade */}
-          <div style={{ position: 'absolute', top: '-50px', right: '-50px', fontSize: '150px', opacity: '0.03', color: '#ff3333' }}>🤖</div>
-
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '40px' }}>
-
-            {/* 📞 SECRETÁRIA ONLINE 24H (IA DE VOZ & ZAP) */}
-            <div style={{ background: '#000', padding: '25px', borderRadius: '15px', borderLeft: '5px solid #ff3333' }}>
-              <h3 style={{ color: '#fff', margin: '0 0 15px 0', fontSize: '20px' }}>📞 Secretária Digital Global 24h</h3>
-              <p style={{ color: '#aaa', fontSize: '14px', lineHeight: '1.7' }}>
-                <strong>UTILIDADE:</strong> Atendimento ininterrupto por Voz e WhatsApp com IA Multilíngue.
-                <br /><br />
-                <span style={{ color: '#ff3333' }}>✔ Atende, tira dúvidas técnicas, agenda serviços e gera orçamentos sem intervenção humana. Sua oficina aberta 24/7 para o mundo.</span>
-              </p>
-            </div>
-
-            {/* 💰 GESTÃO FINANCEIRA INTELIGENTE */}
-            <div style={{ background: '#000', padding: '25px', borderRadius: '15px', borderLeft: '5px solid #3b82f6' }}>
-              <h3 style={{ color: '#3b82f6', margin: '0 0 15px 0', fontSize: '20px' }}>💰 Recuperação de Ativos (Finança IA)</h3>
-              <p style={{ color: '#aaa', fontSize: '14px', lineHeight: '1.7' }}>
-                <strong>UTILIDADE:</strong> Auditoria automática de inadimplência e cobrança inteligente via IA.
-                <br /><br />
-                <span style={{ color: '#3b82f6' }}>✔ Detecta dinheiro parado, calcula impostos automaticamente e executa a cobrança no WhatsApp com persuasão de alto nível.</span>
-              </p>
-            </div>
-
-            {/* 📅 AGENDA PREDITIVA */}
-            <div style={{ background: '#000', padding: '25px', borderRadius: '15px', borderLeft: '5px solid #00E676' }}>
-              <h3 style={{ color: '#00E676', margin: '0 0 15px 0', fontSize: '20px' }}>📅 Preenchimento de Agenda IA</h3>
-              <p style={{ color: '#aaa', fontSize: '14px', lineHeight: '1.7' }}>
-                <strong>UTILIDADE:</strong> Redução de ociosidade zero. A IA monitora horários vazios e dispara campanhas para clientes inativos.
-                <br /><br />
-                <span style={{ color: '#00E676' }}>✔ Se a oficina ficar vazia amanhã, a IA "caça" clientes e preenche o pátio automaticamente.</span>
-              </p>
-            </div>
-
-          </div>
-
-          <div style={{ marginTop: '30px', textAlign: 'center', color: '#ff3333', fontWeight: 'bold', fontSize: '14px', textTransform: 'uppercase' }}>
-            🚀 Status: Em expansão global. Tecnologia escalável para qualquer país.
-          </div>
-        </div>
-      </div>
-
-      {/* RODAPÉ */}
-      <p style={{ textAlign: 'center', color: '#555', fontSize: '12px', marginTop: '40px' }}>
-        Ao clicar em Contratar, sua solicitação é enviada para a Express AI Tech e entraremos em contato em até 24h úteis.
-      </p>
     </div>
   );
 };

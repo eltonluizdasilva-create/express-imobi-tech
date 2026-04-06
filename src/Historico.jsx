@@ -60,7 +60,7 @@ export default function Historico({ oficinaId }) {
             'mecanica': 'Mecânica Geral',
             'hibrido': 'Híbridos / Elétricos',
             'eletrico': '100% Elétrico',
-            'lataria': 'Lataria e Pintura',
+            'funilaria': 'Funilaria e Pintura',
             'moto': 'Oficina Moto',
             'amortecedor': 'Suspensão e Amortecedor',
             'injecao': 'Injeção Eletrônica',

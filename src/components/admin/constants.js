@@ -10,7 +10,7 @@ export const COLORS = {
 
 export const TAB_COLORS = {
   mecanica: '#a855f7',
-  lataria: '#ef4444',
+  funilaria: '#ef4444',
   mercadolivre: '#facc15',
   mercado_livre: '#facc15',
   hibrido: '#10b981',
@@ -32,7 +32,7 @@ export const TAB_COLORS = {
   secretaria: '#c026d3',
   administrador: '#4f46e5',
   contador: '#16a34a',
-  dashboard: '#ffffff',
+  dashboard: COLORS.MAIN,
   financeiro: '#10b981',
   estoque: '#a855f7',
   leads: '#f97316',

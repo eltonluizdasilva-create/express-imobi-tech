@@ -280,8 +280,8 @@ Use apenas números inteiros em libras (psi). Não use aspas extras, não adicio
             const res = await analyzeText(prompt);
             // Tenta extrair JSON de várias formas
             const jsonMatch = res.match(/\{[^{}]*"vazio"[^{}]*"cheio"[^{}]*\}/) ||
-                              res.match(/\{[^{}]*"cheio"[^{}]*"vazio"[^{}]*\}/) ||
-                              res.match(/\{[\s\S]*?\}/);
+                res.match(/\{[^{}]*"cheio"[^{}]*"vazio"[^{}]*\}/) ||
+                res.match(/\{[\s\S]*?\}/);
             if (jsonMatch) {
                 const parsed = JSON.parse(jsonMatch[0]);
                 // Garante que os valores são strings limpas (só números)
@@ -428,6 +428,13 @@ export default function PortalCliente() {
     const [osSelecionada, setOsSelecionada] = useState(null);
     const [abaAtiva, setAbaAtiva] = useState('home');
     const navigate = useNavigate();
+
+    const formatarDataBR = (valor) => {
+        if (!valor) return '—';
+        if (valor?.toDate) return valor.toDate().toLocaleDateString('pt-BR');
+        const data = new Date(valor);
+        return isNaN(data.getTime()) ? '—' : data.toLocaleDateString('pt-BR');
+    };
 
     const handleEntrar = async () => {
         if (!placa || !senha) return alert("Preencha Placa e Senha.");
@@ -606,7 +613,7 @@ export default function PortalCliente() {
                                                 <div className="flex justify-between items-center border-t border-neutral-900 pt-6">
                                                     <div className="flex flex-col">
                                                         <span className="text-neutral-600 text-[9px] font-black uppercase mb-1">DATA</span>
-                                                        <span className="text-white font-bold">{os.data}</span>
+                                                        <span className="text-white font-bold">{os.data?.toDate?.().toLocaleDateString('pt-BR') || formatarDataBR(os.data)}</span>
                                                     </div>
                                                     <div className="text-right">
                                                         <span className="text-neutral-600 text-[9px] font-black uppercase block mb-1">VALOR INVESTIDO</span>
@@ -643,7 +650,7 @@ export default function PortalCliente() {
                                         Laudo Técnico
                                     </h2>
                                     <p className="text-neutral-600 text-[10px] font-black uppercase mb-6">
-                                        {osSelecionada.data} {osSelecionada.modelo ? `• ${osSelecionada.modelo}` : ''}
+                                        {osSelecionada?.data?.toDate?.().toLocaleDateString('pt-BR') || formatarDataBR(osSelecionada?.data)} {osSelecionada.modelo ? `• ${osSelecionada.modelo}` : ''}
                                     </p>
 
                                     {/* Checklist / Serviços */}

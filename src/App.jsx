@@ -19,7 +19,6 @@ import OSPage from "./OSPage";
 import Login from "./Login";
 import LoginAdmin from "./LoginAdmin";
 import Marketing from "./Marketing";
-import Recibo from "./pages/Recibo";
 
 // 🟢 IMPORT DO NOVO PORTAL DO CLIENTE
 import PortalCliente from "./PortalCliente";
@@ -39,7 +38,7 @@ function AppRoutes() {
     '/portal',
     '/portal2',
     '/login'
-  ].includes(location.pathname) && !location.pathname.startsWith('/status/') && !location.pathname.startsWith('/recibo/');
+  ].includes(location.pathname) && !location.pathname.startsWith('/status/');
 
   return (
     <>
@@ -59,9 +58,6 @@ function AppRoutes() {
 
         {/* ABA MARKETING */}
         <Route path="/marketing" element={<Marketing />} />
-
-        {/* RECIBO */}
-        <Route path="/recibo/:oficinaId/:id" element={<Recibo />} />
 
         {/* SITE INSTITUCIONAL */}
         <Route path="/site" element={<Home />} />

@@ -170,38 +170,16 @@ export default function DashboardTab({
     const valorEstoque = listaEstoque.reduce((a, i) => a + ((Number(i.qtd) || 0) * (Number(i.preco_custo) || 0)), 0);
 
     return (
-        <div style={{ padding: '4px 0' }}>
-
-            {/* HEADER COM BOTÕES DE NAVEGAÇÃO */}
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px', flexWrap: 'wrap', gap: '16px', padding: '20px', background: t.bgCard, borderRadius: '16px', border: `1px solid ${t.border}` }}>
-                <div>
-                    <h1 style={{ color: t.texto, margin: 0, fontSize: '20px', fontWeight: '900', textTransform: 'uppercase', letterSpacing: '1px' }}>🏎️ Dashboard da Oficina</h1>
-                    <p style={{ color: t.textoSec, margin: '6px 0 0', fontSize: '13px' }}>Visão completa do seu negócio em tempo real</p>
-                </div>
-                <div style={{ display: 'flex', gap: '10px', alignItems: 'center', flexWrap: 'wrap' }}>
-                    <BotaoAcao label="Nova O.S." cor={MAIN_COLOR} icone="📄" t={t} onClick={onNovaOS} tamanho="lg" />
-                    <BotaoAcao label="Financeiro" cor={GREEN_MONEY} icone="💰" t={t} onClick={onFinanceiro} />
-                    <BotaoAcao label="Estoque" cor={KM_COLOR} icone="📦" t={t} onClick={onEstoque} />
-                </div>
-            </div>
-
-            {/* AÇÕES RÁPIDAS — TODAS FUNCIONANDO */}
-            <div style={{ background: t.bgCard, padding: '20px', borderRadius: '16px', border: `1px solid ${t.border}`, marginBottom: '24px' }}>
-                <h3 style={{ color: t.texto, margin: '0 0 16px', fontSize: '13px', fontWeight: '900', textTransform: 'uppercase', letterSpacing: '1px' }}>⚡ Ações Rápidas</h3>
-                <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
-                    <BotaoAcao label="Nova O.S." icone="📄" cor={MAIN_COLOR} t={t} onClick={onNovaOS} />
-                    <BotaoAcao label="Buscar Cliente" icone="🔍" cor={BLUE_INFO} t={t} onClick={onBuscarCliente} />
-                    <BotaoAcao label="Lançar Despesa" icone="💸" cor={PURPLE_ACCENT} t={t} onClick={onLancarDespesa} />
-                    <BotaoAcao label="Agendar Revisão" icone="📅" cor={KM_COLOR} t={t} onClick={onAgendarRevisao} />
-                </div>
-            </div>
+        <div style={{ background: t.bg, minHeight: '100vh', padding: '4px 0' }}>
 
             {/* CARDS DE MÉTRICAS */}
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '20px', marginBottom: '28px' }}>
-                <CardMetrica label="🚗 No Pátio" valor={osPendentes} cor={MAIN_COLOR} t={t} icone="🔧" subtitulo={`${osPendentes} O.S. em aberto`} />
-                <CardMetrica label="💰 A Receber" valor={fmtMoeda(totalAReceber)} cor="#facc15" t={t} icone="💵" subtitulo={`${listaCarros.filter(os => os.statusPagamento !== 'pago').length} O.S. pendentes`} />
-                <CardMetrica label="📈 Faturamento Mês" valor={temPermissao('financeiro') ? fmtMoeda(financeiro.fMes) : '🔒'} cor={GREEN_MONEY} t={t} icone="📊" subtitulo={temPermissao('financeiro') ? `Hoje: ${fmtMoeda(financeiro.fHoje)}` : 'Sem permissão'} tendencia={null} />
-                <CardMetrica label="📦 Itens Estoque" valor={totalEstoque} cor={KM_COLOR} t={t} icone="📦" subtitulo={`Valor: ${fmtMoeda(valorEstoque)}`} />
+            <div style={{ background: t.bgCard, borderRadius: '16px', border: `1px solid ${t.border}`, padding: '20px', marginBottom: '28px' }}>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '20px' }}>
+                    <CardMetrica label="🚗 No Pátio" valor={osPendentes} cor={MAIN_COLOR} t={t} icone="🔧" subtitulo={`${osPendentes} O.S. em aberto`} />
+                    <CardMetrica label="💰 A Receber" valor={fmtMoeda(totalAReceber)} cor="#facc15" t={t} icone="💵" subtitulo={`${listaCarros.filter(os => os.statusPagamento !== 'pago').length} O.S. pendentes`} />
+                    <CardMetrica label="📈 Faturamento Mês" valor={temPermissao('financeiro') ? fmtMoeda(financeiro.fMes) : '🔒'} cor={GREEN_MONEY} t={t} icone="📊" subtitulo={temPermissao('financeiro') ? `Hoje: ${fmtMoeda(financeiro.fHoje)}` : 'Sem permissão'} tendencia={null} />
+                    <CardMetrica label="📦 Itens Estoque" valor={totalEstoque} cor={KM_COLOR} t={t} icone="📦" subtitulo={`Valor: ${fmtMoeda(valorEstoque)}`} />
+                </div>
             </div>
 
             {/* ALERTAS */}

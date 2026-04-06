@@ -462,6 +462,13 @@ export default function PortalCliente() {
     const [abaAtiva, setAbaAtiva] = useState('home');
     const navigate = useNavigate();
 
+    const formatarDataBR = (valor) => {
+        if (!valor) return '—';
+        if (valor?.toDate) return valor.toDate().toLocaleDateString('pt-BR');
+        const data = new Date(valor);
+        return isNaN(data.getTime()) ? '—' : data.toLocaleDateString('pt-BR');
+    };
+
     const handleEntrar = async () => {
         // Validação simples
         if (!placa || !senha || senha.length !== 4) return alert("Preencha Placa e senha de 4 dígitos.");
@@ -684,7 +691,7 @@ export default function PortalCliente() {
                                                 <div className="flex justify-between items-center border-t border-neutral-900 pt-6">
                                                     <div className="flex flex-col">
                                                         <span className="text-neutral-600 text-[9px] font-black uppercase mb-1">DATA</span>
-                                                        <span className="text-white font-bold">{os.data}</span>
+                                                        <span className="text-white font-bold">{os.data?.toDate?.().toLocaleDateString('pt-BR') || formatarDataBR(os.data)}</span>
                                                     </div>
                                                     <div className="text-right">
                                                         <span className="text-neutral-600 text-[9px] font-black uppercase block mb-1">VALOR INVESTIDO</span>
@@ -721,7 +728,7 @@ export default function PortalCliente() {
                                         Laudo Técnico
                                     </h2>
                                     <p className="text-neutral-600 text-[10px] font-black uppercase mb-6">
-                                        {osSelecionada.data} {osSelecionada.modelo ? `• ${osSelecionada.modelo}` : ''}
+                                        {osSelecionada?.data?.toDate?.().toLocaleDateString('pt-BR') || formatarDataBR(osSelecionada?.data)} {osSelecionada.modelo ? `• ${osSelecionada.modelo}` : ''}
                                     </p>
 
                                     {/* Checklist / Serviços */}

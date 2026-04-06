@@ -11,13 +11,14 @@ export const salvarCliente = async (oficinaId, dadosCliente) => {
 
   try {
     let clienteId = null;
+    let existing = null;
 
     if (telefoneLimpo) {
       const q = query(
         collection(db, 'oficinas', oficinaId, 'leads'),
         where('telefoneLimpo', '==', telefoneLimpo)
       );
-      const existing = await getDocs(q);
+      existing = await getDocs(q);
       if (!existing.empty) {
         clienteId = existing.docs[0].id;
       }
@@ -92,7 +93,7 @@ export const PLANOS_CADEADOS = {
   escapamento: { label: 'Escapamento', plano: 'escapamento' },
   estetica: { label: 'Estética', plano: 'estetica' },
   motos: { label: 'Motos', plano: 'motos' },
-  lataria: { label: 'Lataria', plano: 'lataria' },
+  funilaria: { label: 'Funilaria', plano: 'funilaria' },
   amortecedor: { label: 'Amortecedor', plano: 'amortecedor' },
   injecao: { label: 'Injeção', plano: 'injecao' },
   patrimonio: { label: 'Patrimônio', plano: 'base' },

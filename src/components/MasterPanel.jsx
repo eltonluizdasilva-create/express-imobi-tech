@@ -30,6 +30,7 @@ import {
   setDoc,
   updateDoc,
   getDoc,
+  getDocs,
   collection,
   onSnapshot,
   query,
@@ -39,25 +40,48 @@ import { db } from "../lib/firebase";
 
 // 1. A LISTA QUE MANDA NO SEU IMPÉRIO (TODAS AS SUAS ABAS)
 const LISTA_MESTRA_ABAS = [
-  { id: "visao-geral", nome: "Visão Geral", icon: "📊" },
-  { id: "estoque", nome: "Estoque", icon: "📦" },
-  { id: "financeiro", nome: "Financeiro", icon: "💰" },
-  { id: "tarefa", nome: "Tarefas", icon: "📋" },
-  { id: "nota-fiscal", nome: "Nota Fiscal", icon: "📄" },
-  { id: "retorno", nome: "Retorno/Pós-Venda", icon: "📅" },
-  { id: "clientes", nome: "Clientes", icon: "👥" },
-  { id: "patrimonio", nome: "Patrimônio", icon: "📊" },
-  { id: "fornecedores", nome: "Fornecedores", icon: "🤝" },
-  { id: "historico", nome: "Histórico de Placas", icon: "📋" },
-  { id: "mercadolivre", nome: "Mercado Livre", icon: "📦" },
-  { id: "sistema-config", nome: "Sistema Config", icon: "⚙️" },
-  { id: "master-local", nome: "Master Local", icon: "👑" },
-  { id: "meu-plano", nome: "Meu Plano", icon: "💳" },
-  { id: "ajustes", nome: "Ajustes", icon: "⚙️" },
-  { id: "equipe", nome: "Equipe", icon: "👥" },
-  { id: "marketing", nome: "Marketing", icon: "📣" },
-  { id: "estrategia", nome: "Estratégia", icon: "🚀" },
-  { id: "ajuda", nome: "Ajuda/Suporte", icon: "❓" },
+  // OPERACIONAIS
+  { id: "mecanica", nome: "Mecânica", icon: "🔧", categoria: "operacional" },
+  { id: "clientes", nome: "Clientes", icon: "👥", categoria: "operacional" },
+  { id: "hibrido", nome: "Híbridos/Elétricos", icon: "🔋", categoria: "operacional" },
+  { id: "moto", nome: "Motos", icon: "🏍️", categoria: "operacional" },
+  { id: "funilaria", nome: "Funilaria", icon: "🚗", categoria: "operacional" },
+  { id: "amortecedor", nome: "Amortecedor", icon: "🧰", categoria: "operacional" },
+  { id: "injecao", nome: "Injeção", icon: "🛠️", categoria: "operacional" },
+  { id: "eletrica", nome: "Elétrica", icon: "⚡", categoria: "operacional" },
+  { id: "alinhamento", nome: "Alinhamento", icon: "⚙️", categoria: "operacional" },
+  { id: "oleo", nome: "Óleo", icon: "🛢️", categoria: "operacional" },
+  { id: "revisao", nome: "Revisão", icon: "🛡️", categoria: "operacional" },
+  { id: "ar_condicionado", nome: "Ar-Condicionado", icon: "❄️", categoria: "operacional" },
+  { id: "pneus", nome: "Pneus", icon: "🛞", categoria: "operacional" },
+  { id: "desmanche", nome: "Desmanche", icon: "🚗", categoria: "operacional" },
+  { id: "escapamento", nome: "Escapamento", icon: "🪛", categoria: "operacional" },
+  { id: "lavajato", nome: "Lava Jato", icon: "🚿", categoria: "operacional" },
+  { id: "estetica", nome: "Estética", icon: "✨", categoria: "operacional" },
+  // IA
+  { id: "copiloto", nome: "Copiloto IA", icon: "👨‍🔧", categoria: "ia" },
+  { id: "secretaria", nome: "Secretária IA", icon: "👩‍💼", categoria: "ia" },
+  { id: "administrador", nome: "Administrador IA", icon: "👔", categoria: "ia" },
+  { id: "contador", nome: "Contador IA", icon: "🧮", categoria: "ia" },
+  { id: "mercadolivre", nome: "Mercado Livre", icon: "📦", categoria: "ia" },
+  // GESTÃO
+  { id: "dashboard", nome: "Visão Geral", icon: "📊", categoria: "gestao" },
+  { id: "financeiro", nome: "Financeiro", icon: "💰", categoria: "gestao" },
+  { id: "estoque", nome: "Estoque", icon: "📦", categoria: "gestao" },
+  { id: "leads", nome: "Leads/Clientes", icon: "👥", categoria: "gestao" },
+  { id: "historico", nome: "Histórico", icon: "📋", categoria: "gestao" },
+  { id: "tarefa", nome: "Tarefas", icon: "📋", categoria: "gestao" },
+  { id: "notafiscal", nome: "Nota Fiscal", icon: "📄", categoria: "gestao" },
+  { id: "retorno", nome: "Retorno", icon: "📅", categoria: "gestao" },
+  { id: "patrimonio", nome: "Patrimônio", icon: "🏢", categoria: "gestao" },
+  { id: "fornecedores", nome: "Fornecedores", icon: "🤝", categoria: "gestao" },
+  // SISTEMA
+  { id: "meuplano", nome: "Meu Plano", icon: "💰", categoria: "sistema" },
+  { id: "config", nome: "Ajustes", icon: "⚙️", categoria: "sistema" },
+  { id: "equipe", nome: "Equipe", icon: "👥", categoria: "sistema" },
+  { id: "marketing", nome: "Marketing", icon: "📣", categoria: "sistema" },
+  { id: "estrategia", nome: "Estratégia", icon: "🚀", categoria: "sistema" },
+  { id: "ajuda", nome: "Ajuda", icon: "❓", categoria: "sistema" },
 ];
 
 export default function MasterPanel() {
@@ -72,12 +96,14 @@ export default function MasterPanel() {
   const [config, setConfig] = useState({
     videos: {},
     resumos: {},
-    modulosBase: ["visao-geral", "ajuda"], // Mercado Livre pode ser base se você quiser
+    modulosBase: ["mecanica", "clientes"],
+    modulosFixoIA: ["copiloto", "secretaria", "administrador", "contador"],
     planos: {
       essencial: { preco: 99, slots: 1, func: 3 },
       profissional: { preco: 149, slots: 3, func: 5 },
       especialista: { preco: 249, slots: 5, func: 8 },
       master: { preco: 449, slots: 99, func: 12 },
+      planoPrimeIA: { preco: 599, slots: 999, func: 999, desc: 'Todas as funções + Acesso total à Inteligência Artificial (Copiloto, Secretária e Automações)' },
     },
   });
 
@@ -175,6 +201,7 @@ export default function MasterPanel() {
     setLoading(true);
     try {
       await setDoc(doc(db, "configuracoes_admin", "master"), config, { merge: true });
+      await setDoc(doc(db, "configuracoes_admin", "videos"), { videos: config.videos, resumos: config.resumos }, { merge: true });
       alert("🚀 SISTEMA SINCRONIZADO COM SUCESSO!");
     } catch (error) {
       console.error("Firebase error:", error);
@@ -286,22 +313,45 @@ export default function MasterPanel() {
       {activeTab === "planos" && (
         <div className="space-y-10 animate-in fade-in duration-500">
           <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-            {Object.keys(config.planos).map((p) => (
+            {Object.entries(config.planos).sort(([a], [b]) => (b === 'planoPrimeIA' ? 1 : 0) - (a === 'planoPrimeIA' ? 1 : 0)).map(([p, plano]) => {
+              const isPrime = p === 'planoPrimeIA';
+              const cor = isPrime ? '#a855f7' : '#ff0033';
+              const titulo = isPrime ? '👑 PRIME IA' : p.toUpperCase();
+              return (
               <div
                 key={p}
-                className="bg-zinc-900 p-8 rounded-[55px] border border-zinc-800 hover:border-red-600 transition-all"
+                className={`p-8 rounded-[55px] transition-all ${isPrime ? 'bg-gradient-to-b from-purple-950/40 to-zinc-900 border-2' : 'bg-zinc-900 border border-zinc-800'} ${isPrime ? 'hover:border-purple-500' : 'hover:border-red-600'}`}
+                style={isPrime ? { borderColor: '#a855f744', boxShadow: '0 0 30px #a855f722' } : {}}
               >
-                <h3 className="text-xl font-black text-red-600 uppercase mb-8 text-center">
-                  {p}
+                <h3 className="text-xl font-black uppercase mb-4 text-center" style={{ color: cor }}>
+                  {titulo}
                 </h3>
+                {isPrime && (
+                  <div className="text-center mb-6">
+                    <span className="inline-block bg-gradient-to-r from-purple-600 to-yellow-500 text-white text-[9px] font-black px-4 py-1 rounded-full uppercase tracking-widest">
+                      👑 RECOMENDADO / PREMIUM
+                    </span>
+                  </div>
+                )}
                 <div className="space-y-4">
                   <div className="bg-black/40 p-4 rounded-3xl border border-zinc-800 text-center">
                     <span className="text-[9px] text-zinc-600 font-black block mb-1 uppercase">
-                      Preço Mensal
+                      Preço Mensal (R$)
                     </span>
-                    <p className="text-white font-black text-sm">
-                      R$ {config.planos[p].preco}
-                    </p>
+                    <input
+                      type="number"
+                      value={plano.preco}
+                      className="bg-transparent text-center font-black text-white w-full outline-none"
+                      onChange={(e) =>
+                        setConfig({
+                          ...config,
+                          planos: {
+                            ...config.planos,
+                            [p]: { ...config.planos[p], preco: Number(e.target.value) },
+                          },
+                        })
+                      }
+                    />
                   </div>
                   <div className="bg-black/40 p-4 rounded-3xl border border-zinc-800 text-center">
                     <span className="text-[9px] text-zinc-600 font-black block mb-1 uppercase">
@@ -309,14 +359,14 @@ export default function MasterPanel() {
                     </span>
                     <input
                       type="number"
-                      value={config.planos[p].slots}
+                      value={plano.slots}
                       className="bg-transparent text-center font-black text-white w-full outline-none"
                       onChange={(e) =>
                         setConfig({
                           ...config,
                           planos: {
                             ...config.planos,
-                            [p]: { ...config.planos[p], slots: e.target.value },
+                            [p]: { ...config.planos[p], slots: Number(e.target.value) },
                           },
                         })
                       }
@@ -328,14 +378,14 @@ export default function MasterPanel() {
                     </span>
                     <input
                       type="number"
-                      value={config.planos[p].func}
+                      value={plano.func}
                       className="bg-transparent text-center font-black text-white w-full outline-none"
                       onChange={(e) =>
                         setConfig({
                           ...config,
                           planos: {
                             ...config.planos,
-                            [p]: { ...config.planos[p], func: e.target.value },
+                            [p]: { ...config.planos[p], func: Number(e.target.value) },
                           },
                         })
                       }
@@ -343,40 +393,52 @@ export default function MasterPanel() {
                   </div>
                 </div>
               </div>
-            ))}
+              );
+            })}
           </div>
 
           <div className="bg-zinc-900 p-10 rounded-[60px] border border-zinc-800">
-            <h3 className="text-sm font-black uppercase mb-8 flex items-center gap-2 text-red-600">
-              <Settings size={20} /> Configuração de Módulos Base (Sempre
-              Abertos)
+            <h3 className="text-sm font-black uppercase mb-2 flex items-center gap-2 text-red-600">
+              <Settings size={20} /> Módulos Fixos (Sempre Abertos)
             </h3>
-            <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-3">
-              {LISTA_MESTRA_ABAS.map((cat) => {
-                const isBase = config.modulosBase.includes(cat.id);
-                return (
-                  <button
-                    key={cat.id}
-                    onClick={() => {
-                      const novaBase = isBase
-                        ? config.modulosBase.filter((i) => i !== cat.id)
-                        : [...config.modulosBase, cat.id];
-                      setConfig({ ...config, modulosBase: novaBase });
-                    }}
-                    className={`flex items-center justify-between p-4 rounded-[25px] border text-[9px] font-black uppercase transition-all ${isBase ? "bg-red-600 border-red-600 text-white" : "bg-black/40 border-zinc-800 text-zinc-500 hover:border-zinc-600"}`}
-                  >
-                    <span>
-                      {cat.icon} {cat.nome}
-                    </span>
-                    {isBase ? (
-                      <CheckCircle2 size={16} />
-                    ) : (
-                      <Lock size={16} className="opacity-20" />
-                    )}
-                  </button>
-                );
-              })}
-            </div>
+            <p className="text-zinc-600 text-[10px] font-bold mb-8">
+              Módulos marcados aqui ficam SEMPRE liberadas para todos os clientes, sem contar no limite de slots.
+            </p>
+            {["operacional", "ia", "gestao", "sistema"].map((cat) => {
+              const mods = LISTA_MESTRA_ABAS.filter((m) => m.categoria === cat);
+              const catLabel = { operacional: "⚙️ Operacionais", ia: "🤖 Inteligência Artificial", gestao: "📋 Gestão", sistema: "⚙️ Sistema" }[cat];
+              return (
+                <div key={cat} className="mb-6">
+                  <p className="text-[9px] text-zinc-600 font-black uppercase tracking-widest mb-3">{catLabel}</p>
+                  <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-3">
+                    {mods.map((cat) => {
+                      const isBase = config.modulosBase.includes(cat.id);
+                      return (
+                        <button
+                          key={cat.id}
+                          onClick={() => {
+                            const novaBase = isBase
+                              ? config.modulosBase.filter((i) => i !== cat.id)
+                              : [...config.modulosBase, cat.id];
+                            setConfig({ ...config, modulosBase: novaBase });
+                          }}
+                          className={`flex items-center justify-between p-4 rounded-[25px] border text-[9px] font-black uppercase transition-all ${isBase ? "bg-red-600 border-red-600 text-white" : "bg-black/40 border-zinc-800 text-zinc-500 hover:border-zinc-600"}`}
+                        >
+                          <span>
+                            {cat.icon} {cat.nome}
+                          </span>
+                          {isBase ? (
+                            <CheckCircle2 size={16} />
+                          ) : (
+                            <Lock size={16} className="opacity-20" />
+                          )}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              );
+            })}
           </div>
         </div>
       )}

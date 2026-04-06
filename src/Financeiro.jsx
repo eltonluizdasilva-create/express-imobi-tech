@@ -1,40 +1,42 @@
-import React, { useState, useEffect } from 'react';
-import { db } from './lib/firebase'; 
-import { collection, addDoc, deleteDoc, doc, onSnapshot, query, orderBy } from 'firebase/firestore'; 
+import React, { useState, useEffect, useCallback } from 'react';
+import { db } from './lib/firebase';
+import { collection, addDoc, deleteDoc, doc, getDocs, query, orderBy } from 'firebase/firestore';
 import { useOficina } from "./components/OficinaContext";
-import { BarChart, Bar, XAxis, Tooltip, ResponsiveContainer, Cell } from 'recharts'; // 🔥 Importação do Gráfico
+import { BarChart, Bar, XAxis, Tooltip, ResponsiveContainer, Cell } from 'recharts';
 
-export default function Financeiro() {
-  const { oficinaId } = useOficina() || {};
+export default function Financeiro({ oficinaId: oficinaIdProp, onSalvo }) {
+  const { oficinaId: oficinaIdContext } = useOficina() || {};
+  const oficinaId = oficinaIdProp || oficinaIdContext;
 
   const [descricao, setDescricao] = useState('');
   const [valor, setValor] = useState('');
   const [pagamento, setPagamento] = useState('PIX / Dinheiro');
-  const [tipoTransacao, setTipoTransacao] = useState('entrada'); // 'entrada' ou 'saida'
+  const [tipoTransacao, setTipoTransacao] = useState('entrada');
 
   const [totalHoje, setTotalHoje] = useState(0);
   const [totalMes, setTotalMes] = useState(0);
   const [movimentacoes, setMovimentacoes] = useState([]);
   const [dadosGrafico, setDadosGrafico] = useState([]);
+  const [carregando, setCarregando] = useState(false);
 
-  useEffect(() => {
+  const carregarDados = useCallback(async () => {
     if (!oficinaId) return;
+    setCarregando(true);
+    try {
+      const q = query(collection(db, "oficinas", oficinaId, "financeiro"), orderBy("data", "desc"));
+      const snapshot = await getDocs(q);
+      console.log('[Financeiro] Carregou', snapshot.size, 'documentos de oficina:', oficinaId);
 
-    // 🔥 Busca em tempo real e na pasta segura da oficina
-    const q = query(collection(db, "oficinas", oficinaId, "financeiro"), orderBy("data", "desc"));
-    
-    const unsubscribe = onSnapshot(q, (snapshot) => {
       let somaHoje = 0;
       let somaMes = 0;
       const hoje = new Date();
       const listaTemp = [];
-      
-      // Variáveis para montar o gráfico de 7 dias
+
       const ultimos7Dias = Array(7).fill(0).map((_, i) => {
         const d = new Date();
         d.setDate(d.getDate() - i);
-        return { 
-          diaTexto: d.toLocaleDateString('pt-BR', { weekday: 'short' }), 
+        return {
+          diaTexto: d.toLocaleDateString('pt-BR', { weekday: 'short' }),
           dataComparacao: d.toLocaleDateString('pt-BR'),
           Entradas: 0,
           Saídas: 0
@@ -43,76 +45,91 @@ export default function Financeiro() {
 
       snapshot.forEach((documento) => {
         const transacao = documento.data();
-        const valorTransacao = Number(transacao.valor) || 0;
-        const ehEntrada = transacao.tipo !== 'saida'; // Considera tudo que não é 'saida' como entrada
+        const valorTransacao = Math.abs(Number(transacao.valor) || 0);
+        const ehEntrada = transacao.tipo !== 'saida';
         const multiplicador = ehEntrada ? 1 : -1;
-        
-        if (transacao.data) {
-            const dataTransacao = new Date(transacao.data); // Lidando com strings ISO
 
-            // Soma do Mês
-            if (dataTransacao.getMonth() === hoje.getMonth() && dataTransacao.getFullYear() === hoje.getFullYear()) {
-                somaMes += (valorTransacao * multiplicador);
-            }
-            
-            // Soma de Hoje
-            if (dataTransacao.toLocaleDateString('pt-BR') === hoje.toLocaleDateString('pt-BR')) {
-                somaHoje += (valorTransacao * multiplicador);
-            }
+        let dataTransacao;
+        try {
+          if (transacao.data?.toDate) {
+            dataTransacao = transacao.data.toDate();
+          } else if (transacao.data) {
+            dataTransacao = new Date(transacao.data);
+          } else {
+            dataTransacao = new Date();
+          }
+        } catch { dataTransacao = new Date(); }
 
-            // Alimenta os dados do Gráfico
-            const diaIndex = ultimos7Dias.findIndex(d => d.dataComparacao === dataTransacao.toLocaleDateString('pt-BR'));
-            if (diaIndex !== -1) {
-                if (ehEntrada) ultimos7Dias[diaIndex].Entradas += valorTransacao;
-                else ultimos7Dias[diaIndex].Saídas += valorTransacao;
-            }
+        if (isNaN(dataTransacao.getTime())) dataTransacao = new Date();
 
-            listaTemp.push({
-              id: documento.id,
-              ...transacao,
-              dataTransacao
-            });
+        // Só soma se o valor for razoável (menos de 1 milhão)
+        if (valorTransacao < 1000000) {
+          if (dataTransacao.getMonth() === hoje.getMonth() && dataTransacao.getFullYear() === hoje.getFullYear()) {
+            somaMes += (valorTransacao * multiplicador);
+          }
+          if (dataTransacao.toLocaleDateString('pt-BR') === hoje.toLocaleDateString('pt-BR')) {
+            somaHoje += (valorTransacao * multiplicador);
+          }
+          const diaIndex = ultimos7Dias.findIndex(d => d.dataComparacao === dataTransacao.toLocaleDateString('pt-BR'));
+          if (diaIndex !== -1) {
+            if (ehEntrada) ultimos7Dias[diaIndex].Entradas += valorTransacao;
+            else ultimos7Dias[diaIndex].Saídas += valorTransacao;
+          }
         }
+
+        listaTemp.push({ id: documento.id, ...transacao, dataTransacao });
       });
 
       setTotalHoje(somaHoje);
       setTotalMes(somaMes);
-      setMovimentacoes(listaTemp.slice(0, 8)); // Mostra as últimas 8 na lista
+      setMovimentacoes(listaTemp.slice(0, 8));
       setDadosGrafico(ultimos7Dias);
-    });
-
-    return () => unsubscribe();
+    } catch (err) {
+      console.error('[Financeiro] Erro ao carregar:', err);
+    } finally {
+      setCarregando(false);
+    }
   }, [oficinaId]);
+
+  useEffect(() => {
+    carregarDados();
+  }, [carregarDados]);
+
+  // Atualiza quando onSalvo muda (chamado pelo AdminNovo após salvar rápido)
+  useEffect(() => {
+    if (onSalvo) carregarDados();
+  }, [onSalvo, carregarDados]);
 
   const handleAdicionar = async () => {
     if (!descricao || !valor) {
-      alert("⚠️ Por favor, preencha a descrição e o valor!");
+      alert("⚠️ Preencha a descrição e o valor!");
       return;
     }
-
     try {
-      const valorNumero = parseFloat(valor.replace(',', '.'));
-
+      const valorNumero = Math.abs(parseFloat(String(valor).replace(',', '.')));
       await addDoc(collection(db, "oficinas", oficinaId, "financeiro"), {
         descricao,
         valor: valorNumero,
         pagamento,
-        tipo: tipoTransacao, // 'entrada' ou 'saida'
-        data: new Date().toISOString() 
+        tipo: tipoTransacao,
+        data: new Date().toISOString()
       });
-      
-      setDescricao(''); setValor(''); setPagamento('PIX / Dinheiro');
+      setDescricao('');
+      setValor('');
+      setPagamento('PIX / Dinheiro');
+      carregarDados();
     } catch (error) {
-      alert("❌ Erro ao salvar a transação: " + error.message);
+      alert("❌ Erro: " + error.message);
     }
   };
 
   const handleRemover = async (idDaTransacao) => {
-    if (window.confirm("Tem certeza que deseja apagar ou estornar este valor do caixa?")) {
+    if (window.confirm("Estornar este lançamento?")) {
       try {
         await deleteDoc(doc(db, "oficinas", oficinaId, "financeiro", idDaTransacao));
+        carregarDados();
       } catch (error) {
-        alert("❌ Erro ao remover: " + error.message);
+        alert("❌ Erro: " + error.message);
       }
     }
   };
@@ -218,8 +235,8 @@ export default function Financeiro() {
               <div>
                 <p className="font-bold text-sm truncate max-w-[200px] text-white">{item.descricao}</p>
                 <div className="flex gap-2 text-[10px] mt-1">
-                    <span className="text-gray-400">{new Date(item.dataTransacao).toLocaleDateString('pt-BR')}</span>
-                    <span className="text-gray-500">• {item.pagamento}</span>
+                    <span className="text-gray-400">{item.dataTransacao ? (isNaN(new Date(item.dataTransacao).getTime()) ? '-' : new Date(item.dataTransacao).toLocaleDateString('pt-BR')) : '-'}</span>
+                    <span className="text-gray-500">• {item.pagamento || '—'}</span>
                 </div>
               </div>
               

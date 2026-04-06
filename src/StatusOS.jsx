@@ -1,4 +1,3 @@
-/* eslint-disable no-unused-vars */
 import { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import { db } from './lib/firebase';
@@ -7,8 +6,14 @@ import { doc, getDoc, collection, getDocs } from 'firebase/firestore';
 const MAIN_COLOR = "#FF0033";
 const GREEN_MONEY = "#00E676";
 const KM_COLOR = "#eab308";
-const APP_LINK = 'https://oficina.expresstech.com.br';
 const SITE_LINK = 'https://expresstech.com.br';
+
+function limparTelefone(tel) {
+  if (!tel) return '';
+  const limpo = String(tel).replace(/\D/g, '');
+  if (limpo.length < 10) return '';
+  return limpo.startsWith('55') ? limpo : '55' + limpo;
+}
 
 export default function StatusOS() {
   const { oficinaId, osId } = useParams();
@@ -18,8 +23,6 @@ export default function StatusOS() {
   const [loading, setLoading] = useState(true);
   const [erro, setErro] = useState('');
   const [copiado, setCopiado] = useState(false);
-
-  useEffect(() => { carregarDados(); }, [oficinaId, osId]);
 
   const carregarDados = async () => {
     try {
@@ -59,6 +62,8 @@ export default function StatusOS() {
     }
   };
 
+  useEffect(() => { carregarDados(); }, [oficinaId, osId]);
+
   const copiarPix = () => {
     if (config?.pixKey) {
       navigator.clipboard.writeText(config.pixKey);
@@ -70,9 +75,9 @@ export default function StatusOS() {
 
   const abrirWhatsApp = () => {
     const msg = `Olá! Tenho uma dúvida sobre a minha O.S. #${osId?.slice(-5).toUpperCase()}`;
-    const telefoneDestino = config?.telefone ? config.telefone.replace(/\D/g, '') : '';
+    const telefoneDestino = limparTelefone(config?.telefone);
     if (telefoneDestino) {
-      window.open(`https://wa.me/55${telefoneDestino}?text=${encodeURIComponent(msg)}`, '_blank');
+      window.open(`https://wa.me/${telefoneDestino}?text=${encodeURIComponent(msg)}`, '_blank');
     } else {
       alert("A oficina não configurou um telefone de contato.");
     }
@@ -80,12 +85,13 @@ export default function StatusOS() {
 
   // ✅ Compartilhar ÚLTIMO laudo (a OS atual)
   const compartilharUltimoLaudo = () => {
+    const link = `https://oficina.expresstech.com.br/${oficinaId}/${osId}`;
     const nomeOficina = config?.nome || 'Oficina';
     const total = os?.total ? Number(os.total).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }) : 'R$ 0,00';
     const servico = os?.checklist || os?.diagnostico || 'Serviço realizado';
     const msg =
 `🔧 *${nomeOficina}*
-━━━━━━━━━━━━━━━━━━
+━━━━━━━━━━━━━━━━━━━━━━━━
 
 📋 *Laudo O.S. #${os?.id?.slice(-5).toUpperCase()}*
 🚗 *${os?.modelo || 'Veículo'} | ${os?.placa || ''}*
@@ -97,9 +103,9 @@ ${servico.substring(0, 200)}
 💰 *Total: ${total}*
 
 📱 Acesse seu laudo completo:
-${APP_LINK}
+${link}
 
-━━━━━━━━━━━━━━━━━━
+━━━━━━━━━━━━━━━━━━━━━━━━
 🏢 *Express Tech*
 ${SITE_LINK}`;
     navigator.share
@@ -110,6 +116,7 @@ ${SITE_LINK}`;
   // ✅ Compartilhar TODOS os laudos
   const compartilharTodosLaudos = () => {
     if (todasOS.length === 0) { alert("Nenhum histórico encontrado."); return; }
+    const link = `https://oficina.expresstech.com.br/${oficinaId}/${osId}`;
     const nomeOficina = config?.nome || 'Oficina';
     const historico = todasOS.map((o, i) => {
       const d = o.data_registro
@@ -125,7 +132,7 @@ ${SITE_LINK}`;
 
     const msg =
 `🔧 *${nomeOficina}*
-━━━━━━━━━━━━━━━━━━
+━━━━━━━━━━━━━━━━━━━━━━━━
 
 📂 *Histórico Completo*
 🚗 *${os?.modelo || 'Veículo'} | ${os?.placa || ''}*
@@ -133,13 +140,13 @@ ${SITE_LINK}`;
 
 ${historico}
 
-━━━━━━━━━━━━━━━━━━
+━━━━━━━━━━━━━━━━━━━━━━━━
 💰 *Total investido: ${totalGeral}*
 
 📱 Ver todos os laudos detalhados:
-${APP_LINK}
+${link}
 
-━━━━━━━━━━━━━━━━━━
+━━━━━━━━━━━━━━━━━━━━━━━━
 🏢 *Express Tech*
 ${SITE_LINK}`;
     navigator.share

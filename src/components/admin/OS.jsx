@@ -9,7 +9,7 @@ const SETORES = [
   { key: 'hibrido', label: 'Híbridos', icon: '🔋' },
   { key: 'eletrico', label: 'Elétricos', icon: '🔌' },
   { key: 'moto', label: 'Motos', icon: '🏍️' },
-  { key: 'lataria', label: 'Lataria', icon: '🚗' },
+  { key: 'funilaria', label: 'Funilaria', icon: '🚗' },
   { key: 'amortecedor', label: 'Amortecedor', icon: '🧰' },
   { key: 'injecao', label: 'Injeção', icon: '🛠️' },
   { key: 'eletrica', label: 'Elétrica', icon: '⚡' },

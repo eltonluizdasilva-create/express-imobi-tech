@@ -1,7 +1,7 @@
 /* eslint-disable react/prop-types */
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { db } from './lib/firebase';
-import { collection, addDoc, getDocs, query, orderBy, where, updateDoc, doc, getDoc, deleteDoc } from 'firebase/firestore';
+import { collection, addDoc, getDocs, query, orderBy, where, updateDoc, doc, getDoc, deleteDoc, onSnapshot } from 'firebase/firestore';
 import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged } from 'firebase/auth';
 
 // Componentes de Interface e Admin
@@ -15,7 +15,7 @@ import { Zap, ClipboardList, Wallet, Target, Lock } from 'lucide-react';
 
 // --- 1. MÓDULOS NA PASTA COMPONENTS (Lidos da sua foto) ---
 import Mecanica from './components/Mecanica';
-import LatariaModulo from './components/Lataria';
+import FunilariaModulo from './components/Funilaria';
 import AmortecedorModulo from './components/Amortecedor';
 import MotoModulo from './components/Motos';
 import PneusModulo from './components/pneus';
@@ -33,6 +33,7 @@ import Fornecedores from './components/Fornecedores';
 import Ajuda from './components/Ajuda';
 import MasterPanel from './components/MasterPanel';
 import QuickActions from './components/QuickActions';
+import ModalOnboarding from './components/ModalOnboarding';
 
 // --- 2. MÓDULOS NA RAIZ SRC (Lidos da sua foto) ---
 import EletricaModulo from './Eletrica';
@@ -59,7 +60,7 @@ const AJUDA_ITENS = [
   { aba: 'dashboard', icon: '📊', titulo: 'Visão Geral & Dashboard', conteudo: ['Acompanhe faturamento, número de O.S. e ticket médio.', 'Visualize o status das ordens de serviço em tempo real.', 'Monitore metas financeiras e desempenho da equipe.'] },
   { aba: 'os', icon: '📝', titulo: 'Abertura de O.S. (Triagem)', conteudo: ['Inicie o atendimento clicando em "Nova O.S." ou use a Busca Rápida.', 'Preencha os dados do cliente e veículo (use o microfone se disponível).', 'Encaminhe para o setor técnico desejado (Mecânica, Óleo, Alinhamento, etc).'] },
   { aba: 'mecanica', icon: '🔧', titulo: 'Módulo Mecânica Geral', conteudo: ['Geração de orçamentos detalhados com peças e mão de obra.', 'Controle de serviços complexos e suspensão.', 'Envio automático de orçamento via WhatsApp para aprovação.'] },
-  { aba: 'lataria', icon: '🚗', titulo: 'Lataria & Pintura', conteudo: ['Checklist visual de avarias e fotos do veículo.', 'Orçamento específico para funilaria e serviços de pintura.', 'Acompanhamento do status de repintura e acabamento.'] },
+  { aba: 'funilaria', icon: '🚗', titulo: 'Funilaria & Pintura', conteudo: ['Checklist visual de avarias e fotos do veículo.', 'Orçamento específico para funilaria e serviços de pintura.', 'Acompanhamento do status de repintura e acabamento.'] },
   { aba: 'oleo', icon: '🛢️', titulo: 'Troca de Óleo & Filtros', conteudo: ['Registro simplificado de viscosidade e quantidade de óleo.', 'Controle de troca de filtros (Ar, Óleo, Combustível, Cabine).', 'Configuração de etiqueta de próxima quilometragem.'] },
   { aba: 'alinhamento', icon: '⚙️', titulo: 'Alinhamento & Balanceamento', conteudo: ['Checklist de suspensão e estado dos pneus.', 'Registro de medidas de cambagem, convergência e cáster.', 'Integração com serviços de freios e amortecedores.'] },
   { aba: 'eletrica', icon: '⚡', titulo: 'Elétrica & Baterias', conteudo: ['Diagnóstico de alternador, motor de partida e iluminação.', 'Teste de carga de bateria e scanner eletrônico.', 'Lançamento de componentes elétricos e chicotes.'] },
@@ -76,6 +77,26 @@ const AJUDA_ITENS = [
 
 const { MAIN, GREEN, MASTER } = COLORS;
 const APP_BASE_URL = 'https://oficina.expresstech.com.br';
+const SERVICOS_ESTETICA_ABAS = ['mecanica', 'hibrido', 'eletrico', 'moto', 'funilaria', 'amortecedor', 'injecao', 'eletrica', 'alinhamento', 'oleo', 'revisao', 'ar_condicionado', 'pneus', 'desmanche', 'escapamento', 'lavajato', 'estetica'];
+const MAPA_MODULOS_SERVICOS = {
+  mecanica: ['mecanica', 'MECÂNICA', 'MECANICA'],
+  hibrido: ['hibrido', 'HÍBRIDOS', 'HIBRIDOS'],
+  eletrico: ['eletrico', 'eletricos', 'ELÉTRICOS', 'ELETRICOS'],
+  moto: ['moto', 'motos', 'MOTOS'],
+  funilaria: ['funilaria', 'FUNILARIA'],
+  amortecedor: ['amortecedor', 'AMORTECEDOR'],
+  injecao: ['injecao', 'INJEÇÃO', 'INJECAO'],
+  eletrica: ['eletrica', 'ELÉTRICA', 'ELETRICA'],
+  alinhamento: ['alinhamento', 'ALINHAMENTO'],
+  oleo: ['oleo', 'ÓLEO', 'OLEO'],
+  revisao: ['revisao', 'REVISÃO', 'REVISAO'],
+  ar_condicionado: ['ar_condicionado', 'AR-CONDICIONADO'],
+  pneus: ['pneus', 'PNEUS'],
+  desmanche: ['desmanche', 'DESMANCHE'],
+  escapamento: ['escapamento', 'ESCAPAMENTO'],
+  lavajato: ['lavajato', 'LAVA JATO'],
+  estetica: ['estetica', 'ESTÉTICA', 'ESTETICA'],
+};
 
 export default function Admin() {
   const [logado, setLogado] = useState(false);
@@ -120,6 +141,8 @@ export default function Admin() {
   const [modalTarefaAberto, setModalTarefaAberto] = useState(false);
   const [tarefaRapidaTitulo, setTarefaRapidaTitulo] = useState('');
   const [tarefaRapidaDesc, setTarefaRapidaDesc] = useState('');
+  const [tarefaRapidaData, setTarefaRapidaData] = useState('');
+  const [tarefaRapidaHora, setTarefaRapidaHora] = useState('');
   const [salvandoTarefaRapida, setSalvandoTarefaRapida] = useState(false);
 
   const [modalFinanceiroAberto, setModalFinanceiroAberto] = useState(false);
@@ -140,6 +163,31 @@ export default function Admin() {
 
   // --- ESTADO PARA AJUDA DINÂMICA ---
   const [videosAjudaAdmin, setVideosAjudaAdmin] = useState({});
+
+  const [mostrarOnboarding, setMostrarOnboarding] = useState(true);
+  const [modulosOperacionais, setModulosOperacionais] = useState([]);
+  const [modulosPermitidos, setModulosPermitidos] = useState(null);
+  const [dataFimTrial, setDataFimTrial] = useState(null);
+  const [trialExpirou, setTrialExpirou] = useState(false);
+  const [currentUserId, setCurrentUserId] = useState(null);
+  const trialExpiraouRef = useRef(false);
+
+  // --- TRAVA DE EXPIRAÇÃO DO TRIAL ---
+  useEffect(() => {
+    if (!logado || !currentUserId || !dataFimTrial) return;
+    if (trialExpiraouRef.current) return;
+
+    const fim = dataFimTrial instanceof Date ? dataFimTrial : new Date(dataFimTrial);
+    if (fim >= new Date()) return;
+
+    trialExpiraouRef.current = true;
+    setTrialExpirou(true);
+
+    updateDoc(doc(db, 'usuarios', currentUserId), {
+      modulosPermitidos: null,
+      dataFimTrial: null,
+    }, { merge: true }).catch(err => console.error('Erro ao expirar trial:', err));
+  }, [dataFimTrial, logado, currentUserId]);
 
   const ouvirCampo = (campo) => {
     setCampoOuvindo(campo);
@@ -174,39 +222,49 @@ export default function Admin() {
     if (!oficinaId || !tarefaRapidaTitulo.trim()) return;
     setSalvandoTarefaRapida(true);
     try {
+      let dataHora = null;
+      if (tarefaRapidaData) {
+        const hora = tarefaRapidaHora || '23:59';
+        dataHora = new Date(`${tarefaRapidaData}T${hora}:00`);
+      }
       await addDoc(collection(db, 'oficinas', oficinaId, 'tarefas'), {
         titulo: tarefaRapidaTitulo,
         descricao: tarefaRapidaDesc,
+        dataHora: dataHora,
         status: 'pendente',
-        criadoEm: new Date(),
+        dataCriacao: new Date(),
         prioridade: 'normal'
       });
       setTarefaRapidaTitulo('');
       setTarefaRapidaDesc('');
+      setTarefaRapidaData('');
+      setTarefaRapidaHora('');
       setModalTarefaAberto(false);
-      alert('✅ Tarefa criada com sucesso!');
+      setAbaAtiva('tarefa');
     } catch (err) { alert('Erro ao salvar tarefa: ' + err.message); }
     finally { setSalvandoTarefaRapida(false); }
   };
 
   const salvarFinanceiroRapido = async () => {
-    if (!oficinaId || (!finDesc && !finValor)) return;
+    console.log('[Financeiro] finTipo:', finTipo, 'finDesc:', finDesc, 'finValor:', finValor, 'finPagamento:', finPagamento, 'oficinaId:', oficinaId);
+    if (!oficinaId || (!finDesc && !finValor)) { console.log('[Financeiro] Bloqueado: oficinaId ou campos vazios'); return; }
     setFinSalvando(true);
     try {
-      await addDoc(collection(db, 'oficinas', oficinaId, 'financeiro'), {
+      const docRef = await addDoc(collection(db, 'oficinas', oficinaId, 'financeiro'), {
         descricao: finDesc,
         valor: Number(finValor),
         tipo: finTipo,
         pagamento: finPagamento,
-        data: new Date(),
-        vencimento: new Date(),
+        data: new Date().toISOString(),
+        vencimento: new Date().toISOString(),
         status: 'pago'
       });
+      console.log('[Financeiro] ✓ Salvo com ID:', docRef.id);
       setFinDesc('');
       setFinValor('');
       setModalFinanceiroAberto(false);
-      alert('✅ Lançamento realizado no caixa!');
-    } catch (err) { alert('Erro ao salvar financeiro: ' + err.message); }
+      setAbaAtiva('financeiro');
+    } catch (err) { console.error('[Financeiro] ❌ Erro:', err); alert('Erro ao salvar financeiro: ' + err.message); }
     finally { setFinSalvando(false); }
   };
 
@@ -218,6 +276,7 @@ export default function Admin() {
         nome: leadNome,
         telefone: leadTelefone,
         problema: leadProblema,
+        data_registro: new Date(),
         data: new Date(),
         origem: 'QuickAction',
         status: 'novo'
@@ -226,7 +285,7 @@ export default function Admin() {
       setLeadTelefone('');
       setLeadProblema('');
       setModalClienteAberto(false);
-      alert('✅ Lead/Cliente cadastrado!');
+      setAbaAtiva('leads');
     } catch (err) { alert('Erro ao salvar lead: ' + err.message); }
     finally { setLeadSalvando(false); }
   };
@@ -244,7 +303,7 @@ export default function Admin() {
     if (!os) return 'mecanica';
     const t = String(os.tipo || os.tipoServico || os.setor || 'mecanica').toLowerCase().trim();
     const map = {
-      hibrido: 'hibrido', moto: 'moto', eletrico: 'eletrico', lataria: 'lataria',
+      hibrido: 'hibrido', moto: 'moto', eletrico: 'eletrico', funilaria: 'funilaria',
       amortecedor: 'amortecedor', injecao: 'injecao',
       eletrica: 'eletrica', oleo: 'oleo', alinhamento: 'alinhamento',
       revisao: 'revisao', lavajato: 'lavajato', lava_jato: 'lavajato',
@@ -256,7 +315,7 @@ export default function Admin() {
 
   const resolverAbaDestino = (tipo) => {
     const map = {
-      hibrido: 'hibrido', eletrico: 'eletrico', moto: 'moto', lataria: 'lataria',
+      hibrido: 'hibrido', eletrico: 'eletrico', moto: 'moto', funilaria: 'funilaria',
       amortecedor: 'amortecedor', injecao: 'injecao',
       eletrica: 'eletrica', oleo: 'oleo', alinhamento: 'alinhamento',
       revisao: 'revisao', lavajato: 'lavajato',
@@ -273,7 +332,7 @@ export default function Admin() {
       hibrido: HibridoEV,
       eletrico: VeiculoEletrico,
       moto: MotoModulo,
-      lataria: LatariaModulo,
+      funilaria: FunilariaModulo,
       amortecedor: AmortecedorModulo,
       injecao: InjecaoModulo,
 
@@ -301,7 +360,7 @@ export default function Admin() {
       hibrido: 'Híbridos / EV',
       eletrico: 'Elétricos',
       moto: 'Motos',
-      lataria: 'Lataria',
+      funilaria: 'Funilaria',
       amortecedor: 'Amortecedor',
       injecao: 'Injeção Eletrônica',
 
@@ -326,7 +385,7 @@ export default function Admin() {
       hibrido: 'Triagem encaminhada para laudo de baterias e sistema EV.',
       eletrico: 'Triagem encaminhada para laudo de veículos elétricos.',
       moto: 'Triagem encaminhada para oficina de motocicletas.',
-      lataria: 'Triagem encaminhada para funilaria e pintura.',
+      funilaria: 'Triagem encaminhada para funilaria e pintura.',
       amortecedor: 'Triagem encaminhada para suspensão e amortecedores.',
       injecao: 'Triagem encaminhada para diagnóstico de injeção eletrônica.',
 
@@ -481,13 +540,17 @@ export default function Admin() {
 
   async function carregarPlanos() {
     try {
-      const snap = await getDoc(doc(db, 'oficinas', 'MASTER', 'configuracoes', 'planos'));
-      if (snap.exists()) setPlanosSistema(snap.data());
-
-      // Carrega também os vídeos de ajuda do MASTER
-      const snapVideos = await getDoc(doc(db, 'oficinas', 'MASTER', 'configuracoes', 'videos_ajuda'));
-      if (snapVideos.exists()) setVideosAjudaAdmin(snapVideos.data());
-    } catch { }
+      const snap = await getDoc(doc(db, 'configuracoes_admin', 'master'));
+      if (snap.exists()) {
+        const data = snap.data();
+        console.log('📦 Planos carregados do Firebase:', data);
+        setPlanosSistema(data);
+      } else {
+        console.log('⚠️ Nenhum plano encontrado no Firebase — usando valores padrão');
+      }
+    } catch (err) {
+      console.error('❌ Erro ao carregar planos:', err);
+    }
   }
 
   function carregarTudo() {
@@ -504,6 +567,7 @@ export default function Admin() {
     const auth = getAuth();
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
       if (user) {
+        setCurrentUserId(user.uid);
         if (user.email === import.meta.env.VITE_SU) {
           setPapelLogado('master');
           setPermissoesLogado(null);
@@ -513,9 +577,32 @@ export default function Admin() {
           return;
         }
         try {
+          // REAL-TIME: escuta mudanças em modulosOperacionais, modulosPermitidos, dataFimTrial
+          const unsubUser = onSnapshot(doc(db, 'usuarios', user.uid), (docSnap) => {
+            if (docSnap.exists()) {
+              const dados = docSnap.data();
+              if (dados.modulosOperacionais !== undefined) {
+                setModulosOperacionais(dados.modulosOperacionais);
+                console.log('[AdminNovo] Sidebar atualizada:', dados.modulosOperacionais.length, 'módulos');
+              }
+              if (dados.modulosPermitidos !== undefined) {
+                setModulosPermitidos(dados.modulosPermitidos);
+              }
+              if (dados.dataFimTrial) {
+                const fim = dados.dataFimTrial.toDate ? dados.dataFimTrial.toDate() : new Date(dados.dataFimTrial);
+                setDataFimTrial(fim);
+              }
+              if (dados.onboardingFeito === false) {
+                setMostrarOnboarding(true);
+              }
+            }
+          });
+
           const docSnap = await getDoc(doc(db, 'usuarios', user.uid));
           if (docSnap.exists()) {
             const dados = docSnap.data();
+            // modulosOperacionais, modulosPermitidos, dataFimTrial, onboardingFeito
+            // são ouvidos em tempo real pelo onSnapshot (acima)
             const userOficinaId = dados.papel === 'dono' ? user.uid : dados.oficinaId;
             if (userOficinaId) {
               const oficinaSnap = await getDoc(doc(db, 'oficinas', userOficinaId));
@@ -598,22 +685,45 @@ export default function Admin() {
   };
 
   const temPermissao = (aba) => {
-    if (papelLogado === 'master') return true;
-    if (papelLogado === 'dono') return temAcessoPlano(aba);
-    if (!permissoesLogado) return temAcessoPlano(aba);
-    return permissoesLogado[aba] === true;
+    return moduloLiberado(aba);
   };
 
-  const moduloLiberado = (aba) => {
-    const modulosAtivos = dadosOficina?.modulos_ativos || [];
-    if (papelLogado === 'master') return true;
-    if (modulosAtivos.length === 0) return true;
-    return modulosAtivos.includes(aba);
+  const moduloLiberado = (idAba) => {
+    // 1. Master tem acesso total
+    const ehMaster = dadosOficina?.papel === 'master' || dadosOficina?.plano === 'master';
+    if (ehMaster) return true;
+
+    // 2. Trial de 10 dias com tudo liberado
+    if (dadosOficina?.modulosPermitidos === 'ALL') return true;
+
+    // 3. Abas vitais que nunca devem ficar bloqueadas
+    const abasVitais = [
+      'dashboard', 'mecanica', 'clientes', 'ajuda', 'meuplano', 'config',
+    ];
+    if (abasVitais.includes(idAba)) return true;
+
+    // 4. Módulos contratados
+    if (dadosOficina?.modulosOperacionais?.includes(idAba)) return true;
+
+    // 5. Bloqueio padrão
+    return false;
   };
+
+  const [modalUpgradeAba, setModalUpgradeAba] = useState(null);
 
   const lidarModuloBloqueado = (aba) => {
-    setToastModuloBloqueado(aba);
-    setTimeout(() => setToastModuloBloqueado(null), 3000);
+    setModalUpgradeAba(aba);
+  };
+
+  const LABELS_ABAS_MODAL = {
+    mecanica: 'Mecânica', clientes: 'Clientes', hibrido: 'Híbridos/Elétricos',
+    moto: 'Motos', funilaria: 'Funilaria', amortecedor: 'Amortecedor',
+    injecao: 'Injeção', eletrica: 'Elétrica', alinhamento: 'Alinhamento',
+    oleo: 'Óleo', revisao: 'Revisão', ar_condicionado: 'Ar-Condicionado',
+    pneus: 'Pneus', desmanche: 'Desmanche', escapamento: 'Escapamento',
+    lavajato: 'Lava Jato', estetica: 'Estética',
+    copiloto: 'Copiloto IA', secretaria: 'Secretária IA', administrador: 'Administrador IA',
+    contador: 'Contador IA', mercadolivre: 'Mercado Livre',
   };
 
   const verificarSenha = async () => {
@@ -634,6 +744,7 @@ export default function Admin() {
       setEmailInput('');
       setSenhaInput('');
       setErroLogin('');
+      window.location.href = 'http://localhost:5173/portal';
     });
   };
 
@@ -681,8 +792,8 @@ export default function Admin() {
   );
 
   const LABELS_ABAS = {
-    dashboard: '📊 VISÃO GERAL', os: '🔧 O.S.', mecanica: '🔧 MECÂNICA', hibrido: '🔋 HÍBRIDOS',
-    moto: '🏍️ MOTOS', eletrico: 'ELÉTRICOS', lataria: '🚗 LATARIA', amortecedor: '🧰 AMORTECEDOR', injecao: '🛠️ INJEÇÃO',
+    dashboard: '📊 VISÃO GERAL', os: '🔧 O.S.', mecanica: '🔧 MECÂNICA', clientes: '👥 CLIENTES', hibrido: '🔋 HÍBRIDOS',
+    moto: '🏍️ MOTOS', eletrico: 'ELÉTRICOS', funilaria: '🚗 FUNILARIA', amortecedor: '🧰 AMORTECEDOR', injecao: '🛠️ INJEÇÃO',
     oleo: '🛢️ ÓLEO', alinhamento: '⚙️ ALINHAMENTO', revisao: '🛡️ REVISÃO', eletrica: '⚡ ELÉTRICA',
     ar_condicionado: '❄️ AR-COND.', pneus: '🛞 PNEUS', escapamento: '🪛 ESCAPAMENTO', estetica: '✨ ESTÉTICA',
     lavajato: '🚿 LAVA JATO', desmanche: '🚗 DESMANCHE', copiloto: '👨‍🔧 COPILOTO',
@@ -695,7 +806,7 @@ export default function Admin() {
   };
 
   const abasDisponiveis = [
-    'dashboard', 'os', 'mecanica', 'hibrido', 'eletrico', 'moto', 'lataria', 'amortecedor', 'injecao',
+    'dashboard', 'os', 'mecanica', 'clientes', 'hibrido', 'eletrico', 'moto', 'funilaria', 'amortecedor', 'injecao',
     'oleo', 'alinhamento', 'eletrica', 'revisao', 'ar_condicionado', 'pneus', 'desmanche', 'escapamento', 'estetica',
     'lavajato', 'copiloto', 'secretaria', 'administrador', 'contador',
     'mercadolivre', 'mercado_livre', 'financeiro', 'estoque', 'leads', 'historico',
@@ -703,12 +814,81 @@ export default function Admin() {
     'equipe', 'marketing', 'config', 'master', 'meuplano', 'estrategia', 'ajuda',
   ].filter(aba => temPermissao(aba));
 
+  const modulosUsuario = useMemo(() => {
+    return modulosOperacionais.length > 0
+      ? modulosOperacionais
+      : (dadosOficina?.modulosOperacionais || []);
+  }, [modulosOperacionais, dadosOficina?.modulosOperacionais]);
+
+  const servicosVisiveis = useMemo(() => {
+    const modulosNormalizados = new Set(
+      modulosUsuario
+        .filter(Boolean)
+        .map((modulo) => String(modulo).trim().toLowerCase())
+    );
+
+    return SERVICOS_ESTETICA_ABAS.filter((aba) =>
+      (MAPA_MODULOS_SERVICOS[aba] || [aba]).some((nomeModulo) =>
+        modulosNormalizados.has(String(nomeModulo).trim().toLowerCase())
+      )
+    );
+  }, [modulosUsuario]);
+
   // ─── TELAS DE ESTADO ESPECIAL ───
 
   if (carregandoAuth) {
     return (
       <div style={{ minHeight: '100vh', background: 'black', color: MAIN, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '18px', fontWeight: 'bold' }}>
         ⏳ INICIANDO SISTEMA...
+      </div>
+    );
+  }
+
+  // ─── MODAL DE EXPIRAÇÃO DO TRIAL ───
+  if (trialExpirou) {
+    return (
+      <div style={{
+        minHeight: '100vh', background: 'rgba(0,0,0,0.92)', backdropFilter: 'blur(8px)',
+        display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px', zIndex: 9999, position: 'fixed', inset: 0,
+      }}>
+        <div style={{
+          background: '#111', border: '1px solid #FF0033', borderRadius: '20px',
+          padding: '32px', maxWidth: '420px', width: '100%', textAlign: 'center',
+          boxShadow: '0 0 40px #FF003355',
+        }}>
+          <div style={{ fontSize: '48px', marginBottom: '16px' }}>⏰</div>
+          <h2 style={{ color: '#FF0033', fontSize: '20px', fontWeight: '900', marginBottom: '12px' }}>
+            PERÍODO DE TESTE ENCERRADO
+          </h2>
+          <p style={{ color: '#888', fontSize: '13px', lineHeight: '1.7', marginBottom: '24px' }}>
+            Seu trial de 10 dias com <strong style={{ color: 'white' }}>TODAS as funcionalidades liberadas</strong> chegou ao fim.<br /><br />
+            As abas extras foram <strong style={{ color: '#FF0033' }}>bloqueadas</strong>.<br />
+            Volte ao plano contratado para continuar.
+          </p>
+          <a
+            href={`https://wa.me/5534991439845?text=${encodeURIComponent('Olá! Meu período de teste acabou. Gostaria de fazer upgrade para o Prime IA ou outro plano.')}`}
+            target="_blank"
+            rel="noreferrer"
+            style={{
+              display: 'block', width: '100%', padding: '16px', borderRadius: '12px',
+              background: 'linear-gradient(135deg, #FF0033, #ff3366)', color: 'white',
+              fontWeight: '900', fontSize: '13px', textDecoration: 'none',
+              boxShadow: '0 6px 24px #FF003344', marginBottom: '10px',
+            }}
+          >
+            💬 Falar com Suporte
+          </a>
+          <button
+            onClick={() => setTrialExpirou(false)}
+            style={{
+              width: '100%', padding: '12px', background: 'transparent',
+              color: '#555', border: '1px solid #333', borderRadius: '12px',
+              fontWeight: 'bold', fontSize: '12px', cursor: 'pointer',
+            }}
+          >
+            Continuar com acesso limitado
+          </button>
+        </div>
       </div>
     );
   }
@@ -898,12 +1078,13 @@ export default function Admin() {
           onClick={() => setAbaAtiva('os')}
           style={{
             width: '100%', padding: '16px 24px',
-            background: abaAtiva === 'os' ? MAIN : t.bgCard,
+            background: abaAtiva === 'os' ? MAIN : 'transparent',
             color: abaAtiva === 'os' ? 'white' : MAIN,
-            border: `2px solid ${abaAtiva === 'os' ? MAIN : MAIN + '66'}`,
+            border: `2px solid ${MAIN}`,
             borderRadius: '12px', fontWeight: '900', fontSize: '16px', cursor: 'pointer',
             display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px',
             letterSpacing: '1px', transition: 'all 0.2s',
+            boxShadow: abaAtiva === 'os' ? `0 0 20px ${MAIN}66` : `0 0 15px ${MAIN}33`,
           }}>
           📋 NOVA ORDEM DE SERVIÇO
           {listaCarros.filter(o => o.statusPagamento === 'pendente').length > 0 && (
@@ -940,9 +1121,7 @@ export default function Admin() {
         {/* GRUPO: SERVIÇOS E ESTÉTICA */}
         <p style={{ color: t.textoTer, fontSize: '9px', fontWeight: 'bold', letterSpacing: '2px', margin: '0 0 6px', textTransform: 'uppercase' }}>⚙️ SERVIÇOS E ESTÉTICA</p>
         <div style={{ display: 'flex', gap: '8px', overflowX: 'auto', marginBottom: '12px', paddingBottom: '4px' }}>
-          {['mecanica', 'hibrido', 'eletrico', 'moto', 'lataria', 'amortecedor', 'injecao', 'eletrica', 'alinhamento', 'oleo', 'revisao', 'ar_condicionado', 'pneus', 'desmanche', 'escapamento', 'lavajato', 'estetica']
-            .filter(aba => abasDisponiveis.includes(aba))
-            .map(aba => {
+          {servicosVisiveis.map(aba => {
               const corAba = TAB_COLORS[aba] || MAIN;
               const liberado = moduloLiberado(aba);
               return (
@@ -967,7 +1146,6 @@ export default function Admin() {
         <p style={{ color: t.textoTer, fontSize: '9px', fontWeight: 'bold', letterSpacing: '2px', margin: '0 0 6px', textTransform: 'uppercase' }}>🤖 INTELIGÊNCIA ARTIFICIAL</p>
         <div style={{ display: 'flex', gap: '8px', overflowX: 'auto', marginBottom: '12px', paddingBottom: '4px' }}>
           {['copiloto', 'secretaria', 'administrador', 'contador', 'mercadolivre']
-            .filter(aba => abasDisponiveis.includes(aba))
             .map(aba => {
               const corAba = TAB_COLORS[aba] || MAIN;
               const liberado = moduloLiberado(aba);
@@ -992,8 +1170,8 @@ export default function Admin() {
         {/* GRUPO: GESTÃO */}
         <p style={{ color: t.textoTer, fontSize: '9px', fontWeight: 'bold', letterSpacing: '2px', margin: '0 0 6px', textTransform: 'uppercase' }}>📋 Gestão</p>
         <div style={{ display: 'flex', gap: '8px', overflowX: 'auto', marginBottom: '12px', paddingBottom: '4px' }}>
-          {['dashboard', 'estoque', 'financeiro', 'tarefa', 'notafiscal', 'retorno', 'leads', 'patrimonio', 'fornecedores', 'historico']
-            .filter(aba => abasDisponiveis.includes(aba) && (aba !== 'dashboard' || papelLogado === 'dono'))
+          {['dashboard', 'estoque', 'financeiro', 'leads', 'tarefa', 'notafiscal', 'retorno', 'patrimonio', 'fornecedores', 'historico']
+            .filter(aba => aba !== 'dashboard' || papelLogado === 'dono' || papelLogado === 'master')
             .map(aba => {
               const corAba = TAB_COLORS[aba] || MAIN;
               const liberado = moduloLiberado(aba);
@@ -1021,7 +1199,7 @@ export default function Admin() {
             <p style={{ color: t.textoTer, fontSize: '9px', fontWeight: 'bold', letterSpacing: '2px', margin: '0 0 6px', textTransform: 'uppercase' }}>⚙️ Sistema</p>
             <div style={{ display: 'flex', gap: '8px', overflowX: 'auto', marginBottom: '8px', paddingBottom: '4px' }}>
               {['meuplano', 'config', 'equipe', 'marketing', 'estrategia', 'ajuda', 'master']
-                .filter(aba => abasDisponiveis.includes(aba) && (aba !== 'master' || papelLogado === 'master'))
+                .filter(aba => aba !== 'master' || papelLogado === 'master')
                 .map(aba => {
                   const corAba = TAB_COLORS[aba] || MASTER;
                   const liberado = moduloLiberado(aba);
@@ -1261,9 +1439,9 @@ export default function Admin() {
           />
         )}
 
-        {/* LATARIA */}
-        {abaAtiva === 'lataria' && (
-          <LatariaModulo
+        {/* FUNILARIA */}
+        {abaAtiva === 'funilaria' && (
+          <FunilariaModulo
             abaAtiva={abaAtiva}
             setAbaAtiva={setAbaAtiva}
             irParaNovaOS={irParaNovaOS}
@@ -1619,6 +1797,7 @@ export default function Admin() {
           <ModuloMeuPlano
             dadosOficina={dadosOficina}
             planosSistema={planosSistema}
+            onModulosChange={(mods) => setModulosOperacionais(mods)}
           />
         )}
 
@@ -1696,6 +1875,10 @@ export default function Admin() {
         setTarefaRapidaTitulo={setTarefaRapidaTitulo}
         tarefaRapidaDesc={tarefaRapidaDesc}
         setTarefaRapidaDesc={setTarefaRapidaDesc}
+        tarefaRapidaData={tarefaRapidaData}
+        setTarefaRapidaData={setTarefaRapidaData}
+        tarefaRapidaHora={tarefaRapidaHora}
+        setTarefaRapidaHora={setTarefaRapidaHora}
         salvarTarefaRapida={salvarTarefaRapida}
         salvandoTarefaRapida={salvandoTarefaRapida}
         modalFinanceiroAberto={modalFinanceiroAberto}
@@ -1728,8 +1911,8 @@ export default function Admin() {
         setAbaAtiva={setAbaAtiva}
       />
 
-      {/* TOAST MÓDULO BLOQUEADO */}
-      {toastModuloBloqueado && (
+      {/* TOAST MÓDULO BLOQUEADO (apenas não-operacionais) */}
+      {toastModuloBloqueado && !modalUpgradeAba && (
         <div style={{
           position: 'fixed', bottom: '30px', left: '50%', transform: 'translateX(-50%)',
           background: '#111', border: `1px solid ${MAIN}`, borderRadius: '12px',
@@ -1745,6 +1928,71 @@ export default function Admin() {
           </div>
           <button onClick={() => setToastModuloBloqueado(null)} style={{ background: 'transparent', border: 'none', color: '#555', cursor: 'pointer', fontSize: '16px', padding: '0', flexShrink: 0 }}>✕</button>
         </div>
+      )}
+
+      {/* MODAL UPGRADE MÓDULO */}
+      {modalUpgradeAba && (
+        <div style={{
+          position: 'fixed', inset: 0, zIndex: 99999,
+          background: 'rgba(0,0,0,0.85)', backdropFilter: 'blur(8px)',
+          display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px'
+        }}>
+          <div style={{
+            background: '#111', border: `1px solid ${MAIN}`, borderRadius: '24px',
+            padding: '40px', maxWidth: '420px', width: '100%', textAlign: 'center',
+            boxShadow: `0 0 60px ${MAIN}33`
+          }}>
+            <div style={{
+              width: '64px', height: '64px', borderRadius: '50%', margin: '0 auto 20px',
+              background: `${MAIN}22`, display: 'flex', alignItems: 'center', justifyContent: 'center'
+            }}>
+              <Lock size={28} color={MAIN} />
+            </div>
+            <h2 style={{ color: MAIN, fontSize: '22px', fontWeight: '900', marginBottom: '10px', textTransform: 'uppercase' }}>
+              Upgrade Necessário
+            </h2>
+            <p style={{ color: '#888', fontSize: '13px', lineHeight: '1.7', marginBottom: '8px' }}>
+              O módulo <strong style={{ color: 'white' }}>{LABELS_ABAS_MODAL[modalUpgradeAba] || modalUpgradeAba}</strong> não está incluso no seu plano atual.
+            </p>
+            <p style={{ color: '#555', fontSize: '11px', marginBottom: '28px' }}>
+              Faça um upgrade para desbloquear todos os módulos e funcionalidades.
+            </p>
+            <a
+              href={`https://wa.me/${planosSistema?.whatsapp || '5534991439845'}?text=${encodeURIComponent(`Olá! Gostaria de desbloquear o módulo ${LABELS_ABAS_MODAL[modalUpgradeAba] || modalUpgradeAba}. Qual plano preciso?`)}`}
+              target="_blank"
+              rel="noreferrer"
+              style={{
+                display: 'block', width: '100%', padding: '16px', borderRadius: '12px',
+                background: MAIN, color: 'white', fontWeight: '900', fontSize: '13px',
+                textAlign: 'center', textDecoration: 'none', textTransform: 'uppercase',
+                boxShadow: `0 8px 30px ${MAIN}44`, marginBottom: '10px'
+              }}
+            >
+              💬 Falar com Suporte
+            </a>
+            <button
+              onClick={() => { setModalUpgradeAba(null); setAbaAtiva('meuplano'); }}
+              style={{
+                width: '100%', padding: '14px', background: 'transparent',
+                color: '#888', border: '1px solid #333', borderRadius: '12px',
+                fontWeight: 'bold', fontSize: '12px', cursor: 'pointer', textTransform: 'uppercase'
+              }}
+            >
+              Ver Planos
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL ONBOARDING */}
+      {mostrarOnboarding && (
+        <ModalOnboarding
+          planoLimite={planosSistema?.planos?.essencial?.slots || 5}
+          onComplete={(modulos) => {
+            setModulosOperacionais(modulos);
+            setMostrarOnboarding(false);
+          }}
+        />
       )}
     </div>
   );

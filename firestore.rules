@@ -1,0 +1,25 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // CONFIGURAÇÕES ADMIN (Planos, Preços, Vídeos)
+    // Lê: qualquer pessoa logada (para exibir na tela Ajuda dos clientes)
+    // Grava: apenas o email master (você)
+    match /configuracoes_admin/{document} {
+      allow read: if request.auth != null;
+      allow write: if request.auth != null 
+        && request.auth.token.email.toLowerCase() == 'elton.luizdasilva@gmail.com';
+    }
+    
+    // USUÁRIOS (Onboarding, permissões)
+    match /usuarios/{userId} {
+      allow read: if request.auth != null && request.auth.uid == userId;
+      allow write: if request.auth != null && request.auth.uid == userId;
+    }
+    
+    // OFICINAS (O.S., clientes, equipe, financeiro, etc.)
+    match /oficinas/{oficinaId}/{document=**} {
+      allow read, write: if request.auth != null;
+    }
+  }
+}
