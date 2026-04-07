@@ -1,7 +1,8 @@
-/* eslint-disable react/prop-types */
+﻿/* eslint-disable react/prop-types */
 import React, { useState, useEffect } from 'react';
 import { db } from '../lib/firebase';
 import { doc, updateDoc } from 'firebase/firestore';
+import { sincronizarRetornosAutomaticos } from '../lib/retornos';
 import { Mic, Palette, Save, X, CheckCircle, AlertTriangle, ArrowRight, Info } from 'lucide-react';
 
 const STYLES = {
@@ -21,10 +22,10 @@ const StatusSelector = ({ label, value, onChange }) => (
           key={status}
           onClick={() => onChange(status)}
           className={`px-3 py-1.5 rounded-lg text-[10px] font-bold transition-all border ${value === status
-              ? (status === 'OK' ? 'bg-green-600/20 border-green-500 text-green-500' :
-                status === 'Atenção' ? 'bg-yellow-600/20 border-yellow-500 text-yellow-500' :
-                  'bg-red-600/20 border-red-500 text-red-500')
-              : 'bg-zinc-800 border-zinc-700 text-zinc-500 hover:bg-zinc-700'
+            ? (status === 'OK' ? 'bg-green-600/20 border-green-500 text-green-500' :
+              status === 'Atenção' ? 'bg-yellow-600/20 border-yellow-500 text-yellow-500' :
+                'bg-red-600/20 border-red-500 text-red-500')
+            : 'bg-zinc-800 border-zinc-700 text-zinc-500 hover:bg-zinc-700'
             }`}
         >
           {status === 'OK' && '✓ '} {status.toUpperCase()}
@@ -41,8 +42,8 @@ export default function FunilariaModulo({
   const [success, setSuccess] = useState(false);
   const [showAlert, setShowAlert] = useState(false);
 
-  const [pecas, setPecas] = useState('0,00');
-  const [maoDeObra, setMaoDeObra] = useState('0,00');
+  const [pecas, setPecas] = useState('0');
+  const [maoDeObra, setMaoDeObra] = useState('0');
   const [obsFunilaria, setObsFunilaria] = useState('');
   const [checklist, setChecklist] = useState({
     // Funilaria
@@ -55,8 +56,8 @@ export default function FunilariaModulo({
 
   useEffect(() => {
     if (osParaEditar) {
-      setPecas(osParaEditar.valorPecas?.toString().replace('.', ',') || '0,00');
-      setMaoDeObra(osParaEditar.valorMaoObra?.toString().replace('.', ',') || '0,00');
+      setPecas(osParaEditar.valorPecas?.toString().replace('.', ',') || '0');
+      setMaoDeObra(osParaEditar.valorMaoObra?.toString().replace('.', ',') || '0');
       setObsFunilaria(osParaEditar.observacaoFunilaria || '');
       if (osParaEditar.checklistFunilaria) setChecklist(osParaEditar.checklistFunilaria);
     }
@@ -72,7 +73,7 @@ export default function FunilariaModulo({
     try {
       const vPecas = parseFloat(pecas.replace(',', '.')) || 0;
       const vMao = parseFloat(maoDeObra.replace(',', '.')) || 0;
-      await updateDoc(doc(db, 'oficinas', oficinaId, 'os', osParaEditar.id), {
+      const dadosFunilaria = {
         tipoServico: 'funilaria',
         valorPecas: vPecas,
         valorMaoObra: vMao,
@@ -80,7 +81,9 @@ export default function FunilariaModulo({
         observacaoFunilaria: obsFunilaria,
         checklistFunilaria: checklist,
         data_atualizacao: new Date().toISOString()
-      });
+      };
+      await updateDoc(doc(db, 'oficinas', oficinaId, 'os', osParaEditar.id), dadosFunilaria);
+      await sincronizarRetornosAutomaticos({ oficinaId, osId: osParaEditar.id, osData: dadosFunilaria, osBase: osParaEditar });
       setSuccess(true);
       if (onSalvo) onSalvo();
       setTimeout(onCancelar, 1500);
@@ -111,10 +114,10 @@ export default function FunilariaModulo({
             </div>
             <div className="flex flex-col gap-3">
               <button
-                onClick={() => { 
-                    if (irParaNovaOS) irParaNovaOS(); 
-                    else if (setAbaAtiva) setAbaAtiva('os'); 
-                    setShowAlert(false); 
+                onClick={() => {
+                  if (irParaNovaOS) irParaNovaOS();
+                  else if (setAbaAtiva) setAbaAtiva('os');
+                  setShowAlert(false);
                 }}
                 className="w-full py-4 bg-red-600 hover:bg-red-700 text-white font-bold rounded-2xl flex items-center justify-center gap-2 uppercase"
               >

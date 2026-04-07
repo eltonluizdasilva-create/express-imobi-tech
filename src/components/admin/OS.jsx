@@ -1,7 +1,8 @@
 /* eslint-disable react/prop-types */
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useMemo } from 'react';
 import { addDoc, collection } from 'firebase/firestore';
 import { db } from '../../lib/firebase';
+import { sincronizarRetornosAutomaticos } from '../../lib/retornos';
 import { formatarTelefone, normalizarPlaca, TAB_COLORS } from './constants';
 
 const SETORES = [
@@ -24,7 +25,7 @@ const SETORES = [
   { key: 'estetica', label: 'Estética', icon: '✨' },
 ];
 
-export default function OS({ oficinaId, onSalvo, onRedirecionar, buscarDadosPorPlaca }) {
+export default function OS({ oficinaId, dadosOficina, onSalvo, onRedirecionar, buscarDadosPorPlaca }) {
   const [dados, setDados] = useState({
     nomeCliente: '',
     placa: '',
@@ -37,6 +38,52 @@ export default function OS({ oficinaId, onSalvo, onRedirecionar, buscarDadosPorP
   const [salvando, setSalvando] = useState(false);
   const [buscaPlaca, setBuscaPlaca] = useState('');
   const [setorAtivo, setSetorAtivo] = useState('mecanica');
+
+  const setoresVisiveis = useMemo(() => {
+    if (!dadosOficina) return SETORES;
+
+    const ehMaster = dadosOficina?.papel === 'master' || dadosOficina?.plano === 'master';
+    if (ehMaster || dadosOficina?.modulosPermitidos === 'ALL') return SETORES;
+
+    const modulosNormalizados = new Set(
+      (dadosOficina?.modulosOperacionais || [])
+        .filter(Boolean)
+        .map((m) => String(m).trim().toLowerCase())
+    );
+
+    if (modulosNormalizados.size === 0) return SETORES.filter(s => s.key === 'mecanica');
+
+    const MAPA = {
+      mecanica: ['mecanica', 'MECÂNICA', 'MECANICA'],
+      hibrido: ['hibrido', 'HÍBRIDOS', 'HIBRIDOS'],
+      eletrico: ['eletrico', '100% ELÉTRICOS', '100% ELETRICOS'],
+      moto: ['moto', 'motos', 'MOTOS'],
+      funilaria: ['funilaria', 'FUNILARIA'],
+      amortecedor: ['amortecedor', 'AMORTECEDOR'],
+      injecao: ['injecao', 'INJEÇÃO', 'INJECAO'],
+      eletrica: ['eletrica', 'ELÉTRICA', 'ELÉTRICA'],
+      alinhamento: ['alinhamento', 'ALINHAMENTO'],
+      oleo: ['oleo', 'ÓLEO', 'OLEO'],
+      revisao: ['revisao', 'REVISÃO', 'REVISAO'],
+      ar_condicionado: ['ar_condicionado', 'AR-CONDICIONADO'],
+      pneus: ['pneus', 'PNEUS'],
+      desmanche: ['desmanche', 'DESMANCHE'],
+      escapamento: ['escapamento', 'ESCAPAMENTO'],
+      lavajato: ['lavajato', 'LAVA JATO'],
+      estetica: ['estetica', 'ESTÉTICA', 'ESTETICA'],
+    };
+
+    return SETORES.filter((setor) => {
+      const nomesModulo = MAPA[setor.key] || [setor.key];
+      return nomesModulo.some((nome) => modulosNormalizados.has(nome.toLowerCase()));
+    });
+  }, [dadosOficina]);
+
+  useEffect(() => {
+    if (setoresVisiveis.length > 0 && !setoresVisiveis.find(s => s.key === setorAtivo)) {
+      setSetorAtivo(setoresVisiveis[0].key);
+    }
+  }, [setoresVisiveis, setorAtivo]);
 
   useEffect(() => {
     if (buscaPlaca.length >= 7 && buscarDadosPorPlaca) {
@@ -91,6 +138,12 @@ export default function OS({ oficinaId, onSalvo, onRedirecionar, buscarDadosPorP
       };
 
       const docRef = await addDoc(collection(db, 'oficinas', oficinaId, 'os'), payload);
+      await sincronizarRetornosAutomaticos({
+        oficinaId,
+        osId: docRef.id,
+        osData: payload,
+        osBase: {},
+      });
       const novaOS = { id: docRef.id, ...payload };
 
       alert(`O.S. gerada e enviada para ${setorAtivo.toUpperCase()}!`);
@@ -156,7 +209,7 @@ export default function OS({ oficinaId, onSalvo, onRedirecionar, buscarDadosPorP
         <div className="space-y-4">
           <label className="text-[10px] text-gray-500 font-bold uppercase block">Área do Serviço *</label>
           <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-2">
-            {SETORES.map((setor) => {
+            {setoresVisiveis.map((setor) => {
               const cor = TAB_COLORS[setor.key] || '#ff0033';
               const ativo = setorAtivo === setor.key;
               return (
@@ -206,7 +259,7 @@ export default function OS({ oficinaId, onSalvo, onRedirecionar, buscarDadosPorP
           className="w-full bg-black border border-[#222] p-4 rounded-xl text-white uppercase outline-none focus:border-red-500 text-2xl font-black tracking-[0.2em] transition-all mb-4"
         />
         <div style={{ background: '#1a0505', padding: '12px', borderRadius: '10px', border: '1px solid #ff003322' }}>
-           <p className="text-[11px] text-gray-400 m-0 leading-relaxed">
+          <p className="text-[11px] text-gray-400 m-0 leading-relaxed">
             <strong className="text-red-500">O.S. (Ordem de Serviço):</strong> É o documento que registra tudo o que será feito no veículo, as peças cobradas e garante o histórico técnico do seu cliente.
           </p>
         </div>

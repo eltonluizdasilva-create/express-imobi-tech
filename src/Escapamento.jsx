@@ -1,7 +1,8 @@
-/* eslint-disable react/prop-types */
+﻿/* eslint-disable react/prop-types */
 import React, { useState, useEffect } from "react";
 import { db } from "./lib/firebase";
 import { doc, updateDoc } from "firebase/firestore";
+import { sincronizarRetornosAutomaticos } from "./lib/retornos";
 import {
   Mic, Save, X, CheckCircle, Camera, Plus, Trash2,
   AlertTriangle, ArrowRight, Wind, Wrench, Settings,
@@ -39,8 +40,8 @@ export default function EscapamentoModulo({ oficinaId, osParaEditar, onCancelar,
   const [fotos, setFotos] = useState([]);
 
   const [obsGerais, setObsGerais] = useState('');
-  const [pecas, setPecas] = useState('0,00');
-  const [maoDeObra, setMaoDeObra] = useState('0,00');
+  const [pecas, setPecas] = useState('0');
+  const [maoDeObra, setMaoDeObra] = useState('0');
 
   // Serviços de Escapamento (Fiel à imagem 43632a)
   const [servicos, setServicos] = useState({
@@ -60,8 +61,8 @@ export default function EscapamentoModulo({ oficinaId, osParaEditar, onCancelar,
     if (osParaEditar) {
       setObsGerais(osParaEditar.observacaoEscapamento || '');
       setFotos(osParaEditar.fotosEscapamento || []);
-      setPecas(osParaEditar.valorPecas || '0,00');
-      setMaoDeObra(osParaEditar.valorMaoObra || '0,00');
+      setPecas(osParaEditar.valorPecas || '0');
+      setMaoDeObra(osParaEditar.valorMaoObra || '0');
       if (osParaEditar.servicosEscapamento) setServicos(osParaEditar.servicosEscapamento);
     }
   }, [osParaEditar]);
@@ -110,7 +111,7 @@ export default function EscapamentoModulo({ oficinaId, osParaEditar, onCancelar,
     setLoading(true);
     try {
       const vTotal = (parseFloat(pecas.replace(',', '.')) || 0) + (parseFloat(maoDeObra.replace(',', '.')) || 0);
-      await updateDoc(doc(db, 'oficinas', oficinaId, 'os', osParaEditar.id), {
+      const dadosEscapamento = {
         tipoServico: 'escapamento',
         servicosEscapamento: servicos,
         observacaoEscapamento: obsGerais,
@@ -119,7 +120,9 @@ export default function EscapamentoModulo({ oficinaId, osParaEditar, onCancelar,
         valorMaoObra: maoDeObra,
         totalEscapamento: vTotal,
         data_atualizacao: new Date().toISOString()
-      });
+      };
+      await updateDoc(doc(db, 'oficinas', oficinaId, 'os', osParaEditar.id), dadosEscapamento);
+      await sincronizarRetornosAutomaticos({ oficinaId, osId: osParaEditar.id, osData: dadosEscapamento, osBase: osParaEditar });
       setSuccess(true); if (onSalvo) onSalvo(); setTimeout(onCancelar, 1500);
     } catch (e) { console.error(e); } finally { setLoading(false); }
   };
@@ -237,7 +240,7 @@ export default function EscapamentoModulo({ oficinaId, osParaEditar, onCancelar,
           </div>
         </div>
 
-        {/* 📷 CARROSSEL DE FOTOS (MÁX 10) */}
+        {/* 📸 CARROSSEL DE FOTOS (MÁX 10) */}
         <div className={STYLES.card}>
           <h2 className="text-zinc-500 font-black mb-6 uppercase text-xs tracking-widest flex items-center gap-2">
             <Camera size={16} /> Fotos ({fotos.length}/10)

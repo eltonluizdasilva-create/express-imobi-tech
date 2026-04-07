@@ -1,7 +1,8 @@
-/* eslint-disable react/prop-types */
+﻿/* eslint-disable react/prop-types */
 import React, { useState, useEffect } from "react";
 import { db } from "../lib/firebase";
 import { doc, updateDoc } from "firebase/firestore";
+import { sincronizarRetornosAutomaticos } from "../lib/retornos";
 import {
   Mic, Save, X, CheckCircle, Camera, Plus, Trash2,
   AlertTriangle, ArrowRight, Disc, Wrench, ShoppingCart,
@@ -122,7 +123,7 @@ export default function PneusModulo({ oficinaId, osParaEditar, onCancelar, onSal
     if (!osParaEditar) { setShowBlocker(true); return; }
     setLoading(true);
     try {
-      await updateDoc(doc(db, 'oficinas', oficinaId, 'os', osParaEditar.id), {
+      const dadosPneus = {
         tipoServico: 'pneus',
         servicosPneus: servicos,
         valorServicoPneu: valorServico,
@@ -132,7 +133,9 @@ export default function PneusModulo({ oficinaId, osParaEditar, onCancelar, onSal
         observacaoPneus: obsGerais,
         totalPneus: calcularTotal(),
         data_atualizacao: new Date().toISOString()
-      });
+      };
+      await updateDoc(doc(db, 'oficinas', oficinaId, 'os', osParaEditar.id), dadosPneus);
+      await sincronizarRetornosAutomaticos({ oficinaId, osId: osParaEditar.id, osData: dadosPneus, osBase: osParaEditar });
       setSuccess(true); if (onSalvo) onSalvo(); setTimeout(onCancelar, 1500);
     } catch (e) {
       console.error(e);
@@ -217,7 +220,7 @@ export default function PneusModulo({ oficinaId, osParaEditar, onCancelar, onSal
                   </div>
                   <div className="col-span-2">
                     <label className="text-[10px] text-zinc-500 block mb-2 font-bold uppercase px-2">Valor Unitário (R$)</label>
-                    <input value={pneuNovo.valorUnitario} onChange={e => setPneuNovo({ ...pneuNovo, valorUnitario: e.target.value })} placeholder="0,00" className={STYLES.input} />
+                    <input value={pneuNovo.valorUnitario} onChange={e => setPneuNovo({ ...pneuNovo, valorUnitario: e.target.value })} placeholder="0" className={STYLES.input} />
                   </div>
                 </div>
               </div>

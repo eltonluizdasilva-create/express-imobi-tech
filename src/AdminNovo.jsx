@@ -1,7 +1,6 @@
-/* eslint-disable react/prop-types */
-import React, { useState, useEffect, useMemo, useRef } from 'react';
+﻿import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react';
 import { db } from './lib/firebase';
-import { collection, addDoc, getDocs, query, orderBy, where, updateDoc, doc, getDoc, deleteDoc, onSnapshot } from 'firebase/firestore';
+import { collection, addDoc, getDocs, query, orderBy, updateDoc, doc, getDoc, deleteDoc, onSnapshot } from 'firebase/firestore';
 import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged } from 'firebase/auth';
 
 // Componentes de Interface e Admin
@@ -10,10 +9,9 @@ import Dashboard, { TEMAS } from './DashboardTab';
 import OSModulo from './components/admin/OS';
 import ListaOS from './components/admin/ListaOS';
 import SpeechTextarea from './components/admin/SpeechTextarea';
-import { temAcessoModulo } from './components/admin/helpers';
 import { Zap, ClipboardList, Wallet, Target, Lock } from 'lucide-react';
 
-// --- 1. MÓDULOS NA PASTA COMPONENTS (Lidos da sua foto) ---
+// --- 1. MÓDULOS NA PASTA COMPONENTS ---
 import Mecanica from './components/Mecanica';
 import FunilariaModulo from './components/Funilaria';
 import AmortecedorModulo from './components/Amortecedor';
@@ -35,7 +33,7 @@ import MasterPanel from './components/MasterPanel';
 import QuickActions from './components/QuickActions';
 import ModalOnboarding from './components/ModalOnboarding';
 
-// --- 2. MÓDULOS NA RAIZ SRC (Lidos da sua foto) ---
+// --- 2. MÓDULOS NA RAIZ SRC ---
 import EletricaModulo from './Eletrica';
 import ArCondicionado from './ArCondicionado';
 import Escapamento from './Escapamento';
@@ -56,6 +54,8 @@ import MercadoLivre from './Mercadolivre';
 import TarefaTab from './Tarefas';
 import NotaFiscal from './NotaFiscal';
 import AbaEstrategia from './Estrategia';
+import { sincronizarRetornosAutomaticos } from './lib/retornos';
+
 const AJUDA_ITENS = [
   { aba: 'dashboard', icon: '📊', titulo: 'Visão Geral & Dashboard', conteudo: ['Acompanhe faturamento, número de O.S. e ticket médio.', 'Visualize o status das ordens de serviço em tempo real.', 'Monitore metas financeiras e desempenho da equipe.'] },
   { aba: 'os', icon: '📝', titulo: 'Abertura de O.S. (Triagem)', conteudo: ['Inicie o atendimento clicando em "Nova O.S." ou use a Busca Rápida.', 'Preencha os dados do cliente e veículo (use o microfone se disponível).', 'Encaminhe para o setor técnico desejado (Mecânica, Óleo, Alinhamento, etc).'] },
@@ -70,8 +70,8 @@ const AJUDA_ITENS = [
   { aba: 'financeiro', icon: '💰', titulo: 'Gestão Financeira & Caixa', conteudo: ['Controle de Entradas (Caixa) e Saídas (Despesas).', 'Relatórios de lucro líquido e fluxo de caixa mensal.', 'Lançamentos automáticos ao finalizar uma O.S. paga.'] },
   { aba: 'estoque', icon: '📦', titulo: 'Controle de Peças & Produtos', conteudo: ['Entrada de notas e controle de saldo mínimo.', 'Custo médio e valor total em estoque.', 'Venda de balcão direta ou integrada à O.S.'] },
   { aba: 'clientes', icon: '🎯', titulo: 'Clientes & Leads (CRM)', conteudo: ['Base de dados centralizada de clientes e veículos.', 'Histórico completo de passagens na oficina.', 'Gestão de novos leads que entram via WhatsApp ou site.'] },
-  { aba: 'historico', icon: '🕒', titulo: 'Histórico de Placa (Busca)', conteudo: ['Digite uma placa para ver tudo o que já foi feito no carro.', 'Reimprima O.S. antigas e verifique garantias.', 'Ótimo para fidelização e pós-venda.'] },
-  { aba: 'retorno', icon: '📅', titulo: 'Gestão de Retornos (Vendas)', conteudo: ['Agendamento automático de revisões futuras.', 'Lembrete de troca de óleo, freios e correia dentada.', 'Aumente o faturamento trazendo o cliente de volta.'] },
+  { aba: 'historico', icon: '🕐', titulo: 'Histórico de Placa (Busca)', conteudo: ['Digite uma placa para ver tudo o que já foi feito no carro.', 'Reimprima O.S. antigas e verifique garantias.', 'Ótimo para fidelização e pós-venda.'] },
+  { aba: 'retorno', icon: '📆', titulo: 'Gestão de Retornos (Vendas)', conteudo: ['Agendamento automático de revisões futuras.', 'Lembrete de troca de óleo, freios e correia dentada.', 'Aumente o faturamento trazendo o cliente de volta.'] },
   { aba: 'config', icon: '⚙️', titulo: 'Configurações do Sistema', conteudo: ['Personalize nome, logo e endereço da sua oficina.', 'Cadastre chaves PIX para links de pagamento.', 'Ajuste horários e preferências globais.'] }
 ];
 
@@ -81,12 +81,12 @@ const SERVICOS_ESTETICA_ABAS = ['mecanica', 'hibrido', 'eletrico', 'moto', 'funi
 const MAPA_MODULOS_SERVICOS = {
   mecanica: ['mecanica', 'MECÂNICA', 'MECANICA'],
   hibrido: ['hibrido', 'HÍBRIDOS', 'HIBRIDOS'],
-  eletrico: ['eletrico', 'eletricos', 'ELÉTRICOS', 'ELETRICOS'],
+  eletrico: ['eletrico', '100% ELÉTRICOS', '100% ELETRICOS'],
   moto: ['moto', 'motos', 'MOTOS'],
   funilaria: ['funilaria', 'FUNILARIA'],
   amortecedor: ['amortecedor', 'AMORTECEDOR'],
   injecao: ['injecao', 'INJEÇÃO', 'INJECAO'],
-  eletrica: ['eletrica', 'ELÉTRICA', 'ELETRICA'],
+  eletrica: ['eletrica', 'ELÉTRICA', 'ELÉTRICA'],
   alinhamento: ['alinhamento', 'ALINHAMENTO'],
   oleo: ['oleo', 'ÓLEO', 'OLEO'],
   revisao: ['revisao', 'REVISÃO', 'REVISAO'],
@@ -124,14 +124,12 @@ export default function Admin() {
   const [servicosAlinhamento, setServicosAlinhamento] = useState([]);
   const [extrasAlinhamento, setExtrasAlinhamento] = useState([]);
   const [estadoPneus, setEstadoPneus] = useState('bons');
-  const [subAbaEletrica, setSubAbaEletrica] = useState('geral');
+  const [subAbaEletrica, setSubAbaEletrica] = useState('bateria');
 
   const [nomeCliente, setNomeCliente] = useState('');
   const [placa, setPlaca] = useState('');
   const [telefone, setTelefone] = useState('');
   const [modelo, setModelo] = useState('');
-  const [ano, setAno] = useState('');
-  const [motor, setMotor] = useState('');
   const [senhaPortal, setSenhaPortal] = useState('');
   const [campoOuvindo, setCampoOuvindo] = useState(null);
   const [salvandoOS, setSalvandoOS] = useState(false);
@@ -161,16 +159,34 @@ export default function Admin() {
   const [leadCampoOuvindo, setLeadCampoOuvindo] = useState(null);
   const [toastModuloBloqueado, setToastModuloBloqueado] = useState(null);
 
-  // --- ESTADO PARA AJUDA DINÂMICA ---
-  const [videosAjudaAdmin, setVideosAjudaAdmin] = useState({});
-
   const [mostrarOnboarding, setMostrarOnboarding] = useState(true);
   const [modulosOperacionais, setModulosOperacionais] = useState([]);
-  const [modulosPermitidos, setModulosPermitidos] = useState(null);
   const [dataFimTrial, setDataFimTrial] = useState(null);
   const [trialExpirou, setTrialExpirou] = useState(false);
   const [currentUserId, setCurrentUserId] = useState(null);
   const trialExpiraouRef = useRef(false);
+
+  const [modalUpgradeAba, setModalUpgradeAba] = useState(null);
+
+  const modulosUsuario = useMemo(() => {
+    return modulosOperacionais.length > 0
+      ? modulosOperacionais
+      : (dadosOficina?.modulosOperacionais || []);
+  }, [modulosOperacionais, dadosOficina?.modulosOperacionais]);
+
+  const servicosVisiveis = useMemo(() => {
+    const modulosNormalizados = new Set(
+      modulosUsuario
+        .filter(Boolean)
+        .map((modulo) => String(modulo).trim().toLowerCase())
+    );
+
+    return SERVICOS_ESTETICA_ABAS.filter((aba) =>
+      (MAPA_MODULOS_SERVICOS[aba] || [aba]).some((nomeModulo) =>
+        modulosNormalizados.has(String(nomeModulo).trim().toLowerCase())
+      )
+    );
+  }, [modulosUsuario]);
 
   // --- TRAVA DE EXPIRAÇÃO DO TRIAL ---
   useEffect(() => {
@@ -210,10 +226,9 @@ export default function Admin() {
   const ouvirFinDesc = () => {
     setFinCampoOuvindo(true);
     setTimeout(() => setFinCampoOuvindo(false), 3000);
-    // Integração real com Web Speech API ou similar pode vir depois
   };
 
-  const ouvirCampoLead = (campo, setter) => {
+  const ouvirCampoLead = (campo) => {
     setLeadCampoOuvindo(campo);
     setTimeout(() => setLeadCampoOuvindo(null), 3000);
   };
@@ -264,7 +279,7 @@ export default function Admin() {
       setFinValor('');
       setModalFinanceiroAberto(false);
       setAbaAtiva('financeiro');
-    } catch (err) { console.error('[Financeiro] ❌ Erro:', err); alert('Erro ao salvar financeiro: ' + err.message); }
+    } catch (err) { console.error('[Financeiro] ✗ Erro:', err); alert('Erro ao salvar financeiro: ' + err.message); }
     finally { setFinSalvando(false); }
   };
 
@@ -291,12 +306,12 @@ export default function Admin() {
   };
 
   const irParaNovaOS = () => {
-    setOsEditando(null); // Limpa qualquer O.S. que estava aberta
-    setPlaca('');        // Limpa a placa
-    setNomeCliente('');  // Limpa o nome
-    setTelefone('');     // Limpa o zap
-    setModelo('');       // Limpa o carro
-    setAbaAtiva('os'); // Te joga na aba de entrada (Triagem/OS)
+    setOsEditando(null);
+    setPlaca('');
+    setNomeCliente('');
+    setTelefone('');
+    setModelo('');
+    setAbaAtiva('os');
   };
 
   const resolverTipoOS = (os) => {
@@ -327,7 +342,6 @@ export default function Admin() {
 
   const resolverEditorDaOS = (tipo) => {
     const map = {
-      // AS QUE FALTAVAM:
       mecanica: Mecanica,
       hibrido: HibridoEV,
       eletrico: VeiculoEletrico,
@@ -335,8 +349,6 @@ export default function Admin() {
       funilaria: FunilariaModulo,
       amortecedor: AmortecedorModulo,
       injecao: InjecaoModulo,
-
-      // AS QUE JÁ ESTAVAM AÍ:
       eletrica: EletricaModulo,
       oleo: OleoModulo,
       alinhamento: AlinhamentoModulo,
@@ -356,15 +368,12 @@ export default function Admin() {
     const tipo = resolverTipoOS(osEmEdicao);
     const abaDestino = resolverAbaDestino(tipo);
     const titulos = {
-      // AS QUE VOCÊ ADICIONOU AGORA:
       hibrido: 'Híbridos / EV',
-      eletrico: 'Elétricos',
+      eletrico: '100% ELÉTRICO',
       moto: 'Motos',
       funilaria: 'Funilaria',
       amortecedor: 'Amortecedor',
       injecao: 'Injeção Eletrônica',
-
-      // AS QUE JÁ ESTAVAM:
       mecanica: 'Mecânica', eletrica: 'Elétrica', oleo: 'Óleo',
       alinhamento: 'Alinhamento', revisao: 'Revisão',
       ar_condicionado: 'Ar-Condicionado', pneus: 'Pneus', escapamento: 'Escapamento',
@@ -381,15 +390,12 @@ export default function Admin() {
   const explicacaoTriagemAtiva = useMemo(() => {
     const tipo = resumoEdicaoAtiva?.tipo || 'mecanica';
     const exp = {
-      // ⬇️ AS NOVAS EXPLICAÇÕES:
       hibrido: 'Triagem encaminhada para laudo de baterias e sistema EV.',
       eletrico: 'Triagem encaminhada para laudo de veículos elétricos.',
       moto: 'Triagem encaminhada para oficina de motocicletas.',
       funilaria: 'Triagem encaminhada para funilaria e pintura.',
       amortecedor: 'Triagem encaminhada para suspensão e amortecedores.',
       injecao: 'Triagem encaminhada para diagnóstico de injeção eletrônica.',
-
-      // ⬇️ AS QUE JÁ ESTAVAM AÍ:
       mecanica: 'Triagem encaminhada para diagnóstico mecânico e peças.',
       eletrica: 'Triagem encaminhada para laudo técnico elétrico.',
       oleo: 'Triagem encaminhada para troca de óleo e fluidos.',
@@ -432,6 +438,12 @@ export default function Admin() {
             data: new Date().toISOString()
           });
           await updateDoc(doc(db, 'oficinas', oficinaId, 'os', os.id), { statusPagamento: 'pago' });
+          await sincronizarRetornosAutomaticos({
+            oficinaId,
+            osId: os.id,
+            osData: { statusPagamento: 'pago' },
+            osBase: os,
+          });
           carregarOS();
           carregarFinanceiro();
         } catch {
@@ -479,17 +491,10 @@ export default function Admin() {
     setAbaAtiva('dashboard');
   };
 
-  const titulosGrupoServico = useMemo(() => (
-    ['lavajato', 'estetica'].includes(abaAtiva)
-      ? { principal: '✨ Estética', secundario: '⚙️ Serviços Mecânicos' }
-      : { principal: '⚙️ Serviços Mecânicos', secundario: '✨ Estética' }
-  ), [abaAtiva]);
-
   const oficinaId = useMemo(() => {
     return dadosOficina?.id || localStorage.getItem('oficinaId');
   }, [dadosOficina]);
 
-  // ─── CURATIVO: buscarDadosPorPlaca — evita ReferenceError nas abas ───
   const buscarDadosPorPlaca = async (placaDigitada, callbacks) => {
     const placaNorm = normalizarPlaca(placaDigitada || '');
     if (placaNorm.length < 7) return null;
@@ -506,39 +511,39 @@ export default function Admin() {
     return match || null;
   };
 
-  async function carregarOS() {
+  const carregarOS = useCallback(async () => {
     if (!oficinaId) return;
     try {
       const s = await getDocs(query(collection(db, 'oficinas', oficinaId, 'os'), orderBy('data_registro', 'desc')));
       setListaCarros(s.docs.map(d => ({ id: d.id, ...d.data() })));
     } catch (e) { console.warn('carregarOS:', e.message); }
-  }
+  }, [oficinaId]);
 
-  async function carregarFinanceiro() {
+  const carregarFinanceiro = useCallback(async () => {
     if (!oficinaId) return;
     try {
       const s = await getDocs(query(collection(db, 'oficinas', oficinaId, 'financeiro'), orderBy('data', 'desc')));
       setListaFinanceiro(s.docs.map(d => ({ id: d.id, ...d.data() })));
     } catch (e) { console.warn('carregarFinanceiro:', e.message); }
-  }
+  }, [oficinaId]);
 
-  async function carregarEstoque() {
+  const carregarEstoque = useCallback(async () => {
     if (!oficinaId) return;
     try {
       const s = await getDocs(collection(db, 'oficinas', oficinaId, 'estoque'));
       setListaEstoque(s.docs.map(d => ({ id: d.id, ...d.data() })));
     } catch (e) { console.warn('carregarEstoque:', e.message); }
-  }
+  }, [oficinaId]);
 
-  async function carregarConfig() {
+  const carregarConfig = useCallback(async () => {
     if (!oficinaId) return;
     try {
       const d = await getDoc(doc(db, 'oficinas', oficinaId, 'configuracoes', 'geral'));
       if (d.exists()) setConfig(d.data());
-    } catch { }
-  }
+    } catch (e) { console.error(e); }
+  }, [oficinaId]);
 
-  async function carregarPlanos() {
+  const carregarPlanos = useCallback(async () => {
     try {
       const snap = await getDoc(doc(db, 'configuracoes_admin', 'master'));
       if (snap.exists()) {
@@ -546,14 +551,14 @@ export default function Admin() {
         console.log('📦 Planos carregados do Firebase:', data);
         setPlanosSistema(data);
       } else {
-        console.log('⚠️ Nenhum plano encontrado no Firebase — usando valores padrão');
+        console.log('⚠ Nenhum plano encontrado no Firebase — usando valores padrão');
       }
     } catch (err) {
-      console.error('❌ Erro ao carregar planos:', err);
+      console.error('✗ Erro ao carregar planos:', err);
     }
-  }
+  }, []);
 
-  function carregarTudo() {
+  const carregarTudo = useCallback(() => {
     return Promise.all([
       carregarOS(),
       carregarFinanceiro(),
@@ -561,7 +566,7 @@ export default function Admin() {
       carregarConfig(),
       carregarPlanos(),
     ]);
-  }
+  }, [carregarOS, carregarFinanceiro, carregarEstoque, carregarConfig, carregarPlanos]);
 
   useEffect(() => {
     const auth = getAuth();
@@ -577,16 +582,12 @@ export default function Admin() {
           return;
         }
         try {
-          // REAL-TIME: escuta mudanças em modulosOperacionais, modulosPermitidos, dataFimTrial
-          const unsubUser = onSnapshot(doc(db, 'usuarios', user.uid), (docSnap) => {
+          onSnapshot(doc(db, 'usuarios', user.uid), (docSnap) => {
             if (docSnap.exists()) {
               const dados = docSnap.data();
               if (dados.modulosOperacionais !== undefined) {
                 setModulosOperacionais(dados.modulosOperacionais);
                 console.log('[AdminNovo] Sidebar atualizada:', dados.modulosOperacionais.length, 'módulos');
-              }
-              if (dados.modulosPermitidos !== undefined) {
-                setModulosPermitidos(dados.modulosPermitidos);
               }
               if (dados.dataFimTrial) {
                 const fim = dados.dataFimTrial.toDate ? dados.dataFimTrial.toDate() : new Date(dados.dataFimTrial);
@@ -601,8 +602,6 @@ export default function Admin() {
           const docSnap = await getDoc(doc(db, 'usuarios', user.uid));
           if (docSnap.exists()) {
             const dados = docSnap.data();
-            // modulosOperacionais, modulosPermitidos, dataFimTrial, onboardingFeito
-            // são ouvidos em tempo real pelo onSnapshot (acima)
             const userOficinaId = dados.papel === 'dono' ? user.uid : dados.oficinaId;
             if (userOficinaId) {
               const oficinaSnap = await getDoc(doc(db, 'oficinas', userOficinaId));
@@ -642,9 +641,9 @@ export default function Admin() {
 
   useEffect(() => {
     if (logado && oficinaId) carregarTudo();
-  }, [logado, oficinaId]);
+  }, [logado, oficinaId, carregarTudo]);
 
-  // ─── MAESTRO: edição de O.S. — renderiza apenas o editor correspondente ───
+  // --- MAESTRO: edição de O.S. — renderiza apenas o editor correspondente ---
   if (osEmEdicao) {
     const Editor = resumoEdicaoAtiva?.editor || Mecanica;
     return (
@@ -670,6 +669,8 @@ export default function Admin() {
             onRedirecionar={(t, os) => { setOsEmEdicao(os); setAbaAtiva(t); }}
             onAbrirWhatsApp={abrirWhatsApp}
             onCancelar={fecharEdicao}
+            subAbaEletrica={subAbaEletrica}
+            setSubAbaEletrica={setSubAbaEletrica}
             dadosOficina={dadosOficina}
             papelLogado={papelLogado}
             permissoesLogado={permissoesLogado}
@@ -679,37 +680,15 @@ export default function Admin() {
     );
   }
 
-  const temAcessoPlano = (aba) => {
-    const plano = dadosOficina?.plano || 'trial';
-    return temAcessoModulo(plano, aba);
-  };
-
-  const temPermissao = (aba) => {
-    return moduloLiberado(aba);
-  };
-
   const moduloLiberado = (idAba) => {
-    // 1. Master tem acesso total
     const ehMaster = dadosOficina?.papel === 'master' || dadosOficina?.plano === 'master';
     if (ehMaster) return true;
-
-    // 2. Trial de 10 dias com tudo liberado
     if (dadosOficina?.modulosPermitidos === 'ALL') return true;
-
-    // 3. Abas vitais que nunca devem ficar bloqueadas
-    const abasVitais = [
-      'dashboard', 'mecanica', 'clientes', 'ajuda', 'meuplano', 'config',
-    ];
+    const abasVitais = ['dashboard', 'mecanica', 'clientes', 'ajuda', 'meuplano', 'config'];
     if (abasVitais.includes(idAba)) return true;
-
-    // 4. Módulos contratados
     if (dadosOficina?.modulosOperacionais?.includes(idAba)) return true;
-
-    // 5. Bloqueio padrão
     return false;
   };
-
-  const [modalUpgradeAba, setModalUpgradeAba] = useState(null);
 
   const lidarModuloBloqueado = (aba) => {
     setModalUpgradeAba(aba);
@@ -772,6 +751,12 @@ export default function Admin() {
         kmProxima: osEditando.kmProxima || '',
       };
       await updateDoc(doc(db, 'oficinas', oficinaId, 'os', osEditando.id), dadosAtualizados);
+      await sincronizarRetornosAutomaticos({
+        oficinaId,
+        osId: osEditando.id,
+        osData: dadosAtualizados,
+        osBase: osEditando,
+      });
       setListaCarros(prev => prev.map(o => o.id === osEditando.id ? { ...o, ...dadosAtualizados } : o));
       setOsEditando(null);
       alert('O.S. atualizada!');
@@ -784,16 +769,9 @@ export default function Admin() {
     setListaCarros(prev => prev.filter(o => o.id !== id));
   };
 
-  const osFiltradas = listaCarros.filter(os =>
-    !busca ||
-    (os.placa || '').toLowerCase().includes(busca.toLowerCase()) ||
-    (os.modelo || '').toLowerCase().includes(busca.toLowerCase()) ||
-    (os.nomeCliente || '').toLowerCase().includes(busca.toLowerCase())
-  );
-
   const LABELS_ABAS = {
     dashboard: '📊 VISÃO GERAL', os: '🔧 O.S.', mecanica: '🔧 MECÂNICA', clientes: '👥 CLIENTES', hibrido: '🔋 HÍBRIDOS',
-    moto: '🏍️ MOTOS', eletrico: 'ELÉTRICOS', funilaria: '🚗 FUNILARIA', amortecedor: '🧰 AMORTECEDOR', injecao: '🛠️ INJEÇÃO',
+    moto: '🏍️ MOTOS', eletrico: '🔌 100% ELÉTRICOS', funilaria: '🚗 FUNILARIA', amortecedor: '🧰 AMORTECEDOR', injecao: '🛠️ INJEÇÃO',
     oleo: '🛢️ ÓLEO', alinhamento: '⚙️ ALINHAMENTO', revisao: '🛡️ REVISÃO', eletrica: '⚡ ELÉTRICA',
     ar_condicionado: '❄️ AR-COND.', pneus: '🛞 PNEUS', escapamento: '🪛 ESCAPAMENTO', estetica: '✨ ESTÉTICA',
     lavajato: '🚿 LAVA JATO', desmanche: '🚗 DESMANCHE', copiloto: '👨‍🔧 COPILOTO',
@@ -805,36 +783,7 @@ export default function Admin() {
     master: '👑 MASTER', meuplano: '💰 MEU PLANO',
   };
 
-  const abasDisponiveis = [
-    'dashboard', 'os', 'mecanica', 'clientes', 'hibrido', 'eletrico', 'moto', 'funilaria', 'amortecedor', 'injecao',
-    'oleo', 'alinhamento', 'eletrica', 'revisao', 'ar_condicionado', 'pneus', 'desmanche', 'escapamento', 'estetica',
-    'lavajato', 'copiloto', 'secretaria', 'administrador', 'contador',
-    'mercadolivre', 'mercado_livre', 'financeiro', 'estoque', 'leads', 'historico',
-    'tarefa', 'notafiscal', 'retorno', 'patrimonio', 'fornecedores',
-    'equipe', 'marketing', 'config', 'master', 'meuplano', 'estrategia', 'ajuda',
-  ].filter(aba => temPermissao(aba));
-
-  const modulosUsuario = useMemo(() => {
-    return modulosOperacionais.length > 0
-      ? modulosOperacionais
-      : (dadosOficina?.modulosOperacionais || []);
-  }, [modulosOperacionais, dadosOficina?.modulosOperacionais]);
-
-  const servicosVisiveis = useMemo(() => {
-    const modulosNormalizados = new Set(
-      modulosUsuario
-        .filter(Boolean)
-        .map((modulo) => String(modulo).trim().toLowerCase())
-    );
-
-    return SERVICOS_ESTETICA_ABAS.filter((aba) =>
-      (MAPA_MODULOS_SERVICOS[aba] || [aba]).some((nomeModulo) =>
-        modulosNormalizados.has(String(nomeModulo).trim().toLowerCase())
-      )
-    );
-  }, [modulosUsuario]);
-
-  // ─── TELAS DE ESTADO ESPECIAL ───
+  // --- TELAS DE ESTADO ESPECIAL ---
 
   if (carregandoAuth) {
     return (
@@ -844,7 +793,7 @@ export default function Admin() {
     );
   }
 
-  // ─── MODAL DE EXPIRAÇÃO DO TRIAL ───
+  // --- MODAL DE EXPIRAÇÃO DO TRIAL ---
   if (trialExpirou) {
     return (
       <div style={{
@@ -947,7 +896,7 @@ export default function Admin() {
     );
   }
 
-  // ─── MODO EDIÇÃO SIMPLES DE O.S. (sem Maestro) ───
+  // --- MODO EDIÇÃO SIMPLES DE O.S. (sem Maestro) ---
   if (osEditando && !osEmEdicao) {
     return (
       <div style={{ minHeight: '100vh', background: 'black', color: 'white', padding: '20px' }}>
@@ -1049,7 +998,7 @@ export default function Admin() {
     );
   }
 
-  // ─── LAYOUT PRINCIPAL ───
+  // --- LAYOUT PRINCIPAL ---
   const t = TEMAS[tema];
 
   return (
@@ -1104,7 +1053,7 @@ export default function Admin() {
               const val = normalizarPlaca(e.target.value);
               setBusca(val);
               if (val.length >= 7) {
-                setAbaAtiva('os'); // Abre a lista de O.S. ou histórico se preferir
+                setAbaAtiva('os');
               }
             }}
             style={{
@@ -1122,24 +1071,24 @@ export default function Admin() {
         <p style={{ color: t.textoTer, fontSize: '9px', fontWeight: 'bold', letterSpacing: '2px', margin: '0 0 6px', textTransform: 'uppercase' }}>⚙️ SERVIÇOS E ESTÉTICA</p>
         <div style={{ display: 'flex', gap: '8px', overflowX: 'auto', marginBottom: '12px', paddingBottom: '4px' }}>
           {servicosVisiveis.map(aba => {
-              const corAba = TAB_COLORS[aba] || MAIN;
-              const liberado = moduloLiberado(aba);
-              return (
-                <button key={aba} onClick={() => !liberado ? lidarModuloBloqueado(aba) : setAbaAtiva(aba)}
-                  className="nav-button-premium"
-                  style={{
-                    flexShrink: 0, padding: '8px 14px',
-                    background: abaAtiva === aba ? `${corAba}22` : t.bgCard,
-                    color: !liberado ? '#555' : (abaAtiva === aba ? corAba : `${corAba}aa`),
-                    border: `1px solid ${abaAtiva === aba ? corAba : `${corAba}44`}`,
-                    borderRadius: '20px', fontWeight: '900', fontSize: '11px', cursor: 'pointer', whiteSpace: 'nowrap',
-                    '--glow-color': corAba
-                  }}>
-                  {!liberado && <Lock size={10} style={{ display: 'inline', marginRight: '4px', opacity: 0.6 }} />}
-                  {LABELS_ABAS[aba]}
-                </button>
-              );
-            })}
+            const corAba = TAB_COLORS[aba] || MAIN;
+            const liberado = moduloLiberado(aba);
+            return (
+              <button key={aba} onClick={() => !liberado ? lidarModuloBloqueado(aba) : setAbaAtiva(aba)}
+                className="nav-button-premium"
+                style={{
+                  flexShrink: 0, padding: '8px 14px',
+                  background: abaAtiva === aba ? `${corAba}22` : t.bgCard,
+                  color: !liberado ? '#555' : (abaAtiva === aba ? corAba : `${corAba}aa`),
+                  border: `1px solid ${abaAtiva === aba ? corAba : `${corAba}44`}`,
+                  borderRadius: '20px', fontWeight: '900', fontSize: '11px', cursor: 'pointer', whiteSpace: 'nowrap',
+                  '--glow-color': corAba
+                }}>
+                {!liberado && <Lock size={10} style={{ display: 'inline', marginRight: '4px', opacity: 0.6 }} />}
+                {LABELS_ABAS[aba]}
+              </button>
+            );
+          })}
         </div>
 
         {/* GRUPO: INTELIGÊNCIA ARTIFICIAL */}
@@ -1168,7 +1117,7 @@ export default function Admin() {
         </div>
 
         {/* GRUPO: GESTÃO */}
-        <p style={{ color: t.textoTer, fontSize: '9px', fontWeight: 'bold', letterSpacing: '2px', margin: '0 0 6px', textTransform: 'uppercase' }}>📋 Gestão</p>
+        <p style={{ color: t.textoTer, fontSize: '9px', fontWeight: 'bold', letterSpacing: '2px', margin: '0 0 6px', textTransform: 'uppercase' }}>📋 GESTÃO</p>
         <div style={{ display: 'flex', gap: '8px', overflowX: 'auto', marginBottom: '12px', paddingBottom: '4px' }}>
           {['dashboard', 'estoque', 'financeiro', 'leads', 'tarefa', 'notafiscal', 'retorno', 'patrimonio', 'fornecedores', 'historico']
             .filter(aba => aba !== 'dashboard' || papelLogado === 'dono' || papelLogado === 'master')
@@ -1193,10 +1142,10 @@ export default function Admin() {
             })}
         </div>
 
-        {/* GRUPO: SISTEMA — apenas dono e master */}
+        {/* GRUPO: SISTEMA - apenas dono e master */}
         {(papelLogado === 'dono' || papelLogado === 'master') && (
           <>
-            <p style={{ color: t.textoTer, fontSize: '9px', fontWeight: 'bold', letterSpacing: '2px', margin: '0 0 6px', textTransform: 'uppercase' }}>⚙️ Sistema</p>
+            <p style={{ color: t.textoTer, fontSize: '9px', fontWeight: 'bold', letterSpacing: '2px', margin: '0 0 6px', textTransform: 'uppercase' }}>⚙️ SISTEMA</p>
             <div style={{ display: 'flex', gap: '8px', overflowX: 'auto', marginBottom: '8px', paddingBottom: '4px' }}>
               {['meuplano', 'config', 'equipe', 'marketing', 'estrategia', 'ajuda', 'master']
                 .filter(aba => aba !== 'master' || papelLogado === 'master')
@@ -1229,12 +1178,12 @@ export default function Admin() {
         <div style={{ background: '#1a1000', border: '1px solid #f59e0b44', borderRadius: '8px', padding: '10px 14px', margin: '14px 20px 0', display: 'flex', alignItems: 'center', gap: '10px' }}>
           <span style={{ fontSize: '18px' }}>🤖</span>
           <p style={{ margin: 0, color: '#f59e0b', fontSize: '11px', lineHeight: '1.5' }}>
-            <strong>AVISO:</strong> A Inteligência Artificial pode cometer erros. Use sempre como <strong>assistente de apoio</strong> — a decisão técnica final é sempre do mecânico qualificado.
+            <strong>AVISO:</strong> A Inteligência Artificial pode cometer erros. Use sempre como <strong>assistente de apoio</strong> - a decisão técnica final é sempre do mecânico qualificado.
           </p>
         </div>
       )}
 
-      {/* ─── CONTEÚDO DAS ABAS — ROTEAMENTO INDIVIDUAL ─── */}
+      {/* --- CONTEÚDO DAS ABAS — ROTEAMENTO INDIVIDUAL --- */}
       <div style={{ padding: '20px', maxWidth: '800px', margin: '0 auto' }}>
 
         {/* DASHBOARD */}
@@ -1263,6 +1212,7 @@ export default function Admin() {
           <>
             <OSModulo
               oficinaId={oficinaId}
+              dadosOficina={dadosOficina}
               listaCarros={listaCarros}
               onSalvo={carregarOS}
               onRedirecionar={handleOSCriada}
@@ -1287,7 +1237,7 @@ export default function Admin() {
           </>
         )}
 
-        {/* MECÂNICA GERAL (Mantém o componente Mecânica) */}
+        {/* MECÂNICA GERAL */}
         {abaAtiva === 'mecanica' && (
           <Mecanica
             abaAtiva={abaAtiva}
@@ -1552,6 +1502,7 @@ export default function Admin() {
             buscarDadosPorPlaca={buscarDadosPorPlaca}
           />
         )}
+
         {/* ÓLEO */}
         {abaAtiva === 'oleo' && (
           <OleoModulo
@@ -1792,6 +1743,7 @@ export default function Admin() {
             papelLogado={papelLogado}
           />
         )}
+
         {/* MEU PLANO */}
         {abaAtiva === 'meuplano' && (
           <ModuloMeuPlano
@@ -1857,11 +1809,7 @@ export default function Admin() {
 
         {/* AJUDA */}
         {abaAtiva === 'ajuda' && (
-          <Ajuda
-            ajudaItens={AJUDA_ITENS}
-            tabColors={TAB_COLORS}
-            videosAjudaAdmin={videosAjudaAdmin}
-          />
+          <Ajuda />
         )}
 
       </div>

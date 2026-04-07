@@ -1,7 +1,8 @@
-/* eslint-disable react/prop-types */
+﻿/* eslint-disable react/prop-types */
 import React, { useState, useEffect } from "react";
-import { db } from "../lib/firebase"; // CORRIGIDO: Agora o caminho está certo
+import { db } from "../lib/firebase";
 import { doc, updateDoc } from "firebase/firestore";
+import { sincronizarRetornosAutomaticos } from "../lib/retornos";
 import {
   Mic, Save, X, CheckCircle, Camera, Plus, Trash2,
   Bike, AlertTriangle, ArrowRight, Settings, Disc
@@ -23,10 +24,10 @@ const StatusSelector = ({ label, value, onChange }) => (
           key={status}
           onClick={() => onChange(status)}
           className={`px-3 py-1.5 rounded-lg text-[9px] font-black border transition-all ${value === status
-              ? (status === 'OK' ? 'bg-green-600/20 border-green-500 text-green-500' :
-                status === 'Atenção' ? 'bg-yellow-600/20 border-yellow-500 text-yellow-500' :
-                  'bg-red-600/20 border-red-500 text-red-500')
-              : 'bg-zinc-800 border-zinc-700 text-zinc-500 hover:bg-zinc-700'
+            ? (status === 'OK' ? 'bg-green-600/20 border-green-500 text-green-500' :
+              status === 'Atenção' ? 'bg-yellow-600/20 border-yellow-500 text-yellow-500' :
+                'bg-red-600/20 border-red-500 text-red-500')
+            : 'bg-zinc-800 border-zinc-700 text-zinc-500 hover:bg-zinc-700'
             }`}
         >
           {status.toUpperCase()}
@@ -44,8 +45,8 @@ export default function MotosModulo({ oficinaId, osParaEditar, onCancelar, onSal
 
   const [obsMotor, setObsMotor] = useState('');
   const [obsGeral, setObsGeral] = useState('');
-  const [pecas, setPecas] = useState('0,00');
-  const [maoDeObra, setMaoDeObra] = useState('0,00');
+  const [pecas, setPecas] = useState('0');
+  const [maoDeObra, setMaoDeObra] = useState('0');
 
   const [checklist, setChecklist] = useState({
     compressao: 'OK', vazamentos: 'OK', injecao: 'OK',
@@ -73,13 +74,15 @@ export default function MotosModulo({ oficinaId, osParaEditar, onCancelar, onSal
     setLoading(true);
     try {
       const vTotal = (parseFloat(pecas.replace(',', '.')) || 0) + (parseFloat(maoDeObra.replace(',', '.')) || 0);
-      await updateDoc(doc(db, 'oficinas', oficinaId, 'os', osParaEditar.id), {
+      const dadosMoto = {
         tipoServico: 'moto',
         checklistMoto: checklist,
         obsMotor, obsGeral, fotosMoto: fotos,
         valorPecas: pecas, valorMaoObra: maoDeObra, total: vTotal,
         data_atualizacao: new Date().toISOString()
-      });
+      };
+      await updateDoc(doc(db, 'oficinas', oficinaId, 'os', osParaEditar.id), dadosMoto);
+      await sincronizarRetornosAutomaticos({ oficinaId, osId: osParaEditar.id, osData: dadosMoto, osBase: osParaEditar });
       setSuccess(true); if (onSalvo) onSalvo(); setTimeout(onCancelar, 1500);
     } catch (e) { console.error(e); } finally { setLoading(false); }
   };
@@ -95,7 +98,7 @@ export default function MotosModulo({ oficinaId, osParaEditar, onCancelar, onSal
             <h2 className="text-2xl font-black text-white mb-4 uppercase italic">O.S. Requerida</h2>
             <p className="text-zinc-400 text-sm mb-10 leading-relaxed">
               Para salvar este laudo de Moto:<br />
-              <span className="text-white font-bold">1. Crie a O.S. -> 2. Clique em Editar</span>
+              <span className="text-white font-bold">1. Crie a O.S. → 2. Clique em Editar</span>
             </p>
             <button onClick={() => { if (irParaNovaOS) irParaNovaOS(); setShowBlocker(false); }} className="w-full py-5 bg-orange-600 text-white font-black rounded-2xl flex items-center justify-center gap-2">
               INICIAR O.S. AGORA <ArrowRight size={20} />
@@ -114,7 +117,7 @@ export default function MotosModulo({ oficinaId, osParaEditar, onCancelar, onSal
           <button onClick={onCancelar} className="p-2 bg-zinc-900 rounded-xl border border-zinc-800"><X size={24} /></button>
         </div>
 
-        {/* 📷 CARROSSEL DE FOTOS */}
+        {/* CARROSSEL DE FOTOS */}
         <div className={STYLES.card}>
           <h2 className="text-orange-500 font-black mb-6 uppercase text-[10px] flex items-center gap-2 tracking-widest"><Camera size={14} /> Evidências (Máx 5)</h2>
           <div className="flex gap-4 overflow-x-auto pb-2 scrollbar-hide">
@@ -133,7 +136,7 @@ export default function MotosModulo({ oficinaId, osParaEditar, onCancelar, onSal
           </div>
         </div>
 
-        {/* ⚙️ MOTOR MOTO */}
+        {/* MOTOR MOTO */}
         <div className={STYLES.card}>
           <h2 className="text-orange-500 font-black mb-6 uppercase text-[10px] border-l-2 border-orange-500 pl-3 tracking-widest">⚙️ Motor Moto</h2>
           <div className="bg-zinc-950/40 rounded-2xl border border-zinc-800/50 overflow-hidden mb-6">
@@ -147,7 +150,7 @@ export default function MotosModulo({ oficinaId, osParaEditar, onCancelar, onSal
           </div>
         </div>
 
-        {/* ⛓️ TRANSMISSÃO E RODAS */}
+        {/* TRANSMISSÃO E RODAS */}
         <div className={STYLES.card}>
           <h2 className="text-orange-500 font-black mb-6 uppercase text-[10px] border-l-2 border-orange-500 pl-3 tracking-widest">⛓️ Transmissão & Rodas</h2>
           <div className="bg-zinc-950/40 rounded-2xl border border-zinc-800/50 overflow-hidden">
@@ -157,7 +160,7 @@ export default function MotosModulo({ oficinaId, osParaEditar, onCancelar, onSal
           </div>
         </div>
 
-        {/* 🛑 FREIOS E SUSPENSÃO */}
+        {/* FREIOS E SUSPENSÃO */}
         <div className={STYLES.card}>
           <h2 className="text-orange-500 font-black mb-6 uppercase text-[10px] border-l-2 border-orange-500 pl-3 tracking-widest">🛑 Freios & Suspensão Moto</h2>
           <div className="bg-zinc-950/40 rounded-2xl border border-zinc-800/50 overflow-hidden mb-6">
@@ -172,7 +175,7 @@ export default function MotosModulo({ oficinaId, osParaEditar, onCancelar, onSal
           </div>
         </div>
 
-        {/* 💰 FINANCEIRO */}
+        {/* FINANCEIRO */}
         <div className={STYLES.card}>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 items-end font-mono">
             <div>

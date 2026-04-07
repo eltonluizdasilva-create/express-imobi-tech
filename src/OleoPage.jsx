@@ -5,6 +5,7 @@ import { db } from './lib/firebase';
 import { collection, addDoc } from 'firebase/firestore';
 import { useGemini } from './hooks/useGemini';
 import { useOficina } from './components/OficinaContext';
+import { sincronizarRetornosAutomaticos } from './lib/retornos';
 
 const MAIN_COLOR = "#FF0033";
 const KM_COLOR = "#eab308";
@@ -193,7 +194,13 @@ export default function OleoPage() {
         data_registro: new Date(),
       };
 
-      await addDoc(collection(db, 'oficinas', oficinaId, 'os'), os);
+      const docRef = await addDoc(collection(db, 'oficinas', oficinaId, 'os'), os);
+      await sincronizarRetornosAutomaticos({
+        oficinaId,
+        osId: docRef.id,
+        osData: os,
+        osBase: {},
+      });
 
       setSalvo(true);
       setTimeout(() => setSalvo(false), 3000);

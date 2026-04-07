@@ -1,7 +1,8 @@
-/* eslint-disable react/prop-types */
+﻿/* eslint-disable react/prop-types */
 import React, { useState, useEffect } from "react";
 import { db } from "../lib/firebase";
 import { doc, updateDoc } from "firebase/firestore";
+import { sincronizarRetornosAutomaticos } from "../lib/retornos";
 import {
     Mic, Save, X, CheckCircle, Camera, Plus, Trash2,
     AlertTriangle, ArrowRight, Cpu, Activity, Gauge, Search
@@ -53,8 +54,8 @@ export default function Injecao({
 
     const [dtcCodigo, setDtcCodigo] = useState('');
     const [obsInjecao, setObsInjecao] = useState('');
-    const [pecas, setPecas] = useState('0,00');
-    const [maoDeObra, setMaoDeObra] = useState('0,00');
+    const [pecas, setPecas] = useState('0');
+    const [maoDeObra, setMaoDeObra] = useState('0');
 
     const [checklist, setChecklist] = useState({
         // SCANNER E ECU
@@ -70,8 +71,8 @@ export default function Injecao({
             setDtcCodigo(osParaEditar.dtcCodigo || '');
             setObsInjecao(osParaEditar.observacaoInjecao || '');
             setFotos(osParaEditar.fotosInjecao || []);
-            setPecas(osParaEditar.valorPecas || '0,00');
-            setMaoDeObra(osParaEditar.valorMaoObra || '0,00');
+            setPecas(osParaEditar.valorPecas || '0');
+            setMaoDeObra(osParaEditar.valorMaoObra || '0');
             if (osParaEditar.checklistInjecao) setChecklist(osParaEditar.checklistInjecao);
         }
     }, [osParaEditar]);
@@ -120,7 +121,7 @@ export default function Injecao({
         setLoading(true);
         try {
             const vTotal = (parseFloat(pecas.replace(',', '.')) || 0) + (parseFloat(maoDeObra.replace(',', '.')) || 0);
-            await updateDoc(doc(db, 'oficinas', oficinaId, 'os', osParaEditar.id), {
+            const dadosInjecao = {
                 tipoServico: 'injecao',
                 dtcCodigo,
                 checklistInjecao: checklist,
@@ -130,7 +131,9 @@ export default function Injecao({
                 valorMaoObra: maoDeObra,
                 totalInjecao: vTotal,
                 data_atualizacao: new Date().toISOString()
-            });
+            };
+            await updateDoc(doc(db, 'oficinas', oficinaId, 'os', osParaEditar.id), dadosInjecao);
+            await sincronizarRetornosAutomaticos({ oficinaId, osId: osParaEditar.id, osData: dadosInjecao, osBase: osParaEditar });
             setSuccess(true); if (onSalvo) onSalvo(); setTimeout(onCancelar, 1500);
         } catch (e) { console.error(e); } finally { setLoading(false); }
     };
@@ -172,7 +175,7 @@ export default function Injecao({
                     <button onClick={onCancelar} className="p-3 bg-zinc-900 rounded-2xl border border-zinc-800 hover:bg-zinc-800"><X size={28} /></button>
                 </div>
 
-                {/* 📷 CARROSSEL DE FOTOS EVIDÊNCIAS SCANNER (MÁX 5) */}
+                {/* 📸 CARROSSEL DE FOTOS EVIDÊNCIAS SCANNER (MÁX 5) */}
                 <div className={STYLES.card}>
                     <h2 className="text-pink-500 font-black mb-8 uppercase text-xs tracking-widest flex items-center gap-3">
                         <Camera size={18} /> Fotos do Scanner / Evidências ({fotos.length}/5)

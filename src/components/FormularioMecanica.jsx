@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { db } from '../lib/firebase';
 import { collection, addDoc, doc, updateDoc } from 'firebase/firestore';
 import { normalizarPlaca } from '../lib/utils';
+import { sincronizarRetornosAutomaticos } from '../lib/retornos';
 import { TEMAS } from './DashboardTab';
 
 const FormularioMecanica = ({
@@ -141,12 +142,29 @@ const FormularioMecanica = ({
 
             if (editandoVistoria) {
                 await updateDoc(doc(db, 'oficinas', oficinaId, 'os', editandoVistoria), osData);
+                await sincronizarRetornosAutomaticos({
+                    oficinaId,
+                    osId: editandoVistoria,
+                    osData,
+                    osBase: formVistoria,
+                });
             } else {
-                await addDoc(collection(db, 'oficinas', oficinaId, 'os'), {
+                const docRef = await addDoc(collection(db, 'oficinas', oficinaId, 'os'), {
                     ...osData,
                     statusPagamento: 'pendente',
                     data: new Date().toISOString().split('T')[0],
                     data_registro: new Date().toISOString(),
+                });
+                await sincronizarRetornosAutomaticos({
+                    oficinaId,
+                    osId: docRef.id,
+                    osData: {
+                        ...osData,
+                        statusPagamento: 'pendente',
+                        data: new Date().toISOString().split('T')[0],
+                        data_registro: new Date().toISOString(),
+                    },
+                    osBase: {},
                 });
             }
             alert('✅ O.S. Salva com sucesso!');

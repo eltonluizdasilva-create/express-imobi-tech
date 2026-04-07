@@ -1,7 +1,8 @@
-/* eslint-disable react/prop-types */
+﻿/* eslint-disable react/prop-types */
 import React, { useState, useEffect } from "react";
-import { db } from "../lib/firebase"; // Caminho ajustado para pasta components
+import { db } from "../lib/firebase";
 import { doc, updateDoc } from "firebase/firestore";
+import { sincronizarRetornosAutomaticos } from "../lib/retornos";
 import {
   Mic, Save, X, CheckCircle, Camera, Plus, Trash2,
   AlertTriangle, ArrowRight, MoveVertical, Settings,
@@ -9,7 +10,7 @@ import {
 } from "lucide-react";
 
 const STYLES = {
-  accent: 'text-sky-400', // Azul Céu
+  accent: 'text-sky-400',
   button: 'bg-sky-500 hover:bg-sky-600 text-white font-black py-5 px-8 rounded-2xl shadow-lg transition-all active:scale-95 flex items-center justify-center gap-3',
   card: 'bg-zinc-900/40 border border-zinc-800 rounded-[2.5rem] p-8 mb-8',
   input: 'bg-zinc-950 border-zinc-800 focus:border-sky-500 text-zinc-100 p-4 rounded-xl outline-none w-full transition-all font-mono text-sm'
@@ -24,10 +25,10 @@ const StatusSelector = ({ label, value, onChange }) => (
           key={status}
           onClick={() => onChange(status)}
           className={`px-4 py-2 rounded-xl text-[10px] font-black border transition-all ${value === status
-              ? (status === 'OK' ? 'bg-green-600/20 border-green-500 text-green-500 shadow-[0_0_15px_rgba(34,197,94,0.2)]' :
-                status === 'Atenção' ? 'bg-yellow-600/20 border-yellow-500 text-yellow-500' :
-                  'bg-red-600/20 border-red-500 text-red-500')
-              : 'bg-zinc-800 border-zinc-700 text-zinc-500 hover:bg-zinc-700'
+            ? (status === 'OK' ? 'bg-green-600/20 border-green-500 text-green-500 shadow-[0_0_15px_rgba(34,197,94,0.2)]' :
+              status === 'Atenção' ? 'bg-yellow-600/20 border-yellow-500 text-yellow-500' :
+                'bg-red-600/20 border-red-500 text-red-500')
+            : 'bg-zinc-800 border-zinc-700 text-zinc-500 hover:bg-zinc-700'
             }`}
         >
           {status === 'OK' && '✓ '} {status.toUpperCase()}
@@ -47,10 +48,10 @@ export default function Amortecedor({
 
   const [testeRessalto, setTesteRessalto] = useState('');
   const [obsGerais, setObsGerais] = useState('');
-  const [pecas, setPecas] = useState('0,00');
-  const [maoDeObra, setMaoDeObra] = useState('0,00');
+  const [pecas, setPecas] = useState('0');
+  const [maoDeObra, setMaoDeObra] = useState('0');
 
-  // Checklist Fiel aos Prints (image_36c768.png e image_36c789.png)
+  // Checklist por Posição e Componentes
   const [checklist, setChecklist] = useState({
     // DIAGNÓSTICO POR POSIÇÃO
     dianteiroEsquerdo: 'OK',
@@ -69,8 +70,8 @@ export default function Amortecedor({
       setTesteRessalto(osParaEditar.testeRessalto || '');
       setObsGerais(osParaEditar.observacaoAmortecedor || '');
       setFotos(osParaEditar.fotosAmortecedor || []);
-      setPecas(osParaEditar.valorPecas || '0,00');
-      setMaoDeObra(osParaEditar.valorMaoObra || '0,00');
+      setPecas(osParaEditar.valorPecas || '0');
+      setMaoDeObra(osParaEditar.valorMaoObra || '0');
       if (osParaEditar.checklistAmortecedor) setChecklist(osParaEditar.checklistAmortecedor);
     }
   }, [osParaEditar]);
@@ -100,7 +101,6 @@ export default function Amortecedor({
     setFotos(prev => [...prev, ...novasFotos]);
   };
 
-  // Duplo Microfone Independente
   const [isListening, setIsListening] = useState(null);
   const toggleMic = (campo) => {
     const Recognition = window.SpeechRecognition || window.webkitSpeechRecognition;
@@ -128,7 +128,7 @@ export default function Amortecedor({
     setLoading(true);
     try {
       const vTotal = (parseFloat(pecas.replace(',', '.')) || 0) + (parseFloat(maoDeObra.replace(',', '.')) || 0);
-      await updateDoc(doc(db, 'oficinas', oficinaId, 'os', osParaEditar.id), {
+      const dadosAmortecedor = {
         tipoServico: 'amortecedor',
         checklistAmortecedor: checklist,
         testeRessalto: testeRessalto,
@@ -138,7 +138,9 @@ export default function Amortecedor({
         valorMaoObra: maoDeObra,
         totalAmortecedor: vTotal,
         data_atualizacao: new Date().toISOString()
-      });
+      };
+      await updateDoc(doc(db, 'oficinas', oficinaId, 'os', osParaEditar.id), dadosAmortecedor);
+      await sincronizarRetornosAutomaticos({ oficinaId, osId: osParaEditar.id, osData: dadosAmortecedor, osBase: osParaEditar });
       setSuccess(true); if (onSalvo) onSalvo(); setTimeout(onCancelar, 1500);
     } catch (e) { console.error(e); } finally { setLoading(false); }
   };
@@ -146,7 +148,7 @@ export default function Amortecedor({
   return (
     <div className="bg-black min-h-screen text-zinc-100 p-4 md:p-8 pb-40 relative">
 
-      {/* 🛑 MODAL DE BLOQUEIO (VAI DIRETO PARA O.S.) */}
+      {/* MODAL DE BLOQUEIO */}
       {showBlocker && (
         <div className="fixed inset-0 bg-black/95 backdrop-blur-xl z-[200] flex items-center justify-center p-6 text-center">
           <div className="bg-zinc-900 border border-zinc-800 p-10 rounded-[3rem] max-w-sm shadow-2xl">
@@ -180,7 +182,7 @@ export default function Amortecedor({
           <button onClick={onCancelar} className="p-3 bg-zinc-900 rounded-2xl border border-zinc-800"><X size={28} /></button>
         </div>
 
-        {/* 📷 CARROSSEL DE FOTOS (MÁX 10) */}
+        {/* CARROSSEL DE FOTOS (MÁX 10) */}
         <div className={STYLES.card}>
           <h2 className="text-sky-400 font-black mb-8 uppercase text-xs tracking-widest flex items-center gap-3">
             <Camera size={18} /> Fotos do Veículo / Serviço ({fotos.length}/10)
@@ -202,7 +204,7 @@ export default function Amortecedor({
           </div>
         </div>
 
-        {/* 🛠️ DIAGNÓSTICO TÉCNICO - AMORTECEDORES */}
+        {/* DIAGNÓSTICO TÉCNICO - AMORTECEDORES */}
         <div className={STYLES.card}>
           <h2 className="text-sky-400 font-black mb-8 uppercase text-xs tracking-widest border-l-4 border-sky-500 pl-4">🔍 Diagnóstico Técnico - Amortecedores</h2>
 
@@ -254,16 +256,16 @@ export default function Amortecedor({
           </div>
         </div>
 
-        {/* 💰 VALORES DO SERVIÇO */}
+        {/* VALORES DO SERVIÇO */}
         <div className={STYLES.card}>
           <h2 className="text-sky-400 font-black mb-8 uppercase text-xs tracking-widest border-l-4 border-sky-500 pl-4">💰 Valores do Serviço</h2>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8 items-end font-mono">
             <div>
-              <label className="text-[10px] text-zinc-500 block mb-3 font-bold uppercase tracking-widest px-2 text-shadow-sm">Peças (R$)</label>
+              <label className="text-[10px] text-zinc-500 block mb-3 font-bold uppercase tracking-widest px-2">Peças (R$)</label>
               <input value={pecas} onChange={e => setPecas(e.target.value)} className={STYLES.input + " text-center text-xl"} />
             </div>
             <div>
-              <label className="text-[10px] text-zinc-500 block mb-3 font-bold uppercase tracking-widest px-2 text-shadow-sm">Mão de Obra (R$)</label>
+              <label className="text-[10px] text-zinc-500 block mb-3 font-bold uppercase tracking-widest px-2">Mão de Obra (R$)</label>
               <input value={maoDeObra} onChange={e => setMaoDeObra(e.target.value)} className={STYLES.input + " text-center text-xl"} />
             </div>
             <div className="bg-sky-950/30 border border-sky-500/30 p-6 rounded-[1.5rem] flex flex-col items-center shadow-lg">

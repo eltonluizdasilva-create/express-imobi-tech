@@ -1,7 +1,8 @@
-/* eslint-disable react/prop-types */
+﻿/* eslint-disable react/prop-types */
 import React, { useState, useEffect } from "react";
 import { db } from "./lib/firebase";
 import { doc, updateDoc } from "firebase/firestore";
+import { sincronizarRetornosAutomaticos } from "./lib/retornos";
 import {
   Mic, Save, X, CheckCircle, Camera, Plus, Trash2,
   AlertTriangle, ArrowRight, Droplets, Droplet, Sparkles,
@@ -18,8 +19,8 @@ const ServiceToggle = ({ icon: Icon, title, subtitle, active, onClick }) => (
   <button
     onClick={onClick}
     className={`w-full p-4 rounded-2xl flex flex-col items-start justify-center transition-all border text-left ${active
-        ? 'bg-cyan-600/10 border-cyan-500 shadow-[0_0_15px_rgba(6,182,212,0.15)]'
-        : 'bg-zinc-950/40 border-zinc-800 hover:bg-zinc-800/60'
+      ? 'bg-cyan-600/10 border-cyan-500 shadow-[0_0_15px_rgba(6,182,212,0.15)]'
+      : 'bg-zinc-950/40 border-zinc-800 hover:bg-zinc-800/60'
       }`}
   >
     <div className="flex items-center gap-2 mb-1">
@@ -39,8 +40,8 @@ export default function LavaJatoModulo({ oficinaId, osParaEditar, onCancelar, on
   const [fotos, setFotos] = useState([]);
 
   const [obsGerais, setObsGerais] = useState('');
-  const [pecas, setPecas] = useState('0,00');
-  const [maoDeObra, setMaoDeObra] = useState('0,00');
+  const [pecas, setPecas] = useState('0');
+  const [maoDeObra, setMaoDeObra] = useState('0');
 
   // Serviços de Lava Jato e Estética
   const [servicos, setServicos] = useState({
@@ -62,8 +63,8 @@ export default function LavaJatoModulo({ oficinaId, osParaEditar, onCancelar, on
     if (osParaEditar) {
       setObsGerais(osParaEditar.observacaoLavaJato || '');
       setFotos(osParaEditar.fotosLavaJato || []);
-      setPecas(osParaEditar.valorProdutosLavaJato || '0,00'); // Peças = Produtos no Lava Jato
-      setMaoDeObra(osParaEditar.valorMaoObraLavaJato || '0,00');
+      setPecas(osParaEditar.valorProdutosLavaJato || '0'); // Peças = Produtos no Lava Jato
+      setMaoDeObra(osParaEditar.valorMaoObraLavaJato || '0');
       if (osParaEditar.servicosLavaJato) setServicos(osParaEditar.servicosLavaJato);
     }
   }, [osParaEditar]);
@@ -112,7 +113,7 @@ export default function LavaJatoModulo({ oficinaId, osParaEditar, onCancelar, on
     setLoading(true);
     try {
       const vTotal = (parseFloat(pecas.replace(',', '.')) || 0) + (parseFloat(maoDeObra.replace(',', '.')) || 0);
-      await updateDoc(doc(db, 'oficinas', oficinaId, 'os', osParaEditar.id), {
+      const dadosLavaJato = {
         tipoServico: 'lavajato',
         servicosLavaJato: servicos,
         observacaoLavaJato: obsGerais,
@@ -121,7 +122,9 @@ export default function LavaJatoModulo({ oficinaId, osParaEditar, onCancelar, on
         valorMaoObraLavaJato: maoDeObra,
         totalLavaJato: vTotal,
         data_atualizacao: new Date().toISOString()
-      });
+      };
+      await updateDoc(doc(db, 'oficinas', oficinaId, 'os', osParaEditar.id), dadosLavaJato);
+      await sincronizarRetornosAutomaticos({ oficinaId, osId: osParaEditar.id, osData: dadosLavaJato, osBase: osParaEditar });
       setSuccess(true); if (onSalvo) onSalvo(); setTimeout(onCancelar, 1500);
     } catch (e) { console.error(e); } finally { setLoading(false); }
   };
@@ -247,7 +250,7 @@ export default function LavaJatoModulo({ oficinaId, osParaEditar, onCancelar, on
           </div>
         </div>
 
-        {/* 📷 CARROSSEL DE FOTOS (MÁX 10) */}
+        {/* 📸 CARROSSEL DE FOTOS (MÁX 10) */}
         <div className={STYLES.card}>
           <h2 className="text-zinc-500 font-black mb-6 uppercase text-xs tracking-widest flex items-center gap-2">
             <Camera size={16} /> Fotos do Antes/Depois ({fotos.length}/10)

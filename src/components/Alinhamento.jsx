@@ -1,7 +1,8 @@
-/* eslint-disable react/prop-types */
+﻿/* eslint-disable react/prop-types */
 import React, { useState, useEffect } from "react";
 import { db } from "../lib/firebase";
 import { doc, updateDoc } from "firebase/firestore";
+import { sincronizarRetornosAutomaticos } from "../lib/retornos";
 import {
     Mic, Save, X, CheckCircle, Camera, Plus, Trash2,
     AlertTriangle, ArrowRight, Disc, Target, Gauge,
@@ -18,8 +19,8 @@ const ToggleButton = ({ label, active, onClick }) => (
     <button
         onClick={onClick}
         className={`w-full py-4 px-4 rounded-xl font-black text-[11px] uppercase tracking-widest transition-all border ${active
-                ? 'bg-blue-600/20 border-blue-500 text-blue-400 shadow-[0_0_15px_rgba(59,130,246,0.3)]'
-                : 'bg-zinc-950/50 border-zinc-800 text-zinc-500 hover:bg-zinc-800 hover:text-zinc-300'
+            ? 'bg-blue-600/20 border-blue-500 text-blue-400 shadow-[0_0_15px_rgba(59,130,246,0.3)]'
+            : 'bg-zinc-950/50 border-zinc-800 text-zinc-500 hover:bg-zinc-800 hover:text-zinc-300'
             }`}
     >
         {label}
@@ -35,8 +36,8 @@ export default function Alinhamento({
     const [fotos, setFotos] = useState([]);
 
     const [obsAlinhamento, setObsAlinhamento] = useState('');
-    const [pecas, setPecas] = useState('0,00');
-    const [maoDeObra, setMaoDeObra] = useState('0,00');
+    const [pecas, setPecas] = useState('0');
+    const [maoDeObra, setMaoDeObra] = useState('0');
 
     // Estado dos Serviços (Botões de Liga/Desliga da sua imagem)
     const [servicos, setServicos] = useState({
@@ -63,8 +64,8 @@ export default function Alinhamento({
         if (osParaEditar) {
             setObsAlinhamento(osParaEditar.observacaoAlinhamento || '');
             setFotos(osParaEditar.fotosAlinhamento || []);
-            setPecas(osParaEditar.valorPecas || '0,00');
-            setMaoDeObra(osParaEditar.valorMaoObra || '0,00');
+            setPecas(osParaEditar.valorPecas || '0');
+            setMaoDeObra(osParaEditar.valorMaoObra || '0');
             setEstadoPneus(osParaEditar.estadoPneus || 'Bons');
             if (osParaEditar.servicosAlinhamento) {
                 setServicos(osParaEditar.servicosAlinhamento);
@@ -116,7 +117,7 @@ export default function Alinhamento({
         setLoading(true);
         try {
             const vTotal = (parseFloat(pecas.replace(',', '.')) || 0) + (parseFloat(maoDeObra.replace(',', '.')) || 0);
-            await updateDoc(doc(db, 'oficinas', oficinaId, 'os', osParaEditar.id), {
+            const dadosAlinhamento = {
                 tipoServico: 'alinhamento',
                 servicosAlinhamento: servicos,
                 estadoPneus: estadoPneus,
@@ -126,7 +127,9 @@ export default function Alinhamento({
                 valorMaoObra: maoDeObra,
                 totalAlinhamento: vTotal,
                 data_atualizacao: new Date().toISOString()
-            });
+            };
+            await updateDoc(doc(db, 'oficinas', oficinaId, 'os', osParaEditar.id), dadosAlinhamento);
+            await sincronizarRetornosAutomaticos({ oficinaId, osId: osParaEditar.id, osData: dadosAlinhamento, osBase: osParaEditar });
             setSuccess(true); if (onSalvo) onSalvo(); setTimeout(onCancelar, 1500);
         } catch (e) { console.error(e); } finally { setLoading(false); }
     };
@@ -168,7 +171,7 @@ export default function Alinhamento({
                     <button onClick={onCancelar} className="p-3 bg-zinc-900 rounded-2xl border border-zinc-800 hover:bg-zinc-800"><X size={28} /></button>
                 </div>
 
-                {/* 📷 CARROSSEL DE FOTOS (MÁX 5) */}
+                {/* 📸 CARROSSEL DE FOTOS (MÁX 5) */}
                 <div className={STYLES.card}>
                     <h2 className="text-blue-500 font-black mb-8 uppercase text-xs tracking-widest flex items-center gap-3">
                         <Camera size={18} /> Fotos do Veículo / Serviço ({fotos.length}/5)
@@ -216,8 +219,8 @@ export default function Alinhamento({
                                 key={estado}
                                 onClick={() => setEstadoPneus(estado)}
                                 className={`py-3 px-6 rounded-xl font-black text-xs uppercase tracking-widest transition-all border ${estadoPneus === estado
-                                        ? 'bg-blue-600/20 border-blue-500 text-blue-400 shadow-[0_0_15px_rgba(59,130,246,0.3)]'
-                                        : 'bg-zinc-950/50 border-zinc-800 text-zinc-500 hover:bg-zinc-800'
+                                    ? 'bg-blue-600/20 border-blue-500 text-blue-400 shadow-[0_0_15px_rgba(59,130,246,0.3)]'
+                                    : 'bg-zinc-950/50 border-zinc-800 text-zinc-500 hover:bg-zinc-800'
                                     }`}
                             >
                                 {estado}

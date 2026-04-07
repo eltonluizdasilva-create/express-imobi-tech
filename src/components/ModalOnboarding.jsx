@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+﻿import React, { useState } from 'react';
 import { Sparkles, X } from 'lucide-react';
 import { db } from '../lib/firebase';
 import { doc, setDoc } from 'firebase/firestore';
@@ -8,12 +8,13 @@ const MAIN = '#FF0033';
 const MODULOS_PADRAO_OCULTOS = ['Clientes', 'Copiloto IA'];
 const OPCOES_OFICINA = [
   { nome: 'MECÂNICA', cor: MAIN },
+  { nome: 'ELÉTRICA', cor: '#facc15' },
   { nome: 'HÍBRIDOS', cor: '#a855f7' },
+  { nome: '100% ELÉTRICOS', cor: '#22c55e' },
   { nome: 'MOTOS', cor: '#f97316' },
   { nome: 'FUNILARIA', cor: '#ec4899' },
   { nome: 'AMORTECEDOR', cor: '#f59e0b' },
   { nome: 'INJEÇÃO', cor: '#06b6d4' },
-  { nome: 'ELÉTRICOS', cor: '#eab308' },
   { nome: 'ALINHAMENTO', cor: '#6366f1' },
   { nome: 'ÓLEO', cor: '#84cc16' },
   { nome: 'REVISÃO', cor: '#14b8a6' },
@@ -22,7 +23,7 @@ const OPCOES_OFICINA = [
   { nome: 'DESMANCHE', cor: '#92400e' },
   { nome: 'ESCAPAMENTO', cor: '#6b7280' },
   { nome: 'LAVA JATO', cor: '#0ea5e9' },
-  { nome: 'ESTÉTICA', cor: '#f43f5e' },
+  { nome: 'ESTÉTICA', cor: '#f43f5e' }
 ];
 
 export default function ModalOnboarding({ onComplete, onClose }) {
@@ -137,15 +138,15 @@ export default function ModalOnboarding({ onComplete, onClose }) {
           <>
             {/* CARDS */}
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 mb-6">
-              {OPCOES_OFICINA.map((mod) => {
-                const ativo = modulosSelecionados.includes(mod.nome);
-                const cor = mod.cor || '#666';
+              {OPCOES_OFICINA.map((modulo) => {
+                const ativo = modulosSelecionados.includes(modulo.nome);
+                const cor = modulo.cor;
 
                 return (
                   <button
                     type="button"
-                    key={mod.nome}
-                    onClick={() => toggleModulo(mod.nome)}
+                    key={modulo.nome}
+                    onClick={() => toggleModulo(modulo.nome)}
                     className="relative text-left py-4 px-4 rounded-2xl border transition-all"
                     style={{
                       background: ativo ? `${cor}15` : '#0a0a0a',
@@ -157,7 +158,7 @@ export default function ModalOnboarding({ onComplete, onClose }) {
                   >
                     <div className="flex items-center justify-between">
                       <span style={{ color: ativo ? cor : '#555', fontSize: '10px', fontWeight: '800', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-                        {mod.nome}
+                        {modulo.nome}
                       </span>
                       <div style={{
                         width: '18px', height: '18px', borderRadius: '50%',

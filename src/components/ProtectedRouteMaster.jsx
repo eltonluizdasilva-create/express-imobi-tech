@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import {
   LayoutDashboard, Package, DollarSign, ClipboardList,
-  FileText, Users, LogOut, Lock, Zap, Star, History, Sparkles
+  FileText, Users, LogOut, Lock, Zap, Star, History, Sparkles, HelpCircle
 } from 'lucide-react';
 import { getAuth, signOut, onAuthStateChanged } from 'firebase/auth';
 import { getFirestore, collection, query, where, getDocs } from 'firebase/firestore';
 import { useNavigate } from 'react-router-dom';
+import BibliotecaTreinamento from './Ajuda';
 
 export default function DashboardOficina() {
   const [activeTab, setActiveTab] = useState('visao-geral');
@@ -28,6 +29,7 @@ export default function DashboardOficina() {
     { id: 'patrimonio', name: 'PATRIMÔNIO', icon: <Package size={20} />, color: '#2196f3', premium: true },
     { id: 'desmanche', name: 'DESMANCHE', icon: <Package size={20} />, color: '#ff5722', premium: true },
     { id: 'copiloto', name: 'COPILOTO IA', icon: <Sparkles size={20} />, color: '#ff0033', premium: true },
+    { id: 'ajuda', name: 'AJUDA', icon: <HelpCircle size={20} />, color: '#ff3131', premium: false },
   ];
 
   useEffect(() => {
@@ -95,51 +97,55 @@ export default function DashboardOficina() {
           )}
         </div>
 
-        {/* Grid de Módulos */}
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
-          {modules.map((module) => {
-            const hasAccess = !module.premium || isMaster;
+        {/* Grid de Módulos ou Ajuda */}
+        {activeTab === 'ajuda' ? (
+          <BibliotecaTreinamento />
+        ) : (
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
+            {modules.map((module) => {
+              const hasAccess = !module.premium || isMaster;
 
-            return (
-              <button
-                key={module.id}
-                onClick={() => hasAccess ? setActiveTab(module.id) : alert('🔒 Módulo Premium necessário. Faça upgrade para o plano Master.')}
-                className={`
-                  relative p-6 rounded-2xl border transition-all flex flex-col items-center gap-3
-                  ${activeTab === module.id ? 'bg-zinc-800 border-zinc-500 scale-105' : 'bg-zinc-900 border-zinc-800 hover:border-zinc-700'}
-                  ${!hasAccess ? 'opacity-60 cursor-not-allowed' : 'cursor-pointer hover:bg-zinc-800'}
-                `}
-              >
-                <div
-                  className="p-3 rounded-xl"
-                  style={{ backgroundColor: `${module.color}15`, color: module.color }}
+              return (
+                <button
+                  key={module.id}
+                  onClick={() => hasAccess ? setActiveTab(module.id) : alert('🔒 Módulo Premium necessário. Faça upgrade para o plano Master.')}
+                  className={`
+                    relative p-6 rounded-2xl border transition-all flex flex-col items-center gap-3
+                    ${activeTab === module.id ? 'bg-zinc-800 border-zinc-500 scale-105' : 'bg-zinc-900 border-zinc-800 hover:border-zinc-700'}
+                    ${!hasAccess ? 'opacity-60 cursor-not-allowed' : 'cursor-pointer hover:bg-zinc-800'}
+                  `}
                 >
-                  {module.icon}
-                </div>
-                <span className="text-[10px] font-black tracking-widest uppercase text-center leading-tight">
-                  {module.name}
-                </span>
-
-                {module.premium && !isMaster && (
-                  <div className="absolute top-3 right-3 text-zinc-600 bg-black/50 rounded-full p-1">
-                    <Lock size={12} />
+                  <div
+                    className="p-3 rounded-xl"
+                    style={{ backgroundColor: `${module.color}15`, color: module.color }}
+                  >
+                    {module.icon}
                   </div>
-                )}
+                  <span className="text-[10px] font-black tracking-widest uppercase text-center leading-tight">
+                    {module.name}
+                  </span>
 
-                {module.premium && isMaster && (
-                  <div className="absolute top-3 right-3 text-yellow-500 animate-pulse">
-                    <Star size={12} fill="currentColor" />
-                  </div>
-                )}
-              </button>
-            );
-          })}
-        </div>
+                  {module.premium && !isMaster && (
+                    <div className="absolute top-3 right-3 text-zinc-600 bg-black/50 rounded-full p-1">
+                      <Lock size={12} />
+                    </div>
+                  )}
+
+                  {module.premium && isMaster && (
+                    <div className="absolute top-3 right-3 text-yellow-500 animate-pulse">
+                      <Star size={12} fill="currentColor" />
+                    </div>
+                  )}
+                </button>
+              );
+            })}
+          </div>
+        )}
       </main>
 
       {/* Menu Inferior */}
       <nav className="fixed bottom-6 left-1/2 -translate-x-1/2 bg-black/90 backdrop-blur-2xl border border-zinc-800 p-2 rounded-2xl flex gap-2 shadow-2xl z-50">
-        <button onClick={() => navigate('/')} className="px-6 py-2 rounded-xl bg-zinc-800 text-white font-bold text-[10px] uppercase tracking-tighter">Início</button>
+        <button onClick={() => setActiveTab('visao-geral')} className="px-6 py-2 rounded-xl bg-zinc-800 text-white font-bold text-[10px] uppercase tracking-tighter">Início</button>
         <button onClick={() => navigate('/admin-master')} className="px-6 py-2 rounded-xl text-zinc-500 hover:text-white font-bold text-[10px] uppercase tracking-tighter">Master</button>
       </nav>
     </div>

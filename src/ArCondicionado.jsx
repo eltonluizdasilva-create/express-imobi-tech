@@ -1,7 +1,8 @@
-/* eslint-disable react/prop-types */
+﻿/* eslint-disable react/prop-types */
 import React, { useState, useEffect } from "react";
 import { db } from "./lib/firebase";
 import { doc, updateDoc } from "firebase/firestore";
+import { sincronizarRetornosAutomaticos } from "./lib/retornos";
 import {
   Mic, Save, X, CheckCircle, Camera, Plus, Trash2,
   AlertTriangle, ArrowRight, Snowflake, Wrench, Sparkles,
@@ -18,8 +19,8 @@ const GasButton = ({ label, active, onClick }) => (
   <button
     onClick={onClick}
     className={`py-3 px-6 rounded-full font-black text-xs uppercase tracking-widest transition-all border ${active
-        ? 'bg-cyan-600/20 border-cyan-500 text-cyan-400 shadow-[0_0_15px_rgba(6,182,212,0.3)]'
-        : 'bg-zinc-950/50 border-zinc-800 text-zinc-500 hover:bg-zinc-800 hover:text-zinc-300'
+      ? 'bg-cyan-600/20 border-cyan-500 text-cyan-400 shadow-[0_0_15px_rgba(6,182,212,0.3)]'
+      : 'bg-zinc-950/50 border-zinc-800 text-zinc-500 hover:bg-zinc-800 hover:text-zinc-300'
       }`}
   >
     {label}
@@ -31,8 +32,8 @@ const ServiceToggle = ({ icon: Icon, title, subtitle, active, onClick }) => (
   <button
     onClick={onClick}
     className={`w-full p-4 rounded-2xl flex flex-col items-start justify-center transition-all border text-left ${active
-        ? 'bg-cyan-600/10 border-cyan-500 shadow-[0_0_15px_rgba(6,182,212,0.15)]'
-        : 'bg-zinc-950/40 border-zinc-800 hover:bg-zinc-800/60'
+      ? 'bg-cyan-600/10 border-cyan-500 shadow-[0_0_15px_rgba(6,182,212,0.15)]'
+      : 'bg-zinc-950/40 border-zinc-800 hover:bg-zinc-800/60'
       }`}
   >
     <div className="flex items-center gap-2 mb-1">
@@ -54,8 +55,8 @@ export default function ArCondicionadoModulo({ oficinaId, osParaEditar, onCancel
   // Estados do Ar-Condicionado
   const [tipoGas, setTipoGas] = useState('R134a');
   const [obsGerais, setObsGerais] = useState('');
-  const [pecas, setPecas] = useState('0,00');
-  const [maoDeObra, setMaoDeObra] = useState('0,00');
+  const [pecas, setPecas] = useState('0');
+  const [maoDeObra, setMaoDeObra] = useState('0');
 
   const [servicos, setServicos] = useState({
     manutencaoGeral: false,
@@ -75,8 +76,8 @@ export default function ArCondicionadoModulo({ oficinaId, osParaEditar, onCancel
       setTipoGas(osParaEditar.tipoGasAr || 'R134a');
       setObsGerais(osParaEditar.observacaoAr || '');
       setFotos(osParaEditar.fotosAr || []);
-      setPecas(osParaEditar.valorPecas || '0,00');
-      setMaoDeObra(osParaEditar.valorMaoObra || '0,00');
+      setPecas(osParaEditar.valorPecas || '0');
+      setMaoDeObra(osParaEditar.valorMaoObra || '0');
       if (osParaEditar.servicosAr) setServicos(osParaEditar.servicosAr);
     }
   }, [osParaEditar]);
@@ -125,7 +126,7 @@ export default function ArCondicionadoModulo({ oficinaId, osParaEditar, onCancel
     setLoading(true);
     try {
       const vTotal = (parseFloat(pecas.replace(',', '.')) || 0) + (parseFloat(maoDeObra.replace(',', '.')) || 0);
-      await updateDoc(doc(db, 'oficinas', oficinaId, 'os', osParaEditar.id), {
+      const dadosAr = {
         tipoServico: 'ar-condicionado',
         tipoGasAr: tipoGas,
         servicosAr: servicos,
@@ -135,7 +136,9 @@ export default function ArCondicionadoModulo({ oficinaId, osParaEditar, onCancel
         valorMaoObra: maoDeObra,
         totalAr: vTotal,
         data_atualizacao: new Date().toISOString()
-      });
+      };
+      await updateDoc(doc(db, 'oficinas', oficinaId, 'os', osParaEditar.id), dadosAr);
+      await sincronizarRetornosAutomaticos({ oficinaId, osId: osParaEditar.id, osData: dadosAr, osBase: osParaEditar });
       setSuccess(true); if (onSalvo) onSalvo(); setTimeout(onCancelar, 1500);
     } catch (e) { console.error(e); } finally { setLoading(false); }
   };
@@ -265,7 +268,7 @@ export default function ArCondicionadoModulo({ oficinaId, osParaEditar, onCancel
           </div>
         </div>
 
-        {/* 📷 CARROSSEL DE FOTOS (MÁX 10) - Igual a imagem 428628 */}
+        {/* 📸 CARROSSEL DE FOTOS (MÁX 10) - Igual a imagem 428628 */}
         <div className={STYLES.card}>
           <h2 className="text-zinc-500 font-black mb-6 uppercase text-xs tracking-widest flex items-center gap-2">
             <Camera size={16} /> Fotos ({fotos.length}/10)

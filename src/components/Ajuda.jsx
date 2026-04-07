@@ -1,334 +1,430 @@
-import React, { useState } from 'react';
-import { ChevronDown, HelpCircle, Video, MessageCircle, ExternalLink, Play } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { getDoc, doc } from 'firebase/firestore';
+import { db } from '../lib/firebase';
+import {
+  Settings, FileText, History, MousePointer2, LayoutDashboard, Package,
+  DollarSign, Users, ClipboardList, Receipt, Landmark, Truck,
+  CreditCard, UserPlus, Megaphone, Rocket, HelpCircle, Wrench, Battery,
+  Zap, Bike, Car, Hammer, Activity, Cpu, MoveHorizontal, Droplet,
+  ShieldCheck, Snowflake, Circle, Scissors, Wind, CloudRain, Sparkles,
+  Brain, Briefcase, Shield, Calculator, ShoppingCart, Play, Info, Video
+} from 'lucide-react';
 
-const MANUAL_CSS = `
-  details[open] .chevron-ajuda {
-    transform: rotate(180deg) !important;
+const ESTILO_BIBLIOTECA = `
+  .container-biblioteca { background: #000; min-height: 100vh; padding: 40px 20px; font-family: sans-serif; color: white; padding-bottom: 100px; }
+  .wrapper { maxWidth: 1100px; margin: 0 auto; }
+  
+  .video-principal { 
+    background: linear-gradient(145deg, #111, #050505); 
+    border: 1px solid #333; border-radius: 24px; padding: 30px; 
+    margin-bottom: 50px; display: flex; align-items: center; gap: 25px;
+    box-shadow: 0 10px 40px rgba(255,49,49,0.1);
   }
-  details > summary::-webkit-details-marker {
-    display: none;
+  
+  .item-biblioteca { 
+    background: #0d0d0d; border: 1px solid #1a1a1a; border-radius: 16px; 
+    padding: 16px; margin-bottom: 12px; display: flex; align-items: center; gap: 15px; 
+    transition: 0.2s;
   }
+  .item-biblioteca:hover { border-color: #ff3131; background: #111; }
+  
+  .icone-box { 
+    width: 45px; height: 45px; background: #1a1a1a; border-radius: 12px; 
+    display: flex; align-items: center; justify-content: center; flex-shrink: 0; 
+  }
+  .label-nome { width: 170px; font-size: 13px; font-weight: 800; color: #fff; text-transform: uppercase; }
+  
+  .botao-video { 
+    background: #151515; border: 1px solid #222; border-radius: 8px; color: #888;
+    padding: 10px 15px; font-size: 11px; font-weight: 700; text-decoration: none;
+    display: flex; align-items: center; gap: 8px; min-width: 140px; justify-content: center;
+    transition: 0.2s;
+  }
+  .botao-video.ativo:hover { background: #ff3131; color: white; border-color: #ff3131; }
+  .botao-video.inativo { opacity: 0.4; pointer-events: none; }
+  
+  .box-resumo { 
+    background: #080808; border: 1px solid #151515; border-radius: 10px; 
+    padding: 12px 18px; color: #777; font-size: 12px; flex: 1; line-height: 1.5; 
+  }
+  .titulo-sessao { color: #ff3131; font-size: 14px; font-weight: 900; margin: 40px 0 15px; display: flex; align-items: center; gap: 10px; text-transform: uppercase; letter-spacing: 1px; }
 `;
 
-const MANUAL_ITENS = [
-  {
-    categoria: '⚙️ Mecânica',
-    sessoes: [
-      {
-        titulo: 'Como criar uma nova Ordem de Serviço?',
-        resposta: 'Clique no botão "+ Nova O.S." no topo da tela. Preencha os dados do cliente, veículo e serviço. Adicione fotos se necessário. Clique em salvar para registrar a O.S. no sistema.',
-        video: 'Criando sua primeira O.S.',
-      },
-      {
-        titulo: 'Como adicionar fotos e laudos?',
-        resposta: 'Na tela da O.S., use o botão de câmera para anexar fotos do veículo. Você pode adicionar legendas e diagnósticos. O laudo é gerado automaticamente e pode ser enviado ao cliente.',
-        video: 'Fotos e Laudos',
-      },
-      {
-        titulo: 'Como funciona o checklist de serviços?',
-        resposta: 'Use o checklist para marcar os serviços realizados. Cada item marcado aparece no laudo final. Você pode personalizar os itens em Ajustes.',
-        video: 'Checklist de Serviços',
-      },
-    ],
-  },
-  {
-    categoria: '🚗 Lataria & Pintura',
-    sessoes: [
-      {
-        titulo: 'Como registrar um serviço de funilaria?',
-        resposta: 'Acesse a aba Funilaria, clique em "Novo Serviço". Preencha o tipo de reparo, peças envolvidas e valore. O sistema gera um laudo detalhado.',
-        video: 'Serviços de Funilaria',
-      },
-      {
-        titulo: 'Como enviar laudos ao cliente?',
-        resposta: 'Na O.S. da funilaria, clique em "Compartilhar Laudo". Um link é gerado e enviado via WhatsApp. O cliente acompanha o andamento pelo navegador.',
-        video: 'Enviando Laudos',
-      },
-    ],
-  },
-  {
-    categoria: '🛢️ Óleo & Lubrificação',
-    sessoes: [
-      {
-        titulo: 'Como registrar uma troca de óleo?',
-        resposta: 'Vá em Óleo, preencha o veículo, óleo utilizado, filtro e kilometragem. O sistema salva automaticamente no histórico do cliente.',
-        video: 'Troca de Óleo',
-      },
-      {
-        titulo: 'Como acompanhar histórico de trocas?',
-        resposta: 'O histórico aparece automaticamente na tela do cliente. Você também pode consultar em Leads > veículo específico.',
-        video: 'Histórico do Veículo',
-      },
-    ],
-  },
-  {
-    categoria: '💰 Gestão & Financeiro',
-    sessoes: [
-      {
-        titulo: 'Como funciona o módulo de Financeiro?',
-        resposta: 'Registre entradas (pagamentos recebidos) e despesas (pecas, salários, contas). O sistema calcula automaticamente o lucro do período.',
-        video: 'Financeiro em 5 Minutos',
-      },
-      {
-        titulo: 'Como cadastrar peças no estoque?',
-        resposta: 'Vá em Estoque, clique em "+ Nova Peça". Preencha nome, código, quantidade e valor. O estoque é atualizado após cada O.S.',
-        video: 'Gestão de Estoque',
-      },
-      {
-        titulo: 'Como funciona o módulo de Leads?',
-        resposta: 'Gerencie potenciais clientes em Leads. Adicione com nome, telefone e interesse. Acompanhe o status de cada um e converta em cliente.',
-        video: 'Gerenciando Leads',
-      },
-    ],
-  },
-  {
-    categoria: '🤖 Inteligência Artificial',
-    sessoes: [
-      {
-        titulo: 'Como usar o Copiloto IA?',
-        resposta: 'O Copiloto analisa fotos do veículo e sugere defeitos. Clique no ícone 🧠 na O.S. para acionar. Ele gera textos profissionais para laudos.',
-        video: 'Usando a IA do Copiloto',
-      },
-      {
-        titulo: 'Como usar a Secretária IA?',
-        resposta: 'A Secretária IA responde mensagens automaticamente no WhatsApp. Configure palavras-chave em Ajustes > IA para ativar.',
-        video: 'Secretária IA',
-      },
-      {
-        titulo: 'O Administrador IA gera insights?',
-        resposta: 'Sim! O Administrador analisa padrões de serviços, indica horários de pico e sugere ações. Abra a aba para ver os insights atualizados.',
-        video: 'Insights com IA',
-      },
-    ],
-  },
-  {
-    categoria: '📱 Uso Geral',
-    sessoes: [
-      {
-        titulo: 'Posso usar no celular?',
-        resposta: 'Sim! O sistema é responsivo e funciona perfeitamente em smartphones e tablets. Abra no navegador do seu celular.',
-        video: 'Versão Mobile',
-      },
-      {
-        titulo: 'Como exportar relatórios?',
-        resposta: 'Em Financeiro, use o botão "Exportar". Escolha o período e o formato. O download inicia automaticamente.',
-        video: 'Exportando Relatórios',
-      },
-    ],
-  },
-];
+export default function BibliotecaTreinamento() {
+  const [links, setLinks] = useState({});
+  const [textos, setTextos] = useState({});
 
-const VIDEOS = [
-  { titulo: 'Introdução ao Sistema', duracao: '3:45' },
-  { titulo: 'Criando sua primeira O.S.', duracao: '5:12' },
-  { titulo: 'Gerenciando Leads', duracao: '4:30' },
-  { titulo: 'Financeiro e Fluxo de Caixa', duracao: '6:15' },
-  { titulo: 'Usando a IA do Copiloto', duracao: '7:00' },
-  { titulo: 'Configurando Módulos', duracao: '3:20' },
-];
+  useEffect(() => {
+    const fetchConfig = async () => {
+      try {
+        const snap = await getDoc(doc(db, "configuracoes_admin", "videos"));
+        if (snap.exists()) {
+          const data = snap.data();
+          setLinks(data.videos || {});
+          setTextos(data.resumos || {});
+          console.log("[Ajuda] Dados carregados:", data);
+        } else {
+          console.log("[Ajuda] Nenhum dado de ajuda encontrado.");
+        }
+      } catch (error) {
+        console.error("Erro ao buscar dados de ajuda:", error);
+      }
+    };
+    fetchConfig();
+  }, []);
 
-export default function Ajuda({ ajudaItens, tabColors = {} }) {
-  const [videoOpen, setVideoOpen] = useState(null);
-  const ajudaColor = tabColors?.ajuda || '#06b6d4';
+  // Função para renderizar o botão. Se o link existir no Master, ele fica vermelho e clicável.
+  const renderBotaoVideo = (link) => {
+    if (link && link.trim() !== "") {
+      return (
+        <a href={link} target="_blank" rel="noreferrer" className="botao-video ativo">
+          <Video size={14} fill="currentColor" /> Assistir Aula
+        </a>
+      );
+    }
+    return (
+      <span className="botao-video inativo">
+        <Video size={14} /> Sem Vídeo
+      </span>
+    );
+  };
 
   return (
-    <div>
-      <style>{MANUAL_CSS}</style>
+    <div className="container-biblioteca">
+      <style>{ESTILO_BIBLIOTECA}</style>
+      <div className="wrapper">
 
-      {/* ── HEADER ── */}
-      <div style={{
-        background: 'linear-gradient(145deg, #111, #1a1a1a)',
-        padding: '28px', borderRadius: '16px',
-        border: `1px solid ${ajudaColor}`,
-        marginBottom: '20px',
-        boxShadow: `0 8px 32px ${ajudaColor}18`,
-        textAlign: 'center',
-      }}>
-        <div style={{
-          width: '56px', height: '56px', borderRadius: '50%',
-          background: `${ajudaColor}22`,
-          display: 'flex', alignItems: 'center', justifyContent: 'center',
-          margin: '0 auto 14px',
-        }}>
-          <HelpCircle size={28} color={ajudaColor} />
+        {/* ── VÍDEO PRINCIPAL DE INTRODUÇÃO ── */}
+        <div className="video-principal">
+          <div style={{ width: '70px', height: '70px', background: '#ff3131', borderRadius: '20px', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 0 20px rgba(255,49,49,0.4)', flexShrink: 0 }}>
+            <Play size={32} color="black" fill="black" />
+          </div>
+          <div style={{ flex: 1 }}>
+            <h1 style={{ margin: 0, fontSize: '24px', fontWeight: '900' }}>DOMINANDO O OFICINA IA</h1>
+            <p style={{ margin: '5px 0 0', color: '#888', fontSize: '14px' }}>
+              {textos.principal || "Assista ao tour completo e entenda o fluxo de trabalho do sistema."}
+            </p>
+          </div>
+          <a href={links.principal || "#"} target="_blank" rel="noreferrer" className="botao-video ativo" style={{ background: '#ff3131', color: 'white', padding: '15px 30px', fontSize: '14px' }}>
+            <Play size={16} fill="white" /> AULA PRINCIPAL
+          </a>
         </div>
-        <h2 style={{ color: 'white', margin: '0 0 8px 0', fontSize: '20px', fontWeight: '900' }}>
-          Central de Suporte
-        </h2>
-        <p style={{ color: '#888', margin: 0, fontSize: '13px', lineHeight: '1.6' }}>
-          Encontre respostas rápidas, assista tutoriais em vídeo<br />ou fale com nossa equipe.
-        </p>
-      </div>
 
-      {/* ── VÍDEOS ── */}
-      <div style={{
-        background: '#111', borderRadius: '16px',
-        border: '1px solid #1e1e1e', marginBottom: '20px', overflow: 'hidden',
-      }}>
-        <div style={{
-          padding: '16px 20px', borderBottom: '1px solid #1e1e1e',
-          display: 'flex', alignItems: 'center', gap: '10px',
-        }}>
-          <Video size={18} color={ajudaColor} />
-          <span style={{ color: 'white', fontSize: '13px', fontWeight: '800' }}>
-            🎬 Tutoriais em Vídeo
-          </span>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '30px' }}>
+          <Info size={20} color="#ff3131" />
+          <h2 style={{ fontSize: '18px', fontWeight: '900', margin: 0 }}>BIBLIOTECA DE VÍDEOS E RESUMOS</h2>
         </div>
-        <div style={{ padding: '12px' }}>
-          {VIDEOS.map((v, i) => (
-            <div key={i} style={{
-              display: 'flex', alignItems: 'center', gap: '12px',
-              padding: '12px', borderRadius: '10px',
-              background: videoOpen === i ? `${ajudaColor}10` : '#0a0a0a',
-              marginBottom: '6px',
-              cursor: 'pointer',
-              border: videoOpen === i ? `1px solid ${ajudaColor}44` : '1px solid transparent',
-              transition: 'all 0.15s',
-            }}
-              onClick={() => setVideoOpen(videoOpen === i ? null : i)}
-            >
-              <div style={{
-                width: '40px', height: '40px', borderRadius: '10px',
-                background: `${ajudaColor}22`,
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                flexShrink: 0,
-              }}>
-                <Play size={16} color={ajudaColor} fill={ajudaColor} />
-              </div>
-              <div style={{ flex: 1, minWidth: 0 }}>
-                <p style={{
-                  color: videoOpen === i ? ajudaColor : 'white',
-                  fontSize: '12px', fontWeight: '700', margin: 0,
-                  overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
-                }}>
-                  {v.titulo}
-                </p>
-                <p style={{ color: '#555', fontSize: '10px', margin: '2px 0 0' }}>
-                  {v.duracao}
-                </p>
-              </div>
-              <ExternalLink size={14} color="#333" style={{ flexShrink: 0 }} />
-            </div>
-          ))}
-        </div>
-      </div>
 
-      {/* ── MANUAL (ACCORDION) ── */}
-      <div style={{
-        background: '#111', borderRadius: '16px',
-        border: `1px solid ${ajudaColor}33`, marginBottom: '20px', overflow: 'hidden',
-      }}>
-        <div style={{
-          padding: '16px 20px', borderBottom: `1px solid ${ajudaColor}22`,
-          display: 'flex', alignItems: 'center', gap: '10px',
-        }}>
-          <HelpCircle size={18} color={ajudaColor} />
-          <span style={{ color: 'white', fontSize: '14px', fontWeight: '800' }}>
-            📖 Manual de Uso Rápido
-          </span>
-        </div>
-        <div style={{ padding: '12px' }}>
-          {MANUAL_ITENS.map((cat, ci) => (
-            <details key={ci} style={{ marginBottom: '8px' }}>
-              <summary style={{
-                padding: '12px 16px', cursor: 'pointer',
-                background: '#0a0a0a', borderRadius: '10px',
-                color: '#ccc', fontSize: '12px', fontWeight: '800',
-                listStyle: 'none', display: 'flex', alignItems: 'center', gap: '8px',
-                userSelect: 'none', border: '1px solid #1e1e1e',
-              }}>
-                <ChevronDown
-                  size={14}
-                  style={{ color: '#555', flexShrink: 0, transition: 'transform 0.2s' }}
-                  className="chevron-ajuda"
-                />
-                {cat.categoria}
-              </summary>
-              <div style={{ padding: '8px 0 4px' }}>
-                {cat.sessoes.map((sessao, si) => (
-                  <details key={si} style={{ marginBottom: '4px' }}>
-                    <summary style={{
-                      padding: '10px 14px', cursor: 'pointer',
-                      background: '#0d0d0d', borderRadius: '8px',
-                      color: '#999', fontSize: '11px', fontWeight: '700',
-                      listStyle: 'none',
-                      userSelect: 'none',
-                    }}>
-                      <ChevronDown
-                        size={12}
-                        style={{ color: '#444', flexShrink: 0, marginRight: '6px', display: 'inline' }}
-                        className="chevron-ajuda"
-                      />
-                      {sessao.titulo}
-                    </summary>
-                    <div style={{
-                      padding: '12px 14px',
-                      background: '#0a0a0a',
-                      borderLeft: `2px solid ${ajudaColor}44`,
-                      marginLeft: '12px',
-                      borderRadius: '0 0 8px 8px',
-                    }}>
-                      <p style={{
-                        color: '#888', fontSize: '11px', lineHeight: '1.7',
-                        margin: '0 0 12px 0',
-                      }}>
-                        {sessao.resposta}
-                      </p>
-                      <a
-                        href={`https://wa.me/5534991439845?text=${encodeURIComponent(`Olá! Quero assistir o vídeo: ${sessao.video}`)}`}
-                        target="_blank"
-                        rel="noreferrer"
-                        style={{
-                          display: 'inline-flex', alignItems: 'center', gap: '6px',
-                          padding: '8px 16px', borderRadius: '20px',
-                          background: 'linear-gradient(135deg, #FF0033, #ff3366)',
-                          color: 'white', fontSize: '11px', fontWeight: '800',
-                          textDecoration: 'none',
-                          boxShadow: '0 4px 12px #FF003344',
-                        }}
-                      >
-                        <Play size={10} fill="white" />
-                        Ver Vídeo: {sessao.video}
-                      </a>
-                    </div>
-                  </details>
-                ))}
-              </div>
-            </details>
-          ))}
-        </div>
-      </div>
+        {/* ==========================================
+            SESSÃO 1: CONFIGURAÇÃO INICIAL
+        ========================================== */}
+        <div className="titulo-sessao"><div style={{ width: 4, height: 15, background: '#ff3131' }} /> 1. Configuração Inicial</div>
 
-      {/* ── SUPORTE ── */}
-      <div style={{
-        background: 'linear-gradient(145deg, #0d1f0d, #0a1a0a)',
-        borderRadius: '16px',
-        border: '1px solid #22c55e44',
-        padding: '24px', textAlign: 'center',
-        marginBottom: '20px',
-      }}>
-        <p style={{ color: '#555', fontSize: '11px', fontWeight: '800', textTransform: 'uppercase', letterSpacing: '2px', marginBottom: '14px' }}>
-          Precisa de ajuda personalizada?
-        </p>
-        <a
-          href="https://wa.me/5534991439845?text=Olá! Preciso de ajuda com o sistema Oficina IA."
-          target="_blank"
-          rel="noreferrer"
-          style={{
-            display: 'inline-flex', alignItems: 'center', gap: '8px',
-            padding: '14px 28px', borderRadius: '30px',
-            background: '#22c55e', color: 'black',
-            fontWeight: '900', fontSize: '13px',
-            textDecoration: 'none',
-            boxShadow: '0 4px 20px #22c55e44',
-          }}
-        >
-          <MessageCircle size={18} />
-          Falar com Suporte no WhatsApp
-        </a>
-        <p style={{ color: '#444', fontSize: '10px', marginTop: '12px' }}>
-          Resposta em até 2 horas úteis
-        </p>
+        <div className="item-biblioteca">
+          <div className="icone-box"><Settings size={20} color="#ff3131" /></div>
+          <div className="label-nome">⚙️ Ajustes</div>
+          {renderBotaoVideo(links.config)}
+          <div className="box-resumo">{textos.config || "Esse é o primeiro passo! Coloque seus dados, logo da empresa e sua chave PIX. Assim, quando for emitir o recibo, os dados da empresa e seu PIX já estarão lá."}</div>
+        </div>
+
+        {/* ==========================================
+            SESSÃO 2: OPERACIONAL (CORAÇÃO DO APP)
+        ========================================== */}
+        <div className="titulo-sessao"><div style={{ width: 4, height: 15, background: '#ff3131' }} /> 2. Operacional (Coração do App)</div>
+
+        <div className="item-biblioteca">
+          <div className="icone-box"><FileText size={20} color="#00e5ff" /></div>
+          <div className="label-nome">OS (Ordem de Serviço)</div>
+          {renderBotaoVideo(links.os)}
+          <div className="box-resumo">{textos.os || "O coração do app. Aqui você coloca os dados do cliente, manda orçamentos, faz recibos, fecha pagamento (PIX), manda o link para o cliente e escolhe/edita os serviços."}</div>
+        </div>
+
+        <div className="item-biblioteca">
+          <div className="icone-box"><History size={20} color="#a855f7" /></div>
+          <div className="label-nome">📅 Retorno</div>
+          {renderBotaoVideo(links.retorno)}
+          <div className="box-resumo">{textos.retorno || "Totalmente integrado. Ele avisa automaticamente sobre os prazos de serviços como Elétrica (Bateria), Troca de Óleo e revisões já realizadas."}</div>
+        </div>
+
+        <div className="item-biblioteca">
+          <div className="icone-box"><MousePointer2 size={20} color="#22c55e" /></div>
+          <div className="label-nome">Botões Flutuantes</div>
+          {renderBotaoVideo(links.botoesFlutuantes)}
+          <div className="box-resumo">{textos.botoesFlutuantes || "Entenda para que servem os atalhos rápidos flutuantes que agilizam o atendimento sem precisar sair da tela atual."}</div>
+        </div>
+
+        {/* ==========================================
+            SESSÃO 3: GESTÃO E RELATÓRIOS
+        ========================================== */}
+        <div className="titulo-sessao"><div style={{ width: 4, height: 15, background: '#ff3131' }} /> 3. Gestão e Relatórios</div>
+
+        <div className="item-biblioteca">
+          <div className="icone-box"><LayoutDashboard size={20} /></div>
+          <div className="label-nome">📊 Visão Geral</div>
+          {renderBotaoVideo(links.dashboard)}
+          <div className="box-resumo">{textos.dashboard || "Painel de controle com faturamento estimado, ticket médio e visão em tempo real da produtividade da oficina."}</div>
+        </div>
+
+        <div className="item-biblioteca">
+          <div className="icone-box"><Package size={20} /></div>
+          <div className="label-nome">📦 Estoque</div>
+          {renderBotaoVideo(links.estoque)}
+          <div className="box-resumo">{textos.estoque || "Controle completo de peças e insumos, com histórico de entradas e saídas e alertas de quantidade mínima."}</div>
+        </div>
+
+        <div className="item-biblioteca">
+          <div className="icone-box"><DollarSign size={20} color="#00e676" /></div>
+          <div className="label-nome">📊 Financeiro</div>
+          {renderBotaoVideo(links.financeiro)}
+          <div className="box-resumo">{textos.financeiro || "Seu fluxo de caixa. Controle de contas a pagar, contas a receber e fechamentos diários e mensais."}</div>
+        </div>
+
+        <div className="item-biblioteca">
+          <div className="icone-box"><Users size={20} /></div>
+          <div className="label-nome">👥 Clientes</div>
+          {renderBotaoVideo(links.clientes)}
+          <div className="box-resumo">{textos.clientes || "Base de dados centralizada com todos os seus clientes, histórico de consumo e gerenciamento de leads."}</div>
+        </div>
+
+        <div className="item-biblioteca">
+          <div className="icone-box"><ClipboardList size={20} /></div>
+          <div className="label-nome">📋 Tarefa</div>
+          {renderBotaoVideo(links.tarefa)}
+          <div className="box-resumo">{textos.tarefa || "Organização interna. Atribua e acompanhe tarefas diárias para a sua equipe não deixar nada para trás."}</div>
+        </div>
+
+        <div className="item-biblioteca">
+          <div className="icone-box"><Receipt size={20} color="#03a9f4" /></div>
+          <div className="label-nome">📄 Nota Fiscal</div>
+          {renderBotaoVideo(links.notafiscal)}
+          <div className="box-resumo">{textos.notafiscal || "Módulo integrado para emissão rápida de notas fiscais diretamente dos serviços fechados."}</div>
+        </div>
+
+        <div className="item-biblioteca">
+          <div className="icone-box"><Landmark size={20} /></div>
+          <div className="label-nome">📊 Patrimônio</div>
+          {renderBotaoVideo(links.patrimonio)}
+          <div className="box-resumo">{textos.patrimonio || "Gestão e controle de ferramentas, maquinários, elevadores e ativos da própria oficina."}</div>
+        </div>
+
+        <div className="item-biblioteca">
+          <div className="icone-box"><Truck size={20} /></div>
+          <div className="label-nome">🤝 Fornecedores</div>
+          {renderBotaoVideo(links.fornecedores)}
+          <div className="box-resumo">{textos.fornecedores || "Catálogo de parceiros, autopeças e distribuidores para cotações rápidas e histórico de compras."}</div>
+        </div>
+
+        <div className="item-biblioteca">
+          <div className="icone-box"><History size={20} /></div>
+          <div className="label-nome">📋 Histórico</div>
+          {renderBotaoVideo(links.historico)}
+          <div className="box-resumo">{textos.historico || "Linha do tempo auditável de tudo que acontece no sistema, garantindo segurança e transparência."}</div>
+        </div>
+
+        <div className="item-biblioteca">
+          <div className="icone-box"><CreditCard size={20} color="#ffc107" /></div>
+          <div className="label-nome">💰 Meu Plano</div>
+          {renderBotaoVideo(links.meuplano)}
+          <div className="box-resumo">{textos.meuplano || "Gestão da sua assinatura Oficina IA, slots disponíveis, pagamento e upgrade de recursos."}</div>
+        </div>
+
+        {/* ==========================================
+            SESSÃO 4: ESTRATÉGIA E EQUIPE
+        ========================================== */}
+        <div className="titulo-sessao"><div style={{ width: 4, height: 15, background: '#ff3131' }} /> 4. Equipe e Crescimento</div>
+
+        <div className="item-biblioteca">
+          <div className="icone-box"><UserPlus size={20} /></div>
+          <div className="label-nome">👥 Equipe</div>
+          {renderBotaoVideo(links.equipe)}
+          <div className="box-resumo">{textos.equipe || "Controle de acessos, comissões e acompanhamento de produtividade por mecânico ou funcionário."}</div>
+        </div>
+
+        <div className="item-biblioteca">
+          <div className="icone-box"><Megaphone size={20} color="#ff3131" /></div>
+          <div className="label-nome">📣 Marketing</div>
+          {renderBotaoVideo(links.marketing)}
+          <div className="box-resumo">{textos.marketing || "Ferramentas para envio de campanhas promocionais e reativação de clientes diretamente via WhatsApp."}</div>
+        </div>
+
+        <div className="item-biblioteca">
+          <div className="icone-box"><Rocket size={20} color="#00e5ff" /></div>
+          <div className="label-nome">🚀 Estratégia</div>
+          {renderBotaoVideo(links.estrategia)}
+          <div className="box-resumo">{textos.estrategia || "Análises avançadas e Inteligência de Negócio (BI) para direcionar o crescimento do faturamento da sua oficina."}</div>
+        </div>
+
+        <div className="item-biblioteca">
+          <div className="icone-box"><HelpCircle size={20} /></div>
+          <div className="label-nome">❓ Ajuda</div>
+          {renderBotaoVideo(links.ajuda)}
+          <div className="box-resumo">{textos.ajuda || "Central de suporte rápido para falar diretamente com nosso atendimento em caso de dúvidas."}</div>
+        </div>
+
+        {/* ==========================================
+            SESSÃO 5: ESPECIALIDADES TÉCNICAS (17 ITENS)
+        ========================================== */}
+        <div className="titulo-sessao"><div style={{ width: 4, height: 15, background: '#ff3131' }} /> 5. Especialidades Técnicas</div>
+
+        <div className="item-biblioteca">
+          <div className="icone-box"><Wrench size={20} /></div>
+          <div className="label-nome">🔧 Mecânica</div>
+          {renderBotaoVideo(links.mecanica)}
+          <div className="box-resumo">{textos.mecanica || "Lançamentos específicos para motor, suspensão, freios e manutenções em geral."}</div>
+        </div>
+
+        <div className="item-biblioteca">
+          <div className="icone-box"><Battery size={20} color="#22c55e" /></div>
+          <div className="label-nome">🔋 Híbridos</div>
+          {renderBotaoVideo(links.hibrido)}
+          <div className="box-resumo">{textos.hibrido || "Procedimentos de segurança e checklists dedicados à manutenção de sistemas híbridos."}</div>
+        </div>
+
+        <div className="item-biblioteca">
+          <div className="icone-box"><Zap size={20} color="#00e5ff" /></div>
+          <div className="label-nome">🔌 100% Elétricos</div>
+          {renderBotaoVideo(links.eletrico)}
+          <div className="box-resumo">{textos.eletrico || "Gestão e protocolos para veículos puramente elétricos (EV) e sistemas de alta voltagem."}</div>
+        </div>
+
+        <div className="item-biblioteca">
+          <div className="icone-box"><Bike size={20} /></div>
+          <div className="label-nome">🏍️ Motos</div>
+          {renderBotaoVideo(links.moto)}
+          <div className="box-resumo">{textos.moto || "Fluxo de O.S. adaptado para motocicletas de baixa, média e alta cilindrada."}</div>
+        </div>
+
+        <div className="item-biblioteca">
+          <div className="icone-box"><Hammer size={20} /></div>
+          <div className="label-nome">🚗 Funilaria</div>
+          {renderBotaoVideo(links.funilaria)}
+          <div className="box-resumo">{textos.funilaria || "Gestão de orçamentos complexos por peça, pintura e acompanhamento de veículos sinistrados."}</div>
+        </div>
+
+        <div className="item-biblioteca">
+          <div className="icone-box"><Activity size={20} /></div>
+          <div className="label-nome">🧰 Amortecedor</div>
+          {renderBotaoVideo(links.amortecedor)}
+          <div className="box-resumo">{textos.amortecedor || "Controles específicos para suspensão, testes e recondicionamento de amortecedores."}</div>
+        </div>
+
+        <div className="item-biblioteca">
+          <div className="icone-box"><Cpu size={20} /></div>
+          <div className="label-nome">🛠️ Injeção</div>
+          {renderBotaoVideo(links.injecao)}
+          <div className="box-resumo">{textos.injecao || "Módulo dedicado para diagnósticos avançados com scanner e limpeza de bicos injetores."}</div>
+        </div>
+
+        <div className="item-biblioteca">
+          <div className="icone-box"><Zap size={20} color="#ffc107" /></div>
+          <div className="label-nome">⚡ Elétrica</div>
+          {renderBotaoVideo(links.eletrica)}
+          <div className="box-resumo">{textos.eletrica || "Gerenciamento de troca de baterias, alternadores, motores de arranque e diagnósticos de chicotes."}</div>
+        </div>
+
+        <div className="item-biblioteca">
+          <div className="icone-box"><MoveHorizontal size={20} /></div>
+          <div className="label-nome">⚙️ Alinhamento</div>
+          {renderBotaoVideo(links.alinhamento)}
+          <div className="box-resumo">{textos.alinhamento || "Serviços de geometria 3D, balanceamento, cambagem e caster."}</div>
+        </div>
+
+        <div className="item-biblioteca">
+          <div className="icone-box"><Droplet size={20} color="#ff9800" /></div>
+          <div className="label-nome">🛢️ Óleo</div>
+          {renderBotaoVideo(links.oleo)}
+          <div className="box-resumo">{textos.oleo || "Troca de óleo de motor e transmissão automática com checklists rápidos e etiquetas."}</div>
+        </div>
+
+        <div className="item-biblioteca">
+          <div className="icone-box"><ShieldCheck size={20} color="#4caf50" /></div>
+          <div className="label-nome">🛡️ Revisão</div>
+          {renderBotaoVideo(links.revisao)}
+          <div className="box-resumo">{textos.revisao || "Pacotes de revisão preventiva baseados em quilometragem e manuais de fabricantes."}</div>
+        </div>
+
+        <div className="item-biblioteca">
+          <div className="icone-box"><Snowflake size={20} color="#03a9f4" /></div>
+          <div className="label-nome">❄️ Ar-Cond.</div>
+          {renderBotaoVideo(links.ar_condicionado)}
+          <div className="box-resumo">{textos.ar_condicionado || "Manutenção, higienização, carga de gás e conserto de compressores do sistema de ar."}</div>
+        </div>
+
+        <div className="item-biblioteca">
+          <div className="icone-box"><Circle size={20} /></div>
+          <div className="label-nome">🛞 Pneus</div>
+          {renderBotaoVideo(links.pneus)}
+          <div className="box-resumo">{textos.pneus || "Controle de estoque, vendas e montagem de pneus novos ou recapados."}</div>
+        </div>
+
+        <div className="item-biblioteca">
+          <div className="icone-box"><Scissors size={20} /></div>
+          <div className="label-nome">🚗 Desmanche</div>
+          {renderBotaoVideo(links.desmanche)}
+          <div className="box-resumo">{textos.desmanche || "Gerenciamento e categorização de peças de reaproveitamento e baixas veiculares."}</div>
+        </div>
+
+        <div className="item-biblioteca">
+          <div className="icone-box"><Wind size={20} /></div>
+          <div className="label-nome">🪛 Escapamento</div>
+          {renderBotaoVideo(links.escapamento)}
+          <div className="box-resumo">{textos.escapamento || "Soldas, trocas de catalisadores, abafadores e tubulações de exaustão."}</div>
+        </div>
+
+        <div className="item-biblioteca">
+          <div className="icone-box"><CloudRain size={20} color="#00e5ff" /></div>
+          <div className="label-nome">🚿 Lava Jato</div>
+          {renderBotaoVideo(links.lavajato)}
+          <div className="box-resumo">{textos.lavajato || "Controle de lavagem simples, lavagem completa, higienização interna e serviços rápidos."}</div>
+        </div>
+
+        <div className="item-biblioteca">
+          <div className="icone-box"><Sparkles size={20} color="#a855f7" /></div>
+          <div className="label-nome">✨ Estética</div>
+          {renderBotaoVideo(links.estetica)}
+          <div className="box-resumo">{textos.estetica || "Detalhamento premium, polimento, espelhamento, vitrificação e cuidados de estética automotiva."}</div>
+        </div>
+
+        {/* ==========================================
+            SESSÃO 6: INTELIGÊNCIA E SUPORTE ADMIN
+        ========================================== */}
+        <div className="titulo-sessao"><div style={{ width: 4, height: 15, background: '#ff3131' }} /> 6. Inteligência e Suporte Admin</div>
+
+        <div className="item-biblioteca">
+          <div className="icone-box"><Brain size={20} color="#ff3131" /></div>
+          <div className="label-nome">👨‍🔧 Copiloto IA</div>
+          {renderBotaoVideo(links.copiloto)}
+          <div className="box-resumo">{textos.copiloto || "Inteligência Artificial que auxilia no diagnóstico avançado e fornece acesso rápido a esquemas técnicos."}</div>
+        </div>
+
+        <div className="item-biblioteca">
+          <div className="icone-box"><Briefcase size={20} /></div>
+          <div className="label-nome">👩‍💼 Secretária</div>
+          {renderBotaoVideo(links.secretaria)}
+          <div className="box-resumo">{textos.secretaria || "Automação para atendimento ao cliente, resposta a orçamentos e agendamentos pelo WhatsApp."}</div>
+        </div>
+
+        <div className="item-biblioteca">
+          <div className="icone-box"><Shield size={20} color="#ffc107" /></div>
+          <div className="label-nome">👔 Administrador</div>
+          {renderBotaoVideo(links.administrador)}
+          <div className="box-resumo">{textos.administrador || "Painel de controle macro para donos de oficina que gerenciam métricas consolidadas ou redes de franquias."}</div>
+        </div>
+
+        <div className="item-biblioteca">
+          <div className="icone-box"><Calculator size={20} /></div>
+          <div className="label-nome">🧮 Contador</div>
+          {renderBotaoVideo(links.contador)}
+          <div className="box-resumo">{textos.contador || "Acesso restrito e exportação de relatórios focados estritamente na contabilidade e fiscalidade do negócio."}</div>
+        </div>
+
+        <div className="item-biblioteca">
+          <div className="icone-box"><ShoppingCart size={20} color="#ffc107" /></div>
+          <div className="label-nome">📦 Mercado Livre</div>
+          {renderBotaoVideo(links.mercadolivre)}
+          <div className="box-resumo">{textos.mercadolivre || "Integração para pesquisa ágil de peças, facilitando cotações e repasse de preços para o cliente."}</div>
+        </div>
+
       </div>
     </div>
   );

@@ -1,7 +1,8 @@
-/* eslint-disable react/prop-types */
+﻿/* eslint-disable react/prop-types */
 import React, { useState, useEffect } from "react";
 import { db } from "../lib/firebase";
 import { doc, updateDoc } from "firebase/firestore";
+import { sincronizarRetornosAutomaticos } from "../lib/retornos";
 import {
     Mic, Save, X, CheckCircle, Camera, Plus, Trash2,
     AlertTriangle, ArrowRight, Droplet, Car, Bike, Truck,
@@ -66,8 +67,8 @@ export default function OleoModulo({ oficinaId, osParaEditar, onCancelar, onSalv
     const [litros, setLitros] = useState('');
 
     const [obsGerais, setObsGerais] = useState('');
-    const [pecas, setPecas] = useState('0,00');
-    const [maoDeObra, setMaoDeObra] = useState('0,00');
+    const [pecas, setPecas] = useState('0');
+    const [maoDeObra, setMaoDeObra] = useState('0');
 
     // Cálculo Automático de KM
     useEffect(() => {
@@ -91,8 +92,8 @@ export default function OleoModulo({ oficinaId, osParaEditar, onCancelar, onSalv
             setTipoOleo(osParaEditar.tipoOleo || '5W30 Sintético');
             setLitros(osParaEditar.litrosOleo || '');
             setObsGerais(osParaEditar.observacaoOleo || '');
-            setPecas(osParaEditar.valorPecas || '0,00');
-            setMaoDeObra(osParaEditar.valorMaoObra || '0,00');
+            setPecas(osParaEditar.valorPecas || '0');
+            setMaoDeObra(osParaEditar.valorMaoObra || '0');
         }
     }, [osParaEditar]);
 
@@ -151,7 +152,7 @@ export default function OleoModulo({ oficinaId, osParaEditar, onCancelar, onSalv
         setLoading(true);
         try {
             const vTotal = (parseFloat(pecas.replace(',', '.')) || 0) + (parseFloat(maoDeObra.replace(',', '.')) || 0);
-            await updateDoc(doc(db, 'oficinas', oficinaId, 'os', osParaEditar.id), {
+            const dadosOleo = {
                 tipoServico: 'oleo',
                 tipoVeiculoOleo: tipoVeiculo,
                 kitServicoOleo: kitServico,
@@ -167,7 +168,9 @@ export default function OleoModulo({ oficinaId, osParaEditar, onCancelar, onSalv
                 valorMaoObra: maoDeObra,
                 totalOleo: vTotal,
                 data_atualizacao: new Date().toISOString()
-            });
+            };
+            await updateDoc(doc(db, 'oficinas', oficinaId, 'os', osParaEditar.id), dadosOleo);
+            await sincronizarRetornosAutomaticos({ oficinaId, osId: osParaEditar.id, osData: dadosOleo, osBase: osParaEditar });
             setSuccess(true); if (onSalvo) onSalvo(); setTimeout(onCancelar, 1500);
         } catch (e) { console.error(e); } finally { setLoading(false); }
     };

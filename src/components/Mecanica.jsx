@@ -1,8 +1,8 @@
-/* eslint-disable react/prop-types */
+﻿/* eslint-disable react/prop-types */
 import React, { useState, useEffect } from 'react';
 import { db } from '../lib/firebase';
 import { doc, updateDoc, addDoc, collection } from 'firebase/firestore';
-// IMPORTAÇÃO CORRIGIDA DE TODOS OS ÍCONES
+import { sincronizarRetornosAutomaticos } from '../lib/retornos';
 import { Mic, Save, X, CheckCircle, Camera, Plus, Trash2, Settings, Wrench, Zap, Disc, Activity, AlertTriangle, ArrowRight } from 'lucide-react';
 
 const STYLES = {
@@ -21,10 +21,10 @@ const StatusSelector = ({ label, value, onChange }) => (
                     key={status}
                     onClick={() => onChange(status)}
                     className={`px-3 py-1.5 rounded-lg text-[10px] font-bold transition-all border ${value === status
-                            ? (status === 'OK' ? 'bg-green-600/20 border-green-500 text-green-500' :
-                                status === 'Atenção' ? 'bg-yellow-600/20 border-yellow-500 text-yellow-500' :
-                                    'bg-red-600/20 border-red-500 text-red-500')
-                            : 'bg-zinc-800 border-zinc-700 text-zinc-500 hover:bg-zinc-700'
+                        ? (status === 'OK' ? 'bg-green-600/20 border-green-500 text-green-500' :
+                            status === 'Atenção' ? 'bg-yellow-600/20 border-yellow-500 text-yellow-500' :
+                                'bg-red-600/20 border-red-500 text-red-500')
+                        : 'bg-zinc-800 border-zinc-700 text-zinc-500 hover:bg-zinc-700'
                         }`}
                 >
                     {status === 'OK' && '✓ '} {status.toUpperCase()}
@@ -43,8 +43,8 @@ export default function Mecanica({
     const [showBlocker, setShowBlocker] = useState(false);
     const [fotos, setFotos] = useState([]);
 
-    const [pecas, setPecas] = useState('0,00');
-    const [maoDeObra, setMaoDeObra] = useState('0,00');
+    const [pecas, setPecas] = useState('0');
+    const [maoDeObra, setMaoDeObra] = useState('0');
 
     // Observações por Seção
     const [obsMotor, setObsMotor] = useState('');
@@ -133,8 +133,11 @@ export default function Mecanica({
             };
             if (osParaEditar) {
                 await updateDoc(doc(db, 'oficinas', oficinaId, 'os', osParaEditar.id), dados);
+                await sincronizarRetornosAutomaticos({ oficinaId, osId: osParaEditar.id, osData: dados, osBase: osParaEditar });
             } else {
-                await addDoc(collection(db, 'oficinas', oficinaId, 'os'), { ...dados, data_registro: new Date().toISOString() });
+                const novaOs = { ...dados, data_registro: new Date().toISOString() };
+                const osRef = await addDoc(collection(db, 'oficinas', oficinaId, 'os'), novaOs);
+                await sincronizarRetornosAutomaticos({ oficinaId, osId: osRef.id, osData: novaOs });
             }
             setSuccess(true); if (onSalvo) onSalvo(); setTimeout(onCancelar, 1500);
         } catch (e) { console.error(e); } finally { setLoading(false); }
@@ -196,7 +199,7 @@ export default function Mecanica({
                     </div>
                 </div>
 
-                {/* CHECKLIST COMPLETO - SEM CORTES */}
+                {/* CHECKLIST COMPLETO */}
                 <div className={STYLES.card}>
                     <h2 className="text-purple-500 font-bold mb-6 uppercase text-[10px] tracking-widest">⚙️ Motor & Arrefecimento</h2>
                     <div className="bg-zinc-900/60 rounded-xl border border-zinc-800 overflow-hidden mb-4">

@@ -1,7 +1,8 @@
-/* eslint-disable react/prop-types */
+﻿/* eslint-disable react/prop-types */
 import React, { useState, useEffect } from "react";
 import { db } from "./lib/firebase";
 import { doc, updateDoc } from "firebase/firestore";
+import { sincronizarRetornosAutomaticos } from "./lib/retornos";
 import {
   Mic, Save, X, CheckCircle, Camera, Plus, Trash2,
   AlertTriangle, ArrowRight, Sparkles, Diamond, Palette,
@@ -43,8 +44,8 @@ export default function EsteticaModulo({ oficinaId, osParaEditar, onCancelar, on
   const [fotosDepois, setFotosDepois] = useState([]);
 
   const [obsGerais, setObsGerais] = useState('');
-  const [pecas, setPecas] = useState('0,00');
-  const [maoDeObra, setMaoDeObra] = useState('0,00');
+  const [pecas, setPecas] = useState('0');
+  const [maoDeObra, setMaoDeObra] = useState('0');
 
   // 12 Serviços de Estética Avançada
   const [servicos, setServicos] = useState({
@@ -69,8 +70,8 @@ export default function EsteticaModulo({ oficinaId, osParaEditar, onCancelar, on
       setObsGerais(osParaEditar.observacaoEstetica || '');
       setFotosAntes(osParaEditar.fotosAntesEstetica || []);
       setFotosDepois(osParaEditar.fotosDepoisEstetica || []);
-      setPecas(osParaEditar.valorInsumosEstetica || '0,00');
-      setMaoDeObra(osParaEditar.valorMaoObraEstetica || '0,00');
+      setPecas(osParaEditar.valorInsumosEstetica || '0');
+      setMaoDeObra(osParaEditar.valorMaoObraEstetica || '0');
       if (osParaEditar.servicosEstetica) setServicos(osParaEditar.servicosEstetica);
     }
   }, [osParaEditar]);
@@ -126,7 +127,7 @@ export default function EsteticaModulo({ oficinaId, osParaEditar, onCancelar, on
     setLoading(true);
     try {
       const vTotal = (parseFloat(pecas.replace(',', '.')) || 0) + (parseFloat(maoDeObra.replace(',', '.')) || 0);
-      await updateDoc(doc(db, 'oficinas', oficinaId, 'os', osParaEditar.id), {
+      const dadosEstetica = {
         tipoServico: 'estetica',
         servicosEstetica: servicos,
         observacaoEstetica: obsGerais,
@@ -136,7 +137,9 @@ export default function EsteticaModulo({ oficinaId, osParaEditar, onCancelar, on
         valorMaoObraEstetica: maoDeObra,
         totalEstetica: vTotal,
         data_atualizacao: new Date().toISOString()
-      });
+      };
+      await updateDoc(doc(db, 'oficinas', oficinaId, 'os', osParaEditar.id), dadosEstetica);
+      await sincronizarRetornosAutomaticos({ oficinaId, osId: osParaEditar.id, osData: dadosEstetica, osBase: osParaEditar });
       setSuccess(true); if (onSalvo) onSalvo(); setTimeout(onCancelar, 1500);
     } catch (e) { console.error(e); } finally { setLoading(false); }
   };

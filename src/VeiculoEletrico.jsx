@@ -1,7 +1,8 @@
-/* eslint-disable react/prop-types */
+﻿/* eslint-disable react/prop-types */
 import React, { useState, useEffect } from "react";
 import { db } from "./lib/firebase";
 import { doc, updateDoc } from "firebase/firestore";
+import { sincronizarRetornosAutomaticos } from "./lib/retornos";
 import {
     Mic, Save, X, CheckCircle, Camera, Plus, Trash2,
     Zap, AlertTriangle, ArrowRight, Battery,
@@ -23,10 +24,10 @@ const StatusSelector = ({ label, value, onChange }) => (
                     key={status}
                     onClick={() => onChange(status)}
                     className={`px-4 py-2 rounded-xl text-[10px] font-black border transition-all ${value === status
-                            ? (status === 'OK' ? 'bg-cyan-600/20 border-cyan-500 text-cyan-400 shadow-[0_0_15px_rgba(6,182,212,0.2)]' :
-                                status === 'Atenção' ? 'bg-yellow-600/20 border-yellow-500 text-yellow-500' :
-                                    'bg-red-600/20 border-red-500 text-red-500')
-                            : 'bg-zinc-800 border-zinc-700 text-zinc-500 hover:bg-zinc-700'
+                        ? (status === 'OK' ? 'bg-cyan-600/20 border-cyan-500 text-cyan-400 shadow-[0_0_15px_rgba(6,182,212,0.2)]' :
+                            status === 'Atenção' ? 'bg-yellow-600/20 border-yellow-500 text-yellow-500' :
+                                'bg-red-600/20 border-red-500 text-red-500')
+                        : 'bg-zinc-800 border-zinc-700 text-zinc-500 hover:bg-zinc-700'
                         }`}
                 >
                     {status.toUpperCase()}
@@ -44,16 +45,16 @@ export default function VeiculoEletrico({
     const [showBlocker, setShowBlocker] = useState(false);
     const [fotos, setFotos] = useState([]);
 
-    // Dados Técnicos (image_364464.png)
+    // Dados Técnicos
     const [dadosEV, setDadosEV] = useState({
         soh: '', soc: '', autonomia: '', conector: 'CCS2', defeito: ''
     });
 
     const [obsGeral, setObsGeral] = useState('');
-    const [pecas, setPecas] = useState('0,00');
-    const [maoDeObra, setMaoDeObra] = useState('0,00');
+    const [pecas, setPecas] = useState('0');
+    const [maoDeObra, setMaoDeObra] = useState('0');
 
-    // Checklist BEV Completo (image_36470b.png + Mecânica)
+    // Checklist BEV Completo
     const [checklist, setChecklist] = useState({
         packBateria: 'OK',
         conectorRecarga: 'OK',
@@ -90,7 +91,7 @@ export default function VeiculoEletrico({
         setLoading(true);
         try {
             const vTotal = (parseFloat(pecas.replace(',', '.')) || 0) + (parseFloat(maoDeObra.replace(',', '.')) || 0);
-            await updateDoc(doc(db, 'oficinas', oficinaId, 'os', osParaEditar.id), {
+            const dadosEletrico = {
                 tipoServico: 'eletrico',
                 ...dadosEV,
                 checklistEletrico: checklist,
@@ -100,7 +101,9 @@ export default function VeiculoEletrico({
                 valorMaoObra: maoDeObra,
                 total: vTotal,
                 data_atualizacao: new Date().toISOString()
-            });
+            };
+            await updateDoc(doc(db, 'oficinas', oficinaId, 'os', osParaEditar.id), dadosEletrico);
+            await sincronizarRetornosAutomaticos({ oficinaId, osId: osParaEditar.id, osData: dadosEletrico, osBase: osParaEditar });
             setSuccess(true); if (onSalvo) onSalvo(); setTimeout(onCancelar, 1500);
         } catch (e) { console.error(e); } finally { setLoading(false); }
     };
@@ -116,7 +119,7 @@ export default function VeiculoEletrico({
                         <h2 className="text-2xl font-black text-white mb-4 uppercase">O.S. Requerida</h2>
                         <p className="text-zinc-400 text-sm mb-10 leading-relaxed font-medium">
                             Para salvar este laudo 100% Elétrico:<br />
-                            <span className="text-white font-bold underline italic">1. Crie a O.S. -> 2. Clique em Editar</span>
+                            <span className="text-white font-bold underline italic">1. Crie a O.S. → 2. Clique em Editar</span>
                         </p>
                         <button onClick={() => { irParaNovaOS(); setShowBlocker(false); }} className="w-full py-5 bg-cyan-600 hover:bg-cyan-700 text-white font-black rounded-2xl flex items-center justify-center gap-2 shadow-xl transition-all">
                             INICIAR O.S. AGORA <ArrowRight size={20} />
@@ -140,7 +143,7 @@ export default function VeiculoEletrico({
                     <button onClick={onCancelar} className="p-3 bg-zinc-900 rounded-2xl border border-zinc-800"><X size={28} /></button>
                 </div>
 
-                {/* 📷 CARROSSEL DE FOTOS */}
+                {/* CARROSSEL DE FOTOS */}
                 <div className={STYLES.card}>
                     <h2 className="text-cyan-500 font-black mb-8 uppercase text-xs tracking-widest flex items-center gap-3"><Camera size={18} /> Registros do Sistema ({fotos.length}/5)</h2>
                     <div className="flex gap-6 overflow-x-auto pb-4 scrollbar-hide">
@@ -159,7 +162,7 @@ export default function VeiculoEletrico({
                     </div>
                 </div>
 
-                {/* 📊 DADOS TÉCNICOS (Fiel à image_364464.png) */}
+                {/* DADOS TÉCNICOS */}
                 <div className={STYLES.card}>
                     <h2 className="text-cyan-500 font-black mb-8 uppercase text-xs tracking-widest flex items-center gap-2"><Activity size={18} /> Telemetria de Bateria</h2>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
@@ -197,7 +200,7 @@ export default function VeiculoEletrico({
                     </div>
                 </div>
 
-                {/* ⚡ CHECKLIST BEV COMPLETO (Fiel à image_36470b.png) */}
+                {/* CHECKLIST BEV COMPLETO */}
                 <div className={STYLES.card}>
                     <h2 className="text-cyan-500 font-black mb-8 uppercase text-xs tracking-widest border-l-4 border-cyan-600 pl-4">🛡️ Diagnóstico de Alta Tensão & Mecânica</h2>
                     <div className="bg-zinc-950/40 rounded-[2rem] border border-zinc-800/50 overflow-hidden mb-12 shadow-2xl">
@@ -208,7 +211,6 @@ export default function VeiculoEletrico({
                         <StatusSelector label="Sistema de Regeneração" value={checklist.regeneracao} onChange={v => setChecklist({ ...checklist, regeneracao: v })} />
                         <StatusSelector label="Redutor / Transmissão" value={checklist.redutor} onChange={v => setChecklist({ ...checklist, redutor: v })} />
                         <StatusSelector label="Bateria Auxiliar 12V" value={checklist.bateria12v} onChange={v => setChecklist({ ...checklist, bateria12v: v })} />
-                        {/* Extras de Chassi (Pneu e Amortecedor) */}
                         <StatusSelector label="Amortecedores e Suspensão" value={checklist.amortecedores} onChange={v => setChecklist({ ...checklist, amortecedores: v })} />
                         <StatusSelector label="Pneus Específicos para EV" value={checklist.pneusEV} onChange={v => setChecklist({ ...checklist, pneusEV: v })} />
                     </div>
@@ -224,15 +226,15 @@ export default function VeiculoEletrico({
                     </div>
                 </div>
 
-                {/* 💰 FINANCEIRO */}
+                {/* FINANCEIRO */}
                 <div className={STYLES.card}>
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-8 items-end font-mono">
                         <div>
-                            <label className="text-[10px] text-zinc-500 block mb-3 font-bold uppercase tracking-widest px-2 text-shadow-sm">Peças (R$)</label>
+                            <label className="text-[10px] text-zinc-500 block mb-3 font-bold uppercase tracking-widest px-2">Peças (R$)</label>
                             <input value={pecas} onChange={e => setPecas(e.target.value)} className={STYLES.input + " text-center text-xl"} />
                         </div>
                         <div>
-                            <label className="text-[10px] text-zinc-500 block mb-3 font-bold uppercase tracking-widest px-2 text-shadow-sm">Mão de Obra (R$)</label>
+                            <label className="text-[10px] text-zinc-500 block mb-3 font-bold uppercase tracking-widest px-2">Mão de Obra (R$)</label>
                             <input value={maoDeObra} onChange={e => setMaoDeObra(e.target.value)} className={STYLES.input + " text-center text-xl"} />
                         </div>
                         <div className="bg-cyan-950 border border-cyan-500/30 p-6 rounded-[1.5rem] flex flex-col items-center shadow-lg">

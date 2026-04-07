@@ -15,10 +15,10 @@ import {
 // =====================================================================
 // DESMANCHE.JSX — Módulo completo de gestão de desmanche para EXP AUTO AI
 // Props recebidas do Admin.jsx:
-//   oficinaId       — ID da oficina no Firestore
-//   dadosOficina    — objeto com nomeOficina, telefone, etc.
+//   oficinaId        — ID da oficina no Firestore
+//   dadosOficina     — objeto com nomeOficina, telefone, etc.
 //   carregarFinanceiro — função para recarregar aba financeiro após venda
-//   db              — instância do Firebase Firestore
+//   db               — instância do Firebase Firestore
 //   setLightboxFotos   — abre lightbox global com array de fotos
 //   setLightboxIdx     — define índice inicial no lightbox
 //   setLightboxAberto  — toggle do lightbox
@@ -1024,152 +1024,7 @@ export default function Desmanche({
 
                     {buscandoRede && (
                         <div style={{ textAlign: 'center', padding: '30px', color: '#555' }}>
-                            <p style={{ fontSize: '24px' }}>⏳</p>
-                            <p>Buscando na rede de desmanches...</p>
-                        </div>
-                    )}
-
-                    {!buscandoRede && resultadosRede.length === 0 && buscaRede && (
-                        <div style={{ textAlign: 'center', padding: '40px', color: '#444' }}>
-                            <p style={{ fontSize: '32px' }}>😕</p>
-                            <p>Nenhum resultado encontrado para "<strong style={{ color: '#888' }}>{buscaRede}</strong>".</p>
-                            <p style={{ fontSize: '12px', color: '#555' }}>Tente outros termos ou verifique os parceiros cadastrados.</p>
-                        </div>
-                    )}
-
-                    {resultadosRede.map((item, idx) => (
-                        <div key={idx} style={{ ...cardStyle, borderLeft: `4px solid ${COR}` }}>
-                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '10px', flexWrap: 'wrap' }}>
-                                <div style={{ flex: 1 }}>
-                                    <h4 style={{ color: 'white', margin: '0 0 4px 0' }}>{item.modelo} {item.ano}</h4>
-                                    <p style={{ color: '#555', fontSize: '12px', margin: '0 0 4px 0' }}>
-                                        🎨 {item.cor || '—'} &nbsp;·&nbsp; 📍 {item.patio || '—'}
-                                    </p>
-                                    {item.detalhes && (
-                                        <p style={{ color: '#555', fontSize: '12px', margin: '0 0 8px 0', fontStyle: 'italic' }}>📝 {item.detalhes}</p>
-                                    )}
-                                    <div style={{ background: '#1a1a1a', border: '1px solid #2a2a2a', borderRadius: '8px', padding: '8px 12px', display: 'inline-block' }}>
-                                        <p style={{ color: '#888', fontSize: '11px', margin: '0 0 2px 0' }}>🔧 Oficina</p>
-                                        <p style={{ color: 'white', fontWeight: 'bold', margin: 0 }}>{item.nomeOficina}</p>
-                                    </div>
-                                </div>
-                                {(item.fotos || []).length > 0 && (
-                                    <div style={{ display: 'flex', gap: '5px', flexShrink: 0 }}>
-                                        {item.fotos.slice(0, 3).map((f, i) => (
-                                            <img key={i} src={f} alt="" onClick={() => abrirLightbox(item.fotos, i)}
-                                                style={{ width: '60px', height: '60px', objectFit: 'cover', borderRadius: '8px', cursor: 'pointer', border: '1px solid #2a2a2a' }} />
-                                        ))}
-                                    </div>
-                                )}
-                            </div>
-                            {item.telefone && (
-                                <button
-                                    onClick={() => window.open(`https://wa.me/55${String(item.telefone).replace(/\D/g, '')}?text=${encodeURIComponent(`Olá! Vi o ${item.modelo} ${item.ano || ''} publicado no app. Tenho interesse. Ainda disponível?`)}`, '_blank')}
-                                    style={{ marginTop: '12px', ...btnPrimary('#1a1a1a'), color: '#25D366', border: '1px solid #25D36644' }}>
-                                    💬 Contatar via WhatsApp
-                                </button>
-                            )}
-                        </div>
-                    ))}
-                </div>
-            )}
-
-            {/* ════════════════════════════════════════════════════════════════
-          ABA — PARCEIROS
-      ════════════════════════════════════════════════════════════════ */}
-            {subAba === 'parceiros' && (
-                <div>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '18px' }}>
-                        <div>
-                            <h3 style={{ color: '#f97316', margin: '0 0 4px 0' }}>🔧 Oficinas Parceiras</h3>
-                            <p style={{ color: '#555', fontSize: '12px', margin: 0 }}>
-                                Ao avisar chegada de um veículo, todos os parceiros serão notificados automaticamente.
-                            </p>
-                        </div>
-                        <button onClick={() => { setFormParc(formParcInicial); setMostrarFormParc(true); }}
-                            style={btnPrimary('#f97316')}>
-                            + Parceiro
-                        </button>
-                    </div>
-
-                    {parceiros.length === 0 && (
-                        <div style={{ textAlign: 'center', padding: '40px', color: '#444' }}>
-                            <p style={{ fontSize: '32px' }}>🤝</p>
-                            <p>Nenhuma oficina parceira cadastrada.</p>
-                            <p style={{ fontSize: '12px', color: '#555' }}>Adicione parceiros para receber e enviar avisos de chegada de veículos.</p>
-                        </div>
-                    )}
-
-                    {parceiros.map(p => (
-                        <div key={p.id} style={{ ...cardStyle, borderLeft: '4px solid #f97316' }}>
-                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '10px' }}>
-                                <div>
-                                    <h4 style={{ color: 'white', margin: '0 0 4px 0' }}>{p.nome}</h4>
-                                    <p style={{ color: '#555', fontSize: '12px', margin: 0 }}>
-                                        📞 {p.telefone || '—'} &nbsp;·&nbsp; 📍 {p.cidade || '—'}
-                                        {p.responsavel ? ` · 👤 ${p.responsavel}` : ''}
-                                    </p>
-                                </div>
-                                <div style={{ display: 'flex', gap: '8px' }}>
-                                    {p.telefone && (
-                                        <button onClick={() => window.open(`https://wa.me/55${String(p.telefone).replace(/\D/g, '')}`, '_blank')}
-                                            style={{ ...btnPrimary('#1a1a1a'), color: '#25D366', border: '1px solid #25D36644', padding: '8px 12px' }}>
-                                            💬
-                                        </button>
-                                    )}
-                                    <button onClick={() => excluirParceiro(p.id)}
-                                        style={{ ...btnPrimary('#1a1a1a'), color: '#ef444488', border: '1px solid #ef444422', padding: '8px 12px' }}>
-                                        🗑️
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
-                    ))}
-
-                    {/* ── MODAL FORM PARCEIRO ────────────────────────────────── */}
-                    {mostrarFormParc && (
-                        <div style={{
-                            position: 'fixed', inset: 0,
-                            background: 'rgba(0,0,0,0.92)', zIndex: 9999,
-                            display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px',
-                        }}>
-                            <div style={{
-                                background: '#111', width: '100%', maxWidth: '460px',
-                                borderRadius: '16px', padding: '26px',
-                                border: '2px solid #f97316',
-                            }}>
-                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
-                                    <h3 style={{ color: '#f97316', margin: 0 }}>🔧 Nova Oficina Parceira</h3>
-                                    <button onClick={() => setMostrarFormParc(false)}
-                                        style={{ background: 'transparent', border: 'none', color: '#888', fontSize: '20px', cursor: 'pointer' }}>✖</button>
-                                </div>
-
-                                {[
-                                    { label: 'Nome da Oficina *', key: 'nome', type: 'text' },
-                                    { label: 'WhatsApp (só números)', key: 'telefone', type: 'tel' },
-                                    { label: 'Cidade', key: 'cidade', type: 'text' },
-                                    { label: 'Responsável', key: 'responsavel', type: 'text' },
-                                    { label: 'ID da Oficina no App (opcional)', key: 'oficinaId', type: 'text' },
-                                ].map(({ label, key, type }) => (
-                                    <div key={key} style={{ marginBottom: '12px' }}>
-                                        <label style={{ color: '#666', fontSize: '11px', display: 'block', marginBottom: '4px' }}>{label}</label>
-                                        <input type={type} value={formParc[key]}
-                                            onChange={e => setFormParc(p => ({ ...p, [key]: type === 'tel' ? e.target.value.replace(/\D/g, '') : e.target.value }))}
-                                            style={inputStyle} />
-                                    </div>
-                                ))}
-
-                                <div style={{ display: 'flex', gap: '10px', marginTop: '8px' }}>
-                                    <button onClick={() => setMostrarFormParc(false)}
-                                        style={{ ...btnPrimary('#2a2a2a'), color: '#888', flex: 1 }}>
-                                        Cancelar
-                                    </button>
-                                    <button onClick={salvarParceiro} disabled={salvandoParc}
-                                        style={{ ...btnPrimary('#f97316'), flex: 2, opacity: salvandoParc ? 0.5 : 1 }}>
-                                        {salvandoParc ? '⏳ Salvando...' : '💾 Salvar Parceiro'}
-                                    </button>
-                                </div>
-                            </div>
+                            <p>Buscando...</p>
                         </div>
                     )}
                 </div>

@@ -1,7 +1,8 @@
-/* eslint-disable react/prop-types */
+﻿/* eslint-disable react/prop-types */
 import React, { useState, useEffect } from "react";
 import { db } from "../lib/firebase";
 import { doc, updateDoc } from "firebase/firestore";
+import { sincronizarRetornosAutomaticos } from "../lib/retornos";
 import {
     Mic, Save, X, CheckCircle, Camera, Plus, Trash2,
     AlertTriangle, ArrowRight, ClipboardCheck, Sparkles,
@@ -23,10 +24,10 @@ const StatusSelector = ({ label, value, onChange }) => (
                     key={status}
                     onClick={() => onChange(status)}
                     className={`px-4 py-2 rounded-xl text-[10px] font-black border transition-all ${value === status
-                            ? (status === 'BOM' ? 'bg-green-600/20 border-green-500 text-green-500 shadow-[0_0_15px_rgba(34,197,94,0.2)]' :
-                                status === 'ATENÇÃO' ? 'bg-yellow-600/20 border-yellow-500 text-yellow-500' :
-                                    'bg-red-600/20 border-red-500 text-red-500')
-                            : 'bg-zinc-800 border-zinc-700 text-zinc-500 hover:bg-zinc-700'
+                        ? (status === 'BOM' ? 'bg-green-600/20 border-green-500 text-green-500 shadow-[0_0_15px_rgba(34,197,94,0.2)]' :
+                            status === 'ATENÇÃO' ? 'bg-yellow-600/20 border-yellow-500 text-yellow-500' :
+                                'bg-red-600/20 border-red-500 text-red-500')
+                        : 'bg-zinc-800 border-zinc-700 text-zinc-500 hover:bg-zinc-700'
                         }`}
                 >
                     {status === 'BOM' && '✓ '} {status.toUpperCase()}
@@ -43,8 +44,8 @@ export default function RevisaoModulo({ oficinaId, osParaEditar, onCancelar, onS
     const [fotos, setFotos] = useState([]);
 
     const [relatoMecanico, setRelatoMecanico] = useState('');
-    const [pecas, setPecas] = useState('0,00');
-    const [maoDeObra, setMaoDeObra] = useState('0,00');
+    const [pecas, setPecas] = useState('0');
+    const [maoDeObra, setMaoDeObra] = useState('0');
 
     // Checklist Completo Fiel à Imagem
     const [checklist, setChecklist] = useState({
@@ -72,8 +73,8 @@ export default function RevisaoModulo({ oficinaId, osParaEditar, onCancelar, onS
         if (osParaEditar) {
             setRelatoMecanico(osParaEditar.relatoRevisao || '');
             setFotos(osParaEditar.fotosRevisao || []);
-            setPecas(osParaEditar.valorPecas || '0,00');
-            setMaoDeObra(osParaEditar.valorMaoObra || '0,00');
+            setPecas(osParaEditar.valorPecas || '0');
+            setMaoDeObra(osParaEditar.valorMaoObra || '0');
             if (osParaEditar.checklistRevisao) setChecklist(osParaEditar.checklistRevisao);
         }
     }, [osParaEditar]);
@@ -122,7 +123,7 @@ export default function RevisaoModulo({ oficinaId, osParaEditar, onCancelar, onS
         setLoading(true);
         try {
             const vTotal = (parseFloat(pecas.replace(',', '.')) || 0) + (parseFloat(maoDeObra.replace(',', '.')) || 0);
-            await updateDoc(doc(db, 'oficinas', oficinaId, 'os', osParaEditar.id), {
+            const dadosRevisao = {
                 tipoServico: 'revisao',
                 checklistRevisao: checklist,
                 relatoRevisao: relatoMecanico,
@@ -131,7 +132,9 @@ export default function RevisaoModulo({ oficinaId, osParaEditar, onCancelar, onS
                 valorMaoObra: maoDeObra,
                 totalRevisao: vTotal,
                 data_atualizacao: new Date().toISOString()
-            });
+            };
+            await updateDoc(doc(db, 'oficinas', oficinaId, 'os', osParaEditar.id), dadosRevisao);
+            await sincronizarRetornosAutomaticos({ oficinaId, osId: osParaEditar.id, osData: dadosRevisao, osBase: osParaEditar });
             setSuccess(true); if (onSalvo) onSalvo(); setTimeout(onCancelar, 1500);
         } catch (e) { console.error(e); } finally { setLoading(false); }
     };
@@ -173,7 +176,7 @@ export default function RevisaoModulo({ oficinaId, osParaEditar, onCancelar, onS
                     <button onClick={onCancelar} className="p-3 bg-zinc-900 rounded-2xl border border-zinc-800 hover:bg-zinc-800"><X size={28} /></button>
                 </div>
 
-                {/* 📷 CARROSSEL DE FOTOS (MÁX 5) */}
+                {/* 📸 CARROSSEL DE FOTOS (MÁX 5) */}
                 <div className={STYLES.card}>
                     <h2 className="text-purple-500 font-black mb-8 uppercase text-xs tracking-widest flex items-center gap-3">
                         <Camera size={18} /> Fotos do Veículo / Serviço ({fotos.length}/5)

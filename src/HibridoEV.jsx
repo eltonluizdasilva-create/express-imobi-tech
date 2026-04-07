@@ -1,7 +1,8 @@
-/* eslint-disable react/prop-types */
+﻿/* eslint-disable react/prop-types */
 import React, { useState, useEffect } from "react";
 import { db } from "./lib/firebase";
 import { doc, updateDoc } from "firebase/firestore";
+import { sincronizarRetornosAutomaticos } from "./lib/retornos";
 // Importação de todos os ícones necessários para não dar erro de "not defined"
 import {
     Mic, Save, X, CheckCircle, Camera, Plus, Trash2,
@@ -47,8 +48,8 @@ export default function HibridoEV({ oficinaId, osParaEditar, onCancelar, onSalvo
     // Estados de Medição e Valores
     const [medicoes, setMedicoes] = useState({ soh: '', bat12v: '', temp: '' });
     const [obsTecnica, setObsTecnica] = useState('');
-    const [pecas, setPecas] = useState('0,00');
-    const [maoDeObra, setMaoDeObra] = useState('0,00');
+    const [pecas, setPecas] = useState('0');
+    const [maoDeObra, setMaoDeObra] = useState('0');
 
     // Checklist Completo e Sem Cortes
     const [checklist, setChecklist] = useState({
@@ -80,8 +81,8 @@ export default function HibridoEV({ oficinaId, osParaEditar, onCancelar, onSalvo
             });
             setObsTecnica(osParaEditar.observacaoHibrido || '');
             setFotos(osParaEditar.fotosHibrido || []);
-            setPecas(osParaEditar.valorPecas || '0,00');
-            setMaoDeObra(osParaEditar.valorMaoObra || '0,00');
+            setPecas(osParaEditar.valorPecas || '0');
+            setMaoDeObra(osParaEditar.valorMaoObra || '0');
             if (osParaEditar.checklistHibrido) setChecklist(osParaEditar.checklistHibrido);
         }
     }, [osParaEditar]);
@@ -119,21 +120,32 @@ export default function HibridoEV({ oficinaId, osParaEditar, onCancelar, onSalvo
         setLoading(true);
         try {
             const vTotal = (parseFloat(pecas.replace(',', '.')) || 0) + (parseFloat(maoDeObra.replace(',', '.')) || 0);
-            await updateDoc(doc(db, 'oficinas', oficinaId, 'os', osParaEditar.id), {
+            const dadosHibrido = {
                 tipoServico: 'hibrido',
                 checklistHibrido: checklist,
                 observacaoHibrido: obsTecnica,
                 fotosHibrido: fotos,
                 valorPecas: pecas,
                 valorMaoObra: maoDeObra,
-                totalMódulo: vTotal,
+                totalModulo: vTotal,
                 ...medicoes,
                 data_atualizacao: new Date().toISOString()
-            });
-            setSuccess(true); if (onSalvo) onSalvo(); setTimeout(onCancelar, 1500);
-        } catch (e) { console.error(e); } finally { setLoading(false); }
-    };
+            };
 
+            await updateDoc(doc(db, 'oficinas', oficinaId, 'os', osParaEditar.id), dadosHibrido);
+            await sincronizarRetornosAutomaticos({ oficinaId, osId: osParaEditar.id, osData: dadosHibrido, osBase: osParaEditar });
+
+            setSuccess(true);
+            if (onSalvo) onSalvo();
+        } catch (e) {
+            console.error(e);
+            alert("Erro ao salvar O.S.: " + e.message);
+        } finally {
+            setLoading(false);
+        }
+    }; // <-- A FUNÇÃO AGORA FECHA AQUI CORRETAMENTE!
+
+    // O RETURN DO COMPONENTE FICA FORA DA FUNÇÃO DE SALVAR
     return (
         <div className="bg-black min-h-screen text-zinc-100 p-4 md:p-8 pb-40 relative">
 
@@ -150,7 +162,6 @@ export default function HibridoEV({ oficinaId, osParaEditar, onCancelar, onSalvo
                         </p>
                         <button
                             onClick={() => {
-                                // Tenta usar a função do Admin, se não tiver, apenas troca a aba
                                 if (irParaNovaOS) {
                                     irParaNovaOS();
                                 } else {
@@ -164,8 +175,7 @@ export default function HibridoEV({ oficinaId, osParaEditar, onCancelar, onSalvo
                         </button>
                     </div>
                 </div>
-            )
-            }
+            )}
 
             <div className="max-w-5xl mx-auto">
                 {/* Header Profissional */}
@@ -184,7 +194,7 @@ export default function HibridoEV({ oficinaId, osParaEditar, onCancelar, onSalvo
                     </button>
                 </div>
 
-                {/* 📷 CARROSSEL DE FOTOS PREMIUM */}
+                {/* 📸 CARROSSEL DE FOTOS PREMIUM */}
                 <div className={STYLES.card}>
                     <h2 className="text-green-500 font-black mb-8 uppercase text-xs tracking-widest flex items-center gap-3">
                         <Camera size={18} /> Evidências do Sistema ({fotos.length}/5)

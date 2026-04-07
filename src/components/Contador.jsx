@@ -1,4 +1,4 @@
-/* eslint-disable react/prop-types */
+﻿/* eslint-disable react/prop-types */
 import React, { useState } from "react";
 import {
     Calculator, Receipt, TrendingUp, TrendingDown,
@@ -59,7 +59,7 @@ export default function Contador({ oficinaId }) {
         const valorNum = parseFloat(recValor.replace(',', '.')).toFixed(2);
         const dataAtual = new Date().toLocaleDateString('pt-BR');
 
-        const recibo = `🧾 *RECIBO DE PAGAMENTO*\n\nRecebemos de *${recCliente}* a quantia de *R$ ${valorNum}* referente a:\n🔧 ${recServico}\n\nData: ${dataAtual}\n\nExpress Auto Tech agradece a preferência! 🚀`;
+        const recibo = `🧾 *RECIBO DE PAGAMENTO*\n\nRecebemos de *${recCliente}* a quantia de *R$ ${valorNum}* referente a:\n🔧 ${recServico}\n\nData: ${dataAtual}\n\nExpress Auto Tech agradece a preferência! 📱`;
         setReciboGerado(recibo);
     };
 
@@ -103,7 +103,7 @@ export default function Contador({ oficinaId }) {
 
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
 
-                    {/* 🧾 GERADOR DE RECIBOS */}
+                    {/* 💵 GERADOR DE RECIBOS */}
                     <div className={STYLES.card + " mb-0"}>
                         <h2 className="text-amber-500 font-black mb-6 uppercase text-xs tracking-widest flex items-center gap-2 border-l-4 border-amber-500 pl-4">
                             <Receipt size={16} /> Gerador de Recibos
@@ -150,7 +150,7 @@ export default function Contador({ oficinaId }) {
                                 <option value="despesa">Saída (-)</option>
                             </select>
                             <input value={novaDesc} onChange={e => setNovaDesc(e.target.value)} placeholder="Descrição..." className={STYLES.input + " py-3 flex-1"} />
-                            <input value={novoValor} onChange={e => setNovoValor(e.target.value)} placeholder="R$ 0,00" className={STYLES.input + " py-3 w-24 text-center"} />
+                            <input value={novoValor} onChange={e => setNovoValor(e.target.value)} placeholder="R$ 0" className={STYLES.input + " py-3 w-24 text-center"} />
                             <button onClick={addTransacao} className="bg-amber-600 hover:bg-amber-500 text-white px-4 rounded-xl font-black transition-all">+</button>
                         </div>
 
