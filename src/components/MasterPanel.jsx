@@ -41,6 +41,7 @@ import { db } from "../lib/firebase";
 // 1. A LISTA QUE MANDA NO SEU IMPÉRIO (TODAS AS SUAS ABAS)
 const LISTA_MESTRA_ABAS = [
   // OPERACIONAIS
+  { id: "os", nome: "O.S. (Ordem de Serviço)", icon: "📝", categoria: "operacional" },
   { id: "mecanica", nome: "Mecânica", icon: "🔧", categoria: "operacional" },
   { id: "clientes", nome: "Clientes", icon: "👥", categoria: "operacional" },
   { id: "hibrido", nome: "Híbridos/Elétricos", icon: "🔋", categoria: "operacional" },
@@ -50,6 +51,7 @@ const LISTA_MESTRA_ABAS = [
   { id: "injecao", nome: "Injeção", icon: "🛠️", categoria: "operacional" },
   { id: "eletrica", nome: "Elétrica", icon: "⚡", categoria: "operacional" },
   { id: "alinhamento", nome: "Alinhamento", icon: "⚙️", categoria: "operacional" },
+  { id: "botoesFlutuantes", nome: "Botões Flutuantes", icon: "🖱️", categoria: "operacional" },
   { id: "oleo", nome: "Óleo", icon: "🛢️", categoria: "operacional" },
   { id: "revisao", nome: "Revisão", icon: "🛡️", categoria: "operacional" },
   { id: "ar_condicionado", nome: "Ar-Condicionado", icon: "❄️", categoria: "operacional" },
@@ -318,81 +320,81 @@ export default function MasterPanel() {
               const cor = isPrime ? '#a855f7' : '#ff0033';
               const titulo = isPrime ? '👑 PRIME IA' : p.toUpperCase();
               return (
-              <div
-                key={p}
-                className={`p-8 rounded-[55px] transition-all ${isPrime ? 'bg-gradient-to-b from-purple-950/40 to-zinc-900 border-2' : 'bg-zinc-900 border border-zinc-800'} ${isPrime ? 'hover:border-purple-500' : 'hover:border-red-600'}`}
-                style={isPrime ? { borderColor: '#a855f744', boxShadow: '0 0 30px #a855f722' } : {}}
-              >
-                <h3 className="text-xl font-black uppercase mb-4 text-center" style={{ color: cor }}>
-                  {titulo}
-                </h3>
-                {isPrime && (
-                  <div className="text-center mb-6">
-                    <span className="inline-block bg-gradient-to-r from-purple-600 to-yellow-500 text-white text-[9px] font-black px-4 py-1 rounded-full uppercase tracking-widest">
-                      👑 RECOMENDADO / PREMIUM
-                    </span>
-                  </div>
-                )}
-                <div className="space-y-4">
-                  <div className="bg-black/40 p-4 rounded-3xl border border-zinc-800 text-center">
-                    <span className="text-[9px] text-zinc-600 font-black block mb-1 uppercase">
-                      Preço Mensal (R$)
-                    </span>
-                    <input
-                      type="number"
-                      value={plano.preco}
-                      className="bg-transparent text-center font-black text-white w-full outline-none"
-                      onChange={(e) =>
-                        setConfig({
-                          ...config,
-                          planos: {
-                            ...config.planos,
-                            [p]: { ...config.planos[p], preco: Number(e.target.value) },
-                          },
-                        })
-                      }
-                    />
-                  </div>
-                  <div className="bg-black/40 p-4 rounded-3xl border border-zinc-800 text-center">
-                    <span className="text-[9px] text-zinc-600 font-black block mb-1 uppercase">
-                      Abas Extras
-                    </span>
-                    <input
-                      type="number"
-                      value={plano.slots}
-                      className="bg-transparent text-center font-black text-white w-full outline-none"
-                      onChange={(e) =>
-                        setConfig({
-                          ...config,
-                          planos: {
-                            ...config.planos,
-                            [p]: { ...config.planos[p], slots: Number(e.target.value) },
-                          },
-                        })
-                      }
-                    />
-                  </div>
-                  <div className="bg-black/40 p-4 rounded-3xl border border-zinc-800 text-center">
-                    <span className="text-[9px] text-zinc-600 font-black block mb-1 uppercase">
-                      Máx. Funcionários
-                    </span>
-                    <input
-                      type="number"
-                      value={plano.func}
-                      className="bg-transparent text-center font-black text-white w-full outline-none"
-                      onChange={(e) =>
-                        setConfig({
-                          ...config,
-                          planos: {
-                            ...config.planos,
-                            [p]: { ...config.planos[p], func: Number(e.target.value) },
-                          },
-                        })
-                      }
-                    />
+                <div
+                  key={p}
+                  className={`p-8 rounded-[55px] transition-all ${isPrime ? 'bg-gradient-to-b from-purple-950/40 to-zinc-900 border-2' : 'bg-zinc-900 border border-zinc-800'} ${isPrime ? 'hover:border-purple-500' : 'hover:border-red-600'}`}
+                  style={isPrime ? { borderColor: '#a855f744', boxShadow: '0 0 30px #a855f722' } : {}}
+                >
+                  <h3 className="text-xl font-black uppercase mb-4 text-center" style={{ color: cor }}>
+                    {titulo}
+                  </h3>
+                  {isPrime && (
+                    <div className="text-center mb-6">
+                      <span className="inline-block bg-gradient-to-r from-purple-600 to-yellow-500 text-white text-[9px] font-black px-4 py-1 rounded-full uppercase tracking-widest">
+                        👑 RECOMENDADO / PREMIUM
+                      </span>
+                    </div>
+                  )}
+                  <div className="space-y-4">
+                    <div className="bg-black/40 p-4 rounded-3xl border border-zinc-800 text-center">
+                      <span className="text-[9px] text-zinc-600 font-black block mb-1 uppercase">
+                        Preço Mensal (R$)
+                      </span>
+                      <input
+                        type="number"
+                        value={plano.preco}
+                        className="bg-transparent text-center font-black text-white w-full outline-none"
+                        onChange={(e) =>
+                          setConfig({
+                            ...config,
+                            planos: {
+                              ...config.planos,
+                              [p]: { ...config.planos[p], preco: Number(e.target.value) },
+                            },
+                          })
+                        }
+                      />
+                    </div>
+                    <div className="bg-black/40 p-4 rounded-3xl border border-zinc-800 text-center">
+                      <span className="text-[9px] text-zinc-600 font-black block mb-1 uppercase">
+                        Abas Extras
+                      </span>
+                      <input
+                        type="number"
+                        value={plano.slots}
+                        className="bg-transparent text-center font-black text-white w-full outline-none"
+                        onChange={(e) =>
+                          setConfig({
+                            ...config,
+                            planos: {
+                              ...config.planos,
+                              [p]: { ...config.planos[p], slots: Number(e.target.value) },
+                            },
+                          })
+                        }
+                      />
+                    </div>
+                    <div className="bg-black/40 p-4 rounded-3xl border border-zinc-800 text-center">
+                      <span className="text-[9px] text-zinc-600 font-black block mb-1 uppercase">
+                        Máx. Funcionários
+                      </span>
+                      <input
+                        type="number"
+                        value={plano.func}
+                        className="bg-transparent text-center font-black text-white w-full outline-none"
+                        onChange={(e) =>
+                          setConfig({
+                            ...config,
+                            planos: {
+                              ...config.planos,
+                              [p]: { ...config.planos[p], func: Number(e.target.value) },
+                            },
+                          })
+                        }
+                      />
+                    </div>
                   </div>
                 </div>
-              </div>
               );
             })}
           </div>

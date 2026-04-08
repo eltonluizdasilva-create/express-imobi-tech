@@ -14,7 +14,11 @@ body {
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
 }
 
-.nav-button-premium:hover, .nav-button-premium:active {
+.nav-button-premium-glow {
+  box-shadow: 0 0 10px var(--glow-color, rgba(255,255,255,0.3));
+}
+
+.nav-button-premium:hover, .nav-button-premium:active, .nav-button-premium-glow:hover, .nav-button-premium-glow:active {
   transform: translateY(-2px) scale(1.02);
   box-shadow: 0 0 15px var(--glow-color, rgba(255,255,255,0.3));
   filter: brightness(1.2);

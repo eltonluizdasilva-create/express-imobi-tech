@@ -1,6 +1,6 @@
 /* eslint-disable no-unused-vars */
 import React, { useState } from 'react';
-import { db, auth } from './lib/firebase'; // Verifique se o caminho do firebase está correto
+import { db, auth } from './lib/firebase';
 import { collection, query, where, getDocs } from 'firebase/firestore';
 
 const COR = '#00E676';
@@ -85,9 +85,8 @@ Emissão SEFAZ Estadual`;
       if (!snap.empty) {
         const list = snap.docs.map(d => ({ id: d.id, ...d.data() }));
         list.sort((a, b) => new Date(b.data_registro || 0) - new Date(a.data_registro || 0));
-        const os = list[0]; // Pega a O.S. mais recente
+        const os = list[0];
 
-        // Preenche os campos automaticamente no React
         setNomeCliente(os.nomeCliente || '');
         setModeloCarro(os.modelo || '');
         setNumeroOS(os.id.slice(0, 6).toUpperCase());
@@ -138,7 +137,6 @@ Emissão SEFAZ Estadual`;
       {/* ══════════ ABA: GUIA ══════════ */}
       {subAba === 'guia' && (
         <div className="animate-fade-in">
-
           {/* BLOCO 1: Entendendo */}
           <div style={{ background: '#111', border: `1px solid ${COR}33`, borderRadius: '14px', padding: '20px', marginBottom: '16px' }}>
             <h3 style={{ color: COR, margin: '0 0 14px', fontSize: '16px' }}>💡 Entendendo as Notas da Oficina</h3>
@@ -290,6 +288,28 @@ Emissão SEFAZ Estadual`;
       {/* ══════════ ABA: GERAR DADOS ══════════ */}
       {subAba === 'gerar' && (
         <div className="animate-fade-in">
+
+          {/* PASSO A PASSO EXPLICATIVO FICA AQUI DENTRO AGORA! */}
+          <div style={{ background: '#111', border: `1px solid ${INFO}66`, borderRadius: '12px', padding: '16px', marginBottom: '20px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
+            <p style={{ color: INFO, fontWeight: '900', margin: 0, fontSize: '14px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <span>🎯</span> PASSO A PASSO RÁPIDO PARA EMITIR:
+            </p>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '15px' }}>
+              <div style={{ fontSize: '12px', color: '#ccc', lineHeight: '1.5' }}>
+                <b style={{ color: 'white', display: 'block', marginBottom: '6px' }}>1️⃣ PUXAR OS DADOS</b>
+                Logo abaixo, digite a Placa do cliente e aperte a lupa (ou Enter). A IA preenche os valores da O.S.
+              </div>
+              <div style={{ fontSize: '12px', color: '#ccc', lineHeight: '1.5' }}>
+                <b style={{ color: 'white', display: 'block', marginBottom: '6px' }}>2️⃣ COPIAR O TEXTO</b>
+                Role a tela para baixo e clique no botão grande <strong style={{ color: COR }}>VERDE</strong> (Mão de Obra) ou <strong style={{ color: '#38bdf8' }}>AZUL</strong> (Peças).
+              </div>
+              <div style={{ fontSize: '12px', color: '#ccc', lineHeight: '1.5' }}>
+                <b style={{ color: 'white', display: 'block', marginBottom: '6px' }}>3️⃣ COLAR NO GOVERNO</b>
+                Clique na aba <strong style={{ color: INFO }}>"Portais Oficiais"</strong> ao lado. Lá tem um tutorial com imagens ensinando onde colar o texto no site.
+              </div>
+            </div>
+          </div>
+
           <div style={{ background: '#1a0525', border: `1px solid ${ROXO}55`, borderRadius: '12px', padding: '16px', marginBottom: '20px', display: 'flex', alignItems: 'center', gap: '12px', boxShadow: '0 4px 15px rgba(168,85,247,0.1)' }}>
             <span style={{ fontSize: '24px' }}>🤖</span>
             <p style={{ color: '#c4b5fd', fontSize: '12px', margin: 0, fontWeight: 'bold' }}>AUTOMAÇÃO IA: Digite a placa e clique na lupa (ou aperte Enter). O sistema buscará os dados da última O.S. automaticamente!</p>
@@ -371,9 +391,84 @@ Emissão SEFAZ Estadual`;
         </div>
       )}
 
-      {/* ══════════ ABA: PORTAIS ══════════ */}
+      {/* ══════════ ABA: PORTAIS E TUTORIAIS VISUAIS ══════════ */}
       {subAba === 'portais' && (
         <div className="animate-fade-in">
+
+          {/* TUTORIAL MÃO DE OBRA (GOV.BR) */}
+          <div style={{ background: '#001a0a', border: `2px solid ${COR}55`, borderRadius: '14px', padding: '24px', marginBottom: '20px', position: 'relative' }}>
+            <h3 style={{ color: COR, margin: '0 0 20px', fontSize: '18px', borderBottom: `1px solid ${COR}33`, paddingBottom: '10px' }}>
+              🟢 Como emitir MÃO DE OBRA (Site: gov.br/nfse)
+            </h3>
+
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '20px' }}>
+
+              {/* Passo 1 - Gov.br */}
+              <div style={{ background: '#0a0a0a', padding: '16px', borderRadius: '10px', border: '1px solid #333' }}>
+                <span style={{ background: COR, color: 'black', padding: '4px 8px', borderRadius: '4px', fontWeight: 'bold', fontSize: '12px', marginBottom: '10px', display: 'inline-block' }}>PASSO 1</span>
+                <p style={{ color: 'white', fontWeight: 'bold', fontSize: '14px', margin: '0 0 8px' }}>Cadastro e Login</p>
+                <p style={{ color: '#aaa', fontSize: '12px', lineHeight: '1.5', margin: 0 }}>
+                  Acesse o 1º link verde abaixo. Na tela inicial do Governo, procure o botão azul escrito <strong style={{ color: INFO }}>"Entrar com gov.br"</strong> no canto superior direito.<br /><br />
+                  <em>Obs: Se for a 1ª vez, você fará login com seu CPF e precisará vincular o seu CNPJ lá dentro (conta Prata ou Ouro).</em>
+                </p>
+              </div>
+
+              {/* Passo 2 - Gov.br */}
+              <div style={{ background: '#0a0a0a', padding: '16px', borderRadius: '10px', border: '1px solid #333' }}>
+                <span style={{ background: COR, color: 'black', padding: '4px 8px', borderRadius: '4px', fontWeight: 'bold', fontSize: '12px', marginBottom: '10px', display: 'inline-block' }}>PASSO 2</span>
+                <p style={{ color: 'white', fontWeight: 'bold', fontSize: '14px', margin: '0 0 8px' }}>Emissão Simplificada</p>
+                <p style={{ color: '#aaa', fontSize: '12px', lineHeight: '1.5', margin: 0 }}>
+                  Já dentro do painel do governo, clique no ícone chamado <strong style={{ color: 'white' }}>"Nova NFS-e"</strong> ou na opção de <strong style={{ color: 'white' }}>"Emissão Simplificada"</strong>.<br /><br />
+                  Ele vai pedir para você digitar o CPF do cliente e o Valor total da Mão de Obra.
+                </p>
+              </div>
+
+              {/* Passo 3 - Gov.br */}
+              <div style={{ background: '#0a0a0a', padding: '16px', borderRadius: '10px', border: '1px solid #333' }}>
+                <span style={{ background: COR, color: 'black', padding: '4px 8px', borderRadius: '4px', fontWeight: 'bold', fontSize: '12px', marginBottom: '10px', display: 'inline-block' }}>PASSO 3</span>
+                <p style={{ color: 'white', fontWeight: 'bold', fontSize: '14px', margin: '0 0 8px' }}>Onde colar o texto?</p>
+                <p style={{ color: '#aaa', fontSize: '12px', lineHeight: '1.5', margin: 0 }}>
+                  Role a tela do governo para baixo até achar uma caixa grande escrita <strong style={{ color: WARN }}>"Discriminação dos Serviços"</strong>.<br /><br />
+                  Clique nela com o botão direito, escolha <strong>"Colar"</strong> (para colar o texto gerado pela IA) e clique em Emitir Nota!
+                </p>
+              </div>
+
+            </div>
+          </div>
+
+          {/* TUTORIAL PEÇAS (SEFAZ/SEBRAE) */}
+          <div style={{ background: '#001a1f', border: `2px solid ${INFO}55`, borderRadius: '14px', padding: '24px', marginBottom: '30px' }}>
+            <h3 style={{ color: INFO, margin: '0 0 20px', fontSize: '18px', borderBottom: `1px solid ${INFO}33`, paddingBottom: '10px' }}>
+              🔵 Como emitir nota de PEÇAS (NF-e Sefaz)
+            </h3>
+
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
+
+              <div style={{ background: '#0a0a0a', padding: '16px', borderRadius: '10px', border: '1px solid #333' }}>
+                <span style={{ background: INFO, color: 'black', padding: '4px 8px', borderRadius: '4px', fontWeight: 'bold', fontSize: '12px', marginBottom: '10px', display: 'inline-block' }}>ATENÇÃO</span>
+                <p style={{ color: 'white', fontWeight: 'bold', fontSize: '14px', margin: '0 0 8px' }}>O site da Fazenda é só para consulta</p>
+                <p style={{ color: '#aaa', fontSize: '12px', lineHeight: '1.5', margin: 0 }}>
+                  Aquele site laranja "nfe.fazenda.gov.br" serve apenas para verificar notas antigas. Para emitir uma NF-e de peças de forma gratuita, você precisa usar o <strong>Emissor Gratuito do SEBRAE</strong> (2º link azul abaixo). É necessário ter o Certificado Digital (A1) da sua oficina instalado no computador.
+                </p>
+              </div>
+
+              <div style={{ background: '#0a0a0a', padding: '16px', borderRadius: '10px', border: '1px solid #333' }}>
+                <span style={{ background: INFO, color: 'black', padding: '4px 8px', borderRadius: '4px', fontWeight: 'bold', fontSize: '12px', marginBottom: '10px', display: 'inline-block' }}>ONDE COLAR AS PEÇAS</span>
+                <p style={{ color: 'white', fontWeight: 'bold', fontSize: '14px', margin: '0 0 8px' }}>No Emissor do Sebrae</p>
+                <p style={{ color: '#aaa', fontSize: '12px', lineHeight: '1.5', margin: 0 }}>
+                  1. Faça login no portal do Sebrae.<br />
+                  2. Inicie uma nova "Nota Fiscal (NF-e)".<br />
+                  3. Na aba de "Produtos", crie um item genérico (ex: "Peças Ref. a O.S.").<br />
+                  4. Na caixa de "Informações Adicionais" ou "Descrição do Produto", cole a lista de peças gerada pelo nosso sistema.
+                </p>
+              </div>
+
+            </div>
+          </div>
+
+
+          {/* LISTA DE LINKS OFICIAIS */}
+          <h3 style={{ color: 'white', margin: '0 0 16px', fontSize: '16px' }}>🔗 LINKS OFICIAIS DO GOVERNO</h3>
           <div style={{ background: '#111', border: '1px solid #333', borderRadius: '14px', padding: '20px', marginBottom: '14px' }}>
             <h3 style={{ color: COR, margin: '0 0 16px', fontSize: '15px' }}>🟢 NFS-e — Mão de Obra</h3>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>

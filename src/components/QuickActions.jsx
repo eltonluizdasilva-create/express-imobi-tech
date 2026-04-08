@@ -24,7 +24,7 @@ const QuickActions = ({
     ouvirCampoLead, leadCampoOuvindo
 }) => {
 
-    const BTN_SIZE = '45px';
+    const BTN_SIZE = '40px';
     const BTN_RADIUS = '12px';
 
     return (
@@ -43,14 +43,14 @@ const QuickActions = ({
                 {/* BOTÃO TAREFA RÁPIDA */}
                 <button
                     onClick={() => setModalTarefaAberto(true)}
-                    className="nav-button-premium"
+                    className="nav-button-premium animate-pulse"
                     title="Nova Tarefa Rápida"
                     style={{
                         width: BTN_SIZE, height: BTN_SIZE, borderRadius: '50%',
-                        background: '#10b981', color: 'black', border: 'none',
-                        boxShadow: '0 4px 15px rgba(16,185,129,0.4)', cursor: 'pointer',
+                        background: '#8b5cf6', color: 'white', border: 'none',
+                        boxShadow: '0 4px 15px rgba(139,92,246,0.4)', cursor: 'pointer',
                         display: 'flex', alignItems: 'center', justifyContent: 'center',
-                        '--glow-color': '#10b981'
+                        '--glow-color': '#8b5cf6'
                     }}
                 >
                     <span style={{ fontSize: '18px' }}>📝</span>
@@ -59,7 +59,7 @@ const QuickActions = ({
                 {/* NOVO LEAD RÁPIDO */}
                 <button
                     onClick={() => setModalClienteAberto(true)}
-                    className="nav-button-premium"
+                    className="nav-button-premium animate-pulse"
                     title="Novo Lead Rápido"
                     style={{
                         width: BTN_SIZE, height: BTN_SIZE, borderRadius: '50%',
@@ -74,19 +74,24 @@ const QuickActions = ({
 
                 {/* FINANCEIRO RÁPIDO */}
                 <button
-                    onClick={() => setModalFinanceiroAberto(true)}
-                    className="nav-button-premium"
+                    onClick={() => {
+                        console.log('Finance button clicked');
+                        setModalFinanceiroAberto(true);
+                    }}
+                    className="nav-button-premium animate-pulse"
                     title="Lançamento Rápido"
                     style={{
                         width: BTN_SIZE, height: BTN_SIZE, borderRadius: '50%',
-                        background: '#f59e0b', color: 'black', border: 'none',
-                        boxShadow: '0 4px 15px rgba(245,158,11,0.4)', cursor: 'pointer',
+                        background: '#3b82f6', color: 'white', border: 'none',
+                        boxShadow: '0 4px 15px rgba(59,130,246,0.4)', cursor: 'pointer',
                         display: 'flex', alignItems: 'center', justifyContent: 'center',
-                        '--glow-color': '#f59e0b'
+                        '--glow-color': '#3b82f6'
                     }}
                 >
                     <Wallet size={20} />
                 </button>
+
+
             </div>
 
             {/* ✅ MODAL TAREFA RÁPIDA */}
@@ -142,7 +147,7 @@ const QuickActions = ({
                         <button
                             onClick={salvarTarefaRapida}
                             disabled={salvandoTarefaRapida || !tarefaRapidaTitulo.trim()}
-                            className="nav-button-premium"
+                            className="nav-button-premium animate-pulse"
                             style={{ width: '100%', padding: '18px', background: '#10b981', color: 'black', border: 'none', borderRadius: '12px', fontWeight: '900', fontSize: '14px', cursor: 'pointer', letterSpacing: '1px', '--glow-color': '#10b981' }}
                         >
                             {salvandoTarefaRapida ? 'SALVANDO...' : '+ CRIAR TAREFA'}
@@ -203,7 +208,7 @@ const QuickActions = ({
                                 salvarFinanceiroRapido();
                             }}
                             disabled={finSalvando || !finDesc || !finValor}
-                            className="nav-button-premium"
+                            className="nav-button-premium animate-pulse"
                             style={{ width: '100%', padding: '18px', background: '#f59e0b', color: 'black', border: 'none', borderRadius: '12px', fontWeight: '900', fontSize: '14px', cursor: 'pointer', letterSpacing: '1px', '--glow-color': '#f59e0b' }}
                         >
                             {finSalvando ? 'SALVANDO...' : '💵 LANÇAR NO CAIXA'}
@@ -251,7 +256,7 @@ const QuickActions = ({
                         <button
                             onClick={salvarLeadRapido}
                             disabled={leadSalvando || !leadTelefone}
-                            className="nav-button-premium"
+                            className="nav-button-premium animate-pulse"
                             style={{ width: '100%', padding: '18px', background: GREEN_MONEY, color: 'black', border: 'none', borderRadius: '12px', fontWeight: '900', fontSize: '14px', cursor: 'pointer', letterSpacing: '1px', '--glow-color': GREEN_MONEY }}
                         >
                             {leadSalvando ? 'SALVANDO...' : '+ SALVAR LEAD'}

@@ -23,7 +23,7 @@ import useQuickActions from './hooks/useQuickActions';
 import useAuthListener from './hooks/useAuthListener';
 import useCarregamentoInicial from './hooks/useCarregamentoInicial';
 import { resolverTipoOS, resolverAbaDestino, buscarDadosPorPlaca as buscarDadosPorPlacaHelper, abrirMercado as abrirMercadoHelper, TIPO_TITULOS, TIPO_EXPLICACOES } from './helpers/osHelpers';
-import { Zap, ClipboardList, Wallet, Target, Lock } from 'lucide-react';
+import { Zap, ClipboardList, Wallet, Target, Lock, ShoppingCart, X } from 'lucide-react';
 
 // --- 1. MÓDULOS NA PASTA COMPONENTS ---
 import Mecanica from './components/Mecanica';
@@ -124,6 +124,7 @@ export default function Admin() {
   const [erroLogin, setErroLogin] = useState('');
 
   const [abaAtiva, setAbaAtiva] = useState('dashboard');
+  const [showMLModal, setShowMLModal] = useState(false);
   const [tema, setTema] = useState('escuro');
   const toggleTema = () => setTema(prev => prev === 'escuro' ? 'claro' : 'escuro');
   const [listaCarros, setListaCarros] = useState([]);
@@ -560,7 +561,7 @@ export default function Admin() {
 
       <NovaOSBar t={t} MAIN={MAIN} abaAtiva={abaAtiva} setAbaAtiva={setAbaAtiva} listaCarros={listaCarros} busca={busca} setBusca={setBusca} normalizarPlaca={normalizarPlaca} />
 
-      <MenuNavegacao t={t} servicosVisiveis={servicosVisiveis} TAB_COLORS={TAB_COLORS} MAIN={MAIN} MASTER={MASTER} papelLogado={papelLogado} abaAtiva={abaAtiva} setAbaAtiva={setAbaAtiva} moduloLiberado={moduloLiberado} lidarModuloBloqueado={lidarModuloBloqueado} LABELS_ABAS={LABELS_ABAS} />
+      <MenuNavegacao t={t} servicosVisiveis={servicosVisiveis} MAIN={MAIN} MASTER={MASTER} papelLogado={papelLogado} abaAtiva={abaAtiva} setAbaAtiva={setAbaAtiva} moduloLiberado={moduloLiberado} lidarModuloBloqueado={lidarModuloBloqueado} LABELS_ABAS={LABELS_ABAS} />
 
       <AvisoIA abaAtiva={abaAtiva} />
 
@@ -717,6 +718,39 @@ export default function Admin() {
         setModulosOperacionais={setModulosOperacionais}
         planosSistema={planosSistema}
       />
+
+      {/* JANELA DO MERCADO LIVRE (MODAL) */}
+      {showMLModal && (
+        <div className="fixed inset-0 z-[10000] flex items-center justify-center p-4 md:p-10 backdrop-blur-sm bg-black/60">
+          <div className="bg-zinc-950 border-2 border-yellow-500 w-full max-w-5xl h-[85vh] rounded-[2.5rem] overflow-hidden shadow-[0_0_50px_rgba(255,230,0,0.2)] flex flex-col relative">
+
+            {/* Header do Modal */}
+            <div className="bg-zinc-900 p-4 border-b border-zinc-800 flex justify-between items-center">
+              <div className="flex items-center gap-3">
+                <div className="bg-[#FFE600] p-2 rounded-lg">
+                  <ShoppingCart size={20} color="#FFE600" />
+                </div>
+                <span className="font-black text-yellow-500 uppercase tracking-tighter">Catálogo Inteligente Mercado Livre</span>
+              </div>
+              <button
+                onClick={() => setShowMLModal(false)}
+                className="bg-red-500/10 hover:bg-red-500 text-red-500 hover:text-white p-2 rounded-full transition-all"
+              >
+                <X size={20} />
+              </button>
+            </div>
+
+            {/* Conteúdo do Modal - Aqui chamamos o seu componente MercadoLivre */}
+            <div className="flex-1 overflow-y-auto">
+              <MercadoLivre />
+            </div>
+
+            <div className="bg-zinc-900 p-3 text-center">
+              <p className="text-[10px] text-zinc-500 font-bold uppercase tracking-widest">Tecnologia Express Auto Tech &copy; 2026</p>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
