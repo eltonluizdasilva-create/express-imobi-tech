@@ -130,11 +130,20 @@ export default function OS({ oficinaId, dadosOficina, onSalvo, onRedirecionar, b
       return;
     }
 
+    if (!oficinaId) {
+      alert('Erro: ID da oficina não encontrado. Faça login novamente.');
+      console.error('[OS] ERRO: oficinaId é undefined ou null!');
+      return;
+    }
+
     const setorValido = setorAtivo || 'mecanica';
     
     setSalvando(true);
     try {
+      console.log('[OS] ==========================================');
       console.log('[OS] Iniciando geração - setor:', setorValido);
+      console.log('[OS] OficinaID:', oficinaId);
+      console.log('[OS] ==========================================');
       
       const modeloCompleto = `${dados.veiculo} ${dados.ano} ${dados.motor}`.trim();
       console.log('[OS] Modelo completo:', modeloCompleto);
@@ -152,9 +161,12 @@ export default function OS({ oficinaId, dadosOficina, onSalvo, onRedirecionar, b
       };
       console.log('[OS] Payload:', payload);
 
-      console.log('[OS] Salvando no Firebase...');
+      console.log('[OS] >>>>> GRAVANDO NO FIREBASE...');
+      console.log('[OS] Project ID: express-ai-automation');
+      console.log('[OS] Caminho: oficinas/' + oficinaId + '/os');
+      
       const docRef = await addDoc(collection(db, 'oficinas', oficinaId, 'os'), payload);
-      console.log('[OS] Doc salvo, id:', docRef.id);
+      console.log('[OS] ✓✓✓ SUCESSO! Doc salvo com ID:', docRef.id);
 
       console.log('[OS] Sincronizando retornos...');
       await sincronizarRetornosAutomaticos({

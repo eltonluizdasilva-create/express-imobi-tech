@@ -77,6 +77,7 @@ const LISTA_MESTRA_ABAS = [
   { id: "retorno", nome: "Retorno", icon: "📅", categoria: "gestao" },
   { id: "patrimonio", nome: "Patrimônio", icon: "🏢", categoria: "gestao" },
   { id: "fornecedores", nome: "Fornecedores", icon: "🤝", categoria: "gestao" },
+  { id: "precificacao", nome: "Calculadora de Precificação", icon: "💲", categoria: "gestao" },
   // SISTEMA
   { id: "meuplano", nome: "Meu Plano", icon: "💰", categoria: "sistema" },
   { id: "config", nome: "Ajustes", icon: "⚙️", categoria: "sistema" },

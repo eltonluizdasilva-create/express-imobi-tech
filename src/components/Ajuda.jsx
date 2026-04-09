@@ -215,6 +215,13 @@ export default function BibliotecaTreinamento() {
         </div>
 
         <div className="item-biblioteca">
+          <div className="icone-box"><Calculator size={20} color="#00E676" /></div>
+          <div className="label-nome">💰 PRECIFICAÇÃO</div>
+          {renderBotaoVideo(links.precificacao)}
+          <div className="box-resumo">{textos.precificacao || "👉 Pare de pagar para trabalhar! Use esta aba para saber exatamente quanto cobrar. Configure custos fixos e o sistema calcula automaticamente sua HORA TÉCNICA. Gere orçamentos e envie direto no WhatsApp do cliente."}</div>
+        </div>
+
+        <div className="item-biblioteca">
           <div className="icone-box"><History size={20} /></div>
           <div className="label-nome">📋 Histórico</div>
           {renderBotaoVideo(links.historico)}

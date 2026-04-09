@@ -87,6 +87,7 @@ const AJUDA_ITENS = [
   { aba: 'clientes', icon: '🎯', titulo: 'Clientes & Leads (CRM)', conteudo: ['Base de dados centralizada de clientes e veículos.', 'Histórico completo de passagens na oficina.', 'Gestão de novos leads que entram via WhatsApp ou site.'] },
   { aba: 'historico', icon: '🕐', titulo: 'Histórico de Placa (Busca)', conteudo: ['Digite uma placa para ver tudo o que já foi feito no carro.', 'Reimprima O.S. antigas e verifique garantias.', 'Ótimo para fidelização e pós-venda.'] },
   { aba: 'retorno', icon: '📆', titulo: 'Gestão de Retornos (Vendas)', conteudo: ['Agendamento automático de revisões futuras.', 'Lembrete de troca de óleo, freios e correia dentada.', 'Aumente o faturamento trazendo o cliente de volta.'] },
+  { aba: 'precificacao', icon: '💰', titulo: 'PRECIFICAÇÃO - Sua Calculadora de Lucro Real', conteudo: ['👉 Pare de pagar para trabalhar! Use esta aba para saber exatamente quanto cobrar.', '🏦 PAINEL ESQUERDO: Configure seus custos fixos mensais (Aluguel, Luz, Folha) e suas horas úteis.', '✅ O sistema calcula automaticamente o valor da sua HORA TÉCNICA.', '📈 CALCULADORA À DIREITA: Digite o custo da peça, o tempo do serviço e os impostos.', '📊 RAIO-X DO DINHEIRO: Veja visualmente para onde vai cada centavo e garanta seu LUCRO LÍQUIDO.', '📲 AÇÃO RÁPIDA: Gere o valor e envie o orçamento profissional direto no WhatsApp do cliente com 1 clique.', '💡 Dica: Salve seus custos fixos uma vez e o sistema lembrará deles para todos os próximos orçamentos.'] },
   { aba: 'config', icon: '⚙️', titulo: 'Configurações do Sistema', conteudo: ['Personalize nome, logo e endereço da sua oficina.', 'Cadastre chaves PIX para links de pagamento.', 'Ajuste horários e preferências globais.'] }
 ];
 
@@ -203,12 +204,28 @@ export default function Admin() {
     }, { merge: true }).catch(err => console.error('Erro ao expirar trial:', err));
   }, [dataFimTrial, logado, currentUserId]);
 
+  const isLicencaAtiva = useMemo(() => {
+    if (!dataFimTrial) return true;
+    const fim = dataFimTrial instanceof Date ? dataFimTrial : new Date(dataFimTrial);
+    return fim >= new Date();
+  }, [dataFimTrial]);
+
+  const verificarLicenca = (acao = 'esta ação') => {
+    if (trialExpirou) {
+      alert(`⛔ Sua assinatura expirou! Para continuar usando o sistema e ${acao},renove agora em 💎 MEU PLANO.`);
+      setAbaAtiva('meuplano');
+      return false;
+    }
+    return true;
+  };
+
   const ouvirCampo = (campo) => {
     setCampoOuvindo(campo);
     setTimeout(() => setCampoOuvindo(null), 3000);
   };
 
   const handleSalvarOS = async () => {
+    if (!verificarLicenca('salvar ordens de serviço')) return;
     setSalvandoOS(true);
     try {
       setSalvo(true);
@@ -566,7 +583,7 @@ export default function Admin() {
   return (
     <div style={{ minHeight: '100vh', background: t.bg, color: t.texto, paddingBottom: '100px', transition: 'background 0.3s' }}>
 
-      <Header t={t} papelLogado={papelLogado} MASTER={MASTER} MAIN={MAIN} toggleTema={toggleTema} fazerLogout={fazerLogout} />
+      <Header t={t} papelLogado={papelLogado} MASTER={MASTER} MAIN={MAIN} toggleTema={toggleTema} fazerLogout={fazerLogout} oficinaId={oficinaId} />
 
       <NovaOSBar t={t} MAIN={MAIN} abaAtiva={abaAtiva} setAbaAtiva={setAbaAtiva} listaCarros={listaCarros} busca={busca} setBusca={setBusca} normalizarPlaca={normalizarPlaca} />
 
@@ -668,6 +685,7 @@ export default function Admin() {
         isTrial={isTrial}
         modulosOperacionais={modulosOperacionais}
         irParaNovaOS={irParaNovaOS}
+        verificarLicenca={verificarLicenca}
       />
 
       <ModuloBloqueado

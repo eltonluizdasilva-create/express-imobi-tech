@@ -40,6 +40,7 @@ const TODOS_MODULOS = [
   { id: 'retorno', label: 'Retorno', icon: '📅', cor: '#f97316', categoria: 'gestao' },
   { id: 'patrimonio', label: 'Patrimônio', icon: '🏢', cor: '#78716c', categoria: 'gestao' },
   { id: 'fornecedores', label: 'Fornecedores', icon: '🤝', cor: '#0ea5e9', categoria: 'gestao' },
+  { id: 'precificacao', label: 'Precificação', icon: '💲', cor: '#00E676', categoria: 'gestao' },
   { id: 'meuplano', label: 'Meu Plano', icon: '💰', cor: '#22c55e', categoria: 'sistema' },
   { id: 'config', label: 'Ajustes', icon: '⚙️', cor: '#64748b', categoria: 'sistema' },
   { id: 'equipe', label: 'Equipe', icon: '👥', cor: '#3b82f6', categoria: 'sistema' },
@@ -139,15 +140,26 @@ export default function ModuloMeuPlano({ dadosOficina, planosSistema, onModulosC
         : [...new Set([...modulosBase, ...selecionados])];
       let modsPerm = comTrial ? 'ALL' : null;
       setSelecionados(modsFinais);
+
+      let dataVencimento = null;
+      if (comTrial) {
+        dataVencimento = new Date(Date.now() + 15 * DIA_MS);
+      } else if (ciclo === 'anual') {
+        dataVencimento = new Date(Date.now() + 365 * DIA_MS);
+      } else {
+        dataVencimento = new Date(Date.now() + 30 * DIA_MS);
+      }
+
       const payload = {
         modulosOperacionais: modsFinais,
         modulosPermitidos: modsPerm,
         plano: planoSelecionado,
-        dataFimTrial: comTrial ? new Date(Date.now() + 10 * DIA_MS) : null,
+        dataFimTrial: dataVencimento,
+        tipoPlano: ciclo,
       };
       await updateDoc(doc(db, 'usuarios', uid), payload, { merge: true });
       if (onModulosChange) onModulosChange(modsFinais);
-      setMsgSucesso(comTrial ? '✓ Trial ativado! 10 dias com tudo liberado.' : '✓ Plano atualizado com sucesso!');
+      setMsgSucesso(comTrial ? '✓ Trial ativado! 15 dias com tudo liberado para você acompanhar seus clientes.' : `✓ Plano ativado! Assinatura válida até ${dataVencimento.toLocaleDateString('pt-BR')}.`);
       setTimeout(() => setMsgSucesso(''), 4000);
     } catch (err) {
       console.error(err);

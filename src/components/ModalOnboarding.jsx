@@ -52,7 +52,7 @@ export default function ModalOnboarding({ onComplete, onClose }) {
       const payload = {
         modulosOperacionais: modulosComPadrao,
         modulosPermitidos: comTrial ? 'ALL' : null,
-        dataFimTrial: new Date(Date.now() + 10 * 24 * 60 * 60 * 1000),
+        dataFimTrial: new Date(Date.now() + 15 * 24 * 60 * 60 * 1000),
         onboardingFeito: true,
       };
 

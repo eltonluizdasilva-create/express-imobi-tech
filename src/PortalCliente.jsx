@@ -469,52 +469,51 @@ export default function PortalCliente() {
         return isNaN(data.getTime()) ? '—' : data.toLocaleDateString('pt-BR');
     };
 
-    const handleEntrar = async () => {
+const handleEntrar = async () => {
         // Validação simples
         if (!placa || !senha || senha.length !== 4) return alert("Preencha Placa e senha de 4 dígitos.");
         setCarregando(true);
+        
+        const placaNormalizada = placa.replace(/[^A-Z0-9]/g, '').toUpperCase();
+        console.log('[PortalCliente] Buscando - Placa:', placaNormalizada, 'Senha:', senha);
+        
         try {
-            // Varre todas as oficinas para localizar OS com a placa informada
-            const oficinasSnap = await getDocs(collection(db, 'oficinas'));
+            // Busca global por todas as OS com a placa
+            const q = query(collectionGroup(db, 'os'), where('placa', '==', placaNormalizada));
+            const osSnap = await getDocs(q);
+            console.log('[PortalCliente] Total OS encontradas:', osSnap.size);
+            
             const candidatos = [];
-            for (const ofDoc of oficinasSnap.docs) {
-                const oficinaId = ofDoc.id;
-                const q = query(collection(db, 'oficinas', oficinaId, 'os'), where('placa', '==', placa.toUpperCase()));
-                const osSnap = await getDocs(q);
-                osSnap.forEach(osDoc => {
-                    const d = osDoc.data();
-                    const cel = (d.telefone || d.celular || '').replace(/\D/g, '');
-                    if (cel.slice(-4) === senha) {
-                        candidatos.push({ id: osDoc.id, oficinaId, ...d });
-                    }
-                });
-            }
-
-            // Validar senhaPortal (4 dígitos) a partir do Firebase (campo senhaPortal no doc da oficina)
-            const oficinasIds = [...new Set(candidatos.map(c => c.oficinaId))];
-            const valid = [];
-            for (const oid of oficinasIds) {
-                const offRef = doc(db, 'oficinas', oid);
-                const offSnap = await getDoc(offRef);
-                if (offSnap.exists()) {
-                    const portalSenha = offSnap.data().senhaPortal;
-                    if (portalSenha && portalSenha === senha) {
-                        candidatos.filter(c => c.oficinaId === oid).forEach(c => valid.push(c));
-                    }
+            osSnap.forEach(osDoc => {
+                const d = osDoc.data();
+                const oficinaId = osDoc.ref.parent.parent.id;
+                const cel = (d.telefone || d.celular || '').replace(/\D/g, '');
+                const senhaConsulta = d.senhaConsulta || '';
+                
+                console.log('[PortalCliente] OS:', osDoc.id, 'Oficina:', oficinaId, 'Placa:', d.placa, 'Telefone4:', cel.slice(-4), 'senhaConsulta:', senhaConsulta);
+                
+                // Valida por: telefone (4 últimos dígitos) OU senhaConsulta
+                if (cel.slice(-4) === senha || senhaConsulta === senha) {
+                    candidatos.push({ id: osDoc.id, oficinaId, ...d });
+                    console.log('[PortalCliente] ✓ Candidato aceito!');
                 }
-            }
+            });
 
-            if (valid.length > 0) {
-                setTodasAsOs(valid.sort((a, b) => (b.data_registro || b.data || '').localeCompare(a.data_registro || a.data || '')));
+            console.log('[PortalCliente] Total candidatos:', candidatos.length);
+
+            if (candidatos.length > 0) {
+                setTodasAsOs(candidatos.sort((a, b) => (b.data_registro || b.data || '').localeCompare(a.data_registro || b.data || '')));
                 setAbaAtiva('dashboard');
             } else {
-                alert("Acesso negado. Dados não encontrados.");
+                console.error('[PortalCliente] Nenhuma OS encontrada. Placa:', placaNormalizada, 'Senha:', senha);
+                alert("Acesso negado. Dados não encontrados.\n\nVerifique se a placa está correta (sem hífens) e a senha é os 4 últimos dígitos do seu telefone.");
             }
         } catch (e) {
-            console.error(e);
-            alert("Erro de rede. Verifique sua conexão.");
+            console.error('[PortalCliente] Erro geral:', e);
+            alert("Erro de conexão. Tente novamente.");
+        } finally {
+            setCarregando(false);
         }
-        setCarregando(false);
     };
 
     // ── Compartilhar histórico COMPLETO (texto + todas as fotos)

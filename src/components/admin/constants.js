@@ -48,6 +48,7 @@ export const TAB_COLORS = {
   config: '#6366f1',
   marketing: '#ec4899',
   meuplano: '#8b5cf6',
+  precificacao: '#00E676',
 };
 
 export const normalizarPlaca = (v) => v ? v.toUpperCase().replace(/[^A-Z0-9]/g, '') : '';

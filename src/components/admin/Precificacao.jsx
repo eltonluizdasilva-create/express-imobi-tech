@@ -1,9 +1,9 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { db } from '../../lib/firebase';
 import { doc, getDoc, setDoc } from 'firebase/firestore';
-import { Calculator, DollarSign, Save, TrendingUp, Clock } from 'lucide-react';
+import { Calculator, DollarSign, Save, TrendingUp, Clock, MessageCircle, FileText } from 'lucide-react';
 
-export default function Precificacao({ oficinaId: oficinaIdProp, t }) {
+export default function Precificacao({ oficinaId: oficinaIdProp, config, t, verificarLicenca }) {
   const oficinaId = oficinaIdProp;
 
   const [custos, setCustos] = useState({
@@ -80,6 +80,15 @@ export default function Precificacao({ oficinaId: oficinaIdProp, t }) {
     const custoPeca = Number(servico.custoPeca) || 0;
     return precoCliente - custoPeca - custoMaoObra;
   }, [precoCliente, servico, custoMaoObra]);
+
+  const percentuais = useMemo(() => {
+    if (precoCliente <= 0) return { peca: 0,maoObra: 0, impostos: 0, lucro: 0 };
+    const peca = (custoPecaComMargem / precoCliente) * 100;
+    const maoObra = (custoMaoObra / precoCliente) * 100;
+    const imp = (impostos / precoCliente) * 100;
+    const lucro = (lucroLiquido / precoCliente) * 100;
+    return { peca, maoObra, impostos: imp, lucro };
+  }, [precoCliente, custoPecaComMargem, custoMaoObra, impostos, lucroLiquido]);
 
   const salvarCustos = async () => {
     if (!oficinaId) return;
@@ -419,6 +428,60 @@ export default function Precificacao({ oficinaId: oficinaIdProp, t }) {
               </span>
             </div>
           )}
+
+          {precoCliente > 0 && (
+            <div style={{ marginTop: '20px', padding: '16px', background: '#0a0a0a', borderRadius: '12px', border: '1px solid #222' }}>
+              <div style={{ color: '#888', fontSize: '11px', fontWeight: 'bold', marginBottom: '12px', textTransform: 'uppercase', letterSpacing: '1px' }}>
+                💰 Raio-X do Dinheiro
+              </div>
+              <div style={{ display: 'flex', gap: '8px', height: '24px', borderRadius: '6px', overflow: 'hidden' }}>
+                <div style={{ width: `${percentuais.peca}%`, background: '#3b82f6', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '9px', fontWeight: 'bold', color: 'white' }}>
+                  {percentuais.peca > 10 ? 'Peça' : ''}
+                </div>
+                <div style={{ width: `${percentuais.maoObra}%`, background: '#8b5cf6', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '9px', fontWeight: 'bold', color: 'white' }}>
+                  {percentuais.maoObra > 10 ? 'M.O.' : ''}
+                </div>
+                <div style={{ width: `${percentuais.impostos}%`, background: '#f59e0b', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '9px', fontWeight: 'bold', color: 'black' }}>
+                  {percentuais.impostos > 10 ? 'Taxa' : ''}
+                </div>
+                <div style={{ width: `${percentuais.lucro}%`, background: '#22c55e', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '9px', fontWeight: 'bold', color: 'black' }}>
+                  {percentuais.lucro > 10 ? 'Lucro' : ''}
+                </div>
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '10px', flexWrap: 'wrap', gap: '8px' }}>
+                <span style={{ color: '#3b82f6', fontSize: '10px' }}>🔵 Peça: {percentuais.peca.toFixed(1)}%</span>
+                <span style={{ color: '#8b5cf6', fontSize: '10px' }}>🟣 M.O.: {percentuais.maoObra.toFixed(1)}%</span>
+                <span style={{ color: '#f59e0b', fontSize: '10px' }}>🟠 Taxa: {percentuais.impostos.toFixed(1)}%</span>
+                <span style={{ color: '#22c55e', fontSize: '10px' }}>🟢 Lucro: {percentuais.lucro.toFixed(1)}%</span>
+              </div>
+            </div>
+          )}
+
+          <div style={{ marginTop: '20px', display: 'flex', gap: '12px' }}>
+            <button
+              onClick={() => {
+                const telefone = config?.telefone || '';
+                const msg = `Olá! O orçamento para o seu serviço (${servico.nomeServico || 'serviço'}) ficou em ${formatarMoeda(precoCliente)} (Peças + Mão de obra inclusas).`;
+                if (telefone) {
+                  const telLimpo = telefone.replace(/\D/g, '');
+                  window.open(`https://wa.me/55${telLimpo}?text=${encodeURIComponent(msg)}`, '_blank');
+                } else {
+                  alert('Configure o telefone da oficina em Configurações para enviar por WhatsApp.');
+                }
+              }}
+              style={{ flex: 1, padding: '14px', background: '#22c55e', color: 'black', border: 'none', borderRadius: '8px', fontSize: '13px', fontWeight: 'bold', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}
+            >
+              <MessageCircle size={18} />
+              Enviar Orçamento por WhatsApp
+            </button>
+            <button
+              onClick={() => verificarLicenca ? verificarLicenca('criar ordens de serviço') : alert('Em breve: Integração direta com a O.S.!')}
+              style={{ flex: 1, padding: '14px', background: '#ff0033', color: 'white', border: 'none', borderRadius: '8px', fontSize: '13px', fontWeight: 'bold', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}
+            >
+              <FileText size={18} />
+              Criar O.S. com este valor
+            </button>
+          </div>
         </div>
       </div>
     </div>

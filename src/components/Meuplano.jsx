@@ -204,10 +204,11 @@ export default function ModuloMeuPlano({ dadosOficina, planosSistema, onModulosC
                 modulosOperacionais: modsFinais,
                 modulosPermitidos: comTrial ? 'ALL' : null,
                 plano: planoSelecionado,
-                dataFimTrial: comTrial ? new Date(Date.now() + 10 * DIA_MS) : null,
+                dataFimTrial: comTrial ? new Date(Date.now() + 15 * DIA_MS) : null,
+                tipoPlano: comTrial ? 'trial' : ciclo,
             }, { merge: true });
             if (onModulosChange) onModulosChange(modsFinais);
-            setMsgSucesso(comTrial ? '✓ Trial ativado! 10 dias com tudo liberado.' : '✓ Plano atualizado com sucesso!');
+            setMsgSucesso(comTrial ? '✓ Trial ativado! 15 dias com tudo liberado para você acompanhar seus clientes.' : '✓ Plano atualizado com sucesso!');
             setTimeout(() => setMsgSucesso(''), 4000);
         } catch (err) { console.error(err); }
         finally { setSalvando(false); }

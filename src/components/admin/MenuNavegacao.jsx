@@ -83,7 +83,7 @@ export default function MenuNavegacao({ t, servicosVisiveis, MAIN, MASTER, papel
 
         <p style={{ color: t.textoTer, fontSize: '9px', fontWeight: 'bold', letterSpacing: '2px', margin: '0 0 6px', textTransform: 'uppercase' }}>📋 GESTÃO</p>
         <div style={{ display: 'flex', gap: '8px', overflowX: 'auto', marginBottom: '12px', paddingBottom: '4px' }}>
-          {['dashboard', 'estoque', 'financeiro', 'leads', 'tarefa', 'notafiscal', 'patrimonio', 'fornecedores', 'historico']
+          {['dashboard', 'estoque', 'financeiro', 'leads', 'tarefa', 'notafiscal', 'patrimonio', 'fornecedores', 'historico', 'precificacao']
             .filter(aba => aba !== 'dashboard' || papelLogado === 'dono' || papelLogado === 'master')
             .map(aba => makeButton(aba, 'gestao'))}
         </div>
@@ -92,7 +92,7 @@ export default function MenuNavegacao({ t, servicosVisiveis, MAIN, MASTER, papel
           <>
             <p style={{ color: t.textoTer, fontSize: '9px', fontWeight: 'bold', letterSpacing: '2px', margin: '0 0 6px', textTransform: 'uppercase' }}>⚙️ SISTEMA</p>
             <div style={{ display: 'flex', gap: '8px', overflowX: 'auto', marginBottom: '8px', paddingBottom: '4px' }}>
-              {['meuplano', 'config', 'equipe', 'marketing', 'ajuda', 'precificacao', 'master']
+              {['meuplano', 'config', 'equipe', 'marketing', 'ajuda', 'master']
                 .filter(aba => aba !== 'master' || papelLogado === 'master')
                 .map(aba => makeButton(aba, 'sistema'))}
             </div>

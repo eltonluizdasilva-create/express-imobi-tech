@@ -531,7 +531,7 @@ export default function ConteudoAbas(props) {
       {abaAtiva === 'ajuda' && <Ajuda />}
 
       {abaAtiva === 'precificacao' && (
-        <Precificacao oficinaId={oficinaId} />
+        <Precificacao oficinaId={oficinaId} config={config} verificarLicenca={props.verificarLicenca} />
       )}
 
     </div>
