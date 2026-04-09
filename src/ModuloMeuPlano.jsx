@@ -67,6 +67,8 @@ const FALLBACK_PLANOS = {
   planoPrimeIA: { preco: 599, slots: 999, func: 999 },
 };
 
+const ORDEM_PLANOS = ['essencial', 'profissional', 'especialista', 'master', 'planoPrimeIA'];
+
 export default function ModuloMeuPlano({ dadosOficina, planosSistema, onModulosChange }) {
   const [configMaster, setConfigMaster] = useState({ modulosBase: FALLBACK_FIXOS, planos: {} });
   const [_carregandoConfig, setCarregandoConfig] = useState(true);
@@ -234,7 +236,9 @@ export default function ModuloMeuPlano({ dadosOficina, planosSistema, onModulosC
           Seu plano atual: <span style={{ color: corDestaque }}>{isPrime ? '👑 PRIME IA' : planoSelecionado.toUpperCase()}</span>
         </p>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(100px, 1fr))', gap: '8px', marginBottom: '12px' }}>
-          {Object.entries(planosConfig).map(([chave, p]) => {
+          {ORDEM_PLANOS.map(chave => {
+            const p = planosConfig[chave];
+            if (!p) return null;
             const ativo = planoSelecionado === chave;
             const cor = chave === 'planoPrimeIA' ? '#a855f7' : chave === 'master' ? '#D4AF37' : GREEN;
             return (
@@ -256,6 +260,12 @@ export default function ModuloMeuPlano({ dadosOficina, planosSistema, onModulosC
                 </p>
                 <p style={{ color: '#555', fontSize: '8px', margin: '2px 0 0' }}>
                   {p.slots >= 999 ? '∞' : `1-${p.slots} abas`}
+                </p>
+                <p className="text-[9px] text-zinc-500 uppercase font-bold mt-1">
+                  {chave === 'essencial' ? '3 funcionários' :
+                    chave === 'profissional' ? '5 funcionários' :
+                      chave === 'especialista' ? '8 funcionários' :
+                        'Consultar'}
                 </p>
               </button>
             );
@@ -293,94 +303,94 @@ export default function ModuloMeuPlano({ dadosOficina, planosSistema, onModulosC
       {/* PAINEL DE MÓDULOS */}
       {/* LISTA DE MÓDULOS */}
       <div style={{ background: '#111', borderRadius: '14px', border: `1px solid #222`, marginBottom: '20px', overflow: 'hidden' }}>
-          {/* HEADER */}
-          <div style={{ padding: '16px 18px 12px', borderBottom: '1px solid #1e1e1e' }}>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px', flexWrap: 'wrap' }}>
-              <div>
-                <p style={{ color: 'white', fontSize: '13px', fontWeight: '900', margin: 0 }}>
-                  Módulos da Oficina ({selecionados.length})
-                </p>
-                <p style={{ color: '#555', fontSize: '11px', margin: '2px 0 0' }}>
-                  {isUnlimited
-                    ? 'Plano sem limite — escolha quantas quiser'
-                    : `Escolha até ${planoLimite} módulo${planoLimite !== 1 ? 's' : ''} extra${planoLimite !== 1 ? 's' : ''} (${extrasSelecionados}/${planoLimite})`}
-                </p>
-              </div>
-              {limiteAtingido && (
-                <div style={{ background: 'rgba(239,68,68,0.12)', border: '1px solid #ef4444', borderRadius: '20px', padding: '4px 12px' }}>
-                  <span style={{ color: '#ef4444', fontSize: '10px', fontWeight: '800' }}>Limite atingido</span>
-                </div>
-              )}
+        {/* HEADER */}
+        <div style={{ padding: '16px 18px 12px', borderBottom: '1px solid #1e1e1e' }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px', flexWrap: 'wrap' }}>
+            <div>
+              <p style={{ color: 'white', fontSize: '13px', fontWeight: '900', margin: 0 }}>
+                Módulos da Oficina ({selecionados.length})
+              </p>
+              <p style={{ color: '#555', fontSize: '11px', margin: '2px 0 0' }}>
+                {isUnlimited
+                  ? 'Plano sem limite — escolha quantas quiser'
+                  : `Escolha até ${planoLimite} módulo${planoLimite !== 1 ? 's' : ''} extra${planoLimite !== 1 ? 's' : ''} (${extrasSelecionados}/${planoLimite})`}
+              </p>
             </div>
-          </div>
-
-          {/* CATEGORIAS */}
-          <div style={{ padding: '14px 16px' }}>
-            {/* MÓDULOS FIXOS (do Master) */}
-            {fixosRender.length > 0 && (
-              <div style={{ marginBottom: '16px' }}>
-                <p style={{ color: '#555', fontSize: '9px', fontWeight: '900', textTransform: 'uppercase', letterSpacing: '2px', marginBottom: '6px' }}>
-                  🔒 Módulos Inclusos
-                </p>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                  {fixosRender.map(mod => <div key={mod.id}>{renderCard(mod)}</div>)}
-                </div>
+            {limiteAtingido && (
+              <div style={{ background: 'rgba(239,68,68,0.12)', border: '1px solid #ef4444', borderRadius: '20px', padding: '4px 12px' }}>
+                <span style={{ color: '#ef4444', fontSize: '10px', fontWeight: '800' }}>Limite atingido</span>
               </div>
             )}
-
-            {/* CATEGORIAS RESTANTES */}
-            {CATEGORIAS_RENDER.map(cat => (
-              <div key={cat.key} style={{ marginBottom: '16px' }}>
-                <p style={{ color: '#555', fontSize: '9px', fontWeight: '900', textTransform: 'uppercase', letterSpacing: '2px', marginBottom: '6px' }}>
-                  {cat.label}
-                </p>
-                <div>
-                  <p style={{ color: '#333', fontSize: '8px', fontWeight: '800', textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '4px' }}>
-                    ⭐ Extras {limiteAtingido ? '(limite atingido)' : ''}
-                  </p>
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                    {cat.mods.map(mod => <div key={mod.id}>{renderCard(mod)}</div>)}
-                  </div>
-                </div>
-              </div>
-            ))}
-
-            {/* BOTÕES */}
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginTop: '8px' }}>
-              {msgSucesso && (
-                <div style={{ background: 'rgba(34,197,94,0.1)', border: '1px solid #22c55e', borderRadius: '8px', padding: '10px 14px', textAlign: 'center' }}>
-                  <span style={{ color: '#22c55e', fontSize: '12px', fontWeight: '800' }}>{msgSucesso}</span>
-                </div>
-              )}
-              <button
-                onClick={() => salvarPlano(false)}
-                disabled={salvando}
-                style={{
-                  width: '100%', padding: '13px', borderRadius: '12px',
-                  background: 'transparent', color: '#555', border: '1px solid #333',
-                  fontWeight: '800', fontSize: '11px', textTransform: 'uppercase',
-                  cursor: salvando ? 'not-allowed' : 'pointer', opacity: salvando ? 0.5 : 1,
-                }}
-              >
-                {salvando ? 'Salvando...' : '💾 Salvar Configuração'}
-              </button>
-              <button
-                onClick={() => salvarPlano(true)}
-                disabled={salvando}
-                style={{
-                  width: '100%', padding: '16px', borderRadius: '12px',
-                  background: 'linear-gradient(135deg, #FF0033, #ff3366)',
-                  color: 'white', border: 'none',
-                  fontWeight: '900', fontSize: '13px', textTransform: 'uppercase',
-                  cursor: salvando ? 'not-allowed' : 'pointer',
-                  boxShadow: '0 6px 24px #FF003344', opacity: salvando ? 0.5 : 1,
-                }}
-              >
-                🚀 Testar Tudo + 🧠 IA (10 Dias Grátis)
-              </button>
-            </div>
           </div>
         </div>
+
+        {/* CATEGORIAS */}
+        <div style={{ padding: '14px 16px' }}>
+          {/* MÓDULOS FIXOS (do Master) */}
+          {fixosRender.length > 0 && (
+            <div style={{ marginBottom: '16px' }}>
+              <p style={{ color: '#555', fontSize: '9px', fontWeight: '900', textTransform: 'uppercase', letterSpacing: '2px', marginBottom: '6px' }}>
+                🔒 Módulos Inclusos
+              </p>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                {fixosRender.map(mod => <div key={mod.id}>{renderCard(mod)}</div>)}
+              </div>
+            </div>
+          )}
+
+          {/* CATEGORIAS RESTANTES */}
+          {CATEGORIAS_RENDER.map(cat => (
+            <div key={cat.key} style={{ marginBottom: '16px' }}>
+              <p style={{ color: '#555', fontSize: '9px', fontWeight: '900', textTransform: 'uppercase', letterSpacing: '2px', marginBottom: '6px' }}>
+                {cat.label}
+              </p>
+              <div>
+                <p style={{ color: '#333', fontSize: '8px', fontWeight: '800', textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '4px' }}>
+                  ⭐ Extras {limiteAtingido ? '(limite atingido)' : ''}
+                </p>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                  {cat.mods.map(mod => <div key={mod.id}>{renderCard(mod)}</div>)}
+                </div>
+              </div>
+            </div>
+          ))}
+
+          {/* BOTÕES */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginTop: '8px' }}>
+            {msgSucesso && (
+              <div style={{ background: 'rgba(34,197,94,0.1)', border: '1px solid #22c55e', borderRadius: '8px', padding: '10px 14px', textAlign: 'center' }}>
+                <span style={{ color: '#22c55e', fontSize: '12px', fontWeight: '800' }}>{msgSucesso}</span>
+              </div>
+            )}
+            <button
+              onClick={() => salvarPlano(false)}
+              disabled={salvando}
+              style={{
+                width: '100%', padding: '13px', borderRadius: '12px',
+                background: 'transparent', color: '#555', border: '1px solid #333',
+                fontWeight: '800', fontSize: '11px', textTransform: 'uppercase',
+                cursor: salvando ? 'not-allowed' : 'pointer', opacity: salvando ? 0.5 : 1,
+              }}
+            >
+              {salvando ? 'Salvando...' : '💾 Salvar Configuração'}
+            </button>
+            <button
+              onClick={() => salvarPlano(true)}
+              disabled={salvando}
+              style={{
+                width: '100%', padding: '16px', borderRadius: '12px',
+                background: 'linear-gradient(135deg, #FF0033, #ff3366)',
+                color: 'white', border: 'none',
+                fontWeight: '900', fontSize: '13px', textTransform: 'uppercase',
+                cursor: salvando ? 'not-allowed' : 'pointer',
+                boxShadow: '0 6px 24px #FF003344', opacity: salvando ? 0.5 : 1,
+              }}
+            >
+              🚀 Testar Tudo + 🧠 IA (10 Dias Grátis)
+            </button>
+          </div>
+        </div>
+      </div>
 
       {/* CAIXA DE TOTAL */}
       <div style={{ background: '#1a1a00', border: `2px dashed ${corDestaque}`, padding: '20px', borderRadius: '12px', textAlign: 'center', marginBottom: '16px' }}>

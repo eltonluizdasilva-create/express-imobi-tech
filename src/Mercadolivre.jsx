@@ -13,43 +13,48 @@ export default function MercadoLivre() {
     const [resultados, setResultados] = useState([]);
     const [sortByPreco, setSortByPreco] = useState(false);
 
-    // FUNÇÃO REAL: Consumindo a API Oficial do Mercado Livre
-    const handleSearch = async () => {
+    const IMAGENS_ESTAVEIS = [
+        "https://images.tcdn.com.br/img/img_prod/697730/disco_de_freio_dianteiro_vent_fremax_bd5288_uno_palio_siena_1513_1_20200803154133.jpg",
+        "https://images.tcdn.com.br/img/img_prod/697730/amortecedor_dianteiro_monroe_334437mm_uno_vivace_1167_1_20190806144558.jpg",
+        "https://images.tcdn.com.br/img/img_prod/697730/pastilha_de_freio_dianteira_cobreq_n132_uno_mille_palio_fiorino_1523_1_20200803154448.jpg",
+        "https://images.tcdn.com.br/img/img_prod/697730/filtro_de_oleo_mann_filter_w610_8_uno_palio_punto_fiat_500_1549_1_20200803155705.jpg"
+    ];
+
+    const handleSearch = () => {
         if (!searchTerm.trim()) return;
         setIsSearching(true);
 
-        try {
-            // Faz a requisição para a API pública do ML buscando 12 itens
-            const response = await fetch(`https://api.mercadolibre.com/sites/MLB/search?q=${encodeURIComponent(searchTerm)}&limit=12`);
-            const data = await response.json();
+        // Simula o tempo de busca perfeito para o vídeo (rápido, mas realista)
+        setTimeout(() => {
+            const marcas = ["Original", "Bosch", "Cofap", "Magneti Marelli", "Nakata", "TRW"];
 
-            if (data.results && data.results.length > 0) {
-                const produtosMapeados = data.results.map(item => {
-                    // Melhora a qualidade da imagem trocando o sufixo -I por -O (Original) e força HTTPS
-                    let imagemAltaQualidade = item.thumbnail.replace('http://', 'https://');
-                    imagemAltaQualidade = imagemAltaQualidade.replace('-I.jpg', '-O.jpg');
-
-                    return {
-                        id: item.id,
-                        titulo: item.title,
-                        preco: item.price,
-                        frete: item.shipping?.free_shipping ? "Grátis" : "Consultar",
-                        avaliacao: (4.0 + Math.random() * 1.0).toFixed(1), // API básica não traz review, mantemos mock
-                        img: imagemAltaQualidade,
-                        permalink: item.permalink // Link real do anúncio
-                    };
-                });
-                setResultados(produtosMapeados);
-            } else {
-                setResultados([]);
-                alert("Nenhuma peça encontrada para esta busca.");
-            }
-        } catch (error) {
-            console.error("Erro ao buscar na API do Mercado Livre:", error);
-            alert("Erro de conexão com o Mercado Livre.");
-        } finally {
+            const novosResultados = Array.from({ length: 12 }, (_, i) => {
+                return {
+                    id: i + 1,
+                    titulo: `${searchTerm.toUpperCase()} - ${marcas[i % marcas.length]}`,
+                    preco: (45 + Math.random() * 300).toFixed(2),
+                    frete: i % 2 === 0 ? "FULL" : "Grátis",
+                    avaliacao: (4.3 + Math.random() * 0.6).toFixed(1),
+                    img: IMAGENS_ESTAVEIS[i % IMAGENS_ESTAVEIS.length]
+                };
+            });
+            setResultados(novosResultados);
             setIsSearching(false);
-        }
+        }, 800);
+    };
+
+    // Link limpo: abre a busca exata no Mercado Livre com sua tag
+    const gerarLinkML = () => {
+        const query = searchTerm.trim().replace(/\s+/g, '-').toLowerCase();
+        return `https://lista.mercadolivre.com.br/${query}?af_id=${MEU_ID_AFILIADO}`;
+    };
+
+    // Atualize também o botão de WhatsApp
+    const handleWhatsAppShare = (produto) => {
+        const link = gerarLinkML();
+        const precoFormatado = produto.preco.replace('.', ',');
+        const mensagem = `🚀 *COTAÇÃO EXPRESS AUTO TECH*\n\nPeça: *${produto.titulo}*\n💰 Valor Médio: *R$ ${precoFormatado}*\n\n🛒 Confira todas as opções e compre com segurança no Mercado Livre:\n${link}`;
+        window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(mensagem)}`, '_blank');
     };
 
     const toggleMic = () => {
@@ -68,19 +73,6 @@ export default function MercadoLivre() {
         }
     };
 
-    // LINK DIRETO: Pega o permalink do anúncio real e anexa sua tag de afiliado
-    const gerarLinkML = (permalink) => {
-        const separador = permalink.includes('?') ? '&' : '?';
-        return `${permalink}${separador}af_id=${MEU_ID_AFILIADO}`;
-    };
-
-    const handleWhatsAppShare = (produto) => {
-        const link = gerarLinkML(produto.permalink);
-        const precoFormatado = produto.preco.toLocaleString('pt-BR', { minimumFractionDigits: 2 });
-        const mensagem = `🚀 *COTAÇÃO EXPRESS AUTO TECH*\n\nPeça: *${produto.titulo}*\n💰 Valor: *R$ ${precoFormatado}*\n\n🛒 Acesse o anúncio direto no Mercado Livre:\n${link}`;
-        window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(mensagem)}`, '_blank');
-    };
-
     return (
         <div className="bg-black min-h-screen text-zinc-100 p-4 md:p-8">
             <div className="max-w-6xl mx-auto">
@@ -91,7 +83,7 @@ export default function MercadoLivre() {
                         <div className="p-5 bg-black rounded-3xl shadow-xl"><ShoppingCart className="text-[#FFE600]" size={40} /></div>
                         <div>
                             <h1 className="text-4xl font-black text-[#2d3277] uppercase italic leading-none">Mercado Livre</h1>
-                            <p className="text-yellow-800 font-bold uppercase tracking-[0.2em] text-[10px] mt-1">Integração Oficial API</p>
+                            <p className="text-yellow-800 font-bold uppercase tracking-[0.2em] text-[10px] mt-1">Simulação de Catálogo</p>
                         </div>
                     </div>
                 </div>
@@ -152,10 +144,10 @@ export default function MercadoLivre() {
                                     <div className="mt-auto">
                                         <div className="mb-4">
                                             <span className="text-[10px] text-zinc-500 font-bold mr-1">R$</span>
-                                            <span className="text-2xl font-black text-white font-mono">{produto.preco.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span>
+                                            <span className="text-2xl font-black text-white font-mono">{produto.preco}</span>
                                         </div>
                                         <div className="grid gap-2">
-                                            <button onClick={() => window.open(gerarLinkML(produto.permalink), '_blank')} className="w-full py-3 bg-[#FFE600] text-[#2d3277] font-black uppercase text-[9px] rounded-xl hover:bg-yellow-400 transition-all active:scale-95 shadow-md">
+                                            <button onClick={() => window.open(gerarLinkML(), '_blank')} className="w-full py-3 bg-[#FFE600] text-[#2d3277] font-black uppercase text-[9px] rounded-xl hover:bg-yellow-400 transition-all active:scale-95 shadow-md">
                                                 Ver no ML (Comprar)
                                             </button>
                                             <button onClick={() => handleWhatsAppShare(produto)} className="w-full py-3 bg-zinc-800 text-zinc-400 font-black uppercase text-[9px] rounded-xl border border-zinc-700 hover:bg-green-600 hover:text-white hover:border-green-600 transition-all">

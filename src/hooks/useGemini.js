@@ -35,17 +35,18 @@ export function useGemini() {
     setLoading(true);
     setError(null);
     try {
-      // 🟢 USANDO A VERSÃO LITE (Sem limite Zero e Super Rápida)
-      const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash-lite" });
+      const modelToUse = imageBase64
+        ? genAI.getGenerativeModel({ model: "gemini-1.5-flash" })
+        : genAI.getGenerativeModel({ model: "gemini-2.0-flash-lite" });
 
       if (!imageBase64) {
-        const result = await model.generateContent(prompt);
+        const result = await modelToUse.generateContent(prompt);
         return result.response.text();
       }
 
       const base64Data = imageBase64.replace(/^data:image\/(png|jpeg|jpg|webp);base64,/, '');
       const imagePart = { inlineData: { data: base64Data, mimeType: "image/jpeg" } };
-      const result = await model.generateContent([prompt, imagePart]);
+      const result = await modelToUse.generateContent([prompt, imagePart]);
       return result.response.text();
     } catch (err) {
       const msg = err.message || 'Erro desconhecido';

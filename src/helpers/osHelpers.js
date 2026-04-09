@@ -42,7 +42,8 @@ export const TIPO_EXPLICACOES = {
 
 export function resolverTipoOS(os) {
   if (!os) return 'mecanica';
-  const t = String(os.tipo || os.tipoServico || os.setor || 'mecanica').toLowerCase().trim();
+  const valor = os?.tipo || os?.tipoServico || os?.setor || '';
+  const t = String(valor).toLowerCase().trim();
   const map = {
     hibrido: 'hibrido', moto: 'moto', eletrico: 'eletrico', funilaria: 'funilaria',
     amortecedor: 'amortecedor', injecao: 'injecao',
@@ -55,6 +56,7 @@ export function resolverTipoOS(os) {
 }
 
 export function resolverAbaDestino(tipo) {
+  const tipoSeguro = tipo || 'mecanica';
   const map = {
     hibrido: 'hibrido', eletrico: 'eletrico', moto: 'moto', funilaria: 'funilaria',
     amortecedor: 'amortecedor', injecao: 'injecao',
@@ -63,13 +65,14 @@ export function resolverAbaDestino(tipo) {
     ar_condicionado: 'ar_condicionado', pneus: 'pneus', pneu: 'pneus', escapamento: 'escapamento',
     estetica: 'estetica', desmanche: 'desmanche',
   };
-  return map[tipo] || 'mecanica';
+  return map[tipoSeguro] || 'mecanica';
 }
 
 export function buscarDadosPorPlaca(listaCarros, placaDigitada, normalizarPlaca, callbacks) {
   const placaNorm = normalizarPlaca(placaDigitada || '');
   if (placaNorm.length < 7) return null;
-  const match = listaCarros
+  const lista = listaCarros || [];
+  const match = lista
     .filter(o => normalizarPlaca(o.placa || '') === placaNorm)
     .sort((a, b) => new Date(b.data_registro || 0) - new Date(a.data_registro || 0))[0];
   if (match && callbacks) {

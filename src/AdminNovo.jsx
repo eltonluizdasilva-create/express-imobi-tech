@@ -19,6 +19,7 @@ import ConteudoAbas from './components/admin/ConteudoAbas';
 import ModuloBloqueado from './components/admin/ModuloBloqueado';
 import ModaisExtras from './components/admin/ModaisExtras';
 import TelaMaestro from './components/admin/TelaMaestro';
+import Precificacao from './components/admin/Precificacao';
 import useQuickActions from './hooks/useQuickActions';
 import useAuthListener from './hooks/useAuthListener';
 import useCarregamentoInicial from './hooks/useCarregamentoInicial';
@@ -88,6 +89,8 @@ const AJUDA_ITENS = [
   { aba: 'retorno', icon: '📆', titulo: 'Gestão de Retornos (Vendas)', conteudo: ['Agendamento automático de revisões futuras.', 'Lembrete de troca de óleo, freios e correia dentada.', 'Aumente o faturamento trazendo o cliente de volta.'] },
   { aba: 'config', icon: '⚙️', titulo: 'Configurações do Sistema', conteudo: ['Personalize nome, logo e endereço da sua oficina.', 'Cadastre chaves PIX para links de pagamento.', 'Ajuste horários e preferências globais.'] }
 ];
+
+const isTrial = true; // Simulação de trial de 10 dias
 
 const { MAIN, GREEN, MASTER } = COLORS;
 const APP_BASE_URL = 'https://oficina.expresstech.com.br';
@@ -319,7 +322,8 @@ export default function Admin() {
   };
 
   const handleOSCriada = (setor, novaOS) => {
-    const tipo = resolverTipoOS({ tipo: setor, tipoServico: setor });
+    const setorSeguro = setor || 'mecanica';
+    const tipo = resolverTipoOS({ tipo: setorSeguro, tipoServico: setorSeguro });
     const abaDestino = resolverAbaDestino(tipo);
     setListaCarros(prev => [novaOS, ...prev]);
     setOsEditando(novaOS);
@@ -410,16 +414,19 @@ export default function Admin() {
   }
 
   const moduloLiberado = (idAba) => {
+    if (isTrial) return true;
     const ehMaster = dadosOficina?.papel === 'master' || dadosOficina?.plano === 'master';
     if (ehMaster) return true;
     if (dadosOficina?.modulosPermitidos === 'ALL') return true;
     const abasVitais = ['dashboard', 'mecanica', 'clientes', 'ajuda', 'meuplano', 'config'];
     if (abasVitais.includes(idAba)) return true;
-    if (dadosOficina?.modulosOperacionais?.includes(idAba)) return true;
+    if ((dadosOficina?.modulosOperacionais || []).includes(idAba)) return true;
     return false;
   };
 
   const lidarModuloBloqueado = (aba) => {
+    if (isTrial) return;
+    if (dadosOficina?.plano === 'master' || dadosOficina?.plano === 'prime') return;
     setModalUpgradeAba(aba);
   };
 
@@ -508,6 +515,7 @@ export default function Admin() {
     mercadolivre: '📦 MERCADO LIVRE', mercado_livre: '🛒 MERCADO LIVRE',
     financeiro: '📊 FINANCEIRO', estoque: '📦 ESTOQUE', leads: '👥 CLIENTES', historico: '📋 HISTÓRICO',
     tarefa: '📋 TAREFA', notafiscal: '📄 NOTA FISCAL', retorno: '📅 RETORNO', patrimonio: '📊 PATRIMÔNIO', fornecedores: '🤝 FORNECEDORES',
+    precificacao: '💰 PRECIFICAÇÃO',
     equipe: '👥 EQUIPE', config: '⚙️ AJUSTES', marketing: '📣 MARKETING', estrategia: '🚀 ESTRATÉGIA', ajuda: '❓ AJUDA',
     master: '👑 MASTER', meuplano: '💰 MEU PLANO',
   };
@@ -547,6 +555,7 @@ export default function Admin() {
         SpeechTextarea={SpeechTextarea}
         GREEN={GREEN}
         MAIN={MAIN}
+        oficinaId={oficinaId}
       />
     );
   }
@@ -567,6 +576,7 @@ export default function Admin() {
 
       <ConteudoAbas
         abaAtiva={abaAtiva}
+        dataFimTrial={dataFimTrial}
         listaCarros={listaCarros}
         listaFinanceiro={listaFinanceiro}
         listaEstoque={listaEstoque}
@@ -588,7 +598,7 @@ export default function Admin() {
         abrirWhatsApp={abrirWhatsApp}
         abrirMercado={abrirMercado}
         buscarDadosPorPlaca={buscarDadosPorPlaca}
-        irParaNovaOS={irParaNovaOS}
+        handleOSCriada={handleOSCriada}
         nomeCliente={nomeCliente}
         setNomeCliente={setNomeCliente}
         placa={placa}
@@ -655,6 +665,9 @@ export default function Admin() {
         setSubAbaEletrica={setSubAbaEletrica}
         tema={tema}
         toggleTema={toggleTema}
+        isTrial={isTrial}
+        modulosOperacionais={modulosOperacionais}
+        irParaNovaOS={irParaNovaOS}
       />
 
       <ModuloBloqueado

@@ -91,6 +91,20 @@ export default function ListaOS({ listaCarros, onEditar, onDeletar, onWhatsApp, 
     alert('📋 Link do laudo copiado!');
   };
 
+  const enviarPortalCliente = (os) => {
+    const link = `${APP_BASE_URL}/status/${oficinaId || ''}/${os.id}`;
+    const senha = os.senhaConsulta || 'Não gerada';
+    const msg = `Olá! Acompanhe o serviço do seu veículo placa ${os.placa} pelo nosso portal VIP. Acesse: ${link} e use a senha: ${senha}`;
+    const tel = (os.telefone || '').replace(/\D/g, '');
+
+    if (tel) {
+      window.open(`https://wa.me/55${tel}?text=${encodeURIComponent(msg)}`, '_blank');
+    } else {
+      navigator.clipboard.writeText(link);
+      alert('📋 Link copiado! Telefone não cadastrado para WhatsApp.');
+    }
+  };
+
   const gerarReciboPDF = async (os) => {
     if (!oficinaId) return;
     try {
@@ -352,6 +366,9 @@ export default function ListaOS({ listaCarros, onEditar, onDeletar, onWhatsApp, 
                     <p style={{ margin: '0 0 6px 0', fontSize: '14px', color: '#ccc', fontWeight: '700' }}>
                       🚗 {os.placa} - {os.modelo}
                     </p>
+                    <p style={{ color: '#f59e0b', fontSize: '10px', margin: '0 0 6px 0', fontWeight: '600' }}>
+                      🔑 Senha Web: {os.senhaConsulta || 'Não gerada'}
+                    </p>
                     <p style={{ color: '#777', fontSize: '11px', margin: '0 0 6px 0' }}>
                       Data: {formatarData(os.data_registro)}
                     </p>
@@ -370,7 +387,7 @@ export default function ListaOS({ listaCarros, onEditar, onDeletar, onWhatsApp, 
 
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
                     <button
-                      onClick={() => onWhatsApp?.(os, 'link')}
+                      onClick={() => enviarPortalCliente(os)}
                       style={{ padding: '9px 12px', background: '#22c55e', color: 'black', border: 'none', borderRadius: '6px', cursor: 'pointer', fontSize: '11px', fontWeight: '900' }}
                     >
                       💬 ENVIAR PORTAL AO CLIENTE

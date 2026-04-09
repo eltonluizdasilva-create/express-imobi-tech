@@ -25,7 +25,7 @@ const SETORES = [
   { key: 'estetica', label: 'Estética', icon: '✨' },
 ];
 
-export default function OS({ oficinaId, dadosOficina, onSalvo, onRedirecionar, buscarDadosPorPlaca }) {
+export default function OS({ oficinaId, dadosOficina, onSalvo, onRedirecionar, buscarDadosPorPlaca, isTrial = false, modulosOperacionais = [] }) {
   const [dados, setDados] = useState({
     nomeCliente: '',
     placa: '',
@@ -40,15 +40,15 @@ export default function OS({ oficinaId, dadosOficina, onSalvo, onRedirecionar, b
   const [setorAtivo, setSetorAtivo] = useState('mecanica');
 
   const setoresVisiveis = useMemo(() => {
+    if (isTrial) return SETORES;
     if (!dadosOficina) return SETORES;
 
     const ehMaster = dadosOficina?.papel === 'master' || dadosOficina?.plano === 'master';
     if (ehMaster || dadosOficina?.modulosPermitidos === 'ALL') return SETORES;
 
+    const modulos = (modulosOperacionais || []) || (dadosOficina?.modulosOperacionais || []);
     const modulosNormalizados = new Set(
-      (dadosOficina?.modulosOperacionais || [])
-        .filter(Boolean)
-        .map((m) => String(m).trim().toLowerCase())
+      (modulos || []).filter(Boolean).map((m) => String(m).trim().toLowerCase())
     );
 
     if (modulosNormalizados.size === 0) return SETORES.filter(s => s.key === 'mecanica');
@@ -77,11 +77,14 @@ export default function OS({ oficinaId, dadosOficina, onSalvo, onRedirecionar, b
       const nomesModulo = MAPA[setor.key] || [setor.key];
       return nomesModulo.some((nome) => modulosNormalizados.has(nome.toLowerCase()));
     });
-  }, [dadosOficina]);
+  }, [dadosOficina, isTrial, modulosOperacionais]);
 
   useEffect(() => {
-    if (setoresVisiveis.length > 0 && !setoresVisiveis.find(s => s.key === setorAtivo)) {
-      setSetorAtivo(setoresVisiveis[0].key);
+    if (setoresVisiveis && setoresVisiveis.length > 0 && setorAtivo) {
+      const ativoValido = setoresVisiveis.some(s => s.key === setorAtivo);
+      if (!ativoValido) {
+        setSetorAtivo(setoresVisiveis[0].key);
+      }
     }
   }, [setoresVisiveis, setorAtivo]);
 
@@ -114,6 +117,11 @@ export default function OS({ oficinaId, dadosOficina, onSalvo, onRedirecionar, b
     }
   };
 
+  const gerarSenhaPlaca = (placa) => {
+    const limpa = (placa || '').replace(/[^A-Z0-9]/g, '');
+    return limpa.slice(-4).toUpperCase() || '0000';
+  };
+
   const handleGerarOS = async (e) => {
     e.preventDefault();
 
@@ -122,9 +130,14 @@ export default function OS({ oficinaId, dadosOficina, onSalvo, onRedirecionar, b
       return;
     }
 
+    const setorValido = setorAtivo || 'mecanica';
+    
     setSalvando(true);
     try {
+      console.log('[OS] Iniciando geração - setor:', setorValido);
+      
       const modeloCompleto = `${dados.veiculo} ${dados.ano} ${dados.motor}`.trim();
+      console.log('[OS] Modelo completo:', modeloCompleto);
 
       const payload = {
         ...dados,
@@ -132,21 +145,30 @@ export default function OS({ oficinaId, dadosOficina, onSalvo, onRedirecionar, b
         oficinaId,
         data_registro: new Date().toISOString(),
         statusPagamento: 'pendente',
-        tipo: setorAtivo,
-        tipoServico: setorAtivo,
+        tipo: setorValido,
+        tipoServico: setorValido,
         total: 0,
+        senhaConsulta: gerarSenhaPlaca(dados.placa),
       };
+      console.log('[OS] Payload:', payload);
 
+      console.log('[OS] Salvando no Firebase...');
       const docRef = await addDoc(collection(db, 'oficinas', oficinaId, 'os'), payload);
+      console.log('[OS] Doc salvo, id:', docRef.id);
+
+      console.log('[OS] Sincronizando retornos...');
       await sincronizarRetornosAutomaticos({
         oficinaId,
         osId: docRef.id,
         osData: payload,
         osBase: {},
       });
-      const novaOS = { id: docRef.id, ...payload };
+      console.log('[OS] Retornos sincronizados');
 
-      alert(`O.S. gerada e enviada para ${setorAtivo.toUpperCase()}!`);
+      const novaOS = { id: docRef.id, ...payload };
+      console.log('[OS] Nova OS:', novaOS);
+
+      alert(`O.S. gerada e enviada para ${setorValido.toUpperCase()}!`);
       setDados({
         nomeCliente: '',
         placa: '',
@@ -159,9 +181,17 @@ export default function OS({ oficinaId, dadosOficina, onSalvo, onRedirecionar, b
       setBuscaPlaca('');
       setSetorAtivo('mecanica');
 
-      if (onSalvo) onSalvo();
-      if (onRedirecionar) onRedirecionar(setorAtivo, novaOS);
+      if (onSalvo) {
+        console.log('[OS] Chamando onSalvo...');
+        onSalvo();
+      }
+      if (onRedirecionar) {
+        console.log('[OS] Chamando onRedirecionar...');
+        onRedirecionar(setorValido, novaOS);
+      }
+      console.log('[OS] Finalizado com sucesso');
     } catch (erro) {
+      console.error('[OS] Erro completo:', erro);
       alert('Erro: ' + erro.message);
     } finally {
       setSalvando(false);

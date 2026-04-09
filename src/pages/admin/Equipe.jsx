@@ -7,8 +7,8 @@ const REGRAS_PLANOS = {
   essencial: { membros: 3, nome: 'Essencial' },
   profissional: { membros: 5, nome: 'Profissional' },
   especialista: { membros: 8, nome: 'Especialista' },
-  master: { membros: 12, nome: 'Master IA' },
-  ultimate: { membros: 999, nome: 'Ultimate AI' }
+  master: { membros: 99, nome: 'Master IA' },
+  planoPrimeIA: { membros: 99, nome: 'Prime IA' }
 };
 
 // MÓDULOS QUE O DONO PODE ESCOLHER
@@ -20,8 +20,10 @@ const MODULOS_DISPONIVEIS = [
   { id: 'relatorios', nome: 'Relatórios / Dashboard', icone: '📊' }
 ];
 
-export default function Equipe({ setModalUpgradeAberto }) {
+export default function Equipe({ setModalUpgradeAberto, dataFimTrial }) {
   const { oficinaId, dadosOficina } = useOficina() || {};
+
+  const isTrial = dataFimTrial && new Date(dataFimTrial) > new Date();
 
   // Estados do Formulário
   const [nome, setNome] = useState('');
@@ -34,7 +36,11 @@ export default function Equipe({ setModalUpgradeAberto }) {
   const [limiteAtingido, setLimiteAtingido] = useState(false);
 
   const planoAtual = dadosOficina?.plano || 'essencial';
-  const configPlano = REGRAS_PLANOS[planoAtual] || REGRAS_PLANOS.essencial;
+  let configPlano = REGRAS_PLANOS[planoAtual] || REGRAS_PLANOS.essencial;
+
+  if (isTrial) {
+    configPlano = REGRAS_PLANOS.ultimate;
+  }
 
   // Carregar Equipe em Tempo Real
   useEffect(() => {
@@ -70,8 +76,14 @@ export default function Equipe({ setModalUpgradeAberto }) {
     }
 
     if (membros.length >= configPlano.membros) {
-      alert(`🚀 Seu plano ${configPlano.nome} permite até ${configPlano.membros} funcionários.`);
-      if (setModalUpgradeAberto) setModalUpgradeAberto(true);
+      if (isTrial) {
+        alert("🎉 Você está usando o período de teste com acesso total do plano Prime IA. Adicione sua equipe livremente!");
+      } else if (planoAtual === 'master' || planoAtual === 'planoPrimeIA') {
+        // Ignora o bloqueio
+      } else {
+        alert(`🚀 Seu plano ${configPlano.nome} permite até ${configPlano.membros} funcionários.`);
+        if (setModalUpgradeAberto) setModalUpgradeAberto(true);
+      }
       return;
     }
 
@@ -142,7 +154,7 @@ export default function Equipe({ setModalUpgradeAberto }) {
       <header className="text-center">
         <h2 className="text-xl font-bold text-red-500">👥 GESTÃO DE EQUIPE</h2>
         <p className="text-[10px] text-gray-500 uppercase tracking-widest mt-1">
-          Plano {configPlano.nome}: {membros.length} / {configPlano.membros === 999 ? '∞' : configPlano.membros} vagas
+          {isTrial ? 'Período de Teste (Acesso Total)' : `Plano ${configPlano.nome}`}: {membros.length} / {configPlano.membros === 999 ? '∞' : configPlano.membros} vagas
         </p>
       </header>
 

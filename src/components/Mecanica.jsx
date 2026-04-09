@@ -175,7 +175,7 @@ export default function Mecanica({
 
             <div className="max-w-4xl mx-auto">
                 <h1 className="text-2xl font-bold flex items-center gap-3 mb-8">
-                    <Settings className="text-purple-500" /> Nova O.S. - <span className="text-purple-500 uppercase italic font-black text-shadow-purple">Mecânica Geral</span>
+                    <Settings className="text-purple-500" /> <span className="text-purple-500 uppercase italic font-black text-shadow-purple">Mecânica Geral</span>
                 </h1>
 
                 {/* FOTOS */}

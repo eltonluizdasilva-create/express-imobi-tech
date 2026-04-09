@@ -1,12 +1,21 @@
 import { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import { db } from './lib/firebase';
-import { doc, getDoc, collection, getDocs } from 'firebase/firestore';
+import { doc, getDoc, collection, getDocs, updateDoc } from 'firebase/firestore';
 
 const MAIN_COLOR = "#FF0033";
 const GREEN_MONEY = "#00E676";
 const KM_COLOR = "#eab308";
 const SITE_LINK = 'https://expresstech.com.br';
+
+const gerarSenhaAleatoria = () => {
+  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+  let senha = '';
+  for (let i = 0; i < 6; i++) {
+    senha += chars.charAt(Math.floor(Math.random() * chars.length));
+  }
+  return senha;
+};
 
 function limparTelefone(tel) {
   if (!tel) return '';
@@ -23,6 +32,11 @@ export default function StatusOS() {
   const [loading, setLoading] = useState(true);
   const [erro, setErro] = useState('');
   const [copiado, setCopiado] = useState(false);
+  const [mostrarModalSenha, setMostrarModalSenha] = useState(false);
+  const [senhaAtual, setSenhaAtual] = useState('');
+  const [novaSenha, setNovaSenha] = useState('');
+  const [confirmarSenha, setConfirmarSenha] = useState('');
+  const [msgSenha, setMsgSenha] = useState('');
 
   const carregarDados = async () => {
     try {
@@ -80,6 +94,38 @@ export default function StatusOS() {
       window.open(`https://wa.me/${telefoneDestino}?text=${encodeURIComponent(msg)}`, '_blank');
     } else {
       alert("A oficina não configurou um telefone de contato.");
+    }
+  };
+
+  const alterarSenha = async () => {
+    if (!novaSenha || !senhaAtual || !confirmarSenha) {
+      setMsgSenha('Preencha todos os campos.');
+      return;
+    }
+    if (novaSenha !== confirmarSenha) {
+      setMsgSenha('Nova senha e confirmação não coincidem.');
+      return;
+    }
+    if (novaSenha.length < 4) {
+      setMsgSenha('Senha deve ter pelo menos 4 caracteres.');
+      return;
+    }
+    if (senhaAtual !== os?.senhaConsulta) {
+      setMsgSenha('Senha atual incorreta.');
+      return;
+    }
+    try {
+      await updateDoc(doc(db, 'oficinas', oficinaId, 'os', osId), { senhaConsulta: novaSenha });
+      setMsgSenha('✅ Senha alterada com sucesso!');
+      setTimeout(() => {
+        setMostrarModalSenha(false);
+        setSenhaAtual('');
+        setNovaSenha('');
+        setConfirmarSenha('');
+        setMsgSenha('');
+      }, 2000);
+    } catch (e) {
+      setMsgSenha('Erro ao alterar senha.');
     }
   };
 
@@ -320,6 +366,12 @@ ${SITE_LINK}`;
 
         {/* DÚVIDAS WHATSAPP */}
         <div style={{ marginBottom: '12px' }}>
+          <button onClick={() => setMostrarModalSenha(true)} style={{ width: '100%', padding: '14px', background: '#1a1a1a', color: '#aaa', border: '1px solid #333', borderRadius: '8px', fontWeight: 'bold', fontSize: '13px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px' }}>
+            🔑 ALTERAR SENHA DE ACESSO
+          </button>
+        </div>
+
+        <div style={{ marginBottom: '12px' }}>
           <button onClick={abrirWhatsApp} style={{ width: '100%', padding: '16px', background: '#25D366', color: 'white', border: 'none', borderRadius: '8px', fontWeight: 'bold', fontSize: '14px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px' }}>
             💬 DÚVIDAS? FALAR COM A OFICINA
           </button>
@@ -350,16 +402,65 @@ ${SITE_LINK}`;
           </div>
         )}
 
-        {/* RODAPÉ */}
+{/* RODAPÉ */}
         <div style={{ textAlign: 'center', marginTop: '30px' }}>
           <p style={{ fontSize: '11px', color: '#444', margin: '0 0 6px 0' }}>Tecnologia gerada por <strong>Oficina IA</strong></p>
           <a href={SITE_LINK} target="_blank" rel="noopener noreferrer" style={{ fontSize: '11px', color: '#555', textDecoration: 'none' }}>
             🏢 {SITE_LINK}
           </a>
         </div>
-      </div>
 
-      <style>{`@keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }`}</style>
+        {/* MODAL ALTERAR SENHA */}
+        {mostrarModalSenha && (
+          <div style={{
+            position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.9)', zIndex: 99999,
+            display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px'
+          }}>
+            <div style={{
+              background: '#111', borderRadius: '16px', padding: '25px', maxWidth: '400px', width: '100%',
+              border: '1px solid #333', boxShadow: '0 20px 60px rgba(0,0,0,0.5)'
+            }}>
+              <h3 style={{ margin: '0 0 20px 0', color: '#fff', fontSize: '18px', textAlign: 'center' }}>🔑 Alterar Senha de Acesso</h3>
+              <div style={{ marginBottom: '15px' }}>
+                <label style={{ color: '#888', fontSize: '12px', display: 'block', marginBottom: '5px' }}>SENHA ATUAL</label>
+                <input
+                  type="password"
+                  value={senhaAtual}
+                  onChange={(e) => setSenhaAtual(e.target.value)}
+                  style={{ width: '100%', padding: '12px', background: '#000', border: '1px solid #333', borderRadius: '8px', color: '#fff', fontSize: '14px' }}
+                />
+              </div>
+              <div style={{ marginBottom: '15px' }}>
+                <label style={{ color: '#888', fontSize: '12px', display: 'block', marginBottom: '5px' }}>NOVA SENHA</label>
+                <input
+                  type="password"
+                  value={novaSenha}
+                  onChange={(e) => setNovaSenha(e.target.value)}
+                  style={{ width: '100%', padding: '12px', background: '#000', border: '1px solid #333', borderRadius: '8px', color: '#fff', fontSize: '14px' }}
+                />
+              </div>
+              <div style={{ marginBottom: '20px' }}>
+                <label style={{ color: '#888', fontSize: '12px', display: 'block', marginBottom: '5px' }}>CONFIRMAR NOVA SENHA</label>
+                <input
+                  type="password"
+                  value={confirmarSenha}
+                  onChange={(e) => setConfirmarSenha(e.target.value)}
+                  style={{ width: '100%', padding: '12px', background: '#000', border: '1px solid #333', borderRadius: '8px', color: '#fff', fontSize: '14px' }}
+                />
+              </div>
+              {msgSenha && (
+                <div style={{ padding: '10px', background: msgSenha.includes('✅') ? '#22c55e22' : '#ef444422', border: `1px solid ${msgSenha.includes('✅') ? '#22c55e' : '#ef4444'}`, borderRadius: '8px', color: msgSenha.includes('✅') ? '#22c55e' : '#ef4444', fontSize: '12px', marginBottom: '15px', textAlign: 'center' }}>
+                  {msgSenha}
+                </div>
+              )}
+              <div style={{ display: 'flex', gap: '10px' }}>
+                <button onClick={() => { setMostrarModalSenha(false); setMsgSenha(''); }} style={{ flex: 1, padding: '12px', background: '#333', color: '#fff', border: 'none', borderRadius: '8px', fontWeight: 'bold', cursor: 'pointer' }}>CANCELAR</button>
+                <button onClick={alterarSenha} style={{ flex: 1, padding: '12px', background: MAIN_COLOR, color: '#fff', border: 'none', borderRadius: '8px', fontWeight: 'bold', cursor: 'pointer' }}>SALVAR</button>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
     </div>
   );
 }

@@ -36,6 +36,8 @@ export default function MenuNavegacao({ t, servicosVisiveis, MAIN, MASTER, papel
     const corCat = COLORS_CAT[category];
     const liberado = moduloLiberado(aba);
     const isActive = abaAtiva === aba;
+    const ehIscaDeVenda = category === 'ia' || category === 'gestao';
+    const mostraCadeado = !liberado && !ehIscaDeVenda;
 
     return (
       <button
@@ -59,7 +61,7 @@ export default function MenuNavegacao({ t, servicosVisiveis, MAIN, MASTER, papel
           }
         }}
       >
-        {!liberado && <Lock size={10} style={{ display: 'inline', marginRight: '4px', opacity: 0.6 }} />}
+        {mostraCadeado && <Lock size={10} style={{ display: 'inline', marginRight: '4px', opacity: 0.6 }} />}
         {LABELS_ABAS[aba]}
       </button>
     );
@@ -90,7 +92,7 @@ export default function MenuNavegacao({ t, servicosVisiveis, MAIN, MASTER, papel
           <>
             <p style={{ color: t.textoTer, fontSize: '9px', fontWeight: 'bold', letterSpacing: '2px', margin: '0 0 6px', textTransform: 'uppercase' }}>⚙️ SISTEMA</p>
             <div style={{ display: 'flex', gap: '8px', overflowX: 'auto', marginBottom: '8px', paddingBottom: '4px' }}>
-              {['meuplano', 'config', 'equipe', 'marketing', 'ajuda', 'master']
+              {['meuplano', 'config', 'equipe', 'marketing', 'ajuda', 'precificacao', 'master']
                 .filter(aba => aba !== 'master' || papelLogado === 'master')
                 .map(aba => makeButton(aba, 'sistema'))}
             </div>

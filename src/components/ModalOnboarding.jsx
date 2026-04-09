@@ -17,7 +17,6 @@ const OPCOES_OFICINA = [
   { nome: 'INJEÇÃO', cor: '#06b6d4' },
   { nome: 'ALINHAMENTO', cor: '#6366f1' },
   { nome: 'ÓLEO', cor: '#84cc16' },
-  { nome: 'REVISÃO', cor: '#14b8a6' },
   { nome: 'AR-CONDICIONADO', cor: '#3b82f6' },
   { nome: 'PNEUS', cor: '#78716c' },
   { nome: 'DESMANCHE', cor: '#92400e' },

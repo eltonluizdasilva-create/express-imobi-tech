@@ -1,7 +1,22 @@
 /* eslint-disable react/prop-types */
+import Historico from '../../Historico';
+import Equipe from '../../Equipe';
+import ConfiguracoesPage from '../../Configuracoes';
+import ModuloMeuPlano from '../../ModuloMeuPlano';
+import MasterPanel from '../MasterPanel';
+import TarefaTab from '../../Tarefas';
+import NotaFiscal from '../../NotaFiscal';
+import GestaoRetorno from '../../components/GestaoRetorno';
+import OficinaPatrimonio from '../../components/OficinaPatrimonio';
+import Fornecedores from '../../components/Fornecedores';
+import Ajuda from '../../components/Ajuda';
+import AbaEstrategia from '../../Estrategia';
+import Precificacao from './Precificacao';
 
-export default function ConteudoAbas({ abaAtiva, listaCarros, listaFinanceiro, listaEstoque, config, dadosOficina, oficinaId, papelLogado, permissoesLogado, handleSalvarOS, salvandoOS, salvo, onSalvo, osEmEdicao, osParaEditar, onCancelar, iniciarEdicao, deletarOS, enviarWhatsApp, abrirWhatsApp, abrirMercado, buscarDadosPorPlaca, irParaNovaOS, nomeCliente, setNomeCliente, placa, setPlaca, telefone, setTelefone, modelo, setModelo, senhaPortal, setSenhaPortal, ouvirCampo, campoOuvindo, normalizarPlaca, formatarMoeda, Dashboard, OSModulo, ListaOS, Mecanica, HibridoEV, VeiculoEletrico, MotoModulo, FunilariaModulo, AmortecedorModulo, InjecaoModulo, OleoModulo, AlinhamentoModulo, EletricaModulo, RevisaoModulo, ArCondicionado, PneusModulo, Escapamento, Estetica, LavaJato, Desmanche, CopilotoModulo, Secretaria, Administrador, Contador, MarketingModulo, MercadoLivre, Financeiro, Estoque, LeadsPage, Historico, Equipe, ConfiguracoesPage, ModuloMeuPlano, MasterPanel, TarefaTab, NotaFiscal, GestaoRetorno, OficinaPatrimonio,   Fornecedores, Ajuda, AbaEstrategia, servicosAlinhamento, setServicosAlinhamento, extrasAlinhamento, setExtrasAlinhamento, estadoPneus, setEstadoPneus, subAbaEletrica, setSubAbaEletrica, tema, toggleTema, buscaMercado,
-}) {
+export default function ConteudoAbas(props) {
+  const { abaAtiva, dataFimTrial, listaCarros, listaFinanceiro, listaEstoque, config, dadosOficina, oficinaId, papelLogado, permissoesLogado, handleSalvarOS, salvandoOS, salvo, onSalvo, osEmEdicao, osParaEditar, onCancelar, iniciarEdicao, deletarOS, enviarWhatsApp, abrirWhatsApp, abrirMercado, buscarDadosPorPlaca, handleOSCriada, nomeCliente, setNomeCliente, placa, setPlaca, telefone, setTelefone, modelo, setModelo, senhaPortal, setSenhaPortal, ouvirCampo, campoOuvindo, normalizarPlaca, formatarMoeda, Dashboard, OSModulo, ListaOS, Mecanica, HibridoEV, VeiculoEletrico, MotoModulo, FunilariaModulo, AmortecedorModulo, InjecaoModulo, OleoModulo, AlinhamentoModulo, EletricaModulo, RevisaoModulo, ArCondicionado, PneusModulo, Escapamento, Estetica, LavaJato, Desmanche, CopilotoModulo, Secretaria, Administrador, Contador, MarketingModulo, MercadoLivre, Financeiro, Estoque, LeadsPage, Historico, Equipe, ConfiguracoesPage, ModuloMeuPlano, MasterPanel, TarefaTab, NotaFiscal, GestaoRetorno, OficinaPatrimonio, Fornecedores, Ajuda, AbaEstrategia, servicosAlinhamento, setServicosAlinhamento, extrasAlinhamento, setExtrasAlinhamento, estadoPneus, setEstadoPneus, subAbaEletrica, setSubAbaEletrica, tema, toggleTema, buscaMercado, isTrial, modulosOperacionais, irParaNovaOS } = props;
+
+
   return (
     <div style={{ padding: '20px', maxWidth: '800px', margin: '0 auto' }}>
 
@@ -12,15 +27,15 @@ export default function ConteudoAbas({ abaAtiva, listaCarros, listaFinanceiro, l
           listaEstoque={listaEstoque}
           config={config}
           onAbrirWhatsApp={abrirWhatsApp}
-          onLembreteOleo={() => {}}
+          onLembreteOleo={() => { }}
           tema={tema}
           onToggleTema={toggleTema}
           onNovaOS={irParaNovaOS}
-          onBuscarCliente={() => {}}
-          onFinanceiro={() => {}}
-          onEstoque={() => {}}
-          onLancarDespesa={() => {}}
-          onAgendarRevisao={() => {}}
+          onBuscarCliente={() => { }}
+          onFinanceiro={() => { }}
+          onEstoque={() => { }}
+          onLancarDespesa={() => { }}
+          onAgendarRevisao={() => { }}
           oficinaId={oficinaId}
         />
       )}
@@ -32,11 +47,13 @@ export default function ConteudoAbas({ abaAtiva, listaCarros, listaFinanceiro, l
             dadosOficina={dadosOficina}
             listaCarros={listaCarros}
             onSalvo={onSalvo}
-            onRedirecionar={irParaNovaOS}
+            onRedirecionar={handleOSCriada}
             buscarDadosPorPlaca={buscarDadosPorPlaca}
             config={config}
             editarOS={osParaEditar}
             onAbrirWhatsApp={abrirWhatsApp}
+            isTrial={isTrial}
+            modulosOperacionais={modulosOperacionais}
           />
           <div style={{ marginTop: '20px' }}>
             <ListaOS
@@ -56,7 +73,7 @@ export default function ConteudoAbas({ abaAtiva, listaCarros, listaFinanceiro, l
 
       {abaAtiva === 'mecanica' && (
         <Mecanica
-          abaAtiva={abaAtiva} setAbaAtiva={() => {}}
+          abaAtiva={abaAtiva} setAbaAtiva={() => { }}
           irParaNovaOS={irParaNovaOS}
           papelLogado={papelLogado}
           oficinaId={oficinaId}
@@ -85,7 +102,7 @@ export default function ConteudoAbas({ abaAtiva, listaCarros, listaFinanceiro, l
 
       {abaAtiva === 'hibrido' && (
         <HibridoEV
-          abaAtiva={abaAtiva} setAbaAtiva={() => {}}
+          abaAtiva={abaAtiva} setAbaAtiva={() => { }}
           irParaNovaOS={irParaNovaOS}
           papelLogado={papelLogado}
           oficinaId={oficinaId}
@@ -114,7 +131,7 @@ export default function ConteudoAbas({ abaAtiva, listaCarros, listaFinanceiro, l
 
       {abaAtiva === 'eletrico' && (
         <VeiculoEletrico
-          abaAtiva={abaAtiva} setAbaAtiva={() => {}}
+          abaAtiva={abaAtiva} setAbaAtiva={() => { }}
           irParaNovaOS={irParaNovaOS}
           papelLogado={papelLogado}
           oficinaId={oficinaId}
@@ -143,7 +160,7 @@ export default function ConteudoAbas({ abaAtiva, listaCarros, listaFinanceiro, l
 
       {abaAtiva === 'moto' && (
         <MotoModulo
-          abaAtiva={abaAtiva} setAbaAtiva={() => {}}
+          abaAtiva={abaAtiva} setAbaAtiva={() => { }}
           irParaNovaOS={irParaNovaOS}
           papelLogado={papelLogado}
           oficinaId={oficinaId}
@@ -172,7 +189,7 @@ export default function ConteudoAbas({ abaAtiva, listaCarros, listaFinanceiro, l
 
       {abaAtiva === 'funilaria' && (
         <FunilariaModulo
-          abaAtiva={abaAtiva} setAbaAtiva={() => {}}
+          abaAtiva={abaAtiva} setAbaAtiva={() => { }}
           irParaNovaOS={irParaNovaOS}
           papelLogado={papelLogado}
           oficinaId={oficinaId}
@@ -201,7 +218,7 @@ export default function ConteudoAbas({ abaAtiva, listaCarros, listaFinanceiro, l
 
       {abaAtiva === 'amortecedor' && (
         <AmortecedorModulo
-          abaAtiva={abaAtiva} setAbaAtiva={() => {}}
+          abaAtiva={abaAtiva} setAbaAtiva={() => { }}
           irParaNovaOS={irParaNovaOS}
           papelLogado={papelLogado}
           oficinaId={oficinaId}
@@ -230,7 +247,7 @@ export default function ConteudoAbas({ abaAtiva, listaCarros, listaFinanceiro, l
 
       {abaAtiva === 'injecao' && (
         <InjecaoModulo
-          abaAtiva={abaAtiva} setAbaAtiva={() => {}}
+          abaAtiva={abaAtiva} setAbaAtiva={() => { }}
           irParaNovaOS={irParaNovaOS}
           papelLogado={papelLogado}
           oficinaId={oficinaId}
@@ -384,7 +401,7 @@ export default function ConteudoAbas({ abaAtiva, listaCarros, listaFinanceiro, l
         <Desmanche
           dadosOficina={dadosOficina}
           papelLogado={papelLogado}
-          carregarFinanceiro={() => {}}
+          carregarFinanceiro={() => { }}
           config={config}
           permissoesLogado={permissoesLogado}
         />
@@ -394,7 +411,7 @@ export default function ConteudoAbas({ abaAtiva, listaCarros, listaFinanceiro, l
         <CopilotoModulo
           papelLogado={papelLogado}
           dadosOficina={dadosOficina}
-          setAbaAtiva={() => {}}
+          setAbaAtiva={() => { }}
           listaCarros={listaCarros}
         />
       )}
@@ -413,7 +430,7 @@ export default function ConteudoAbas({ abaAtiva, listaCarros, listaFinanceiro, l
         <Financeiro
           oficinaId={oficinaId}
           listaFinanceiro={listaFinanceiro}
-          onSalvo={() => {}}
+          onSalvo={() => { }}
           dadosOficina={dadosOficina}
           papelLogado={papelLogado}
         />
@@ -423,7 +440,7 @@ export default function ConteudoAbas({ abaAtiva, listaCarros, listaFinanceiro, l
         <Estoque
           oficinaId={oficinaId}
           listaEstoque={listaEstoque}
-          onSalvo={() => {}}
+          onSalvo={() => { }}
           dadosOficina={dadosOficina}
           papelLogado={papelLogado}
         />
@@ -452,13 +469,14 @@ export default function ConteudoAbas({ abaAtiva, listaCarros, listaFinanceiro, l
           oficinaId={oficinaId}
           dadosOficina={dadosOficina}
           papelLogado={papelLogado}
+          dataFimTrial={dataFimTrial}
         />
       )}
 
       {abaAtiva === 'config' && (
         <ConfiguracoesPage
           oficinaId={oficinaId}
-          onSalvo={() => {}}
+          onSalvo={() => { }}
           dadosOficina={dadosOficina}
           papelLogado={papelLogado}
         />
@@ -468,12 +486,12 @@ export default function ConteudoAbas({ abaAtiva, listaCarros, listaFinanceiro, l
         <ModuloMeuPlano
           dadosOficina={dadosOficina}
           planosSistema={{}}
-          onModulosChange={() => {}}
+          onModulosChange={() => { }}
         />
       )}
 
       {abaAtiva === 'master' && (
-        <MasterPanel setPlanosGlobais={() => {}} />
+        <MasterPanel setPlanosGlobais={() => { }} />
       )}
 
       {abaAtiva === 'tarefa' && (
@@ -492,7 +510,7 @@ export default function ConteudoAbas({ abaAtiva, listaCarros, listaFinanceiro, l
         <GestaoRetorno
           oficinaId={oficinaId}
           listaCarros={listaCarros}
-          setListaCarros={() => {}}
+          setListaCarros={() => { }}
           nomeOficina={dadosOficina?.nome}
           abrirWhatsAppFn={abrirWhatsApp}
         />
@@ -511,6 +529,10 @@ export default function ConteudoAbas({ abaAtiva, listaCarros, listaFinanceiro, l
       )}
 
       {abaAtiva === 'ajuda' && <Ajuda />}
+
+      {abaAtiva === 'precificacao' && (
+        <Precificacao oficinaId={oficinaId} />
+      )}
 
     </div>
   );
