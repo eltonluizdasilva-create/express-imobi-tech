@@ -76,6 +76,8 @@ export default function AdminHeader({ abaAtiva, setAbaAtiva, pendentes = 0 }) {
                 onClick={() => setAbaAtiva('os')}
                 style={{
                     width: '100%',
+                    maxWidth: '350px', /* 🔥 O SEGREDO: Trava o crescimento no computador */
+                    margin: '0 auto 20px auto', /* 🔥 Centraliza o botão na tela */
                     padding: '15px',
                     background: CORES.erro,
                     color: 'white',
@@ -83,7 +85,6 @@ export default function AdminHeader({ abaAtiva, setAbaAtiva, pendentes = 0 }) {
                     borderRadius: '8px',
                     fontWeight: '900',
                     fontSize: '14px',
-                    marginBottom: '20px',
                     cursor: 'pointer',
                     display: 'flex',
                     justifyContent: 'center',

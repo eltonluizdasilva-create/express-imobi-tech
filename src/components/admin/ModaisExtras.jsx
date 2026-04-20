@@ -1,4 +1,5 @@
 /* eslint-disable react/prop-types */
+import React from 'react';
 
 export default function ModaisExtras({
   QuickActions,
@@ -52,6 +53,8 @@ export default function ModaisExtras({
 }) {
   return (
     <>
+     
+
       <QuickActions
         oficinaId={oficinaId}
         GREEN_MONEY={GREEN}
@@ -104,6 +107,8 @@ export default function ModaisExtras({
             setModulosOperacionais(modulos);
             setMostrarOnboarding(false);
           }}
+          // ✅ CORREÇÃO: Passando o onClose para garantir que o modal saiba como se destruir ao clicar no X
+          onClose={() => setMostrarOnboarding(false)}
         />
       )}
     </>

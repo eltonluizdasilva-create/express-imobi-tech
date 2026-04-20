@@ -139,8 +139,8 @@ export default function RevisaoModulo({ oficinaId, osParaEditar, onCancelar, onS
         } catch (e) { console.error(e); } finally { setLoading(false); }
     };
 
-    return (
-        <div className="bg-black min-h-screen text-zinc-100 p-4 md:p-8 pb-40 relative">
+  return (
+    <div id="revisao-area" className="bg-black min-h-screen text-zinc-100 p-4 md:p-8 pb-40 relative">
 
             {/* 🛑 MODAL DE BLOQUEIO (VAI DIRETO PARA O.S.) */}
             {showBlocker && (
@@ -268,7 +268,7 @@ export default function RevisaoModulo({ oficinaId, osParaEditar, onCancelar, onS
                                 </div>
                                 <div>
                                     <label className="text-[9px] text-zinc-500 block mb-2 font-bold uppercase">Mão de Obra (R$)</label>
-                                    <input value={maoDeObra} onChange={e => setMaoDeObra(e.target.value)} className="bg-zinc-950 border border-zinc-800 text-zinc-100 p-3 rounded-xl outline-none w-full text-center" />
+                                    <input id="mao-obra" value={maoDeObra} onChange={e => setMaoDeObra(e.target.value)} className="bg-zinc-950 border border-zinc-800 text-zinc-100 p-3 rounded-xl outline-none w-full text-center" />
                                 </div>
                             </div>
                             <div className="bg-zinc-950 border border-zinc-800 p-4 rounded-xl flex items-center justify-center gap-3">

@@ -151,7 +151,7 @@ export default function Secretaria({ oficinaId }) {
     };
 
     return (
-        <div className="bg-black min-h-screen text-zinc-100 p-4 md:p-8 pb-40">
+        <div id="tour-aba-secretaria" data-tour="secretaria" className="bg-black min-h-screen text-zinc-100 p-4 md:p-8 pb-40">
             <div className="max-w-6xl mx-auto">
 
                 {/* HEADER */}

@@ -1,9 +1,11 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { db } from './lib/firebase';
-import { collectionGroup, collection, query, where, getDocs, getDoc, doc } from 'firebase/firestore';
+import { collectionGroup, query, where, getDocs } from 'firebase/firestore';
 import { useGroq } from './hooks/useGroq';
 import ChecklistViagem from './ChecklistViagem';
+import AbaAjudaIA from './AbaAjudaIA';
+import { ArrowLeft } from 'lucide-react';
 
 // ==========================================
 // 🔒 TRAVA DE SEGURANÇA (Limite de 5 usos da IA por dia)
@@ -23,8 +25,6 @@ const verificarLimiteIA = () => {
 
 // ==========================================
 // 🗜️ COMPRESSOR DE IMAGEM
-// Reduz para máx 800px e qualidade 0.65
-// Retorna base64 comprimido
 // ==========================================
 const comprimirImagem = (base64, maxWidth = 800, qualidade = 0.65) => {
     return new Promise((resolve) => {
@@ -37,28 +37,21 @@ const comprimirImagem = (base64, maxWidth = 800, qualidade = 0.65) => {
             canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height);
             resolve(canvas.toDataURL('image/jpeg', qualidade));
         };
-        img.onerror = () => resolve(base64); // fallback: retorna original
+        img.onerror = () => resolve(base64);
         img.src = base64;
     });
 };
 
 // ==========================================
 // 📤 MONTAR MENSAGEM WHATSAPP COM FOTOS
-// Como o WhatsApp não aceita base64 diretamente,
-// incluímos as fotos como miniaturas na mensagem
-// e abrimos cada uma no navegador se necessário
 // ==========================================
 const compartilharComFotos = (texto, fotos = []) => {
-    // Abre o WhatsApp com o texto
     window.open(`https://wa.me/?text=${encodeURIComponent(texto)}`, '_blank');
-
-    // Se tiver fotos, abre cada uma em nova aba para o usuário poder salvar/compartilhar
     if (fotos && fotos.length > 0) {
         setTimeout(() => {
             fotos.forEach((foto, i) => {
                 const src = foto?.foto || foto;
                 if (!src || !src.startsWith('data:')) return;
-                // Abre a imagem em nova aba para o usuário compartilhar manualmente
                 const janela = window.open('', `_blank`);
                 if (janela) {
                     janela.document.write(`
@@ -79,6 +72,111 @@ const compartilharComFotos = (texto, fotos = []) => {
     }
 };
 
+// ==========================================
+// 🔧 HELPER: Extrai resumo legível do checklist
+// ==========================================
+const extrairResumoChecklist = (checklist, observacoes) => {
+    if (typeof checklist === 'string' && checklist.trim()) return checklist.trim();
+
+    if (checklist && typeof checklist === 'object') {
+        const labels = {
+            motorEstado: 'Motor', vazamentosOleo: 'Vazamentos', ruidos: 'Ruídos',
+            radiador: 'Radiador', correiaDistribuicao: 'Correia',
+            pastilhas: 'Pastilhas', discos: 'Discos', fluidoFreio: 'Fluido Freio',
+            abs: 'ABS', amortecedores: 'Amortecedores', buchas: 'Buchas',
+            rolamentos: 'Rolamentos', direcao: 'Direção', terminais: 'Terminais',
+            bateria: 'Bateria', alternador: 'Alternador', luzes: 'Luzes',
+            fusiveis: 'Fusíveis', escapamento: 'Escapamento',
+            amassados: 'Amassados', oxidacao: 'Oxidação', pintura: 'Pintura',
+            repintura: 'Repintura', vidros: 'Vidros', retrovisores: 'Retrovisores',
+            parachoques: 'Para-choques', borrachas: 'Borrachas',
+            bancos: 'Bancos', painel: 'Painel', tapetes: 'Tapetes',
+            compressao: 'Compressão', injecao: 'Injeção', corrente: 'Corrente',
+            pneus: 'Pneus', freioD: 'Freio Dianteiro', freioT: 'Freio Traseiro',
+            garfo: 'Garfo', amortecedorT: 'Amortecedor Traseiro',
+        };
+        const itensProblema = Object.entries(checklist)
+            .filter(([, v]) => v === 'Atenção' || v === 'Trocar')
+            .map(([k, v]) => `${labels[k] || k}: ${v}`);
+        if (itensProblema.length > 0) return `⚠️ ${itensProblema.join(' • ')}`;
+        return '✅ Revisão Geral — Todos os itens OK';
+    }
+
+    if (observacoes && typeof observacoes === 'object') {
+        const partes = Object.values(observacoes).filter(Boolean);
+        if (partes.length > 0) return partes.join(' | ');
+    }
+
+    return 'Revisão Geral';
+};
+
+// ==========================================
+// 🛡️ SANITIZADOR GLOBAL
+// ==========================================
+const safe = (valor) => {
+    if (valor === null || valor === undefined) return '—';
+    if (typeof valor === 'string') return valor.trim() || '—';
+    if (typeof valor === 'number') return String(valor);
+    if (typeof valor === 'boolean') return valor ? 'Sim' : 'Não';
+    if (Array.isArray(valor)) return valor.length ? 'Ver detalhes' : '—';
+    if (typeof valor === 'object') return '—';
+    return String(valor);
+};
+
+const ChecklistResumo = ({ checklist }) => {
+    if (!checklist || typeof checklist !== 'object') return null;
+    const labels = {
+        motorEstado: 'Motor', vazamentosOleo: 'Vazamentos', ruidos: 'Ruídos',
+        radiador: 'Radiador', correiaDistribuicao: 'Correia',
+        pastilhas: 'Pastilhas', discos: 'Discos', fluidoFreio: 'Fluido Freio',
+        abs: 'ABS', amortecedores: 'Amortecedores', buchas: 'Buchas',
+        rolamentos: 'Rolamentos', direcao: 'Direção', terminais: 'Terminais',
+        bateria: 'Bateria', alternador: 'Alternador', luzes: 'Luzes',
+        fusiveis: 'Fusíveis', escapamento: 'Escapamento',
+        amassados: 'Amassados', oxidacao: 'Oxidação', pintura: 'Pintura',
+        repintura: 'Repintura', vidros: 'Vidros', retrovisores: 'Retrovisores',
+        parachoques: 'Para-choques', borrachas: 'Borrachas',
+        bancos: 'Bancos', painel: 'Painel', tapetes: 'Tapetes',
+        compressao: 'Compressão', injecao: 'Injeção', corrente: 'Corrente',
+        pneus: 'Pneus', freioD: 'Freio Dianteiro', freioT: 'Freio Traseiro',
+        garfo: 'Garfo', amortecedorT: 'Amortecedor Traseiro',
+    };
+    const corStatus = { 'OK': 'text-green-500', 'Atenção': 'text-yellow-500', 'Trocar': 'text-red-500' };
+    return (
+        <div className="grid grid-cols-2 gap-2 mt-4">
+            {Object.entries(checklist).map(([key, value]) => (
+                <div key={key} className="flex items-center justify-between bg-black/40 p-2 rounded-lg border border-neutral-900">
+                    <span className="text-neutral-500 text-[10px]">{labels[key] || key}</span>
+                    <span className={`text-[10px] font-black ${corStatus[value] || 'text-neutral-400'}`}>{value}</span>
+                </div>
+            ))}
+        </div>
+    );
+};
+
+const ObservacoesResumo = ({ observacoes }) => {
+    if (!observacoes || typeof observacoes !== 'object') return null;
+    const secoes = {
+        motor: '⚙️ Motor', freios: '🛑 Freios', suspensao: '🔩 Suspensão',
+        eletrica: '⚡ Elétrica', geral: '📋 Geral',
+        funilaria: '🛠️ Funilaria', acabamento: '💎 Acabamento',
+    };
+    const entradas = Object.entries(secoes)
+        .map(([key, label]) => ({ key, label, texto: observacoes[key] || observacoes[key.charAt(0).toUpperCase() + key.slice(1)] }))
+        .filter(({ texto }) => texto && typeof texto === 'string' && texto.trim());
+    if (entradas.length === 0) return null;
+    return (
+        <div className="space-y-3 mt-4">
+            {entradas.map(({ key, label, texto }) => (
+                <div key={key} className="bg-black/40 border border-neutral-900 p-4 rounded-xl">
+                    <span className="text-neutral-500 text-[9px] font-black uppercase block mb-1">{label}</span>
+                    <p className="text-gray-300 text-sm leading-relaxed">{texto}</p>
+                </div>
+            ))}
+        </div>
+    );
+};
+
 // --- CONFIGURAÇÃO DE TEMAS ---
 const abasConfig = {
     home: { text: 'INÍCIO / LOGIN', menuStyle: 'bg-red-900/10 border-red-500/50 text-red-500 shadow-[0_0_15px_rgba(220,38,38,0.15)]', theme: { main: 'text-red-600', bg: 'bg-red-600', border: 'border-red-600', borderLight: 'border-red-900/30', bgLight: 'bg-red-900/10', textLight: 'text-red-500', shadowColor: 'rgba(220,38,38,0.44)' } },
@@ -87,40 +185,16 @@ const abasConfig = {
     calibra: { text: 'CALIBRAGEM EXATA', menuStyle: 'bg-green-900/10 border-green-500/50 text-green-500 shadow-[0_0_15px_rgba(34,197,94,0.15)]', theme: { main: 'text-green-600', bg: 'bg-green-600', border: 'border-green-600', borderLight: 'border-green-900/30', bgLight: 'bg-green-900/10', textLight: 'text-green-500', shadowColor: 'rgba(34,197,94,0.44)' } },
     oleo: { text: 'GUIA DE ÓLEO', menuStyle: 'bg-orange-900/10 border-orange-500/50 text-orange-500 shadow-[0_0_15px_rgba(249,115,22,0.15)]', theme: { main: 'text-orange-600', bg: 'bg-orange-600', border: 'border-orange-600', borderLight: 'border-orange-900/30', bgLight: 'bg-orange-900/10', textLight: 'text-orange-500', shadowColor: 'rgba(249,115,22,0.44)' } },
     calc: { text: 'CALCULADORA FLEX', menuStyle: 'bg-purple-900/10 border-purple-500/50 text-purple-500 shadow-[0_0_15px_rgba(168,85,247,0.15)]', theme: { main: 'text-purple-600', bg: 'bg-purple-600', border: 'border-purple-600', borderLight: 'border-purple-900/30', bgLight: 'bg-purple-900/10', textLight: 'text-purple-500', shadowColor: 'rgba(168,85,247,0.44)' } },
-    dicas: { text: 'DICAS TÉCNICAS', menuStyle: 'bg-cyan-900/10 border-cyan-500/50 text-cyan-500 shadow-[0_0_15px_rgba(6,182,212,0.15)]', theme: { main: 'text-cyan-600', bg: 'bg-cyan-600', border: 'border-cyan-600', borderLight: 'border-cyan-900/30', bgLight: 'bg-cyan-900/10', textLight: 'text-cyan-500', shadowColor: 'rgba(6,182,212,0.44)' } }
+    dicas: { text: 'DICAS TÉCNICAS', menuStyle: 'bg-cyan-900/10 border-cyan-500/50 text-cyan-500 shadow-[0_0_15px_rgba(6,182,212,0.15)]', theme: { main: 'text-cyan-600', bg: 'bg-cyan-600', border: 'border-cyan-600', borderLight: 'border-cyan-900/30', bgLight: 'bg-cyan-900/10', textLight: 'text-cyan-500', shadowColor: 'rgba(6,182,212,0.44)' } },
+    ajuda: { text: '💬 FALE COM A ESPECIALISTA', menuStyle: 'bg-red-600 border-red-500 text-white shadow-[0_0_20px_rgba(220,38,38,0.5)] hover:bg-red-500 animate-pulse', theme: { main: 'text-red-500', bg: 'bg-red-600', border: 'border-red-600', borderLight: 'border-red-900/30', bgLight: 'bg-red-900/10', textLight: 'text-red-500', shadowColor: 'rgba(220,38,38,0.44)' } }
 };
 
 const videosDestaque = [
-    {
-        id: 1,
-        titulo: "COMO USAR O PORTAL",
-        link: "https://youtube.com/shorts/Ce5GGozfVs4?feature=share",
-        thumbnail: "https://img.youtube.com/vi/Ce5GGozfVs4/0.jpg"
-    },
-    {
-        id: 2,
-        titulo: "VALORIZAÇÃO DE REVENDA",
-        link: "https://youtu.be/9TdP0avJGhs",
-        thumbnail: "https://img.youtube.com/vi/9TdP0avJGhs/0.jpg"
-    },
-    {
-        id: 3,
-        titulo: "DOUTOR IA: COMO FUNCIONA",
-        link: "https://youtube.com/shorts/6pWY8GXSKgU?feature=share",
-        thumbnail: "https://img.youtube.com/vi/6pWY8GXSKgU/0.jpg"
-    },
-    {
-        id: 4,
-        titulo: "SCANNER DE PAINEL",
-        link: "https://youtu.be/BHn2ZfSPr9Y",
-        thumbnail: "https://img.youtube.com/vi/BHn2ZfSPr9Y/0.jpg"
-    },
-    {
-        id: 5,
-        titulo: "VIAGEM SEGURA",
-        link: "https://youtube.com/shorts/xVI-DmvYcOg?feature=share",
-        thumbnail: "https://img.youtube.com/vi/xVI-DmvYcOg/0.jpg"
-    }
+    { id: 1, titulo: "COMO USAR O PORTAL", link: "https://youtube.com/shorts/Ce5GGozfVs4?feature=share", thumbnail: "https://img.youtube.com/vi/Ce5GGozfVs4/0.jpg" },
+    { id: 2, titulo: "VALORIZAÇÃO DE REVENDA", link: "https://youtu.be/9TdP0avJGhs", thumbnail: "https://img.youtube.com/vi/9TdP0avJGhs/0.jpg" },
+    { id: 3, titulo: "DOUTOR IA: COMO FUNCIONA", link: "https://youtube.com/shorts/6pWY8GXSKgU?feature=share", thumbnail: "https://img.youtube.com/vi/6pWY8GXSKgU/0.jpg" },
+    { id: 4, titulo: "SCANNER DE PAINEL", link: "https://youtu.be/BHn2ZfSPr9Y", thumbnail: "https://img.youtube.com/vi/BHn2ZfSPr9Y/0.jpg" },
+    { id: 5, titulo: "VIAGEM SEGURA", link: "https://youtube.com/shorts/xVI-DmvYcOg?feature=share", thumbnail: "https://img.youtube.com/vi/xVI-DmvYcOg/0.jpg" }
 ];
 
 const DisclaimerIA = () => (
@@ -135,9 +209,6 @@ const BotaoVoltar = ({ onBack }) => (
     </button>
 );
 
-// ==========================================
-// 📸 LIGHTBOX DE FOTOS
-// ==========================================
 function Lightbox({ fotos, indiceInicial, onFechar }) {
     const [idx, setIdx] = useState(indiceInicial);
     useEffect(() => {
@@ -172,9 +243,6 @@ function Lightbox({ fotos, indiceInicial, onFechar }) {
     );
 }
 
-// ==========================================
-// 🖼️ GALERIA DE FOTOS DA O.S.
-// ==========================================
 function GaleriaFotos({ fotos }) {
     const [lightboxAberto, setLightboxAberto] = useState(false);
     const [indice, setIndice] = useState(0);
@@ -207,7 +275,81 @@ function GaleriaFotos({ fotos }) {
     );
 }
 
-// --- FERRAMENTAS DE IA ---
+// ==========================================
+// 🎙️ DOUTOR IA (COM BOTÃO GIGANTE DE ÁUDIO)
+// ==========================================
+function DoutorIA({ theme, onBack }) {
+    const { analyzeText, loading } = useGroq();
+    const [pergunta, setPergunta] = useState('');
+    const [carro, setCarro] = useState('');
+    const [ano, setAno] = useState('');
+    const [resposta, setResposta] = useState(null);
+    const [gravando, setGravando] = useState(false);
+
+    const diagnosticar = async () => {
+        if (!pergunta || !carro || !ano) return alert("Preencha o veículo, o ano e o sintoma.");
+        if (!verificarLimiteIA()) return;
+        setResposta(null);
+        try {
+            const prompt = `Mecânico sênior. Carro: ${carro}. Ano: ${ano}. Sintoma: ${pergunta}. Responda APENAS em JSON estrito: {"diagnostico": "..."}`;
+            const res = await analyzeText(prompt);
+            const jsonMatch = res.match(/\{[\s\S]*\}/);
+            if (jsonMatch) setResposta(JSON.parse(jsonMatch[0]));
+        } catch (error) { console.error(error); }
+    };
+
+    const toggleGravacao = () => {
+        if (gravando) {
+            setGravando(false);
+            setPergunta(pergunta + (pergunta ? ' ' : '') + '(Sintoma informado via áudio pelo cliente...)');
+        } else {
+            setGravando(true);
+        }
+    };
+
+    return (
+        <div className="w-full max-w-2xl mx-auto text-center pb-20 px-4 mt-10 animate-fade-in">
+            <BotaoVoltar onBack={onBack} />
+            <h2 className="text-3xl font-black text-white uppercase mb-8">Doutor <span className={theme.main}>IA</span></h2>
+
+            <div className="bg-[#0a0a0a] border border-neutral-800 p-8 rounded-3xl space-y-6 shadow-2xl relative overflow-hidden">
+                <div className={`absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-blue-600 to-transparent opacity-50`}></div>
+
+                <div className="flex gap-4">
+                    <input type="text" placeholder="VEÍCULO" value={carro} onChange={e => setCarro(e.target.value)} className="w-2/3 p-4 bg-black border border-neutral-900 rounded-xl text-white font-bold outline-none focus:border-blue-600 transition-all" />
+                    <input type="text" placeholder="ANO" value={ano} onChange={e => setAno(e.target.value)} className="w-1/3 p-4 bg-black border border-neutral-900 rounded-xl text-white font-bold text-center outline-none focus:border-blue-600 transition-all" />
+                </div>
+
+                {/* 👇 O NOVO BOTÃO REDONDO DE ÁUDIO NO MEIO 👇 */}
+                <div className="flex justify-center py-6">
+                    <button
+                        onClick={toggleGravacao}
+                        className={`w-40 h-40 rounded-full flex flex-col items-center justify-center transition-all border-4 ${gravando
+                                ? 'bg-blue-900/20 border-blue-500 shadow-[0_0_40px_rgba(59,130,246,0.6)] animate-pulse'
+                                : 'bg-[#050505] border-neutral-800 hover:border-blue-500 hover:shadow-[0_0_20px_rgba(59,130,246,0.3)]'
+                            }`}
+                    >
+                        <span className="text-5xl mb-2">🎙️</span>
+                        <span className={`text-[10px] font-black uppercase tracking-widest mt-2 ${gravando ? 'text-blue-400' : 'text-neutral-500'}`}>
+                            {gravando ? 'A ESCUTAR...' : 'GRAVAR ÁUDIO'}
+                        </span>
+                    </button>
+                </div>
+                {/* 👆 FIM DO BOTÃO 👆 */}
+
+                <textarea value={pergunta} onChange={e => setPergunta(e.target.value)} placeholder="Ou digite o sintoma aqui se preferir..." className="w-full h-16 bg-black border border-neutral-800 rounded-xl p-4 text-white resize-none outline-none focus:border-blue-600 transition-all text-xs" />
+
+                <button onClick={diagnosticar} disabled={loading || gravando} className={`w-full ${theme.bg} py-5 rounded-2xl font-black uppercase text-white hover:opacity-80 active:scale-95 transition-all shadow-lg shadow-blue-600/20 tracking-widest disabled:opacity-50`}>
+                    {loading ? 'A ANALISAR...' : 'ANALISAR SINTOMA'}
+                </button>
+            </div>
+
+            {resposta && <div className={`mt-8 bg-[#0a0a0a] p-8 rounded-3xl text-left text-gray-300 font-medium leading-relaxed border ${theme.borderLight} shadow-xl animate-fade-in`}>{resposta.diagnostico}</div>}
+            <DisclaimerIA />
+        </div>
+    );
+}
+
 function ScannerLuzesIA({ carroLogado, theme, onBack }) {
     const { analyzeText, loading } = useGroq();
     const [carro, setCarro] = useState(carroLogado || '');
@@ -256,43 +398,6 @@ function ScannerLuzesIA({ carroLogado, theme, onBack }) {
     );
 }
 
-function DoutorIA({ theme, onBack }) {
-    const { analyzeText, loading } = useGroq();
-    const [pergunta, setPergunta] = useState('');
-    const [carro, setCarro] = useState('');
-    const [ano, setAno] = useState('');
-    const [resposta, setResposta] = useState(null);
-
-    const diagnosticar = async () => {
-        if (!pergunta || !carro || !ano) return alert("Preencha o veículo, o ano e o sintoma.");
-        if (!verificarLimiteIA()) return;
-        setResposta(null);
-        try {
-            const prompt = `Mecânico sênior. Carro: ${carro}. Ano: ${ano}. Sintoma: ${pergunta}. Responda APENAS em JSON estrito: {"diagnostico": "..."}`;
-            const res = await analyzeText(prompt);
-            const jsonMatch = res.match(/\{[\s\S]*\}/);
-            if (jsonMatch) setResposta(JSON.parse(jsonMatch[0]));
-        } catch (error) { console.error(error); }
-    };
-
-    return (
-        <div className="w-full max-w-2xl mx-auto text-center pb-20 px-4 mt-10 animate-fade-in">
-            <BotaoVoltar onBack={onBack} />
-            <h2 className="text-3xl font-black text-white uppercase mb-8">Doutor <span className={theme.main}>IA</span></h2>
-            <div className="bg-[#0a0a0a] border border-neutral-800 p-8 rounded-3xl space-y-4 shadow-2xl">
-                <div className="flex gap-4">
-                    <input type="text" placeholder="VEÍCULO" value={carro} onChange={e => setCarro(e.target.value)} className="w-2/3 p-4 bg-black border border-neutral-900 rounded-xl text-white font-bold outline-none focus:border-blue-600 transition-all" />
-                    <input type="text" placeholder="ANO" value={ano} onChange={e => setAno(e.target.value)} className="w-1/3 p-4 bg-black border border-neutral-900 rounded-xl text-white font-bold text-center outline-none focus:border-blue-600 transition-all" />
-                </div>
-                <textarea value={pergunta} onChange={e => setPergunta(e.target.value)} placeholder="Descreva o sintoma aqui..." className="w-full h-32 bg-black border border-neutral-800 rounded-xl p-4 text-white resize-none outline-none focus:border-blue-600 transition-all" />
-                <button onClick={diagnosticar} className={`w-full ${theme.bg} py-4 rounded-xl font-black uppercase text-white hover:opacity-80 active:scale-95 transition-all shadow-lg shadow-blue-600/20`}>{loading ? 'ANALISANDO...' : 'DIAGNOSTICAR AGORA'}</button>
-            </div>
-            {resposta && <div className={`mt-8 bg-[#0a0a0a] p-8 rounded-3xl text-left text-gray-300 font-medium leading-relaxed border ${theme.borderLight} shadow-xl animate-fade-in`}>{resposta.diagnostico}</div>}
-            <DisclaimerIA />
-        </div>
-    );
-}
-
 function CalibragemIA({ theme, onBack }) {
     const { analyzeText, loading } = useGroq();
     const [carro, setCarro] = useState('');
@@ -305,19 +410,14 @@ function CalibragemIA({ theme, onBack }) {
         if (!verificarLimiteIA()) return;
         setResultado(null); setErro('');
         try {
-            // Prompt mais direto para forçar resposta com números
             const prompt = `Você é um especialista automotivo. Qual a calibragem recomendada dos pneus do ${carro} com aro ${aro}?
 Responda SOMENTE em JSON válido, sem texto adicional, sem explicações:
 {"vazio": "32", "cheio": "35"}
 Use apenas números inteiros em libras (psi). Não use aspas extras, não adicione texto fora do JSON.`;
             const res = await analyzeText(prompt);
-            // Tenta extrair JSON de várias formas
-            const jsonMatch = res.match(/\{[^{}]*"vazio"[^{}]*"cheio"[^{}]*\}/) ||
-                res.match(/\{[^{}]*"cheio"[^{}]*"vazio"[^{}]*\}/) ||
-                res.match(/\{[\s\S]*?\}/);
+            const jsonMatch = res.match(/\{[^{}]*"vazio"[^{}]*"cheio"[^{}]*\}/) || res.match(/\{[^{}]*"cheio"[^{}]*"vazio"[^{}]*\}/) || res.match(/\{[\s\S]*?\}/);
             if (jsonMatch) {
                 const parsed = JSON.parse(jsonMatch[0]);
-                // Garante que os valores são strings limpas (só números)
                 parsed.vazio = String(parsed.vazio).replace(/[^0-9]/g, '') || '--';
                 parsed.cheio = String(parsed.cheio).replace(/[^0-9]/g, '') || '--';
                 setResultado(parsed);
@@ -356,9 +456,7 @@ Use apenas números inteiros em libras (psi). Não use aspas extras, não adicio
                             <p className="text-neutral-600 text-[10px] font-bold mt-1">PSI / LBS</p>
                         </div>
                     </div>
-                    <p className="text-neutral-700 text-[9px] font-bold text-center">
-                        {carro.toUpperCase()} • ARO {aro} • Valores em libras (PSI)
-                    </p>
+                    <p className="text-neutral-700 text-[9px] font-bold text-center">{carro.toUpperCase()} • ARO {aro} • Valores em libras (PSI)</p>
                 </div>
             )}
             <DisclaimerIA />
@@ -469,77 +567,59 @@ export default function PortalCliente() {
         return isNaN(data.getTime()) ? '—' : data.toLocaleDateString('pt-BR');
     };
 
-const handleEntrar = async () => {
-        // Validação simples
-        if (!placa || !senha || senha.length !== 4) return alert("Preencha Placa e senha de 4 dígitos.");
+    const handleEntrar = async () => {
+        if (!placa || !senha) return alert("Preencha Placa e Senha.");
         setCarregando(true);
-        
-        const placaNormalizada = placa.replace(/[^A-Z0-9]/g, '').toUpperCase();
-        console.log('[PortalCliente] Buscando - Placa:', placaNormalizada, 'Senha:', senha);
-        
         try {
-            // Busca global por todas as OS com a placa
-            const q = query(collectionGroup(db, 'os'), where('placa', '==', placaNormalizada));
-            const osSnap = await getDocs(q);
-            console.log('[PortalCliente] Total OS encontradas:', osSnap.size);
-            
-            const candidatos = [];
-            osSnap.forEach(osDoc => {
-                const d = osDoc.data();
-                const oficinaId = osDoc.ref.parent.parent.id;
-                const cel = (d.telefone || d.celular || '').replace(/\D/g, '');
-                const senhaConsulta = d.senhaConsulta || '';
-                
-                console.log('[PortalCliente] OS:', osDoc.id, 'Oficina:', oficinaId, 'Placa:', d.placa, 'Telefone4:', cel.slice(-4), 'senhaConsulta:', senhaConsulta);
-                
-                // Valida por: telefone (4 últimos dígitos) OU senhaConsulta
-                if (cel.slice(-4) === senha || senhaConsulta === senha) {
-                    candidatos.push({ id: osDoc.id, oficinaId, ...d });
-                    console.log('[PortalCliente] ✓ Candidato aceito!');
+            const q = query(collectionGroup(db, "os"), where("placa", "==", placa.toUpperCase()));
+            const snap = await getDocs(q);
+            const list = [];
+            snap.forEach(doc => {
+                const d = doc.data();
+                const senhaArmazenada = String(d.senhaConsulta || '').trim();
+                const cel = (d.telefone || d.celular || d.whatsapp || '').replace(/\D/g, '');
+                const senhaLegado = cel.slice(-4);
+                const senhaDigitada = String(senha).trim();
+                if (senhaArmazenada === senhaDigitada || senhaLegado === senhaDigitada) {
+                    list.push({ id: doc.id, ...d });
                 }
             });
-
-            console.log('[PortalCliente] Total candidatos:', candidatos.length);
-
-            if (candidatos.length > 0) {
-                setTodasAsOs(candidatos.sort((a, b) => (b.data_registro || b.data || '').localeCompare(a.data_registro || b.data || '')));
+            if (list.length > 0) {
+                setTodasAsOs(list.sort((a, b) => (b.data_registro || b.data || '').localeCompare(a.data_registro || a.data || '')));
                 setAbaAtiva('dashboard');
             } else {
-                console.error('[PortalCliente] Nenhuma OS encontrada. Placa:', placaNormalizada, 'Senha:', senha);
-                alert("Acesso negado. Dados não encontrados.\n\nVerifique se a placa está correta (sem hífens) e a senha é os 4 últimos dígitos do seu telefone.");
+                alert("Acesso negado. Dados não encontrados.");
             }
         } catch (e) {
-            console.error('[PortalCliente] Erro geral:', e);
-            alert("Erro de conexão. Tente novamente.");
-        } finally {
-            setCarregando(false);
+            alert("Erro de rede. Verifique sua conexão.");
         }
+        setCarregando(false);
     };
 
-    // ── Compartilhar histórico COMPLETO (texto + todas as fotos)
     const compartilharHistoricoCompleto = () => {
         if (!todasAsOs || todasAsOs.length === 0) return;
         let texto = `🚗 *Histórico de Manutenção*\n*Veículo:* ${placa}\n\n`;
         todasAsOs.forEach(os => {
-            texto += `📅 *Data:* ${os.data || 'N/A'}\n`;
-            texto += `🛠️ *Serviço:* ${os.checklist || 'Revisão'}\n`;
+            const resumoServico = extrairResumoChecklist(os.checklist, os.observacoes);
+            texto += `📅 *Data:* ${formatarDataBR(os.data_registro || os.data)}\n`;
+            texto += `🛠️ *Serviço:* ${resumoServico}\n`;
             texto += `💰 *Valor:* R$ ${os.total || '0'}\n`;
             if (os.fotos && os.fotos.length > 0) texto += `📸 *Fotos:* ${os.fotos.length} foto(s) no laudo\n`;
             texto += `---\n`;
         });
-        // Coleta todas as fotos de todas as OS
         const todasFotos = todasAsOs.flatMap(os => os.fotos || []);
         compartilharComFotos(texto, todasFotos);
     };
 
-    // ── Compartilhar OS ESPECÍFICA (texto + fotos daquela OS)
     const compartilharOsEspecifica = () => {
         if (!osSelecionada) return;
         const fotos = osSelecionada.fotos || [];
+        const resumoServico = extrairResumoChecklist(osSelecionada.checklist, osSelecionada.observacoes);
         let texto = `🚗 *Laudo Técnico*\n`;
-        texto += `*Veículo:* ${placa} — ${osSelecionada.modelo || ''}\n`;
-        texto += `*Data:* ${osSelecionada.data || 'N/A'}\n\n`;
-        texto += `🛠️ *Serviços:*\n${osSelecionada.checklist || 'Revisão Geral'}\n\n`;
+        texto += `*Veículo:* ${osSelecionada.veiculo || placa}\n`;
+        texto += `*Placa:* ${osSelecionada.placa || placa}\n`;
+        texto += `*Data:* ${formatarDataBR(osSelecionada.data_registro || osSelecionada.data)}\n\n`;
+        texto += `🛠️ *Serviços:*\n${resumoServico}\n\n`;
         if (osSelecionada.detalhesPecas) texto += `📦 *Peças:* ${osSelecionada.detalhesPecas}\n\n`;
         texto += `💰 *Total:* R$ ${osSelecionada.total || '0'}`;
         if (fotos.length > 0) texto += `\n📸 *${fotos.length} foto(s) do serviço serão abertas em seguida*`;
@@ -550,7 +630,7 @@ const handleEntrar = async () => {
         <div className="flex flex-col min-h-screen bg-[#050505] text-white font-sans overflow-x-hidden">
             {/* HEADER */}
             <header className="w-full px-8 py-5 flex justify-between items-center border-b border-neutral-900 sticky top-0 bg-[#050505] z-50 font-black">
-                <h1 className="text-xl font-black text-red-600 tracking-[0.3em] uppercase cursor-pointer" onClick={() => window.location.reload()}>🔧 Exp Auto Tech</h1>
+                <h1 className="text-xl font-black text-red-600 tracking-[0.3em] uppercase cursor-pointer" onClick={() => window.location.reload()}>🔧 OFICINA IA</h1>
                 <button onClick={() => navigate('/login-admin')} className="bg-[#eab308] text-black px-6 py-2 rounded-lg text-[10px] uppercase shadow-lg shadow-yellow-600/20 hover:scale-105 transition-all">🏢 ÁREA ADMIN</button>
             </header>
 
@@ -574,9 +654,8 @@ const handleEntrar = async () => {
                                 {carregando ? 'ENTRANDO...' : 'ACESSAR AGORA'}
                             </button>
                         </div>
-                        <a href="https://youtu.be/td0WLQTujeE" target="_blank" rel="noopener noreferrer" className="mt-8 mb-10 flex items-center gap-2 text-red-500 font-black text-[10px] uppercase tracking-widest border border-red-600/30 px-6 py-3 rounded-full hover:bg-red-600 hover:text-white transition-all">🎬 COMO USAR O PORTAL</a>
+                        <a href="https://youtu.be/u5ufl4IrzlA" target="_blank" rel="noopener noreferrer" className="mt-8 mb-10 flex items-center gap-2 text-red-500 font-black text-[10px] uppercase tracking-widest border border-red-600/30 px-6 py-3 rounded-full hover:bg-red-600 hover:text-white transition-all">🎬 COMO USAR O PORTAL</a>
 
-                        {/* CARROSSEL DE VÍDEOS EDUCATIVOS */}
                         <div className="w-full mt-6 mb-10">
                             <p className="text-neutral-600 text-[9px] font-black uppercase mb-4 tracking-widest text-center">📺 Dicas para valorizar seu veículo</p>
                             <div className="flex gap-4 overflow-x-auto pb-4 px-2 scrollbar-hide">
@@ -598,8 +677,21 @@ const handleEntrar = async () => {
 
                         <div className="w-full mt-4 border-t border-neutral-900 pt-8">
                             <p className="text-neutral-600 text-[9px] font-black uppercase mb-6 tracking-widest text-center">Ou acesse as Ferramentas de IA</p>
+
+                            {/* 👇 NOVO BOTÃO DA ESPECIALISTA CENTRALIZADO 👇 */}
+                            <div className="flex justify-center mb-8">
+                                <button
+                                    onClick={() => { setAbaAtiva('ajuda'); window.scrollTo(0, 0); }}
+                                    className="flex items-center gap-3 px-8 py-4 bg-[#1a0000] border-2 border-red-500 rounded-full text-red-500 hover:text-white font-black text-[10px] md:text-xs uppercase tracking-widest shadow-[0_0_30px_rgba(220,38,38,0.4)] hover:shadow-[0_0_50px_rgba(220,38,38,0.6)] hover:bg-red-600 transition-all hover:scale-105"
+                                >
+                                    <span className="text-2xl">👩‍🔧</span> FALE COM A ESPECIALISTA
+                                </button>
+                            </div>
+                            {/* 👆 FIM DO BOTÃO DA ESPECIALISTA 👆 */}
+
+                            {/* GRADE COM O RESTO DAS FERRAMENTAS */}
                             <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                                {Object.entries(abasConfig).filter(([id]) => id !== 'home').map(([id, config]) => (
+                                {Object.entries(abasConfig).filter(([id]) => id !== 'home' && id !== 'ajuda').map(([id, config]) => (
                                     <button key={id} onClick={() => { setAbaAtiva(id); window.scrollTo(0, 0); }} className={`w-full py-6 px-4 rounded-2xl font-black text-[10px] uppercase transition-all border bg-[#0a0a0a] hover:scale-[1.03] shadow-lg ${config.menuStyle}`}>
                                         {config.text}
                                     </button>
@@ -616,6 +708,7 @@ const handleEntrar = async () => {
                 {!todasAsOs && abaAtiva === 'oleo' && <GuiaOleoIA theme={abasConfig.oleo.theme} onBack={() => { setAbaAtiva('home'); window.scrollTo(0, 0); }} />}
                 {!todasAsOs && abaAtiva === 'calc' && <CalculadoraFlex theme={abasConfig.calc.theme} onBack={() => { setAbaAtiva('home'); window.scrollTo(0, 0); }} />}
                 {!todasAsOs && abaAtiva === 'dicas' && <DicasTecnicas theme={abasConfig.dicas.theme} onBack={() => { setAbaAtiva('home'); window.scrollTo(0, 0); }} />}
+                {!todasAsOs && abaAtiva === 'ajuda' && <AbaAjudaIA theme={abasConfig.ajuda.theme} onBack={() => { setAbaAtiva('home'); window.scrollTo(0, 0); }} />}
 
                 {/* TELA 2: DASHBOARD DO CLIENTE LOGADO */}
                 {todasAsOs && (
@@ -662,9 +755,11 @@ const handleEntrar = async () => {
                                         {todasAsOs.map(os => (
                                             <div key={os.id} onClick={() => setOsSelecionada(os)} className="bg-[#0a0a0a] border border-neutral-800 p-8 md:p-10 rounded-[2.5rem] hover:border-red-600 transition-all group cursor-pointer shadow-xl relative overflow-hidden">
                                                 <div className="absolute top-0 right-0 p-4 bg-red-600/10 text-red-500 font-black text-[8px] rounded-bl-xl uppercase tracking-widest">VER LAUDO</div>
-                                                <p className="text-white font-black text-lg md:text-xl mb-4 pr-20 uppercase leading-relaxed group-hover:text-red-500 transition-colors line-clamp-2">{os.checklist || 'Revisão Geral'}</p>
 
-                                                {/* ── MINIATURAS DAS FOTOS NA LISTA ── */}
+                                                <p className="text-white font-black text-lg md:text-xl mb-4 pr-20 uppercase leading-relaxed group-hover:text-red-500 transition-colors line-clamp-2">
+                                                    {extrairResumoChecklist(os.checklist, os.observacoes)}
+                                                </p>
+
                                                 {os.fotos && os.fotos.length > 0 && (
                                                     <div className="flex gap-2 mb-4 overflow-x-auto pb-1">
                                                         {os.fotos.slice(0, 4).map((foto, i) => {
@@ -690,11 +785,11 @@ const handleEntrar = async () => {
                                                 <div className="flex justify-between items-center border-t border-neutral-900 pt-6">
                                                     <div className="flex flex-col">
                                                         <span className="text-neutral-600 text-[9px] font-black uppercase mb-1">DATA</span>
-                                                        <span className="text-white font-bold">{os.data?.toDate?.().toLocaleDateString('pt-BR') || formatarDataBR(os.data)}</span>
+                                                        <span className="text-white font-bold">{formatarDataBR(os.data_registro || os.data)}</span>
                                                     </div>
                                                     <div className="text-right">
                                                         <span className="text-neutral-600 text-[9px] font-black uppercase block mb-1">VALOR INVESTIDO</span>
-                                                        <p className="text-green-500 font-black text-xl md:text-2xl tracking-tighter">R$ {os.total}</p>
+                                                        <p className="text-green-500 font-black text-xl md:text-2xl tracking-tighter">R$ {safe(os.total)}</p>
                                                     </div>
                                                 </div>
                                             </div>
@@ -727,13 +822,29 @@ const handleEntrar = async () => {
                                         Laudo Técnico
                                     </h2>
                                     <p className="text-neutral-600 text-[10px] font-black uppercase mb-6">
-                                        {osSelecionada?.data?.toDate?.().toLocaleDateString('pt-BR') || formatarDataBR(osSelecionada?.data)} {osSelecionada.modelo ? `• ${osSelecionada.modelo}` : ''}
+                                        {formatarDataBR(osSelecionada.data_registro || osSelecionada.data)}
+                                        {osSelecionada.veiculo ? ` • ${osSelecionada.veiculo}` : osSelecionada.modelo ? ` • ${osSelecionada.modelo}` : ''}
                                     </p>
 
-                                    {/* Checklist / Serviços */}
-                                    <p className="text-gray-300 text-sm md:text-base leading-relaxed whitespace-pre-line mb-8">
-                                        {osSelecionada.checklist || 'Revisão Geral'}
-                                    </p>
+                                    {typeof osSelecionada.checklist === 'string' && osSelecionada.checklist.trim() ? (
+                                        <p className="text-gray-300 text-sm md:text-base leading-relaxed whitespace-pre-line mb-8">
+                                            {osSelecionada.checklist}
+                                        </p>
+                                    ) : typeof osSelecionada.checklist === 'object' && osSelecionada.checklist ? (
+                                        <div className="mb-8">
+                                            <p className="text-neutral-500 text-[9px] font-black uppercase mb-3 tracking-widest">🔍 INSPEÇÃO REALIZADA</p>
+                                            <ChecklistResumo checklist={osSelecionada.checklist} />
+                                        </div>
+                                    ) : (
+                                        <p className="text-gray-300 text-sm mb-8">Revisão Geral</p>
+                                    )}
+
+                                    {osSelecionada.observacoes && typeof osSelecionada.observacoes === 'object' && (
+                                        <div className="mb-8">
+                                            <p className="text-neutral-500 text-[9px] font-black uppercase mb-3 tracking-widest">📋 OBSERVAÇÕES DO TÉCNICO</p>
+                                            <ObservacoesResumo observacoes={osSelecionada.observacoes} />
+                                        </div>
+                                    )}
 
                                     {/* Peças utilizadas */}
                                     {osSelecionada.detalhesPecas && (
@@ -747,7 +858,7 @@ const handleEntrar = async () => {
                                     <GaleriaFotos fotos={osSelecionada.fotos} />
 
                                     {/* KM */}
-                                    {osSelecionada.kmAtual && (
+                                    {osSelecionada.kmAtual ? (
                                         <div className="mt-8 flex gap-4">
                                             <div className="flex-1 bg-black/40 border border-neutral-900 p-4 rounded-xl text-center">
                                                 <p className="text-neutral-600 text-[9px] font-black uppercase mb-1">KM ATUAL</p>
@@ -760,12 +871,12 @@ const handleEntrar = async () => {
                                                 </div>
                                             )}
                                         </div>
-                                    )}
+                                    ) : null}
 
                                     {/* Total */}
                                     <div className="text-center pt-10 border-t border-neutral-900 mt-8">
                                         <p className="text-neutral-500 text-[10px] font-black uppercase mb-2 tracking-widest">INVESTIMENTO TOTAL NA MANUTENÇÃO</p>
-                                        <p className="text-green-500 font-black text-5xl tracking-tighter">R$ {osSelecionada.total}</p>
+                                        <p className="text-green-500 font-black text-5xl tracking-tighter">R$ {safe(osSelecionada.total)}</p>
                                         {osSelecionada.statusPagamento === 'pago' && (
                                             <span className="inline-block mt-3 bg-green-500/10 text-green-500 border border-green-500/30 px-4 py-1 rounded-full text-[10px] font-black uppercase">✅ PAGO</span>
                                         )}

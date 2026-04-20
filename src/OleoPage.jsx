@@ -6,6 +6,7 @@ import { collection, addDoc } from 'firebase/firestore';
 import { useGemini } from './hooks/useGemini';
 import { useOficina } from './components/OficinaContext';
 import { sincronizarRetornosAutomaticos } from './lib/retornos';
+import { comprimirFoto } from './lib/utils';
 
 const MAIN_COLOR = "#FF0033";
 const KM_COLOR = "#eab308";
@@ -102,21 +103,7 @@ export default function OleoPage() {
     rec.start();
   };
 
-  const comprimirFoto = (base64, qualidade = 0.5) => {
-    return new Promise((resolve) => {
-      const img = new Image();
-      img.onload = () => {
-        const canvas = document.createElement('canvas');
-        const maxW = 800;
-        const ratio = Math.min(maxW / img.width, maxW / img.height, 1);
-        canvas.width = img.width * ratio;
-        canvas.height = img.height * ratio;
-        canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height);
-        resolve(canvas.toDataURL('image/jpeg', qualidade));
-      };
-      img.src = base64;
-    });
-  };
+  // Uses centralized comprimirFoto from utils.js (WebP, 70%, 1280px)
 
   const handleFotoPainel = async (e) => {
     const file = e.target.files[0];

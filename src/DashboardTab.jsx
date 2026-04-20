@@ -175,9 +175,13 @@ export default function DashboardTab({
             {/* CARDS DE MÉTRICAS */}
             <div style={{ background: t.bgCard, borderRadius: '16px', border: `1px solid ${t.border}`, padding: '20px', marginBottom: '28px' }}>
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '20px' }}>
-                    <CardMetrica label="🚗 No Pátio" valor={osPendentes} cor={MAIN_COLOR} t={t} icone="🔧" subtitulo={`${osPendentes} O.S. em aberto`} />
+                    <div data-tour="no-patio-card">
+                        <CardMetrica label="🚗 No Pátio" valor={osPendentes} cor={MAIN_COLOR} t={t} icone="🔧" subtitulo={`${osPendentes} O.S. em aberto`} />
+                    </div>
                     <CardMetrica label="💰 A Receber" valor={fmtMoeda(totalAReceber)} cor="#facc15" t={t} icone="💵" subtitulo={`${listaCarros.filter(os => os.statusPagamento !== 'pago').length} O.S. pendentes`} />
-                    <CardMetrica label="📈 Faturamento Mês" valor={temPermissao('financeiro') ? fmtMoeda(financeiro.fMes) : '🔒'} cor={GREEN_MONEY} t={t} icone="📊" subtitulo={temPermissao('financeiro') ? `Hoje: ${fmtMoeda(financeiro.fHoje)}` : 'Sem permissão'} tendencia={null} />
+                    <div data-tour="faturamento-card">
+                        <CardMetrica label="📈 Faturamento Mês" valor={temPermissao('financeiro') ? fmtMoeda(financeiro.fMes) : '🔒'} cor={GREEN_MONEY} t={t} icone="📊" subtitulo={temPermissao('financeiro') ? `Hoje: ${fmtMoeda(financeiro.fHoje)}` : 'Sem permissão'} tendencia={null} />
+                    </div>
                     <CardMetrica label="📦 Itens Estoque" valor={totalEstoque} cor={KM_COLOR} t={t} icone="📦" subtitulo={`Valor: ${fmtMoeda(valorEstoque)}`} />
                 </div>
             </div>

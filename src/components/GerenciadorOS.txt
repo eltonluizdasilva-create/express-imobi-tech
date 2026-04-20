@@ -1,0 +1,197 @@
+// GerenciadorOS.jsx
+import React, { useState } from 'react';
+import OS from './admin/OS';
+import Mecanica from './Mecanica';
+import Eletrica from './Eletrica';
+import Funilaria from './Funilaria';
+import Injecao from './Injecao';
+
+export default function GerenciadorOS({ oficinaId, dadosOficina, buscarDadosPorPlaca, modulosOperacionais = [], onSalvo }) {
+    const [etapa, setEtapa] = useState('IDENTIFICACAO');
+    const [servicoAtivo, setServicoAtivo] = useState(null);
+    const [dadosOS, setDadosOS] = useState({});
+
+    const handleRedirecionar = (setorValido, osData) => {
+        console.log('[GerenciadorOS] Redirecionando para:', setorValido);
+        setServicoAtivo(setorValido);
+        setDadosOS(osData);
+        setEtapa('EXECUCAO');
+    };
+
+    const handleFinalizar = () => {
+        setEtapa('RESUMO');
+    };
+
+    const handleNovaOS = () => {
+        setServicoAtivo(null);
+        setDadosOS({});
+        setEtapa('IDENTIFICACAO');
+    };
+
+    const renderEtapa = () => {
+        switch (etapa) {
+
+            case 'IDENTIFICACAO':
+                return (
+                    <OS
+                        oficinaId={oficinaId}
+                        dadosOficina={dadosOficina}
+                        modulosOperacionais={modulosOperacionais}
+                        buscarDadosPorPlaca={buscarDadosPorPlaca}
+                        isTrial={false}
+                        onSalvo={onSalvo}
+                        onRedirecionar={handleRedirecionar}
+                    />
+                );
+
+            case 'EXECUCAO':
+                if (servicoAtivo === 'mecanica') {
+                    return (
+                        <Mecanica
+                            osData={dadosOS}
+                            oficinaId={oficinaId}
+                            aoFinalizar={handleFinalizar}
+                            aoVoltar={handleNovaOS}
+                        />
+                    );
+                }
+                if (servicoAtivo === 'eletrica') {
+                    return (
+                        <Eletrica
+                            osData={dadosOS}
+                            oficinaId={oficinaId}
+                            aoFinalizar={handleFinalizar}
+                            aoVoltar={handleNovaOS}
+                        />
+                    );
+                }
+                if (servicoAtivo === 'funilaria') {
+                    return (
+                        <Funilaria
+                            osData={dadosOS}
+                            oficinaId={oficinaId}
+                            aoFinalizar={handleFinalizar}
+                            aoVoltar={handleNovaOS}
+                        />
+                    );
+                }
+                if (servicoAtivo === 'injecao') {
+                    return (
+                        <Injecao
+                            osData={dadosOS}
+                            oficinaId={oficinaId}
+                            aoFinalizar={handleFinalizar}
+                            aoVoltar={handleNovaOS}
+                        />
+                    );
+                }
+
+                // Demais setores — tela de em construção
+                return (
+                    <div style={{
+                        padding: '40px 20px',
+                        color: 'white',
+                        textAlign: 'center',
+                        background: '#0a0a0a',
+                        minHeight: '300px',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        gap: '16px'
+                    }}>
+                        <span style={{ fontSize: '48px' }}>🚧</span>
+                        <h3 style={{ color: '#ff0033', margin: 0 }}>
+                            {servicoAtivo?.toUpperCase()} em construção
+                        </h3>
+                        <p style={{ color: '#666', fontSize: '13px' }}>
+                            A O.S. foi salva com sucesso. Esta tela de serviço ainda está sendo desenvolvida.
+                        </p>
+                        <button
+                            onClick={handleNovaOS}
+                            style={{
+                                background: '#ff0033',
+                                color: 'white',
+                                border: 'none',
+                                padding: '12px 24px',
+                                borderRadius: '8px',
+                                fontWeight: 'bold',
+                                cursor: 'pointer'
+                            }}
+                        >
+                            ← Nova O.S.
+                        </button>
+                    </div>
+                );
+
+            case 'RESUMO':
+                return (
+                    <div style={{
+                        padding: '40px 20px',
+                        color: 'white',
+                        background: '#0a0a0a',
+                        minHeight: '300px',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        gap: '16px',
+                        textAlign: 'center'
+                    }}>
+                        <span style={{ fontSize: '48px' }}>✅</span>
+                        <h2 style={{ color: '#00ff88', margin: 0 }}>O.S. Finalizada!</h2>
+                        <div style={{
+                            background: '#111',
+                            border: '1px solid #222',
+                            borderRadius: '12px',
+                            padding: '20px',
+                            width: '100%',
+                            maxWidth: '400px',
+                            textAlign: 'left'
+                        }}>
+                            <p style={{ margin: '4px 0', fontSize: '13px', color: '#aaa' }}>
+                                <strong style={{ color: '#fff' }}>Cliente:</strong> {dadosOS.nomeCliente}
+                            </p>
+                            <p style={{ margin: '4px 0', fontSize: '13px', color: '#aaa' }}>
+                                <strong style={{ color: '#fff' }}>Placa:</strong> {dadosOS.placa}
+                            </p>
+                            <p style={{ margin: '4px 0', fontSize: '13px', color: '#aaa' }}>
+                                <strong style={{ color: '#fff' }}>Veículo:</strong> {dadosOS.modelo}
+                            </p>
+                            <p style={{ margin: '4px 0', fontSize: '13px', color: '#aaa' }}>
+                                <strong style={{ color: '#fff' }}>Setor:</strong> {dadosOS.tipoServico?.toUpperCase()}
+                            </p>
+                            <p style={{ margin: '4px 0', fontSize: '13px', color: '#aaa' }}>
+                                <strong style={{ color: '#fff' }}>ID da O.S.:</strong>{' '}
+                                <span style={{ color: '#ff0033', fontFamily: 'monospace' }}>{dadosOS.id}</span>
+                            </p>
+                        </div>
+                        <button
+                            onClick={handleNovaOS}
+                            style={{
+                                background: '#ff0033',
+                                color: 'white',
+                                border: 'none',
+                                padding: '14px 32px',
+                                borderRadius: '8px',
+                                fontWeight: 'bold',
+                                cursor: 'pointer',
+                                fontSize: '15px'
+                            }}
+                        >
+                            + Nova O.S.
+                        </button>
+                    </div>
+                );
+
+            default:
+                return <div style={{ color: 'white', padding: '20px' }}>Erro no fluxo.</div>;
+        }
+    };
+
+    return (
+        <div className="os-container" style={{ background: '#000', minHeight: '100vh' }}>
+            {renderEtapa()}
+        </div>
+    );
+}

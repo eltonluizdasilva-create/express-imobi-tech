@@ -93,10 +93,58 @@ Seja direto e prático. O mecânico está na oficina agora.`;
         setTimeout(() => document.getElementById('prompt-resultado')?.scrollIntoView({ behavior: 'smooth' }), 100);
     };
 
+    const [mensagemCliente, setMensagemCliente] = useState('');
+    const [copiadoCliente, setCopiadoCliente] = useState(false);
+
     const copiarPrompt = () => {
         navigator.clipboard.writeText(promptGerado);
         setCopiado(true);
         setTimeout(() => setCopiado(false), 2500);
+    };
+
+    const gerarMensagemCliente = async () => {
+        if (!sintoma && !promptGerado) return alert('⚠️ Gere primeiro o diagnóstico técnico!');
+        
+        const veiculo = [marca, modelo, motor, ano].filter(Boolean).join(' ') || 'veículo';
+        
+        const promptMensagem = `Transforme o diagnóstico técnico abaixo numa mensagem friendly para enviar ao cliente do veículo. 
+
+VEÍCULO: ${veiculo}
+SINTOMA RELATADO: ${sintoma || 'não informado'}
+CÓDIGO OBD: ${obd || 'não informado'}
+
+DIAGNÓSTICO TÉCNICO:
+${promptGerado}
+
+Crie uma mensagem em português brasileiro que:
+1. Comece com saudação amigável
+2. Explique o problema em palavras simples (sem术语 técnicos)
+3. Mencione as possíveis soluções de forma clara
+4. Inclua estimativa de tempo e valor (se mencionado no diagnóstico)
+5. Termine com opção de confirmação
+
+Mantenha um tom profissional mas acessível. Use emojis sparingly. máximo 300 palavras.`;
+
+        try {
+            const respostaIA = await analyzeText(promptMensagem);
+            const msg = `🚗 *Orçamento Express Tech*\n\n${respostaIA}`;
+            setMensagemCliente(msg);
+            setTimeout(() => document.getElementById('mensagem-cliente')?.scrollIntoView({ behavior: 'smooth' }), 100);
+        } catch (erro) {
+            console.error("Erro ao gerar mensagem:", erro);
+            alert('❌ Erro ao gerar mensagem: ' + erro.message);
+        }
+    };
+
+    const copiarMensagemCliente = () => {
+        navigator.clipboard.writeText(mensagemCliente);
+        setCopiadoCliente(true);
+        setTimeout(() => setCopiadoCliente(false), 2500);
+    };
+
+    const abrirWhatsApp = () => {
+        const msg = encodeURIComponent(mensagemCliente);
+        window.open(`https://wa.me/?text=${msg}`, '_blank');
     };
 
     const abrirGeminiComPrompt = () => {
@@ -231,6 +279,31 @@ Seja direto e prático. O mecânico está na oficina agora.`;
                             📋 Criar O.S.<br /><span style={{ fontSize: '10px', fontWeight: 'normal', opacity: 0.8 }}>com esses dados</span>
                         </button>
                     </div>
+
+                    {/* -- BOTÃO MENSAGEM CLIENTE -- */}
+                    <button onClick={gerarMensagemCliente}
+                        style={{ width: '100%', padding: '14px', background: '#25D366', color: 'white', border: 'none', borderRadius: '12px', fontSize: '15px', fontWeight: '900', cursor: 'pointer', marginBottom: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
+                        <span>💬</span> Gerar Mensagem p/ Cliente (WhatsApp)
+                    </button>
+
+                    {/* -- MENSAGEM CLIENTE -- */}
+                    {mensagemCliente && (
+                        <div id="mensagem-cliente" style={{ background: '#0a2a10', border: '2px solid #25D366', borderRadius: '14px', padding: '16px', marginBottom: '16px' }}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+                                <p style={{ margin: 0, color: '#25D366', fontWeight: '900', fontSize: '14px' }}>📱 Mensagem para o Cliente</p>
+                                <button onClick={copiarMensagemCliente} style={{ padding: '6px 14px', background: copiadoCliente ? '#25D36622' : '#0a2a10', color: copiadoCliente ? '#25D366' : '#25D366', border: `1px solid ${copiadoCliente ? '#25D366' : '#25D366'}`, borderRadius: '8px', fontSize: '11px', fontWeight: 'bold', cursor: 'pointer' }}>
+                                    {copiadoCliente ? '✅ Copiado!' : '📋 Copiar'}
+                                </button>
+                            </div>
+                            <pre style={{ color: '#ccc', fontSize: '12px', whiteSpace: 'pre-wrap', lineHeight: '1.5', margin: 0, background: '#0d3520', padding: '12px', borderRadius: '8px' }}>
+                                {mensagemCliente}
+                            </pre>
+                            <button onClick={abrirWhatsApp}
+                                style={{ width: '100%', marginTop: '12px', padding: '12px', background: '#25D366', color: 'white', border: 'none', borderRadius: '10px', fontSize: '14px', fontWeight: 'bold', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
+                                📱 Abrir no WhatsApp
+                            </button>
+                        </div>
+                    )}
 
                     {/* -- GUIA DE USO DA CÂMERA -- */}
                     <div style={{ background: '#111', border: '1px solid #333', borderRadius: '12px', padding: '16px' }}>

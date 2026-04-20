@@ -4,6 +4,7 @@ import { db } from './lib/firebase';
 import { collection, addDoc, getDocs, updateDoc, doc } from 'firebase/firestore';
 import { useOficina } from '.././components/OficinaContext';
 import { sincronizarRetornosAutomaticos } from '../../lib/retornos';
+import { comprimirFoto, normalizarPlaca, formatarMoeda } from '../../lib/utils';
 
 const COR = '#a855f7';
 const COR2 = '#9333ea';
@@ -11,14 +12,7 @@ const GREEN = '#00E676';
 
 const normalizarPlaca = (v) => (v || '').toUpperCase().replace(/[^A-Z0-9]/g, '');
 const formatarMoeda = (v) => Number(v || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
-const comprimirFoto = (b, q = 0.5) => new Promise(res => {
-  const img = new Image(); img.onload = () => {
-    const c = document.createElement('canvas'), MAX = 800, sc = img.width > MAX ? MAX / img.width : 1;
-    c.width = img.width * sc; c.height = img.height * sc;
-    c.getContext('2d').drawImage(img, 0, 0, c.width, c.height);
-    res(c.toDataURL('image/jpeg', q));
-  }; img.src = b;
-});
+// Uses centralized comprimirFoto from utils.js with WebP, 70% quality, max 1280px
 
 const SERVICOS_EST = [
   { key: 'polimento_simples', label: '✓ Polimento Simples', desc: '1 passo, remove riscos leves', cor: '#c084fc' },

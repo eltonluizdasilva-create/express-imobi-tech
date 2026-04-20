@@ -70,19 +70,65 @@ export function resolverAbaDestino(tipo) {
 
 export function buscarDadosPorPlaca(listaCarros, placaDigitada, normalizarPlaca, callbacks) {
   const placaNorm = normalizarPlaca(placaDigitada || '');
+  // Precisa de pelo menos 7 caracteres (padrão brasileiro ABC1234)
   if (placaNorm.length < 7) return null;
+  
   const lista = listaCarros || [];
+  // Encontra a OS mais recente com essa placa
   const match = lista
     .filter(o => normalizarPlaca(o.placa || '') === placaNorm)
     .sort((a, b) => new Date(b.data_registro || 0) - new Date(a.data_registro || 0))[0];
+  
   if (match && callbacks) {
-    if (callbacks.setNome) callbacks.setNome(match.nomeCliente || '');
-    if (callbacks.setTelefone) callbacks.setTelefone(match.telefone || '');
-    if (callbacks.setModelo) callbacks.setModelo(match.modelo || '');
-    if (callbacks.setKm) callbacks.setKm(match.kmAtual || '');
+    // Limpa telefone primeiro antes de preencher (prioridade de limpeza)
+    if (callbacks.setTelefone) {
+      // Pega telefone atual do campo
+      const telefoneAtual = callbacks.getTelefone?.() || '';
+      const telefoneEncontrado = match.telefone || '';
+      
+      // Se已经有値 且 diferente do encontrado, sugere confirmação
+      if (telefoneAtual && telefoneAtual !== telefoneEncontrado) {
+        if (callbacks.onSuggestTelefone) {
+          // Passa old e new para o callback de sugestão
+          callbacks.onSuggestTelefone(telefoneEncontrado, telefoneAtual);
+        } else {
+          // Fallback: não preenche automaticamente
+          console.log('📱 Telefone diferente encontrado, esperando confirmação:', telefoneEncontrado);
+        }
+      } else {
+        // Se campo vazio ou igual, preenche automaticamente
+        callbacks.setTelefone(telefoneEncontrado);
+      }
+    }
+    if (callbacks.setNome) callbacks.setNome(match.nomeCliente || match.cliente || '');
+    if (callbacks.setModelo) callbacks.setModelo(match.modelo || match.veiculo || '');
+    if (callbacks.setKm) callbacks.setKm(match.km?.toString() || match.kmAtual?.toString() || '');
     if (callbacks.onFound) callbacks.onFound(match);
   }
   return match || null;
+}
+
+// Máscara brasileira para telefone
+export function formatarTelefoneBR(telefone) {
+  if (!telefone) return '';
+  // Remove caracteres não numéricos
+  const nums = telefone.replace(/\D/g, '');
+  // Formato: (00) 0 0000-0000 ou (00) 00000-0000
+  if (nums.length === 10) {
+    return `(${nums.slice(0,2)}) ${nums[2]} ${nums.slice(3,7)}-${nums.slice(7)}`;
+  }
+  if (nums.length === 11) {
+    return `(${nums.slice(0,2)}) ${nums.slice(2,3)} ${nums.slice(3,7)}-${nums.slice(7)}`;
+  }
+  return telefone;
+}
+
+// Validar telefone brasileiro
+export function validarTelefoneBR(telefone) {
+  if (!telefone) return false;
+  const nums = telefone.replace(/\D/g, '');
+  // Telefone brasileiro tem 10 ou 11 dígitos (com DDD)
+  return nums.length >= 10 && nums.length <= 11;
 }
 
 export function abrirMercado(os) {

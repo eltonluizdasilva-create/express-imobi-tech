@@ -7,7 +7,8 @@ import {
   CreditCard, UserPlus, Megaphone, Rocket, HelpCircle, Wrench, Battery,
   Zap, Bike, Car, Hammer, Activity, Cpu, MoveHorizontal, Droplet,
   ShieldCheck, Snowflake, Circle, Scissors, Wind, CloudRain, Sparkles,
-  Brain, Briefcase, Shield, Calculator, ShoppingCart, Play, Info, Video
+  Brain, Briefcase, Shield, Calculator, ShoppingCart, Play, Info, Video,
+  MessageCircle
 } from 'lucide-react';
 
 const ESTILO_BIBLIOTECA = `
@@ -23,7 +24,8 @@ const ESTILO_BIBLIOTECA = `
   
   .item-biblioteca { 
     background: #0d0d0d; border: 1px solid #1a1a1a; border-radius: 16px; 
-    padding: 16px; margin-bottom: 12px; display: flex; align-items: center; gap: 15px; 
+    padding: 16px; margin-bottom: 12px; display: flex; align-items: flex-start; gap: 15px; 
+    flex-wrap: wrap;
     transition: 0.2s;
   }
   .item-biblioteca:hover { border-color: #ff3131; background: #111; }
@@ -32,25 +34,53 @@ const ESTILO_BIBLIOTECA = `
     width: 45px; height: 45px; background: #1a1a1a; border-radius: 12px; 
     display: flex; align-items: center; justify-content: center; flex-shrink: 0; 
   }
-  .label-nome { width: 170px; font-size: 13px; font-weight: 800; color: #fff; text-transform: uppercase; }
+  .label-nome { width: 170px; font-size: 13px; font-weight: 800; color: #fff; text-transform: uppercase; margin-top: 14px; }
   
   .botao-video { 
     background: #151515; border: 1px solid #222; border-radius: 8px; color: #888;
     padding: 10px 15px; font-size: 11px; font-weight: 700; text-decoration: none;
     display: flex; align-items: center; gap: 8px; min-width: 140px; justify-content: center;
     transition: 0.2s;
+    margin-top: 5px;
   }
   .botao-video.ativo:hover { background: #ff3131; color: white; border-color: #ff3131; }
   .botao-video.inativo { opacity: 0.4; pointer-events: none; }
   
   .box-resumo { 
     background: #080808; border: 1px solid #151515; border-radius: 10px; 
-    padding: 12px 18px; color: #777; font-size: 12px; flex: 1; line-height: 1.5; 
+    padding: 12px 18px; color: #777; font-size: 12px; flex: 1 1 300px; line-height: 1.5; 
+    width: 100%; max-width: 100%; box-sizing: border-box;
   }
   .titulo-sessao { color: #ff3131; font-size: 14px; font-weight: 900; margin: 40px 0 15px; display: flex; align-items: center; gap: 10px; text-transform: uppercase; letter-spacing: 1px; }
+
+  @media (max-width: 768px) {
+    .video-principal {
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 15px;
+    }
+    .item-biblioteca {
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 15px;
+    }
+    .label-nome {
+      width: 100%;
+      margin-top: 0;
+    }
+    .botao-video {
+      width: 100%;
+      box-sizing: border-box;
+      margin-top: 0;
+    }
+    .box-resumo {
+      width: 100%;
+      margin-top: 10px;
+    }
+  }
 `;
 
-export default function BibliotecaTreinamento() {
+export default function BibliotecaTreinamento({ onOpenChat }) {
   const [links, setLinks] = useState({});
   const [textos, setTextos] = useState({});
 
@@ -89,10 +119,35 @@ export default function BibliotecaTreinamento() {
     );
   };
 
+  const reiniciarTour = () => {
+    window.dispatchEvent(new CustomEvent('reiniciarOnboarding'));
+  };
+
   return (
     <div className="container-biblioteca">
       <style>{ESTILO_BIBLIOTECA}</style>
       <div className="wrapper">
+
+        {/* ── BOTÃO REINICIAR TOUR ── */}
+        <button
+          onClick={reiniciarTour}
+          style={{
+            background: '#ff3131',
+            border: '2px solid #ff3131',
+            color: 'white',
+            padding: '12px 20px',
+            borderRadius: '10px',
+            fontWeight: 'bold',
+            fontSize: '12px',
+            cursor: 'pointer',
+            marginBottom: '20px',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '8px',
+          }}
+        >
+
+        </button>
 
         {/* ── VÍDEO PRINCIPAL DE INTRODUÇÃO ── */}
         <div className="video-principal">

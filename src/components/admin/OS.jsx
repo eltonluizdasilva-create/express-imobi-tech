@@ -25,20 +25,77 @@ const SETORES = [
   { key: 'estetica', label: 'Estética', icon: '✨' },
 ];
 
-export default function OS({ oficinaId, dadosOficina, onSalvo, onRedirecionar, buscarDadosPorPlaca, isTrial = false, modulosOperacionais = [] }) {
+/**
+ * OSModulo.jsx (Recepção de Veículo)
+ * 
+ * CORREÇÃO: Agora recebe as props corretas do GerenciadorDeModulos:
+ * - nomeCliente, setNomeCliente, placa, setPlaca, telefone, setTelefone, modelo, setModelo
+ * - modulosOperacionais (para filtrar setores visíveis)
+ * - handleOSCriada (callback que redireciona após criar a OS)
+ * 
+ * O fluxo agora é:
+ * 1. Usuário preenche cliente, placa, telefone, modelo
+ * 2. Seleciona um setor (Mecânica, Estética, etc.)
+ * 3. Clica em "GERAR O.S."
+ * 4. OS é criada no Firebase
+ * 5. handleOSCriada é chamado com a nova OS e setor escolhido
+ * 6. AdminNovo redireciona para o módulo do setor (TelaMaestro)
+ */
+export default function OSModulo({
+  // Props obrigatórias
+  oficinaId,
+  handleOSCriada,
+
+  // Props do formulário (vêm do AdminNovo através do GerenciadorDeModulos)
+  nomeCliente = '',
+  setNomeCliente = () => { },
+  placa = '',
+  setPlaca = () => { },
+  telefone = '',
+  setTelefone = () => { },
+  modelo = '',
+  setModelo = () => { },
+
+  // Props opcionais
+  senhaPortal = '',
+  setSenhaPortal = () => { },
+  ouvirCampo = null,
+  campoOuvindo = null,
+  buscarDadosPorPlaca = null,
+  modulosOperacionais = [],
+  dadosOficina = {},
+  isTrial = false,
+}) {
   const [dados, setDados] = useState({
-    nomeCliente: '',
-    placa: '',
-    veiculo: '',
+    nomeCliente: nomeCliente || '',
+    placa: placa || '',
+    veiculo: modelo || '',
     ano: '',
     motor: '',
-    telefone: '',
+    telefone: telefone || '',
     tipoVeiculo: 'carro',
   });
+
   const [salvando, setSalvando] = useState(false);
   const [buscaPlaca, setBuscaPlaca] = useState('');
   const [setorAtivo, setSetorAtivo] = useState('mecanica');
 
+  // ────────────────────────────────────────────────────────────────────────────
+  // SINCRONIZAÇÃO: dados locais ↔ props do AdminNovo
+  // ────────────────────────────────────────────────────────────────────────────
+  useEffect(() => {
+    setDados(prev => ({
+      ...prev,
+      nomeCliente: nomeCliente || prev.nomeCliente,
+      placa: placa || prev.placa,
+      telefone: telefone || prev.telefone,
+      veiculo: modelo || prev.veiculo,
+    }));
+  }, [nomeCliente, placa, telefone, modelo]);
+
+  // ────────────────────────────────────────────────────────────────────────────
+  // FILTRAGEM DE SETORES: apenas os módulos operacionais contratados
+  // ────────────────────────────────────────────────────────────────────────────
   const setoresVisiveis = useMemo(() => {
     if (isTrial) return SETORES;
     if (!dadosOficina) return SETORES;
@@ -79,6 +136,7 @@ export default function OS({ oficinaId, dadosOficina, onSalvo, onRedirecionar, b
     });
   }, [dadosOficina, isTrial, modulosOperacionais]);
 
+  // Garante que o setor ativo seja válido
   useEffect(() => {
     if (setoresVisiveis && setoresVisiveis.length > 0 && setorAtivo) {
       const ativoValido = setoresVisiveis.some(s => s.key === setorAtivo);
@@ -88,14 +146,15 @@ export default function OS({ oficinaId, dadosOficina, onSalvo, onRedirecionar, b
     }
   }, [setoresVisiveis, setorAtivo]);
 
+  // ────────────────────────────────────────────────────────────────────────────
+  // BUSCA POR PLACA: quando o usuário digita uma placa, busca dados cadastrados
+  // ────────────────────────────────────────────────────────────────────────────
   useEffect(() => {
     if (buscaPlaca.length >= 7 && buscarDadosPorPlaca) {
       buscarDadosPorPlaca(buscaPlaca, {
         setNome: (v) => setDados((d) => ({ ...d, nomeCliente: v })),
         setTelefone: (v) => setDados((d) => ({ ...d, telefone: v })),
         setModelo: (v) => {
-          // Tenta quebrar o modelo em campos se possível, senão joga em 'veiculo'
-          const partes = v.split(' ');
           setDados((d) => ({ ...d, veiculo: v }));
         }
       });
@@ -103,6 +162,9 @@ export default function OS({ oficinaId, dadosOficina, onSalvo, onRedirecionar, b
     }
   }, [buscaPlaca, buscarDadosPorPlaca]);
 
+  // ────────────────────────────────────────────────────────────────────────────
+  // HANDLER: mudanças nos inputs
+  // ────────────────────────────────────────────────────────────────────────────
   const handleChange = (e) => {
     const { name, value } = e.target;
     let novoValor = value;
@@ -110,18 +172,31 @@ export default function OS({ oficinaId, dadosOficina, onSalvo, onRedirecionar, b
     if (name === 'placa') novoValor = normalizarPlaca(value);
     if (name === 'telefone') novoValor = formatarTelefone(value);
 
+    // 1. Salva na tela local
     setDados((prev) => ({ ...prev, [name]: novoValor }));
+
+    // 2. Sincroniza com os states do AdminNovo (via props)
+    if (name === 'nomeCliente' && setNomeCliente) setNomeCliente(novoValor);
+    if (name === 'placa' && setPlaca) setPlaca(novoValor);
+    if (name === 'telefone' && setTelefone) setTelefone(novoValor);
+    if (name === 'veiculo' && setModelo) setModelo(novoValor);
 
     if (name === 'placa') {
       setBuscaPlaca(novoValor);
     }
   };
 
+  // ────────────────────────────────────────────────────────────────────────────
+  // GERAÇÃO DA SENHA: baseada nos últimos 4 dígitos da placa
+  // ────────────────────────────────────────────────────────────────────────────
   const gerarSenhaPlaca = (placa) => {
     const limpa = (placa || '').replace(/[^A-Z0-9]/g, '');
     return limpa.slice(-4).toUpperCase() || '0000';
   };
 
+  // ────────────────────────────────────────────────────────────────────────────
+  // SUBMIT: criar a O.S. no Firebase e redirecionar
+  // ────────────────────────────────────────────────────────────────────────────
   const handleGerarOS = async (e) => {
     e.preventDefault();
 
@@ -132,55 +207,58 @@ export default function OS({ oficinaId, dadosOficina, onSalvo, onRedirecionar, b
 
     if (!oficinaId) {
       alert('Erro: ID da oficina não encontrado. Faça login novamente.');
-      console.error('[OS] ERRO: oficinaId é undefined ou null!');
       return;
     }
 
     const setorValido = setorAtivo || 'mecanica';
-    
+
     setSalvando(true);
     try {
-      console.log('[OS] ==========================================');
-      console.log('[OS] Iniciando geração - setor:', setorValido);
-      console.log('[OS] OficinaID:', oficinaId);
-      console.log('[OS] ==========================================');
-      
-      const modeloCompleto = `${dados.veiculo} ${dados.ano} ${dados.motor}`.trim();
-      console.log('[OS] Modelo completo:', modeloCompleto);
+      console.log('[OSModulo] ==========================================');
+      console.log('[OSModulo] Iniciando geração - setor:', setorValido);
+      console.log('[OSModulo] OficinaID:', oficinaId);
+      console.log('[OSModulo] Dados:', dados);
+      console.log('[OSModulo] ==========================================');
 
+      const modeloCompleto = `${dados.veiculo} ${dados.ano} ${dados.motor}`.trim();
+
+      // Payload da OS que será salva no Firebase
       const payload = {
         ...dados,
         modelo: modeloCompleto,
+        veiculo: modeloCompleto,
+        nomeCliente: dados.nomeCliente,
+        cliente: dados.nomeCliente,
         oficinaId,
         data_registro: new Date().toISOString(),
+        data: new Date(),
         statusPagamento: 'pendente',
         tipo: setorValido,
         tipoServico: setorValido,
         total: 0,
         senhaConsulta: gerarSenhaPlaca(dados.placa),
+        senha_web: gerarSenhaPlaca(dados.placa),
       };
-      console.log('[OS] Payload:', payload);
 
-      console.log('[OS] >>>>> GRAVANDO NO FIREBASE...');
-      console.log('[OS] Project ID: express-ai-automation');
-      console.log('[OS] Caminho: oficinas/' + oficinaId + '/os');
-      
+      // Salva no Firebase
       const docRef = await addDoc(collection(db, 'oficinas', oficinaId, 'os'), payload);
-      console.log('[OS] ✓✓✓ SUCESSO! Doc salvo com ID:', docRef.id);
 
-      console.log('[OS] Sincronizando retornos...');
+      // Sincroniza com automações (lembretes, retornos, etc.)
       await sincronizarRetornosAutomaticos({
         oficinaId,
         osId: docRef.id,
         osData: payload,
         osBase: {},
       });
-      console.log('[OS] Retornos sincronizados');
 
+      // Cria objeto da nova OS com o ID do Firebase
       const novaOS = { id: docRef.id, ...payload };
-      console.log('[OS] Nova OS:', novaOS);
 
-      alert(`O.S. gerada e enviada para ${setorValido.toUpperCase()}!`);
+      console.log('[OSModulo] OS criada com sucesso:', novaOS.id);
+
+      alert(`✅ O.S. gerada e enviada para ${setorValido.toUpperCase()}!`);
+
+      // Limpa o formulário
       setDados({
         nomeCliente: '',
         placa: '',
@@ -193,62 +271,104 @@ export default function OS({ oficinaId, dadosOficina, onSalvo, onRedirecionar, b
       setBuscaPlaca('');
       setSetorAtivo('mecanica');
 
-      if (onSalvo) {
-        console.log('[OS] Chamando onSalvo...');
-        onSalvo();
+      // CRUCIAL: Chama o callback para redirecionar
+      if (handleOSCriada) {
+        console.log('[OSModulo] Chamando handleOSCriada com setor:', setorValido);
+        handleOSCriada(setorValido, novaOS);
       }
-      if (onRedirecionar) {
-        console.log('[OS] Chamando onRedirecionar...');
-        onRedirecionar(setorValido, novaOS);
-      }
-      console.log('[OS] Finalizado com sucesso');
+
     } catch (erro) {
-      console.error('[OS] Erro completo:', erro);
-      alert('Erro: ' + erro.message);
+      console.error('[OSModulo] Erro completo:', erro);
+      alert('❌ Erro ao gerar O.S.: ' + erro.message);
     } finally {
       setSalvando(false);
     }
   };
 
   return (
-    <div className="bg-black text-white p-4 max-w-3xl mx-auto">
+    <div id="tela-recepcao" className="bg-black text-white p-4 max-w-3xl mx-auto">
       <h2 className="text-xl font-bold text-red-500 mb-6 border-b border-red-900/30 pb-4">📋 Recepção de Veículo</h2>
 
       <form onSubmit={handleGerarOS} className="space-y-6">
+        {/* Seção: Dados do Cliente */}
         <div className="space-y-4">
           <div>
             <label className="text-[10px] text-gray-500 font-bold uppercase block mb-1">Cliente *</label>
-            <input type="text" name="nomeCliente" value={dados.nomeCliente} onChange={handleChange} className="w-full bg-[#111] border border-[#333] p-3 rounded-lg text-white focus:border-red-500 outline-none" required />
+            <input
+              type="text"
+              name="nomeCliente"
+              value={dados.nomeCliente}
+              onChange={handleChange}
+              className="w-full bg-[#111] border border-[#333] p-3 rounded-lg text-white focus:border-red-500 outline-none"
+              required
+            />
           </div>
 
           <div className="grid grid-cols-2 gap-4">
             <div>
               <label className="text-[10px] text-gray-500 font-bold uppercase block mb-1">Placa *</label>
-              <input type="text" name="placa" value={dados.placa} onChange={handleChange} className="w-full bg-black border border-red-900 p-3 rounded-lg text-white font-bold text-center tracking-widest text-lg" required />
+              <input
+                type="text"
+                name="placa"
+                value={dados.placa}
+                onChange={handleChange}
+                className="w-full bg-black border border-red-900 p-3 rounded-lg text-white font-bold text-center tracking-widest text-lg"
+                required
+              />
             </div>
             <div>
               <label className="text-[10px] text-gray-500 font-bold uppercase block mb-1">WhatsApp *</label>
-              <input type="text" name="telefone" value={dados.telefone} onChange={handleChange} className="w-full bg-[#111] border border-[#333] p-3 rounded-lg text-white" required />
+              <input
+                type="text"
+                name="telefone"
+                value={dados.telefone}
+                onChange={handleChange}
+                className="w-full bg-[#111] border border-[#333] p-3 rounded-lg text-white"
+                required
+              />
             </div>
           </div>
 
           <div className="grid grid-cols-3 gap-2">
             <div className="col-span-1">
               <label className="text-[10px] text-gray-500 font-bold uppercase block mb-1">Veículo *</label>
-              <input type="text" name="veiculo" value={dados.veiculo} onChange={handleChange} placeholder="Ex: Gol" className="w-full bg-[#111] border border-[#333] p-3 rounded-lg text-white text-xs" required />
+              <input
+                type="text"
+                name="veiculo"
+                value={dados.veiculo}
+                onChange={handleChange}
+                placeholder="Ex: Gol"
+                className="w-full bg-[#111] border border-[#333] p-3 rounded-lg text-white text-xs"
+                required
+              />
             </div>
             <div>
               <label className="text-[10px] text-gray-500 font-bold uppercase block mb-1">Ano</label>
-              <input type="text" name="ano" value={dados.ano} onChange={handleChange} placeholder="2020" className="w-full bg-[#111] border border-[#333] p-3 rounded-lg text-white text-xs" />
+              <input
+                type="text"
+                name="ano"
+                value={dados.ano}
+                onChange={handleChange}
+                placeholder="2020"
+                className="w-full bg-[#111] border border-[#333] p-3 rounded-lg text-white text-xs"
+              />
             </div>
             <div>
               <label className="text-[10px] text-gray-500 font-bold uppercase block mb-1">Motor</label>
-              <input type="text" name="motor" value={dados.motor} onChange={handleChange} placeholder="1.6" className="w-full bg-[#111] border border-[#333] p-3 rounded-lg text-white text-xs" />
+              <input
+                type="text"
+                name="motor"
+                value={dados.motor}
+                onChange={handleChange}
+                placeholder="1.6"
+                className="w-full bg-[#111] border border-[#333] p-3 rounded-lg text-white text-xs"
+              />
             </div>
           </div>
         </div>
 
-        <div className="space-y-4">
+        {/* Seção: Escolher Setor */}
+        <div id="passo-selecionar-ramo" className="space-y-4">
           <label className="text-[10px] text-gray-500 font-bold uppercase block">Área do Serviço *</label>
           <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-2">
             {setoresVisiveis.map((setor) => {
@@ -272,22 +392,39 @@ export default function OS({ oficinaId, dadosOficina, onSalvo, onRedirecionar, b
                     gap: '2px',
                     cursor: 'pointer',
                     transition: 'all 0.2s',
-                    '--glow-color': cor
                   }}
                 >
                   <span style={{ fontSize: '16px' }}>{setor.icon}</span>
-                  <span style={{ fontSize: '8px', fontWeight: '900', textTransform: 'uppercase', letterSpacing: '0.5px', textAlign: 'center', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', width: '100%' }}>{setor.label}</span>
+                  <span style={{
+                    fontSize: '8px',
+                    fontWeight: '900',
+                    textTransform: 'uppercase',
+                    letterSpacing: '0.5px',
+                    textAlign: 'center',
+                    whiteSpace: 'nowrap',
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis',
+                    width: '100%'
+                  }}>
+                    {setor.label}
+                  </span>
                 </button>
               );
             })}
           </div>
         </div>
 
-        <button type="submit" disabled={salvando} className="w-full bg-red-600 hover:bg-red-700 text-white font-bold py-4 rounded-lg mt-4 shadow-xl">
-          {salvando ? 'GERANDO...' : '💾 GERAR O.S.'}
+        {/* Botão: Gerar O.S. */}
+        <button
+          type="submit"
+          disabled={salvando}
+          className="w-full bg-red-600 hover:bg-red-700 disabled:bg-red-900 text-white font-bold py-4 rounded-lg mt-4 shadow-xl transition-all"
+        >
+          {salvando ? '⏳ GERANDO...' : '💾 GERAR O.S.'}
         </button>
       </form>
 
+      {/* Seção: Busca Rápida por Placa */}
       <div className="mt-12 bg-[#0a0a0a] border border-[#1a1a1a] p-5 rounded-2xl shadow-inner">
         <div className="flex items-center gap-3 mb-4">
           <span className="text-xl">🔍</span>
@@ -295,7 +432,7 @@ export default function OS({ oficinaId, dadosOficina, onSalvo, onRedirecionar, b
         </div>
         <input
           type="text"
-          placeholder="Digite a placa para preencher..."
+          placeholder="Digite a placa para preencher automaticamente..."
           value={buscaPlaca}
           onChange={(e) => setBuscaPlaca(e.target.value)}
           className="w-full bg-black border border-[#222] p-4 rounded-xl text-white uppercase outline-none focus:border-red-500 text-2xl font-black tracking-[0.2em] transition-all mb-4"

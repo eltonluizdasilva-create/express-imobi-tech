@@ -1,88 +1,102 @@
-import React from "react";
-import { BrowserRouter as Router, Routes, Route, useLocation } from "react-router-dom";
+import React from 'react';
+import { BrowserRouter as Router, Navigate, Route, Routes, useLocation } from 'react-router-dom';
 
-// IMPORTANTE: Caminhos apontando para a pasta atual (./) ou components
-import StatusOS from './StatusOS';
-import { OficinaProvider } from "./components/OficinaContext";
-import ProtectedRouteMaster from "./components/ProtectedRouteMaster";
-import Layout from "./components/Layout";
+import { AuthProvider, useAuth } from './contexts/AuthContext';
+import { OficinaProvider } from './components/OficinaContext';
 
-import Home from "./Home";
-import Servicos from "./Servicos";
-import Sobre from "./Sobre";
+import Layout from './components/Layout';
 import AdminNovo from './AdminNovo';
-import Cadastro from "./Cadastro";
-import LeadsPage from "./LeadsPage";
-import Historico from "./Historico";
-import OleoPage from "./OleoPage";
-import OSPage from "./OSPage";
-import Login from "./Login";
-import LoginAdmin from "./LoginAdmin";
-import Marketing from "./Marketing";
+import Historico from './Historico';
+import Login from './Login';
+import LoginAdmin from './LoginAdmin';
+import OSPage from './OSPage';
+import PortalCliente from './PortalCliente';
+import StatusOS from './StatusOS';
 
-// 🟢 IMPORT DO NOVO PORTAL DO CLIENTE
-import PortalCliente from "./PortalCliente";
+function TelaCarregamento() {
+  return (
+    <div className="h-screen w-full bg-black flex flex-col items-center justify-center">
+      <div className="w-10 h-10 border-4 border-emerald-500 border-t-transparent rounded-full animate-spin" />
+      <p className="text-white mt-4 font-bold">Verificando acesso...</p>
+    </div>
+  );
+}
+
+function PrivateRoute({ children }) {
+  const { logado, carregandoAuth } = useAuth();
+
+  if (carregandoAuth) {
+    return <TelaCarregamento />;
+  }
+
+  return logado ? children : <Navigate to="/login-admin" replace />;
+}
 
 function AppRoutes() {
   const location = useLocation();
+  const { logado, carregandoAuth } = useAuth();
 
-  // Lógica do menu inferior (Layout)
-  // Adicionamos as rotas onde o menu NÃO deve aparecer
-  const mostrarMenuInferior = ![
-    '/',
-    '/site',
-    '/cadastro',
-    '/servicos',
-    '/sobre',
-    '/login-admin',
-    '/portal',
-    '/portal2',
-    '/login'
-  ].includes(location.pathname) && !location.pathname.startsWith('/status/');
+  if (carregandoAuth) {
+    return <TelaCarregamento />;
+  }
+
+  const rotasSemLayout = ['/', '/login', '/login-admin', '/portal', '/portal2'];
+  const mostrarMenuInferior =
+    !rotasSemLayout.includes(location.pathname) &&
+    !location.pathname.startsWith('/status/');
 
   return (
     <>
       <Routes>
-        {/* 🟢 PORTAL DO CLIENTE - PÁGINA PRINCIPAL E VARIANTES */}
-        <Route path="/" element={<PortalCliente />} />
+        <Route
+          path="/"
+          element={logado ? <Navigate to="/admin" replace /> : <PortalCliente />}
+        />
+
         <Route path="/portal" element={<PortalCliente />} />
-        <Route path="/portal2" element={<PortalCliente />} />
 
-        {/* LOGINS */}
-        <Route path="/login" element={<Login />} />
-        <Route path="/login-admin" element={<LoginAdmin />} />
+        <Route
+          path="/login"
+          element={logado ? <Navigate to="/admin" replace /> : <Login />}
+        />
 
-        {/* 🟢 ADMIN CORRIGIDO (PARA ABRIR DIRETO SEM TELA PRETA) */}
-        <Route path="/admin" element={<AdminNovo />} />
-        <Route path="/admin2" element={<AdminNovo />} />
+        <Route
+          path="/login-admin"
+          element={logado ? <Navigate to="/admin" replace /> : <LoginAdmin />}
+        />
 
-        {/* ABA MARKETING */}
-        <Route path="/marketing" element={<Marketing />} />
+        <Route
+          path="/admin"
+          element={(
+            <PrivateRoute>
+              <AdminNovo />
+            </PrivateRoute>
+          )}
+        />
 
-        {/* SITE INSTITUCIONAL */}
-        <Route path="/site" element={<Home />} />
-        <Route path="/servicos" element={<Servicos />} />
-        <Route path="/sobre" element={<Sobre />} />
-        <Route path="/cadastro" element={<Cadastro />} />
+        <Route
+          path="/historico"
+          element={(
+            <PrivateRoute>
+              <Historico />
+            </PrivateRoute>
+          )}
+        />
 
-        {/* STATUS DA OS (PÁGINA DO CLIENTE) */}
+        <Route
+          path="/os"
+          element={(
+            <PrivateRoute>
+              <OSPage />
+            </PrivateRoute>
+          )}
+        />
+
         <Route path="/status/:oficinaId/:osId" element={<StatusOS />} />
 
-        {/* 🟢 SISTEMA INTERNO (AQUI O MENU INFERIOR APARECE) */}
-        <Route path="/historico" element={<Historico />} />
-        <Route path="/oleo" element={<OleoPage />} />
-        <Route path="/os" element={<OSPage />} />
-        <Route path="/leads" element={<LeadsPage />} />
-
-        {/* ÁREA MASTER PROTEGIDA */}
-        <Route path="/master" element={
-          <ProtectedRouteMaster>
-            <AdminNovo />
-          </ProtectedRouteMaster>
-        } />
+        <Route path="*" element={<Navigate to={logado ? '/admin' : '/login-admin'} replace />} />
       </Routes>
 
-      {/* O componente Layout é o seu menu inferior com botões */}
       {mostrarMenuInferior && <Layout />}
     </>
   );
@@ -90,10 +104,12 @@ function AppRoutes() {
 
 export default function App() {
   return (
-    <OficinaProvider>
-      <Router>
-        <AppRoutes />
-      </Router>
-    </OficinaProvider>
+    <Router>
+      <AuthProvider>
+        <OficinaProvider>
+          <AppRoutes />
+        </OficinaProvider>
+      </AuthProvider>
+    </Router>
   );
 }

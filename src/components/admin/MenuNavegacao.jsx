@@ -4,7 +4,6 @@ import { Lock, ShoppingCart, X } from 'lucide-react';
 import MercadoLivre from '../../Mercadolivre';
 
 const COLORS_CAT = {
-  servicos: '#00E676',
   ia: '#FFE600',
   gestao: '#a855f7',
   sistema: '#38bdf8',
@@ -29,7 +28,7 @@ const BASE_STYLE = {
   justifyContent: 'center',
 };
 
-export default function MenuNavegacao({ t, servicosVisiveis, MAIN, MASTER, papelLogado, abaAtiva, setAbaAtiva, moduloLiberado, lidarModuloBloqueado, LABELS_ABAS }) {
+export default function MenuNavegacao({ t, MAIN, MASTER, papelLogado, abaAtiva, setAbaAtiva, moduloLiberado, lidarModuloBloqueado, LABELS_ABAS }) {
   const [showMLModal, setShowMLModal] = useState(false);
 
   const makeButton = (aba, category) => {
@@ -39,25 +38,57 @@ export default function MenuNavegacao({ t, servicosVisiveis, MAIN, MASTER, papel
     const ehIscaDeVenda = category === 'ia' || category === 'gestao';
     const mostraCadeado = !liberado && !ehIscaDeVenda;
 
+    // IDs para o Tour de Onboarding
+    let botaoId = undefined;
+    if (aba === 'config') botaoId = 'tour-botao-ajustes';
+    if (aba === 'ajuda') botaoId = 'tour-botao-ajuda';
+    if (aba === 'dashboard') botaoId = 'tour-botao-dashboard';
+    if (aba === 'copiloto') botaoId = 'tour-botao-copiloto';
+    if (aba === 'secretaria') botaoId = 'tour-botao-secretaria';
+    if (aba === 'administrador') botaoId = 'tour-botao-administrador';
+    if (aba === 'contador') botaoId = 'tour-botao-contador';
+    if (aba === 'estoque') botaoId = 'tour-botao-estoque';
+    if (aba === 'financeiro') botaoId = 'tour-botao-financeiro';
+    if (aba === 'precificacao') botaoId = 'tour-botao-precificacao';
+    if (aba === 'meuplano') botaoId = 'tour-botao-meuplano';
+    if (aba === 'equipe') botaoId = 'tour-botao-equipe';
+    if (aba === 'retorno') botaoId = 'menu-retorno';
+    if (aba === 'clientes') botaoId = 'menu-clientes';
+
     return (
       <button
         key={aba}
-        onClick={() => !liberado ? lidarModuloBloqueado(aba) : setAbaAtiva(aba)}
+        id={botaoId} // ✅ O ID invisível é injetado no botão aqui!
+        data-tour={aba}
+        onClick={() => {
+          if (!liberado) {
+            lidarModuloBloqueado(aba);
+          } else {
+            window.dispatchEvent(new CustomEvent('ativarModoFoco'));
+            setAbaAtiva(aba);
+          }
+        }}
         style={{
           ...BASE_STYLE,
-          border: `1px solid ${corCat}`,
-          color: !liberado ? '#999' : (isActive ? 'white' : '#ddd'),
-          boxShadow: `0 0 10px ${corCat}`,
-          opacity: isActive ? 1 : 0.7,
+          border: `2px solid ${corCat}`,
+          color: !liberado ? '#999' : (isActive ? corCat : '#bbb'),
+          background: isActive ? `${corCat}22` : 'transparent',
+          boxShadow: isActive ? `0 0 20px ${corCat}, inset 0 0 10px ${corCat}44` : `0 0 8px ${corCat}66`,
+          opacity: isActive ? 1 : 0.8,
+          textShadow: isActive ? `0 0 10px ${corCat}` : 'none',
         }}
         onMouseEnter={(e) => {
           e.currentTarget.style.opacity = '1';
           e.currentTarget.style.color = 'white';
+          e.currentTarget.style.boxShadow = `0 0 20px ${corCat}, inset 0 0 10px ${corCat}44`;
+          e.currentTarget.style.textShadow = `0 0 10px ${corCat}`;
         }}
         onMouseLeave={(e) => {
           if (!isActive) {
-            e.currentTarget.style.opacity = '0.7';
-            e.currentTarget.style.color = !liberado ? '#999' : '#ddd';
+            e.currentTarget.style.opacity = '0.8';
+            e.currentTarget.style.color = !liberado ? '#999' : '#bbb';
+            e.currentTarget.style.boxShadow = `0 0 8px ${corCat}66`;
+            e.currentTarget.style.textShadow = 'none';
           }
         }}
       >
@@ -69,12 +100,9 @@ export default function MenuNavegacao({ t, servicosVisiveis, MAIN, MASTER, papel
 
   return (
     <>
-      <div style={{ background: t.bgCardAlt, padding: '12px 20px 8px', borderBottom: `1px solid ${t.border}` }}>
+      <div id="menu-navegacao" className="menu-navegacao" style={{ background: t.bgCardAlt, padding: '12px 20px 8px', borderBottom: `1px solid ${t.border}` }}>
 
-        <p style={{ color: t.textoTer, fontSize: '9px', fontWeight: 'bold', letterSpacing: '2px', margin: '0 0 6px', textTransform: 'uppercase' }}>⚙️ SERVIÇOS E ESTÉTICA</p>
-        <div style={{ display: 'flex', gap: '8px', overflowX: 'auto', marginBottom: '12px', paddingBottom: '4px' }}>
-          {servicosVisiveis.map(aba => makeButton(aba, 'servicos'))}
-        </div>
+        {/* ❌ SEÇÃO "SERVIÇOS E ESTÉTICA" FOI REMOVIDA DAQUI PARA ALIVIAR O SISTEMA ❌ */}
 
         <p style={{ color: t.textoTer, fontSize: '9px', fontWeight: 'bold', letterSpacing: '2px', margin: '0 0 6px', textTransform: 'uppercase' }}>🧠 INTELIGÊNCIA ARTIFICIAL</p>
         <div style={{ display: 'flex', gap: '8px', overflowX: 'auto', marginBottom: '12px', paddingBottom: '4px' }}>
@@ -99,34 +127,6 @@ export default function MenuNavegacao({ t, servicosVisiveis, MAIN, MASTER, papel
           </>
         )}
       </div>
-
-      {/* 🚀 BOTÃO FLUTUANTE PREMIUM - MERCADO LIVRE */}
-      {abaAtiva !== 'mercadolivre' && (
-        <div className="fixed bottom-10 left-10 z-[9999] flex items-center group cursor-pointer" onClick={() => setShowMLModal(true)}>
-          {/* O Botão Redondo Pulsante */}
-          <div className="relative w-12 h-12 bg-[#FFE600] border-4 border-yellow-600 rounded-full flex items-center justify-center shadow-[0_10px_30px_rgba(255,230,0,0.4)] transition-all active:scale-90 group-hover:scale-110">
-            <ShoppingCart size={20} color="#2d3277" strokeWidth={3} />
-            {/* Selo ML */}
-            <span className="absolute -top-1 -right-1 bg-[#2d3277] text-[#FFE600] text-[8px] font-black px-1 py-0.5 rounded-md border border-[#FFE600] shadow-md z-10">
-              ML
-            </span>
-            {/* Efeito Ping */}
-            <span className="absolute inset-0 rounded-full animate-ping bg-[#FFE600] opacity-40 pointer-events-none"></span>
-          </div>
-
-          {/* Balão de Texto Hover */}
-          <div className="ml-4 opacity-0 group-hover:opacity-100 transition-all duration-300 -translate-x-4 group-hover:translate-x-0 pointer-events-none">
-            <div className="bg-[#2d3277] text-white py-2 px-4 rounded-2xl shadow-2xl border-l-4 border-[#FFE600] flex flex-col">
-              <span className="text-[10px] font-black uppercase tracking-tighter text-[#FFE600]">
-                Mercado Livre
-              </span>
-              <span className="text-[9px] font-bold text-zinc-100 whitespace-nowrap">
-                Catálogo Inteligente de Peças
-              </span>
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* Modal Mercado Livre */}
       {showMLModal && (
