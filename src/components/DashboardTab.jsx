@@ -386,8 +386,8 @@ export default function DashboardTab({
             )}
 
             {/* ===== GRÁFICO DE RECEITA ===== */}
-            {montado && temPermissao('financeiro') && dadosGrafico.length > 0 && (
-                <div style={{ marginBottom: '20px' }}>
+            {montado && (
+                <div style={{ width: '100%', height: '250px', minWidth: '300px' }}>
                     <GraficoReceita
                         dadosGrafico={dadosGrafico}
                         t={t}

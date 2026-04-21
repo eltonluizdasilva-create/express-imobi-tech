@@ -39,8 +39,6 @@ export const TEMAS = {
         chipStrong: 'rgba(255,255,255,0.1)',
         empty: 'rgba(255,255,255,0.03)',
         heroBorder: 'rgba(255,255,255,0.08)',
-        // compat keys usados por outros módulos que herdam o tema
-        bg: '#000000',
         bgCard: 'rgba(16, 20, 30, 0.94)',
         bgCardAlt: 'rgba(10, 12, 18, 0.9)',
         border: 'rgba(255,255,255,0.1)',

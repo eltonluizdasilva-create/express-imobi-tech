@@ -1,18 +1,27 @@
-import React from 'react';
+import React, { Suspense, lazy } from 'react';
 import { BrowserRouter as Router, Navigate, Route, Routes, useLocation } from 'react-router-dom';
 
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { OficinaProvider } from './components/OficinaContext';
 
 import Layout from './components/Layout';
-import AdminNovo from './AdminNovo';
-import Historico from './Historico';
-import Login from './Login';
-import LoginAdmin from './LoginAdmin';
-import OSPage from './OSPage';
-import PortalCliente from './PortalCliente';
-import StatusOS from './StatusOS';
 
+// ============================================================
+// IMPORTAÇÕES DINÂMICAS (LAZY LOADING)
+// Reduz o bundle inicial e acelera o carregamento em 3G/4G
+// ============================================================
+const AdminNovo = lazy(() => import('./AdminNovo'));
+const Historico = lazy(() => import('./Historico'));
+const Login = lazy(() => import('./Login'));
+const LoginAdmin = lazy(() => import('./LoginAdmin'));
+const OSPage = lazy(() => import('./OSPage'));
+const PortalCliente = lazy(() => import('./PortalCliente'));
+const StatusOS = lazy(() => import('./StatusOS'));
+
+// ============================================================
+// COMPONENTE DE CARREGAMENTO (FALLBACK)
+// Exibido enquanto os módulos dinâmicos são baixados
+// ============================================================
 function TelaCarregamento() {
   return (
     <div className="h-screen w-full bg-black flex flex-col items-center justify-center">
@@ -22,6 +31,10 @@ function TelaCarregamento() {
   );
 }
 
+// ============================================================
+// ROTA PRIVADA
+// Garante que apenas usuários logados acessem o Admin
+// ============================================================
 function PrivateRoute({ children }) {
   const { logado, carregandoAuth } = useAuth();
 
@@ -32,6 +45,9 @@ function PrivateRoute({ children }) {
   return logado ? children : <Navigate to="/login-admin" replace />;
 }
 
+// ============================================================
+// GERENCIAMENTO DE ROTAS
+// ============================================================
 function AppRoutes() {
   const location = useLocation();
   const { logado, carregandoAuth } = useAuth();
@@ -102,12 +118,18 @@ function AppRoutes() {
   );
 }
 
+// ============================================================
+// COMPONENTE PRINCIPAL (APP)
+// Envolvido em Suspense para gerenciar o Lazy Loading
+// ============================================================
 export default function App() {
   return (
     <Router>
       <AuthProvider>
         <OficinaProvider>
-          <AppRoutes />
+          <Suspense fallback={<TelaCarregamento />}>
+            <AppRoutes />
+          </Suspense>
         </OficinaProvider>
       </AuthProvider>
     </Router>

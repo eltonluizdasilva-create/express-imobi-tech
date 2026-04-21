@@ -2,7 +2,6 @@ import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 import { VitePWA } from 'vite-plugin-pwa'
 
-// https://vitejs.dev/config/
 export default defineConfig({
   base: './',
   plugins: [
@@ -10,6 +9,11 @@ export default defineConfig({
     VitePWA({
       registerType: 'autoUpdate',
       includeAssets: ['favicon.ico', 'apple-touch-icon.png', 'masked-icon.svg'],
+      // ADICIONE ESTE BLOCO WORKBOX ABAIXO
+      workbox: {
+        maximumFileSizeToCacheInBytes: 4000000, // Aumenta o limite para 4MB
+        globPatterns: ['**/*.{js,css,html,ico,png,svg}']
+      },
       manifest: {
         name: 'Oficina IA Express',
         short_name: 'OficinaIA',

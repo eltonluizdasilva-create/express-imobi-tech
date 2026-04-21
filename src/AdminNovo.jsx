@@ -115,7 +115,7 @@ const LABELS_ABAS = {
   oleo: '🛢️ ÓLEO', alinhamento: '⚙️ ALINHAMENTO', revisao: '🛡️ REVISÃO',
   eletrica: '⚡ ELÉTRICA', ar_condicionado: '❄️ AR-COND.', pneus: '🛞 PNEUS',
   escapamento: '🪛 ESCAPAMENTO', estetica: '✨ ESTÉTICA',
-  lavajato: '🚿 LAVA JATO', desmanche: '🚗 DESMANCHE',
+  lavajato: '🚿 LAVA JATO',
   copiloto: '👨‍🔧 COPILOTO', secretaria: '👩‍💼 SECRETÁRIA',
   administrador: '👔 ADMINISTRADOR', contador: '📋 ASSIST. FISCAL',
   mercadolivre: '📦 COMPRAS', mercado_livre: '📦 COMPRAS',
@@ -124,7 +124,7 @@ const LABELS_ABAS = {
   tarefa: '📋 TAREFA', notafiscal: '📄 NOTA FISCAL',
   retorno: '📅 RETORNO', patrimonio: '📊 PATRIMÔNIO',
   fornecedores: '🤝 FORNECEDORES', precificacao: '💰 PRECIFICAÇÃO',
-  desmanche: '🏗️ DESMANCHE',
+  desmanche: '🏗️ DESMANCHE', // MANTER APENAS ESTA ENTRADA
   equipe: '👥 EQUIPE', config: '⚙️ AJUSTES',
   marketing: '📣 MARKETING', estrategia: '🚀 ESTRATÉGIA',
   ajuda: '❓ AJUDA', master: '👑 MASTER', meuplano: '💰 MEU PLANO',
@@ -158,6 +158,13 @@ const MODULOS_MAP = {
 // ─── Componente Principal ──────────────────────────────────────────────────────
 
 export default function Admin() {
+  // ── Cleanup Onboarding ──────────────────────────────────────────────────────
+  useEffect(() => {
+    localStorage.setItem('onboarding_completed', 'true');
+    localStorage.setItem('driver_tour_finished', 'true');
+    console.log("Limpeza de Cache de Onboarding executada com sucesso.");
+  }, []);
+
   // ── Auth Context ──────────────────────────────────────────────────────────
   const {
     logado, carregandoAuth, papelLogado, permissoesLogado,

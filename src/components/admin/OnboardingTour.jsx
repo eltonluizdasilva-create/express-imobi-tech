@@ -4,81 +4,120 @@ import React, { useCallback, useEffect, useMemo, useState } from 'react';
 const TOUR_STORAGE_KEY = 'oficina_ia_tour_feito';
 const TOUR_Z_INDEX = 10000000;
 
+// Lista completa atualizada com todas as abas do novo ecossistema
 const PASSOS_TOUR = [
   {
-    titulo: '1. O Cerebro (Ajustes)',
-    texto:
-      'Aqui fica o centro de comando da Oficina IA. Configure a base do sistema e entenda que este passo e o ponto de partida da sua operacao.',
+    titulo: 'Passo 1: Foco em Ajustes (O Cérebro) ⚙️',
+    texto: 'Cadastre os dados da sua empresa uma única vez e tenha recibos personalizados e chaves PIX integradas. Transforme cada atendimento em uma entrega profissional que reforça a confiança da sua marca.',
   },
   {
-    titulo: '2. O Coracao (Nova O.S.)',
-    texto:
-      'Nesta etapa voce cria a nova ordem de servico, organiza atendimento e pode preparar a experiencia do cliente com senha e acompanhamento.',
+    titulo: 'Passo 2: Foco na Nova O.S. (O Coração) 🚗',
+    texto: 'Este é o coração do app. Ao gerar uma O.S., você cria uma central de controle onde pode editar serviços, mandar mensagens, anexar fotos e gerar uma senha para o cliente acompanhar tudo online.',
   },
   {
-    titulo: '3. Passeio pelas Abas',
-    texto:
-      'Agora voce tem uma visao geral da plataforma. Vamos percorrer IA, gestao, sistema e indicadores para entender o fluxo completo.',
+    titulo: 'Passo 3: Tour pelas Abas (Passeio Funcional) 🛠️',
+    texto: 'Agora você tem uma visão geral da plataforma. Vamos percorrer IA, Gestão, Sistema e Indicadores para você dominar cada recurso do seu novo ecossistema de trabalho.',
+  },
+  // ==========================================
+  // 🧠 INTELIGÊNCIA ARTIFICIAL
+  // ==========================================
+  {
+    titulo: '👨‍🔧 Copiloto - Seu Assistente',
+    texto: 'Aqui você consegue um diagnóstico rápido para qualquer problema. A IA analisa a situação e oferece soluções práticas. Use sempre que tiver dúvida no pátio!',
   },
   {
-    titulo: '4. Copiloto',
-    texto:
-      'Use o Copiloto para apoio tecnico, raciocinio rapido e ajuda no diagnostico durante o atendimento.',
+    titulo: '👩‍💼 Secretária - Comunicação',
+    texto: 'Deixe a IA gerenciar sua comunicação com clientes. Templates automáticos, mensagens em massa e acompanhamento de conversas - tudo organizado.',
   },
   {
-    titulo: '5. Secretaria',
-    texto:
-      'A Secretaria ajuda na comunicacao com clientes, mensagens, follow-up e rotina comercial com mais consistencia.',
+    titulo: '👔 Administrador - Metas e Objetivos',
+    texto: 'Defina metas para sua oficina e acompanhe o progresso em tempo real. Conhecer seus números é o primeiro passo para crescer!',
   },
   {
-    titulo: '6. Administrador',
-    texto:
-      'No Administrador voce acompanha visao gerencial, metas e a saude operacional da oficina.',
+    titulo: '📋 Assist. Fiscal - Caixa e Recibos',
+    texto: 'Gerencie suas finanças com inteligência. Recibos, cupons e relatórios de caixa organizados para trazer clareza para o seu negócio.',
   },
   {
-    titulo: '7. Assistente Fiscal',
-    texto:
-      'O Assistente Fiscal organiza caixa, recibos e leitura financeira para voce ter mais clareza sobre o negocio.',
+    titulo: '📦 Compras - Reposição Inteligente',
+    texto: 'A IA ajuda você a gerenciar pedidos com fornecedores e cotações, buscando sempre o melhor custo-benefício e evitando a falta de peças.',
   },
   {
-    titulo: '8. Estoque',
-    texto:
-      'Controle pecas, reposicao e disponibilidade para reduzir perda de tempo e gargalos no servico.',
+    titulo: '📅 Retorno - Fidelização Ativa',
+    texto: 'Automatize o pós-venda. O sistema gerencia retornos, lembra o cliente de revisões futuras e ajuda a manter a agenda da oficina sempre cheia.',
   },
   {
-    titulo: '9. Financeiro',
-    texto:
-      'Aqui voce acompanha receitas, despesas e a movimentacao financeira do dia a dia.',
+    titulo: '🚀 Estratégia - Crescimento',
+    texto: 'Insights gerados por IA para alavancar sua oficina. Descubra tendências, identifique gargalos operacionais e encontre oportunidades ocultas.',
   },
   {
-    titulo: '10. Precificacao',
-    texto:
-      'Use esta area para montar precos com seguranca e proteger a margem da oficina.',
+    titulo: '💰 Precificação - Proteja sua Margem',
+    texto: 'Calcule o preço ideal para serviços e peças com segurança. A IA ajuda a garantir orçamentos precisos para você nunca deixar dinheiro na mesa.',
+  },
+  // ==========================================
+  // 📋 GESTÃO
+  // ==========================================
+  {
+    titulo: '📊 Visão Geral - O Painel',
+    texto: 'Um dashboard completo com os indicadores vitais da sua oficina. Monitore faturamento, O.S. abertas e produtividade em um único lugar.',
   },
   {
-    titulo: '11. Meu Plano',
-    texto:
-      'Consulte assinatura, beneficios e status do seu plano sempre que precisar.',
+    titulo: '📦 Estoque - Controle Absoluto',
+    texto: 'Organize seu inventário e reduza desperdícios. Controle a disponibilidade de peças para evitar que os mecânicos fiquem parados esperando material.',
   },
   {
-    titulo: '12. Equipe',
-    texto:
-      'Gerencie colaboradores, acessos e responsabilidades para manter a operacao organizada.',
+    titulo: '📊 Financeiro - A Saúde do Negócio',
+    texto: 'Acompanhe todas as receitas e despesas. Entenda exatamente a movimentação do seu caixa no dia a dia com relatórios claros.',
   },
   {
-    titulo: '13. Ajuda',
-    texto:
-      'Quando surgir qualquer duvida, esta area concentra suporte, orientacoes e caminhos para destravar o uso.',
+    titulo: '🏗️ Desmanche - Gestão de Lotes',
+    texto: 'Controle completo para operações de desmanche. Gerencie a entrada de veículos, catalogação de peças e a rentabilidade de cada sucata.',
   },
   {
-    titulo: '14. Faturamento',
-    texto:
-      'Este passo mostra a leitura do faturamento e ajuda voce a acompanhar desempenho e resultado da oficina.',
+    titulo: '👥 Clientes - Sua Base de Ouro',
+    texto: 'Cadastro detalhado, preferências e informações de contato. Mantenha os dados dos seus clientes sempre atualizados para um atendimento VIP.',
   },
   {
-    titulo: '15. Patio',
-    texto:
-      'Fechamos no patio para enxergar fluxo, ocupacao e ritmo real da operacao no dia a dia.',
+    titulo: '📋 Tarefa - Ritmo do Pátio',
+    texto: 'Distribua serviços, defina prioridades e acompanhe a execução das tarefas da equipe para manter a produtividade da oficina em alta.',
+  },
+  {
+    titulo: '📄 Nota Fiscal - Sem Burocracia',
+    texto: 'Módulo dedicado para a emissão de notas fiscais, integrado ao seu faturamento para manter a operação legalizada sem dor de cabeça.',
+  },
+  {
+    titulo: '📊 Patrimônio - Seus Ativos',
+    texto: 'Gerencie ferramentas, elevadores e equipamentos de diagnóstico. Tenha o controle do que pertence à oficina e o status de manutenção de cada item.',
+  },
+  {
+    titulo: '🤝 Fornecedores - Parceiros',
+    texto: 'Centralize contatos e condições de pagamento dos seus parceiros de autopeças e serviços terceirizados.',
+  },
+  {
+    titulo: '📋 Histórico - Memória da Oficina',
+    texto: 'Acesse rapidamente qualquer Ordem de Serviço ou veículo que já passou pela sua oficina. O arquivo digital completo da sua operação.',
+  },
+  // ==========================================
+  // ⚙️ SISTEMA
+  // ==========================================
+  {
+    titulo: '💰 Meu Plano - Sua Assinatura',
+    texto: 'Consulte seu plano ativo, verifique benefícios e acompanhe o status da sua assinatura da Oficina IA sempre que precisar.',
+  },
+  {
+    titulo: '⚙️ Ajustes - Configurações',
+    texto: 'Personalize o sistema com as informações da sua oficina, horários de funcionamento e preferências operacionais.',
+  },
+  {
+    titulo: '👥 Equipe - Permissões',
+    texto: 'Cadastre colaboradores e controle exatamente o que cada um pode ver ou editar dentro do sistema. Segurança total para os seus dados.',
+  },
+  {
+    titulo: '📣 Marketing - Destaque sua Marca',
+    texto: 'Ferramentas e campanhas para alavancar o nome da sua oficina, atrair novos clientes e profissionalizar a presença digital do seu negócio.',
+  },
+  {
+    titulo: '❓ Ajuda - Suporte e Manuais',
+    texto: 'Surgiu alguma dúvida? Esta área concentra tutoriais, manuais e o caminho direto para falar com nosso suporte técnico.',
   },
 ];
 
@@ -142,7 +181,8 @@ function TourModal({ aberto, passoAtual, totalPassos, passo, onAnterior, onProxi
           </h2>
         </div>
 
-        <p
+        {/* Alterado para div para evitar erros se o texto for muito complexo */}
+        <div
           style={{
             margin: 0,
             fontSize: 16,
@@ -151,7 +191,7 @@ function TourModal({ aberto, passoAtual, totalPassos, passo, onAnterior, onProxi
           }}
         >
           {passo.texto}
-        </p>
+        </div>
 
         <div
           style={{
@@ -212,7 +252,7 @@ function TourModal({ aberto, passoAtual, totalPassos, passo, onAnterior, onProxi
                 padding: '10px 16px',
               }}
             >
-              {ultimoPasso ? 'Finalizar' : 'Proximo'}
+              {ultimoPasso ? 'Finalizar' : 'Próximo'}
             </button>
           </div>
         </div>
@@ -225,30 +265,26 @@ export default React.memo(function OnboardingTour({
   setMostrarOnboarding,
   modalBemVindoAberto = false,
 }) {
-  const [tourConcluido, setTourConcluido] = useState(() => !!localStorage.getItem(TOUR_STORAGE_KEY));
   const [aberto, setAberto] = useState(false);
   const [passoAtual, setPassoAtual] = useState(0);
 
-  console.log('ESTADO ATUAL:', { aberto, passoAtual, tourConcluido, modalBemVindoAberto });
-
   const passos = useMemo(() => PASSOS_TOUR, []);
 
+  // Lógica de abertura inicial corrigida e simplificada
   useEffect(() => {
-    // Removemos a trava do modal de boas-vindas
-    if (!tourConcluido) {
-      setPassoAtual(0);
-      setAberto(true);
-      return;
-    }
+    const tourJaFoiFeito = localStorage.getItem(TOUR_STORAGE_KEY) === 'true';
 
-    if (modalBemVindoAberto) {
+    // Só tenta abrir automaticamente se não foi feito e não tem outro modal bloqueando
+    if (!tourJaFoiFeito && !modalBemVindoAberto) {
+      setAberto(true);
+    } else if (modalBemVindoAberto) {
+      // Se o modal de boas vindas aparecer, garantimos que o tour esconde
       setAberto(false);
     }
-  }, [tourConcluido, modalBemVindoAberto]);
+  }, [modalBemVindoAberto]);
 
   const fecharTour = useCallback(() => {
     localStorage.setItem(TOUR_STORAGE_KEY, 'true');
-    setTourConcluido(true);
     setAberto(false);
 
     if (typeof setMostrarOnboarding === 'function') {
@@ -256,16 +292,19 @@ export default React.memo(function OnboardingTour({
     }
   }, [setMostrarOnboarding]);
 
+  const reiniciarTour = useCallback(() => {
+    localStorage.removeItem(TOUR_STORAGE_KEY);
+    setPassoAtual(0);
+    setAberto(true); // Força a reabertura imediata
+  }, []);
+
   const irParaAnterior = useCallback(() => {
     setPassoAtual((p) => Math.max(0, p - 1));
   }, []);
 
   const irParaProximo = useCallback(() => {
     setPassoAtual((p) => {
-      if (p >= passos.length - 1) {
-        return p;
-      }
-
+      if (p >= passos.length - 1) return p;
       return p + 1;
     });
   }, [passos.length]);
@@ -273,18 +312,10 @@ export default React.memo(function OnboardingTour({
   const avancarOuFinalizar = useCallback(() => {
     if (passoAtual >= passos.length - 1) {
       fecharTour();
-      return;
+    } else {
+      irParaProximo();
     }
-
-    irParaProximo();
   }, [fecharTour, irParaProximo, passoAtual, passos.length]);
-
-  const reiniciarTour = useCallback(() => {
-    localStorage.removeItem(TOUR_STORAGE_KEY);
-    setTourConcluido(false);
-    setPassoAtual(0);
-    setAberto(!modalBemVindoAberto);
-  }, [modalBemVindoAberto]);
 
   return (
     <>
@@ -298,15 +329,15 @@ export default React.memo(function OnboardingTour({
         onFechar={fecharTour}
       />
 
+      {/* Botão sempre visível para rever o tour */}
       <button
         type="button"
         onClick={reiniciarTour}
         style={{
           position: 'fixed',
+          right: 20,
           bottom: 20,
-          left: '50%',
-          transform: 'translateX(-50%)',
-          zIndex: TOUR_Z_INDEX,
+          zIndex: TOUR_Z_INDEX - 1,
           border: '1px solid #ff2d55',
           borderRadius: 999,
           background: '#0f172a',
@@ -314,12 +345,11 @@ export default React.memo(function OnboardingTour({
           cursor: 'pointer',
           fontSize: 12,
           fontWeight: 700,
-          padding: '10px 20px',
+          padding: '10px 16px',
           boxShadow: '0 12px 30px rgba(0, 0, 0, 0.28)',
-          whiteSpace: 'nowrap',
         }}
       >
-        🔁 Rever passo a passo
+        Rever passo a passo
       </button>
     </>
   );
