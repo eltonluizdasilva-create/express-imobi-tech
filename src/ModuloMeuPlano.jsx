@@ -28,8 +28,8 @@ const TODOS_MODULOS = [
   { id: 'copiloto', label: 'Copiloto IA', icon: '👨‍🔧', cor: '#a855f7', categoria: 'ia' },
   { id: 'secretaria', label: 'Secretária IA', icon: '👩‍💼', cor: '#d946ef', categoria: 'ia' },
   { id: 'administrador', label: 'Administrador IA', icon: '👔', cor: '#7c3aed', categoria: 'ia' },
-  { id: 'contador', label: 'Contador IA', icon: '🧮', cor: '#4f46e5', categoria: 'ia' },
-  { id: 'mercadolivre', label: 'Mercado Livre', icon: '📦', cor: '#facc15', categoria: 'ia' },
+  { id: 'contador', label: 'Assistente Fiscal IA', icon: '📋', cor: '#4f46e5', categoria: 'ia' },
+  { id: 'mercadolivre', label: 'Compras', icon: '📦', cor: '#facc15', categoria: 'ia' },
   { id: 'dashboard', label: 'Visão Geral', icon: '📊', cor: '#06b6d4', categoria: 'gestao' },
   { id: 'financeiro', label: 'Financeiro', icon: '💰', cor: '#22c55e', categoria: 'gestao' },
   { id: 'estoque', label: 'Estoque', icon: '📦', cor: '#f59e0b', categoria: 'gestao' },
@@ -61,6 +61,7 @@ const IA_MODULOS = ['copiloto', 'secretaria', 'administrador', 'contador', 'merc
 const DIA_MS = 24 * 60 * 60 * 1000;
 
 const FALLBACK_PLANOS = {
+  GRATUITO: { preco: 0, slots: 1, func: 1 },
   essencial: { preco: 99, slots: 1, func: 3 },
   profissional: { preco: 149, slots: 3, func: 5 },
   especialista: { preco: 249, slots: 5, func: 8 },
@@ -242,6 +243,58 @@ export default function ModuloMeuPlano({ dadosOficina, planosSistema, onModulosC
         <p style={{ color: '#666', fontSize: '12px' }}>Escolha seu plano e os módulos extras que sua oficina oferece</p>
       </div>
 
+      {/* PLANO GRATUITO SEPARADO */}
+      <div style={{
+        background: 'linear-gradient(145deg, rgba(255,215,0,0.06) 0%, rgba(255,160,0,0.04) 50%, #0a0a0a 100%)',
+        borderRadius: '14px',
+        border: '1px solid rgba(255,215,0,0.25)',
+        padding: '20px',
+        marginBottom: '20px',
+        position: 'relative',
+        overflow: 'hidden',
+        boxShadow: '0 0 30px rgba(255,215,0,0.05)'
+      }}>
+        {/* Badge SEM CUSTO */}
+        <div style={{
+          position: 'absolute',
+          top: '0',
+          right: '0',
+          background: 'linear-gradient(135deg, #FFD700 0%, #FFA500 100%)',
+          color: 'black',
+          fontSize: '9px',
+          fontWeight: '900',
+          padding: '5px 14px',
+          borderRadius: '0 0 0 14px',
+          textTransform: 'uppercase',
+          letterSpacing: '0.1em',
+          boxShadow: '0 2px 12px rgba(255,215,0,0.3)'
+        }}>
+          🌟 SEM CUSTO
+        </div>
+
+        <h3 style={{ color: '#FFD700', margin: '0 0 10px 0', fontSize: '18px', fontWeight: '900', textShadow: '0 0 20px rgba(255,215,0,0.3)' }}>
+          🎁 Ferramenta Grátis EXPRESS AUTO TECH
+        </h3>
+        <p style={{ color: '#888', fontSize: '13px', lineHeight: '1.5', margin: '0 0 15px 0' }}>
+          Acesso vitalício ao controle de Clientes e Visão Geral. Registro básico de entradas e saídas para organizar sua oficina sem custo inicial.
+        </p>
+
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px' }}>
+          <div style={{ background: '#1a1a1a', padding: '8px 12px', borderRadius: '8px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+            <Check size={14} color={GREEN} />
+            <span style={{ color: '#eee', fontSize: '12px', fontWeight: 'bold' }}>3 OS / mês</span>
+          </div>
+          <div style={{ background: '#1a1a1a', padding: '8px 12px', borderRadius: '8px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+            <Check size={14} color={GREEN} />
+            <span style={{ color: '#eee', fontSize: '12px', fontWeight: 'bold' }}>Financeiro Básico</span>
+          </div>
+          <div style={{ background: '#1a1a1a', padding: '8px 12px', borderRadius: '8px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+            <Check size={14} color={GREEN} />
+            <span style={{ color: '#eee', fontSize: '12px', fontWeight: 'bold' }}>Clientes e Visão Geral</span>
+          </div>
+        </div>
+      </div>
+
       {/* PLANO ATUAL / SELETOR */}
       <div style={{ background: '#111', borderRadius: '14px', border: '1px solid #222', padding: '16px', marginBottom: '20px' }}>
         <p style={{ color: '#555', fontSize: '10px', fontWeight: '900', textTransform: 'uppercase', letterSpacing: '2px', marginBottom: '12px' }}>
@@ -398,7 +451,7 @@ export default function ModuloMeuPlano({ dadosOficina, planosSistema, onModulosC
                 boxShadow: '0 6px 24px #FF003344', opacity: salvando ? 0.5 : 1,
               }}
             >
-              🚀 Testar Tudo + 🧠 IA (10 Dias Grátis)
+              🚀 Testar Tudo + 🧠 IA (15 Dias Grátis)
             </button>
           </div>
         </div>

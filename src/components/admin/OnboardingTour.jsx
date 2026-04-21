@@ -36,9 +36,9 @@ const PASSOS_TOUR = [
       'No Administrador voce acompanha visao gerencial, metas e a saude operacional da oficina.',
   },
   {
-    titulo: '7. Contador',
+    titulo: '7. Assistente Fiscal',
     texto:
-      'O Contador organiza caixa, recibos e leitura financeira para voce ter mais clareza sobre o negocio.',
+      'O Assistente Fiscal organiza caixa, recibos e leitura financeira para voce ter mais clareza sobre o negocio.',
   },
   {
     titulo: '8. Estoque',
@@ -303,8 +303,9 @@ export default React.memo(function OnboardingTour({
         onClick={reiniciarTour}
         style={{
           position: 'fixed',
-          right: 20,
           bottom: 20,
+          left: '50%',
+          transform: 'translateX(-50%)',
           zIndex: TOUR_Z_INDEX,
           border: '1px solid #ff2d55',
           borderRadius: 999,
@@ -313,11 +314,12 @@ export default React.memo(function OnboardingTour({
           cursor: 'pointer',
           fontSize: 12,
           fontWeight: 700,
-          padding: '10px 16px',
+          padding: '10px 20px',
           boxShadow: '0 12px 30px rgba(0, 0, 0, 0.28)',
+          whiteSpace: 'nowrap',
         }}
       >
-        Rever passo a passo
+        🔁 Rever passo a passo
       </button>
     </>
   );

@@ -12,6 +12,7 @@
  */
 
 import React from 'react';
+import { db } from '../../lib/firebase';
 
 export default function GerenciadorDeModulos(props) {
     const {
@@ -105,6 +106,9 @@ export default function GerenciadorDeModulos(props) {
         // Lista de módulos (essencial para aparecer "Serviços" e "Estética")
         modulosOperacionais,
         irParaNovaOS,
+        // Limite de O.S. para plano GRATUITO
+        listaCarros,
+        setAbaAtiva,
     };
 
     // ── Props do módulo Lista de O.S. ─────────────────────────────────────────
@@ -235,7 +239,8 @@ export default function GerenciadorDeModulos(props) {
             return <modulos.LavaJato {...propsComuns} osParaEditar={osParaEditar} onCancelar={onCancelar} />;
 
         case 'desmanche':
-            return <modulos.Desmanche {...propsComuns} osParaEditar={osParaEditar} onCancelar={onCancelar} />;
+            // Desmanche está em Gestão — precisa passar db explicitamente
+            return <modulos.Desmanche {...propsComuns} db={db} />;
 
         // ── MÓDULOS IA ────────────────────────────────────────────────────────
 

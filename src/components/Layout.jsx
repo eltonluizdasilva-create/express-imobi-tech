@@ -32,7 +32,7 @@ export default function Layout() {
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
             <span style={{ fontSize: '20px' }}>🔧</span>
             <span style={{ color: '#FF0033', fontWeight: '900', fontSize: '13px', letterSpacing: '1px' }}>
-              OFICINA IA
+              EXPRESS AUTO TECH
             </span>
           </div>
 

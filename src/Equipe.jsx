@@ -10,6 +10,11 @@ const NIVEL_ACESSO = [
 ];
 
 export default function Equipe({ oficinaId, dadosOficina }) {
+  // ========== PLANO GRATUITO: SÓ 1 FUNCIONÁRIO ==========
+  const planoAtual = dadosOficina?.plano || 'GRATUITO';
+  const isGratuito = planoAtual === 'GRATUITO' || planoAtual === 'gratis';
+  const LIMITE_GRATUITO = 1;
+
   const [nome, setNome] = useState('');
   const [emailFuncionario, setEmailFuncionario] = useState('');
   const [whatsapp, setWhatsapp] = useState('');
@@ -30,6 +35,12 @@ export default function Equipe({ oficinaId, dadosOficina }) {
   const handleSalvar = async () => {
     if (!nome.trim()) { alert('Preencha o nome do funcionário.'); return; }
     if (!emailFuncionario.trim()) { alert('Preencha o e-mail de login.'); return; }
+
+    // ========== TRAVA PLANO GRATUITO ==========
+    if (isGratuito && membros.length >= LIMITE_GRATUITO) {
+      alert('⛔ Plano Gratuito permite apenas 1 funcionário.\nFaça upgrade para o plano ESSENCIAL para adicionar mais membros.');
+      return;
+    }
 
     setSalvando(true);
     try {
@@ -72,9 +83,42 @@ export default function Equipe({ oficinaId, dadosOficina }) {
         </p>
       </div>
 
+      {/* BANNER UPGRADE — só aparece quando GRATUITO + já tem 1 membro */}
+      {isGratuito && membros.length >= LIMITE_GRATUITO && (
+        <div className="mb-6 rounded-[24px] overflow-hidden border border-[#FFD700]/40" style={{ background: 'linear-gradient(135deg, rgba(255,215,0,0.1) 0%, rgba(255,160,0,0.08) 100%)' }}>
+          <div className="p-6 flex flex-col md:flex-row items-start md:items-center gap-4 justify-between">
+            <div className="flex items-center gap-4">
+              <div className="w-12 h-12 rounded-2xl flex items-center justify-center flex-shrink-0" style={{ background: 'rgba(255,215,0,0.15)', border: '1px solid rgba(255,215,0,0.3)' }}>
+                <span style={{ fontSize: '22px' }}>👑</span>
+              </div>
+              <div>
+                <p className="font-black text-sm" style={{ color: '#FFD700' }}>LIMITE DO PLANO GRATUITO ATINGIDO</p>
+                <p className="text-[11px] text-zinc-400 mt-1">Você já possui {membros.length} funcionário cadastrado. O plano Gratuito permite apenas <strong style={{ color: '#FFD700' }}>1 funcionário</strong>.</p>
+              </div>
+            </div>
+            <button
+              onClick={() => window.open(`https://wa.me/5534991439845?text=${encodeURIComponent('Olá! Quero fazer upgrade para o plano ESSENCIAL e adicionar mais funcionários.')}`, '_blank')}
+              className="flex-shrink-0 px-6 py-3 rounded-xl font-black text-sm text-black uppercase tracking-widest transition-all hover:brightness-110 active:scale-95"
+              style={{ background: 'linear-gradient(135deg, #FFD700 0%, #FFA500 100%)', boxShadow: '0 4px 20px rgba(255,215,0,0.25)' }}
+            >
+              🚀 Upgrade para ESSENCIAL
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* FORMULÁRIO */}
-      <div className="bg-zinc-900 rounded-[30px] border border-zinc-800 p-6 mb-6">
-        <p className="text-[10px] text-zinc-600 font-black uppercase tracking-widest mb-4">Novo Membro</p>
+      <div className={`bg-zinc-900 rounded-[30px] border p-6 mb-6 transition-all ${
+        isGratuito && membros.length >= LIMITE_GRATUITO
+          ? 'border-[#FFD700]/20 opacity-50 pointer-events-none select-none'
+          : 'border-zinc-800'
+      }`}>
+        <p className="text-[10px] text-zinc-600 font-black uppercase tracking-widest mb-4">
+          {isGratuito && membros.length >= LIMITE_GRATUITO
+            ? '🔒 Bloqueado — Upgrade necessário'
+            : 'Novo Membro'
+          }
+        </p>
 
         <div className="space-y-3">
           <input

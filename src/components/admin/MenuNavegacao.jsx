@@ -28,15 +28,22 @@ const BASE_STYLE = {
   justifyContent: 'center',
 };
 
-export default function MenuNavegacao({ t, MAIN, MASTER, papelLogado, abaAtiva, setAbaAtiva, moduloLiberado, lidarModuloBloqueado, LABELS_ABAS }) {
+export default function MenuNavegacao({ t, MAIN, MASTER, papelLogado, abaAtiva, setAbaAtiva, moduloLiberado, lidarModuloBloqueado, LABELS_ABAS, dadosOficina }) {
   const [showMLModal, setShowMLModal] = useState(false);
+  const isGratuito = dadosOficina?.plano === 'GRATUITO' || dadosOficina?.plano === 'gratis';
+  
+  // Módulos que ficam desbloqueados no plano GRATUITO
+  const MODULOS_GRATUITOS = ['dashboard', 'clientes', 'os', 'oleo', 'alinhamento', 'ajuda', 'meuplano', 'config'];
 
   const makeButton = (aba, category) => {
     const corCat = COLORS_CAT[category];
     const liberado = moduloLiberado(aba);
     const isActive = abaAtiva === aba;
     const ehIscaDeVenda = category === 'ia' || category === 'gestao';
-    const mostraCadeado = !liberado && !ehIscaDeVenda;
+    // Mostrar cadeado: (1) módulo não liberado E não é isca de venda, OU (2) usuário GRATUITO e aba não está na lista grátis
+    const mostraCadeadoPadrao = !liberado && !ehIscaDeVenda;
+    const mostraCadeadoGratuito = isGratuito && !MODULOS_GRATUITOS.includes(aba);
+    const mostraCadeado = mostraCadeadoPadrao || mostraCadeadoGratuito;
 
     // IDs para o Tour de Onboarding
     let botaoId = undefined;
@@ -106,12 +113,12 @@ export default function MenuNavegacao({ t, MAIN, MASTER, papelLogado, abaAtiva, 
 
         <p style={{ color: t.textoTer, fontSize: '9px', fontWeight: 'bold', letterSpacing: '2px', margin: '0 0 6px', textTransform: 'uppercase' }}>🧠 INTELIGÊNCIA ARTIFICIAL</p>
         <div style={{ display: 'flex', gap: '8px', overflowX: 'auto', marginBottom: '12px', paddingBottom: '4px' }}>
-          {['copiloto', 'secretaria', 'administrador', 'contador', 'mercadolivre', 'retorno', 'estrategia'].map(aba => makeButton(aba, 'ia'))}
+          {['copiloto', 'secretaria', 'administrador', 'contador', 'mercadolivre', 'retorno', 'estrategia', 'precificacao'].map(aba => makeButton(aba, 'ia'))}
         </div>
 
         <p style={{ color: t.textoTer, fontSize: '9px', fontWeight: 'bold', letterSpacing: '2px', margin: '0 0 6px', textTransform: 'uppercase' }}>📋 GESTÃO</p>
         <div style={{ display: 'flex', gap: '8px', overflowX: 'auto', marginBottom: '12px', paddingBottom: '4px' }}>
-          {['dashboard', 'estoque', 'financeiro', 'leads', 'tarefa', 'notafiscal', 'patrimonio', 'fornecedores', 'historico', 'precificacao']
+          {['dashboard', 'estoque', 'financeiro', 'desmanche', 'leads', 'tarefa', 'notafiscal', 'patrimonio', 'fornecedores', 'historico']
             .filter(aba => aba !== 'dashboard' || papelLogado === 'dono' || papelLogado === 'master')
             .map(aba => makeButton(aba, 'gestao'))}
         </div>

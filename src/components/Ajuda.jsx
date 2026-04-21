@@ -129,25 +129,31 @@ export default function BibliotecaTreinamento({ onOpenChat }) {
       <div className="wrapper">
 
         {/* ── BOTÃO REINICIAR TOUR ── */}
-        <button
-          onClick={reiniciarTour}
-          style={{
-            background: '#ff3131',
-            border: '2px solid #ff3131',
-            color: 'white',
-            padding: '12px 20px',
-            borderRadius: '10px',
-            fontWeight: 'bold',
-            fontSize: '12px',
-            cursor: 'pointer',
-            marginBottom: '20px',
-            display: 'flex',
-            alignItems: 'center',
-            gap: '8px',
-          }}
-        >
-
-        </button>
+        <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '24px' }}>
+          <button
+            onClick={reiniciarTour}
+            style={{
+              background: 'transparent',
+              border: '2px solid #ff3131',
+              color: '#ff3131',
+              padding: '12px 28px',
+              borderRadius: '10px',
+              fontWeight: 'bold',
+              fontSize: '12px',
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '8px',
+              letterSpacing: '1px',
+              textTransform: 'uppercase',
+              transition: 'all 0.2s',
+            }}
+            onMouseEnter={e => { e.currentTarget.style.background = '#ff3131'; e.currentTarget.style.color = 'white'; }}
+            onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = '#ff3131'; }}
+          >
+            🔁 Rever Tour de Apresentação
+          </button>
+        </div>
 
         {/* ── VÍDEO PRINCIPAL DE INTRODUÇÃO ── */}
         <div className="video-principal">
@@ -168,6 +174,44 @@ export default function BibliotecaTreinamento({ onOpenChat }) {
         <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '30px' }}>
           <Info size={20} color="#ff3131" />
           <h2 style={{ fontSize: '18px', fontWeight: '900', margin: 0 }}>BIBLIOTECA DE VÍDEOS E RESUMOS</h2>
+        </div>
+
+        {/* ==========================================
+            FERRAMENTA GRÁTIS OFICINA IA
+        ========================================== */}
+        <div style={{
+          background: 'linear-gradient(145deg, #1a1a1a, #0d0d0d)',
+          border: '2px solid #22c55e',
+          borderRadius: '24px',
+          padding: '30px',
+          marginBottom: '50px',
+          boxShadow: '0 10px 40px rgba(34,197,94,0.1)'
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '15px', marginBottom: '20px' }}>
+            <div style={{ width: '50px', height: '50px', background: '#22c55e', borderRadius: '15px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <Sparkles size={28} color="black" />
+            </div>
+            <h2 style={{ margin: 0, fontSize: '22px', fontWeight: '900', color: '#22c55e' }}>FERRAMENTA GRÁTIS OFICINA IA</h2>
+          </div>
+
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '20px' }}>
+            <div>
+              <h4 style={{ color: '#fff', fontSize: '14px', fontWeight: '800', marginBottom: '8px' }}>O que é?</h4>
+              <p style={{ color: '#888', fontSize: '12px', lineHeight: '1.6', margin: 0 }}>Acesso vitalício ao controle de Clientes e Visão Geral da sua oficina.</p>
+            </div>
+            <div>
+              <h4 style={{ color: '#fff', fontSize: '14px', fontWeight: '800', marginBottom: '8px' }}>Financeiro Grátis</h4>
+              <p style={{ color: '#888', fontSize: '12px', lineHeight: '1.6', margin: 0 }}>Liberamos o registro básico de entradas e saídas para você organizar sua oficina sem custo inicial.</p>
+            </div>
+            <div>
+              <h4 style={{ color: '#fff', fontSize: '14px', fontWeight: '800', marginBottom: '8px' }}>Sem Pressão</h4>
+              <p style={{ color: '#888', fontSize: '12px', lineHeight: '1.6', margin: 0 }}>Use o tempo que precisar para conhecer o sistema. O limite do plano gratuito é de <strong style={{ color: '#fff' }}>3 ordens de serviço por mês</strong>. Se sua oficina tiver um movimento maior, escolha um dos nossos planos Pro para continuar cadastrando seus serviços.</p>
+            </div>
+            <div>
+              <h4 style={{ color: '#fff', fontSize: '14px', fontWeight: '800', marginBottom: '8px' }}>Seus Dados Seguros</h4>
+              <p style={{ color: '#888', fontSize: '12px', lineHeight: '1.6', margin: 0 }}>Se decidir fazer o upgrade depois, nada se perde. Todo seu histórico continua com você.</p>
+            </div>
+          </div>
         </div>
 
         {/* ==========================================
@@ -475,9 +519,9 @@ export default function BibliotecaTreinamento({ onOpenChat }) {
 
         <div className="item-biblioteca">
           <div className="icone-box"><Calculator size={20} /></div>
-          <div className="label-nome">🧮 Contador</div>
+          <div className="label-nome">📋 Assistente Fiscal</div>
           {renderBotaoVideo(links.contador)}
-          <div className="box-resumo">{textos.contador || "Acesso restrito e exportação de relatórios focados estritamente na contabilidade e fiscalidade do negócio."}</div>
+          <div className="box-resumo">{textos.contador || "Suporte fiscal e organização de caixa, recibos e leitura financeira. Atua como apoio ao seu contador profissional, não como substituto."}</div>
         </div>
 
         <div className="item-biblioteca">

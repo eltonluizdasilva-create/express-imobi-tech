@@ -4,6 +4,7 @@ import { addDoc, collection } from 'firebase/firestore';
 import { db } from '../../lib/firebase';
 import { sincronizarRetornosAutomaticos } from '../../lib/retornos';
 import { formatarTelefone, normalizarPlaca, TAB_COLORS } from './constants';
+import { getLimiteOS, contarOSdoMes, LIMITES_PLANOS } from '../../lib/validacoes-planos';
 
 const SETORES = [
   { key: 'mecanica', label: 'Mecânica', icon: '🔧' },
@@ -19,7 +20,7 @@ const SETORES = [
   { key: 'revisao', label: 'Revisão', icon: '🛡️' },
   { key: 'ar_condicionado', label: 'Ar-Cond.', icon: '❄️' },
   { key: 'pneus', label: 'Pneus', icon: '🛞' },
-  { key: 'desmanche', label: 'Desmanche', icon: '🚗' },
+  // desmanche removido — agora é aba de Gestão, não O.S.
   { key: 'escapamento', label: 'Escapamento', icon: '🪛' },
   { key: 'lavajato', label: 'Lava Jato', icon: '🚿' },
   { key: 'estetica', label: 'Estética', icon: '✨' },
@@ -65,6 +66,8 @@ export default function OSModulo({
   modulosOperacionais = [],
   dadosOficina = {},
   isTrial = false,
+  listaCarros = [],
+  setAbaAtiva = null,
 }) {
   const [dados, setDados] = useState({
     nomeCliente: nomeCliente || '',
@@ -209,6 +212,35 @@ export default function OSModulo({
       alert('Erro: ID da oficina não encontrado. Faça login novamente.');
       return;
     }
+
+    // ── Verificação de limite do plano GRATUITO ──────────────────────────
+    const planoAtual = dadosOficina?.plano || 'GRATUITO';
+    const isGratuito = planoAtual === 'GRATUITO' || planoAtual === 'gratis';
+    if (isGratuito) {
+      const limiteOS = getLimiteOS(planoAtual);
+      const osMes = contarOSdoMes(listaCarros);
+      const alertaEm = LIMITES_PLANOS.GRATUITO.alerta_em; // 2
+
+      if (osMes >= limiteOS) {
+        alert(
+          `⛔ Limite do plano GRATUITO atingido!\n\n` +
+          `Você já gerou ${osMes} O.S. este mês (limite: ${limiteOS}).\n\n` +
+          `Faça o upgrade para um plano Pro e continue cadastrando seus serviços sem parar. 🚀`
+        );
+        if (setAbaAtiva) setAbaAtiva('meuplano');
+        return;
+      }
+
+      if (osMes === alertaEm) {
+        const confirmar = window.confirm(
+          `⚠️ Atenção: Esta é sua ${osMes + 1}ª O.S. no plano GRATUITO.\n\n` +
+          `Seu limite é de ${limiteOS} O.S. por mês. Deseja continuar?\n\n` +
+          `👉 Para remover o limite, acesse MEU PLANO e faça o upgrade.`
+        );
+        if (!confirmar) return;
+      }
+    }
+    // ────────────────────────────────────────────────────────────────────
 
     const setorValido = setorAtivo || 'mecanica';
 

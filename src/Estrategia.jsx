@@ -1,11 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { db } from './lib/firebase';
 import { collection, getDocs, query, orderBy } from 'firebase/firestore';
-import { MessageCircle, Sparkles, X, Send, Clock, Car, User, Wrench } from 'lucide-react';
+import { MessageCircle, Sparkles, X, Send, Clock, Car, User, Wrench, Zap, TrendingUp, AlertCircle, CheckCircle, Target, Radio } from 'lucide-react';
 
 const SERVICOS_BASE = [
   'troca de óleo', 'óleo', 'oleo', 'revisão', 'revisao', 'freio', 'suspensão', 'suspensao',
-  'alinhar', 'alinhamento', 'filtro', 'correia', 'embreagem', 'embreagem', 'escapamento',
+  'alinhar', 'alinhamento', 'filtro', 'correia', 'embreagem', 'escapamento',
   'motor', 'câmbio', 'cambio', 'radiador', 'bateria', 'pneus', 'borracharia'
 ];
 
@@ -69,8 +69,11 @@ export default function AbaEstrategia({ oficinaId }) {
   const [oportunidades, setOportunidades] = useState([]);
   const [loading, setLoading] = useState(true);
   const [modal, setModal] = useState(null);
-  const [filtro, setFiltro] = useState(3);
+  const [modalHistorico, setModalHistorico] = useState(null);
+  const [filtro, setFiltro] = useState('todos'); // 'todos', 'quente', 'morno', 'frio'
   const [enviadas, setEnviadas] = useState([]);
+  const [pilotoAutomatico, setPilotoAutomatico] = useState(false);
+  const [animando, setAnimando] = useState(false);
 
   useEffect(() => {
     if (!oficinaId) { setLoading(false); return; }
@@ -87,7 +90,6 @@ export default function AbaEstrategia({ oficinaId }) {
           const d = doc.data();
 
           const info = tempoDecorrido(d.data_registro || d.data);
-          console.log('OS lida:', doc.id, '| Campo data_registro:', d.data_registro, '| Campo data:', d.data, '| Info:', info);
           if (!info) return;
 
           const limite = filtro === 6 ? -9999 : -9999;
@@ -107,6 +109,8 @@ export default function AbaEstrategia({ oficinaId }) {
             meses: info.meses,
             valor,
             telefone: d.telefone || '',
+            frequencia: d.frequencia || 1,
+            ltv: d.ltv || valor,
           });
         });
 
@@ -120,13 +124,36 @@ export default function AbaEstrategia({ oficinaId }) {
     };
 
     buscarOportunidades();
-  }, [oficinaId, filtro]);
+  }, [oficinaId]);
 
-  const potencialTotal = oportunidades.reduce((acc, o) => acc + (o.valor || 0), 0);
-  const totalMensagens = oportunidades.length;
+  // ========== CÁLCULOS DE POTENCIAL FINANCEIRO ==========
+  const oportunidadesQuentes = oportunidades.filter(o => o.meses >= 6);
+  const oportunidadesMornas = oportunidades.filter(o => o.meses >= 3 && o.meses < 6);
+  const oportunidadesFrias = oportunidades.filter(o => o.meses < 3);
+
+  const potencial3Meses = oportunidadesMornas.reduce((acc, o) => acc + (o.valor || 0), 0);
+  const potencial6Meses = oportunidadesQuentes.reduce((acc, o) => acc + (o.valor || 0), 0);
+  const potencialFrio = oportunidadesFrias.reduce((acc, o) => acc + (o.valor || 0), 0);
+  const potencialTotal = potencial3Meses + potencial6Meses + potencialFrio;
+
+  // ========== FILTRO DE STATUS ==========
+  const oportunidadesFiltradas = (() => {
+    switch (filtro) {
+      case 'quente':
+        return oportunidadesQuentes;
+      case 'morno':
+        return oportunidadesMornas;
+      case 'frio':
+        return oportunidadesFrias;
+      default:
+        return oportunidades;
+    }
+  })();
 
   const abrirModal = (opp) => setModal(opp);
   const fecharModal = () => setModal(null);
+  const abrirModalHistorico = (opp) => setModalHistorico(opp);
+  const fecharModalHistorico = () => setModalHistorico(null);
 
   const mensagemIA = (opp) => {
     const texto = gerarMensagem(opp.cliente, opp.veiculo, opp.tempo.meses);
@@ -137,197 +164,344 @@ export default function AbaEstrategia({ oficinaId }) {
     const texto = encodeURIComponent(mensagemIA(opp));
     window.open(`https://wa.me/55${(opp.telefone || '').replace(/\D/g, '')}?text=${texto}`, '_blank');
     setEnviadas(prev => [...prev, opp.id]);
+
+    // Simular piloto automático
+    if (pilotoAutomatico) {
+      setAnimando(true);
+      setTimeout(() => setAnimando(false), 2000);
+    }
+  };
+
+  const formatarMoeda = (valor) => {
+    return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(valor);
+  };
+
+  const getStatusColor = (meses) => {
+    if (meses >= 6) return { bg: 'bg-red-600/10', border: 'border-red-600/30', text: 'text-red-500', label: '🔴 QUENTE', badge: 'bg-red-600' };
+    if (meses >= 3) return { bg: 'bg-yellow-600/10', border: 'border-yellow-600/30', text: 'text-yellow-500', label: '🟡 MORNO', badge: 'bg-yellow-600' };
+    return { bg: 'bg-gray-600/10', border: 'border-gray-600/30', text: 'text-gray-500', label: '⚪ FRIO', badge: 'bg-gray-600' };
   };
 
   return (
-    <div className="min-h-screen bg-black text-white p-6 pb-40 font-sans">
-      {/* CABEÇALHO */}
-      <div className="bg-zinc-900 rounded-[40px] border border-zinc-800 p-8 mb-8">
-        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
-          <div>
-            <h1 className="text-2xl font-black uppercase tracking-tight text-red-500 mb-1">
-              🎯 Cérebro de Retenção — IA
-            </h1>
-            <p className="text-zinc-500 text-xs font-bold uppercase tracking-widest">
-              Máquina Preditiva de Oportunidades
-            </p>
-          </div>
-          <div className="flex gap-4">
-            <div className="bg-black/60 rounded-2xl px-6 py-4 border border-zinc-800 text-center">
-              <p className="text-[9px] text-zinc-600 font-black uppercase tracking-widest mb-1">Oportunidades</p>
-              <p className="text-2xl font-black text-red-500">{totalMensagens}</p>
-            </div>
-            <div className="bg-black/60 rounded-2xl px-6 py-4 border border-zinc-800 text-center">
-              <p className="text-[9px] text-zinc-600 font-black uppercase tracking-widest mb-1">Receita Potencial</p>
-              <p className="text-2xl font-black text-green-400">R$ {potencialTotal.toLocaleString('pt-BR')}</p>
-            </div>
-          </div>
+    <div className="min-h-screen bg-gradient-to-b from-black via-zinc-950 to-black text-white p-6 pb-40 font-sans">
+
+      {/* ========== CABEÇALHO COM PILOTO AUTOMÁTICO ========== */}
+      <div className="mb-8 flex justify-between items-start">
+        <div>
+          <h1 className="text-4xl font-black mb-2">🚀 MÁQUINA DE RETORNO R$</h1>
+          <p className="text-sm text-zinc-400">Identifica e recupera carteira de clientes com ROI automático</p>
         </div>
 
-        {/* FILTRO DE TEMPO */}
-        <div className="flex gap-3 mt-6">
-          <span className="text-[10px] text-zinc-600 font-black uppercase tracking-widest flex items-center">Filtrar:</span>
-          {[3, 6, 12].map((mes) => (
-            <button
-              key={mes}
-              onClick={() => setFiltro(mes)}
-              className={`px-5 py-2 rounded-full text-[10px] font-black uppercase tracking-widest transition-all ${
-                filtro === mes
-                  ? 'bg-red-600 text-white shadow-lg shadow-red-600/30'
-                  : 'bg-zinc-800 text-zinc-500 hover:text-white'
-              }`}
-            >
-              +{mes} meses
-            </button>
-          ))}
-        </div>
+        {/* TOGGLE PILOTO AUTOMÁTICO */}
+        <button
+          onClick={() => setPilotoAutomatico(!pilotoAutomatico)}
+          className={`flex items-center gap-3 px-6 py-3 rounded-2xl font-bold transition-all ${pilotoAutomatico
+            ? 'bg-green-600/20 border border-green-600/50 text-green-400'
+            : 'bg-zinc-800/60 border border-zinc-700/50 text-zinc-400 hover:text-zinc-300'
+            }`}
+        >
+          <Radio size={18} className={pilotoAutomatico ? 'animate-pulse' : ''} />
+          {pilotoAutomatico ? 'PILOTO AUTOMÁTICO ATIVO' : 'Ativar Piloto Automático'}
+        </button>
       </div>
 
-      {/* ALERTA DE POTENCIAL */}
-      {totalMensagens > 0 && (
-        <div className="bg-gradient-to-r from-yellow-900/20 to-orange-900/20 border border-yellow-600/20 rounded-2xl p-4 mb-6 flex items-center gap-4">
-          <div className="w-10 h-10 bg-yellow-500/20 rounded-full flex items-center justify-center flex-shrink-0">
-            <Sparkles size={20} className="text-yellow-400" />
+      {/* ========== PAINEL DE POTENCIAL FINANCEIRO (TOPO) ========== */}
+      {oportunidades.length > 0 && (
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+          {/* CARD: PRÓXIMOS 3 MESES */}
+          <div className="bg-gradient-to-br from-green-600/20 to-emerald-600/10 rounded-3xl border border-green-600/30 p-6 relative overflow-hidden">
+            <div className="absolute top-0 right-0 w-32 h-32 bg-green-600/5 rounded-full -mr-16 -mt-16" />
+            <div className="relative">
+              <div className="flex items-center gap-2 mb-2">
+                <Target size={16} className="text-green-400" />
+                <p className="text-[10px] text-green-400 font-bold uppercase tracking-wider">Próximos 3 Meses</p>
+              </div>
+              <p className="text-3xl font-black text-white mb-2">{formatarMoeda(potencial3Meses)}</p>
+              <p className="text-xs text-green-400/80">{oportunidadesMornas.length} clientes para reativar</p>
+            </div>
           </div>
-          <div>
-            <p className="text-yellow-400 text-xs font-black uppercase tracking-widest">⚠️ Oportunidades identificadas</p>
-            <p className="text-zinc-400 text-[10px] mt-0.5">
-              {totalMensagens} clientes não retornam há mais de {filtro} meses. Potencial de receita: <strong className="text-green-400">R$ {potencialTotal.toLocaleString('pt-BR')}</strong>
-            </p>
+
+          {/* CARD: PRÓXIMOS 6 MESES */}
+          <div className="bg-gradient-to-br from-orange-600/20 to-red-600/10 rounded-3xl border border-orange-600/30 p-6 relative overflow-hidden">
+            <div className="absolute top-0 right-0 w-32 h-32 bg-orange-600/5 rounded-full -mr-16 -mt-16" />
+            <div className="relative">
+              <div className="flex items-center gap-2 mb-2">
+                <AlertCircle size={16} className="text-orange-400" />
+                <p className="text-[10px] text-orange-400 font-bold uppercase tracking-wider">Próximos 6 Meses</p>
+              </div>
+              <p className="text-3xl font-black text-white mb-2">{formatarMoeda(potencial6Meses)}</p>
+              <p className="text-xs text-orange-400/80">{oportunidadesQuentes.length} clientes QUENTES 🔴</p>
+            </div>
+          </div>
+
+          {/* CARD: ACIMA DE 12 MESES */}
+          <div className="bg-gradient-to-br from-purple-600/20 to-blue-600/10 rounded-3xl border border-purple-600/30 p-6 relative overflow-hidden">
+            <div className="absolute top-0 right-0 w-32 h-32 bg-purple-600/5 rounded-full -mr-16 -mt-16" />
+            <div className="relative">
+              <div className="flex items-center gap-2 mb-2">
+                <TrendingUp size={16} className="text-purple-400" />
+                <p className="text-[10px] text-purple-400 font-bold uppercase tracking-wider">Potencial Total</p>
+              </div>
+              <p className="text-3xl font-black text-white mb-2">{formatarMoeda(potencialTotal)}</p>
+              <p className="text-xs text-purple-400/80">{oportunidades.length} oportunidades na carteira</p>
+            </div>
           </div>
         </div>
       )}
 
-      {/* GRID DE CARDS */}
-      {loading ? (
-        <div className="flex justify-center py-20">
-          <div className="flex flex-col items-center gap-4">
-            <div className="w-12 h-12 border-4 border-red-600 border-t-transparent rounded-full animate-spin" />
-            <p className="text-zinc-600 text-xs font-bold uppercase tracking-widest">Sincronizando dados com IA...</p>
+      {/* ========== SEMÁFORO DE STATUS INTELIGENTE ========== */}
+      {oportunidades.length > 0 && (
+        <div className="mb-8 bg-zinc-900/50 border border-zinc-800 rounded-2xl p-4">
+          <p className="text-xs font-bold text-zinc-500 uppercase tracking-wider mb-4">Filtro de Prioridade</p>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+            <button
+              onClick={() => setFiltro('todos')}
+              className={`py-3 px-4 rounded-xl font-bold text-sm transition-all ${filtro === 'todos'
+                ? 'bg-white text-black'
+                : 'bg-zinc-800 text-zinc-400 hover:text-white hover:bg-zinc-700'
+                }`}
+            >
+              📊 Todos ({oportunidades.length})
+            </button>
+            <button
+              onClick={() => setFiltro('quente')}
+              className={`py-3 px-4 rounded-xl font-bold text-sm transition-all ${filtro === 'quente'
+                ? 'bg-red-600 text-white'
+                : 'bg-red-600/10 text-red-400 hover:bg-red-600/20'
+                }`}
+            >
+              🔴 Quente ({oportunidadesQuentes.length})
+            </button>
+            <button
+              onClick={() => setFiltro('morno')}
+              className={`py-3 px-4 rounded-xl font-bold text-sm transition-all ${filtro === 'morno'
+                ? 'bg-yellow-600 text-white'
+                : 'bg-yellow-600/10 text-yellow-400 hover:bg-yellow-600/20'
+                }`}
+            >
+              🟡 Morno ({oportunidadesMornas.length})
+            </button>
+            <button
+              onClick={() => setFiltro('frio')}
+              className={`py-3 px-4 rounded-xl font-bold text-sm transition-all ${filtro === 'frio'
+                ? 'bg-gray-600 text-white'
+                : 'bg-gray-600/10 text-gray-400 hover:bg-gray-600/20'
+                }`}
+            >
+              ⚪ Frio ({oportunidadesFrias.length})
+            </button>
           </div>
         </div>
-      ) : oportunidades.length === 0 ? (
-        <div className="flex flex-col items-center justify-center py-12">
-          <div className="bg-zinc-900 rounded-[40px] border border-zinc-800 p-10 text-center max-w-2xl relative overflow-hidden">
-            <div className="absolute inset-0 bg-gradient-to-br from-red-600/5 to-orange-600/5 pointer-events-none rounded-[40px]" />
-            <div className="relative">
-              <div className="w-20 h-20 bg-gradient-to-br from-red-600/20 to-orange-600/20 rounded-full flex items-center justify-center mx-auto mb-6 border border-red-600/20">
-                <Sparkles size={36} className="text-red-500" />
-              </div>
-              <h3 className="text-xl font-black text-white mb-3">
-                Seu Cérebro de Retenção está sendo treinado...
-              </h3>
-              <p className="text-zinc-400 text-sm leading-relaxed mb-6">
-                O Oficina IA analisa automaticamente o histórico dos seus clientes para prever quem precisa voltar. Conforme você registra e conclui Ordens de Serviço, nosso sistema identificará serviços (como troca de óleo e revisões) realizados há mais de 3, 6 ou 12 meses.
-                <br /><br />
-                Quando for o momento exato de chamar o cliente de volta, os cards aparecerão aqui com mensagens de WhatsApp geradas por Inteligência Artificial prontas para envio, ajudando você a vender mais no piloto automático!
+      )}
+
+      {/* ========== CARDS DE CLIENTES ========== */}
+      {loading ? (
+        <div className="flex items-center justify-center py-20">
+          <div className="text-center">
+            <Sparkles className="w-12 h-12 mx-auto animate-spin text-red-500 mb-4" />
+            <p className="text-zinc-400">Carregando oportunidades...</p>
+          </div>
+        </div>
+      ) : oportunidadesFiltradas.length === 0 ? (
+        <div className="bg-zinc-900 rounded-3xl border border-zinc-800 p-16 text-center relative overflow-hidden">
+          <div className="absolute inset-0 bg-gradient-to-br from-purple-600/5 to-blue-600/5 pointer-events-none rounded-3xl" />
+          <div className="relative">
+            <div className="w-20 h-20 bg-gradient-to-br from-purple-600/20 to-blue-600/20 rounded-full flex items-center justify-center mx-auto mb-6 border border-purple-600/20">
+              <Sparkles size={36} className="text-purple-500" />
+            </div>
+            <h3 className="text-2xl font-black text-white mb-3">
+              Seu Cérebro de Retenção está sendo treinado...
+            </h3>
+            <p className="text-zinc-400 text-sm leading-relaxed mb-6 max-w-2xl mx-auto">
+              O Oficina IA analisa automaticamente o histórico dos seus clientes para prever quem precisa voltar. Conforme você registra e conclui Ordens de Serviço, nosso sistema identificará serviços (como troca de óleo e revisões) realizados há mais de 3, 6 ou 12 meses.
+              <br /><br />
+              Quando for o momento exato de chamar o cliente de volta, os cards aparecerão aqui com mensagens de WhatsApp geradas por Inteligência Artificial prontas para envio!
+            </p>
+            <div className="bg-black/60 border border-zinc-700 rounded-2xl px-5 py-3 inline-flex items-center gap-3">
+              <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
+              <p className="text-[11px] text-zinc-400 font-medium">
+                Continue cadastrando suas O.S. diariamente na aba <span className="text-red-400 font-bold">Mecânica</span> ou <span className="text-red-400 font-bold">Óleo</span>
               </p>
-              <div className="bg-black/60 border border-zinc-700 rounded-2xl px-5 py-3 flex items-center gap-3">
-                <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse flex-shrink-0" />
-                <p className="text-[11px] text-zinc-400 font-medium">
-                  Continue cadastrando suas O.S. diariamente na aba <span className="text-red-400 font-bold">Mecânica</span> ou <span className="text-red-400 font-bold">Óleo</span> para alimentar a IA
-                </p>
-              </div>
             </div>
           </div>
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-          {oportunidades.map((opp) => {
+          {oportunidadesFiltradas.map((opp) => {
             const jaEnviada = enviadas.includes(opp.id);
+            const statusColor = getStatusColor(opp.meses);
+
             return (
               <div
                 key={opp.id}
-                className="bg-zinc-900 rounded-[30px] border border-zinc-800 p-6 hover:border-red-600/30 transition-all relative"
+                className={`${statusColor.bg} border ${statusColor.border} rounded-3xl p-6 hover:border-white/20 transition-all relative overflow-hidden group`}
               >
-                {/* BADGE URGÊNCIA */}
-                {opp.meses >= 6 && (
-                  <div className="absolute top-4 right-4 bg-red-600 text-white text-[8px] font-black uppercase tracking-widest px-2 py-1 rounded-full">
-                    🔴 URGENTE
-                  </div>
-                )}
-                {opp.meses >= 3 && opp.meses < 6 && (
-                  <div className="absolute top-4 right-4 bg-yellow-600 text-black text-[8px] font-black uppercase tracking-widest px-2 py-1 rounded-full">
-                    🟡 ALERTA
-                  </div>
-                )}
+                <div className="absolute top-0 right-0 w-24 h-24 bg-white/5 rounded-full -mr-12 -mt-12 group-hover:bg-white/10 transition-all" />
 
-                {/* CLIENTE */}
-                <div className="flex items-center gap-3 mb-4">
-                  <div className="w-10 h-10 bg-red-600/10 rounded-full flex items-center justify-center border border-red-600/20 flex-shrink-0">
-                    <User size={16} className="text-red-500" />
-                  </div>
-                  <div className="min-w-0">
-                    <p className="text-sm font-black truncate">{opp.cliente}</p>
-                    <p className="text-[10px] text-zinc-600 uppercase font-bold tracking-widest truncate">{opp.placa}</p>
-                  </div>
+                {/* BADGE STATUS */}
+                <div className="absolute top-4 right-4 flex items-center gap-2 bg-black/40 rounded-full px-3 py-1 text-xs font-black">
+                  <span className={`w-2 h-2 ${statusColor.badge} rounded-full`} />
+                  <span className={statusColor.text}>{statusColor.label}</span>
                 </div>
 
-                {/* VEÍCULO */}
-                <div className="flex items-center gap-2 mb-3">
-                  <Car size={14} className="text-zinc-600 flex-shrink-0" />
-                  <p className="text-xs text-zinc-400 truncate">{opp.veiculo}</p>
-                </div>
+                <div className="relative">
+                  {/* CLIENTE */}
+                  <div className="flex items-start gap-3 mb-4">
+                    <div className={`w-12 h-12 ${statusColor.bg} rounded-full flex items-center justify-center border ${statusColor.border} flex-shrink-0`}>
+                      <User size={18} className={statusColor.text} />
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <p className="text-sm font-black truncate">{opp.cliente}</p>
+                      <p className="text-[10px] text-zinc-500 uppercase font-bold tracking-widest truncate">{opp.placa}</p>
+                    </div>
+                  </div>
 
-                {/* SERVIÇO */}
-                <div className="flex items-center gap-2 mb-4">
-                  <Wrench size={14} className="text-zinc-600 flex-shrink-0" />
-                  <p className="text-[10px] text-zinc-500 font-bold uppercase tracking-widest truncate">
-                    {opp.servico}
-                  </p>
-                </div>
+                  {/* VEÍCULO */}
+                  <div className="flex items-center gap-2 mb-3 text-zinc-400">
+                    <Car size={14} className="flex-shrink-0" />
+                    <p className="text-xs truncate">{opp.veiculo}</p>
+                  </div>
 
-                {/* TEMPO */}
-                <div className="flex items-center gap-2 mb-5 bg-black/40 rounded-xl px-3 py-2">
-                  <Clock size={14} className="text-red-500 flex-shrink-0" />
-                  <p className="text-[10px] text-zinc-400 font-bold">
-                    Último contato há <span className="text-red-400 font-black">{opp.tempo.texto}</span>
-                  </p>
-                </div>
+                  {/* SERVIÇO */}
+                  <div className="flex items-center gap-2 mb-4 text-zinc-500">
+                    <Wrench size={14} className="flex-shrink-0" />
+                    <p className="text-[10px] font-bold uppercase tracking-widest truncate">{opp.servico}</p>
+                  </div>
 
-                {/* BOTÃO IA */}
-                <button
-                  onClick={() => abrirModal(opp)}
-                  className="w-full bg-gradient-to-r from-red-600 to-orange-600 hover:from-red-500 hover:to-orange-500 text-white py-3 rounded-2xl font-black text-[10px] uppercase tracking-widest flex items-center justify-center gap-2 transition-all shadow-lg shadow-red-600/20 active:scale-95"
-                >
-                  <Sparkles size={14} />
-                  {jaEnviada ? '✏️ Editar Mensagem' : '🤖 Gerar Mensagem IA'}
-                </button>
+                  {/* TEMPO */}
+                  <div className="flex items-center gap-2 mb-5 bg-black/40 rounded-xl px-3 py-2">
+                    <Clock size={14} className={statusColor.text} />
+                    <p className="text-[10px] text-zinc-400 font-bold">
+                      Último contato: <span className={`${statusColor.text} font-black`}>{opp.tempo.texto}</span>
+                    </p>
+                  </div>
+
+                  {/* VALOR DO ÚLTMO SERVIÇO */}
+                  <div className="bg-black/40 rounded-xl px-3 py-2 mb-5">
+                    <p className="text-[9px] text-zinc-600 font-bold uppercase tracking-widest mb-1">Valor do último serviço</p>
+                    <p className="text-lg font-black text-white">{formatarMoeda(opp.valor)}</p>
+                  </div>
+
+                  {/* BOTÕES */}
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => abrirModalHistorico(opp)}
+                      className="flex-1 py-2 bg-zinc-800/60 hover:bg-zinc-700/60 rounded-xl text-[10px] font-black uppercase tracking-widest text-zinc-300 transition-colors border border-zinc-700/50"
+                    >
+                      📊 Ver Histórico
+                    </button>
+                    <button
+                      onClick={() => abrirModal(opp)}
+                      className={`flex-1 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all flex items-center justify-center gap-1 ${statusColor.badge} text-white hover:opacity-90 shadow-lg`}
+                    >
+                      <Sparkles size={12} />
+                      {jaEnviada ? 'Editar' : 'Mensagem IA'}
+                    </button>
+                  </div>
+                </div>
               </div>
             );
           })}
         </div>
       )}
 
-      {/* MODAL DE MENSAGEM IA */}
+      {/* ========== MODAL: HISTÓRICO RÁPIDO ========== */}
+      {modalHistorico && (
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4" onClick={fecharModalHistorico}>
+          <div
+            className="bg-zinc-900 rounded-3xl border border-zinc-800 w-full max-w-md p-8 relative"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <button
+              onClick={fecharModalHistorico}
+              className="absolute top-4 right-4 w-8 h-8 bg-zinc-800 rounded-full flex items-center justify-center hover:bg-zinc-700 transition-colors"
+            >
+              <X size={14} />
+            </button>
+
+            <div className="mb-6">
+              <h3 className="text-lg font-black text-white mb-1">📊 Histórico do Cliente</h3>
+              <p className="text-[10px] text-zinc-600 font-bold uppercase tracking-widest">{modalHistorico.cliente} — {modalHistorico.placa}</p>
+            </div>
+
+            {/* FREQUÊNCIA */}
+            <div className="bg-blue-600/10 border border-blue-600/30 rounded-2xl p-4 mb-4">
+              <p className="text-[10px] text-blue-400 font-bold uppercase tracking-widest mb-2">Frequência</p>
+              <p className="text-2xl font-black text-white">{modalHistorico.frequencia}x</p>
+              <p className="text-[9px] text-blue-400/70">visitas na oficina</p>
+            </div>
+
+            {/* ÚLTIMO SERVIÇO */}
+            <div className="bg-purple-600/10 border border-purple-600/30 rounded-2xl p-4 mb-4">
+              <p className="text-[10px] text-purple-400 font-bold uppercase tracking-widest mb-2">Último Serviço</p>
+              <p className="text-sm font-black text-white capitalize mb-1">{modalHistorico.servico}</p>
+              <p className="text-[9px] text-purple-400/70">
+                {typeof modalHistorico.ultimaData === 'object' && modalHistorico.ultimaData.toDate
+                  ? modalHistorico.ultimaData.toDate().toLocaleDateString('pt-BR')
+                  : String(modalHistorico.ultimaData).substring(0, 10)}
+              </p>
+            </div>
+
+            {/* LTV (LIFETIME VALUE) */}
+            <div className="bg-green-600/10 border border-green-600/30 rounded-2xl p-4 mb-4">
+              <p className="text-[10px] text-green-400 font-bold uppercase tracking-widest mb-2">LTV (Valor Total)</p>
+              <p className="text-2xl font-black text-white">{formatarMoeda(modalHistorico.ltv)}</p>
+              <p className="text-[9px] text-green-400/70">investido na oficina</p>
+            </div>
+
+            {/* PRÓXIMA DATA ESTIMADA */}
+            <div className="bg-orange-600/10 border border-orange-600/30 rounded-2xl p-4 mb-6">
+              <p className="text-[10px] text-orange-400 font-bold uppercase tracking-widest mb-2">Próxima Data Estimada</p>
+              <p className="text-lg font-black text-white">
+                {modalHistorico.meses >= 6 ? '🔴 AGORA' : modalHistorico.meses >= 3 ? '🟡 Este mês' : '⚪ Próximos dias'}
+              </p>
+              <p className="text-[9px] text-orange-400/70">baseado no histórico</p>
+            </div>
+
+            <button
+              onClick={fecharModalHistorico}
+              className="w-full py-3 bg-white text-black rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-zinc-200 transition-colors"
+            >
+              Fechar
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* ========== MODAL: MENSAGEM IA ========== */}
       {modal && (
         <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4" onClick={fecharModal}>
           <div
-            className="bg-zinc-900 rounded-[40px] border border-zinc-800 w-full max-w-lg p-8 relative"
+            className="bg-zinc-900 rounded-3xl border border-zinc-800 w-full max-w-lg p-8 relative"
             onClick={(e) => e.stopPropagation()}
           >
-            {/* HEADER MODAL */}
-            <div className="flex justify-between items-start mb-6">
-              <div>
-                <h3 className="text-lg font-black text-red-500 uppercase tracking-tight">🤖 Sugestão de Mensagem</h3>
-                <p className="text-[10px] text-zinc-600 font-bold uppercase tracking-widest mt-1">{modal.cliente} — {modal.veiculo}</p>
-              </div>
-              <button
-                onClick={fecharModal}
-                className="w-8 h-8 bg-zinc-800 rounded-full flex items-center justify-center hover:bg-zinc-700 transition-colors"
-              >
-                <X size={14} />
-              </button>
+            <button
+              onClick={fecharModal}
+              className="absolute top-4 right-4 w-8 h-8 bg-zinc-800 rounded-full flex items-center justify-center hover:bg-zinc-700 transition-colors"
+            >
+              <X size={14} />
+            </button>
+
+            <div className="mb-6">
+              <h3 className="text-lg font-black text-red-500 uppercase tracking-tight mb-1">🤖 Sugestão de Mensagem</h3>
+              <p className="text-[10px] text-zinc-600 font-bold uppercase tracking-widest">{modal.cliente} — {modal.veiculo}</p>
             </div>
 
-            {/* preview da mensagem */}
+            {/* PREVIEW DA MENSAGEM */}
             <div className="bg-black/60 rounded-2xl border border-zinc-800 p-4 mb-5">
               <p className="text-[11px] text-zinc-400 font-mono whitespace-pre-wrap leading-relaxed">
                 {mensagemIA(modal)}
               </p>
             </div>
 
-            {/* NOTA */}
+            {/* STATUS PILOTO AUTOMÁTICO */}
+            {pilotoAutomatico && (
+              <div className="bg-green-600/10 border border-green-600/30 rounded-2xl p-3 mb-5 flex items-center gap-2">
+                <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
+                <p className="text-[10px] text-green-400 font-bold">Piloto Automático enviará para WhatsApp</p>
+              </div>
+            )}
+
             <p className="text-[9px] text-zinc-700 font-bold uppercase tracking-widest mb-5">
               💡 A mensagem é apenas uma sugestão. Personalize antes de enviar.
             </p>
@@ -348,6 +522,17 @@ export default function AbaEstrategia({ oficinaId }) {
                 Enviar WhatsApp
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* ========== EFEITO VISUAL PILOTO AUTOMÁTICO ========== */}
+      {animando && (
+        <div className="fixed inset-0 pointer-events-none z-40">
+          <div className="absolute inset-0 bg-green-500/5 animate-pulse" />
+          <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2">
+            <div className="w-32 h-32 border-2 border-green-500/30 rounded-full animate-spin" />
+            <div className="absolute inset-0 flex items-center justify-center text-green-500 font-black text-sm">✓ Enviado!</div>
           </div>
         </div>
       )}

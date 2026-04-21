@@ -38,7 +38,7 @@ export const LABELS_ABAS_MODAL = {
     pneus: 'Pneus', desmanche: 'Desmanche', escapamento: 'Escapamento',
     lavajato: 'Lava Jato', estetica: 'Estética',
     copiloto: 'Copiloto IA', secretaria: 'Secretária IA', administrador: 'Administrador IA',
-    contador: 'Contador IA', mercadolivre: 'Mercado Livre',
+    contador: 'Assistente Fiscal IA', mercadolivre: 'Compras',
 };
 
 export const LABELS_ABAS = {
@@ -47,8 +47,8 @@ export const LABELS_ABAS = {
     oleo: '🛢️ ÓLEO', alinhamento: '⚙️ ALINHAMENTO', revisao: '🛡️ REVISÃO', eletrica: '⚡ ELÉTRICA',
     ar_condicionado: '❄️ AR-COND.', pneus: '🛞 PNEUS', escapamento: '🪛 ESCAPAMENTO', estetica: '✨ ESTÉTICA',
     lavajato: '🚿 LAVA JATO', desmanche: '🚗 DESMANCHE', copiloto: '👨‍🔧 COPILOTO',
-    secretaria: '👩‍💼 SECRETÁRIA', administrador: '👔 ADMINISTRADOR', contador: '🧮 CONTADOR',
-    mercadolivre: '📦 MERCADO LIVRE', mercado_livre: '🛒 MERCADO LIVRE',
+    secretaria: '👩‍💼 SECRETÁRIA', administrador: '👔 ADMINISTRADOR', contador: '📋 ASSIST. FISCAL',
+    mercadolivre: '📦 COMPRAS', mercado_livre: '📦 COMPRAS',
     financeiro: '📊 FINANCEIRO', estoque: '📦 ESTOQUE', leads: '👥 CLIENTES', historico: '📋 HISTÓRICO',
     tarefa: '📋 TAREFA', notafiscal: '📄 NOTA FISCAL', retorno: '📅 RETORNO', patrimonio: '📊 PATRIMÔNIO', fornecedores: '🤝 FORNECEDORES',
     precificacao: '💰 PRECIFICAÇÃO',

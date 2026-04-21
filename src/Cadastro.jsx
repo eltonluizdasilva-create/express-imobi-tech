@@ -52,7 +52,7 @@ export default function Cadastro() {
         cidade: form.cidade,
         telefone: form.telefone.replace(/\D/g, ''),
         email: form.email,
-        plano: 'trial',
+        plano: 'GRATUITO',
         trialInicio: agora,
         trialFim: fimTrial,
         ativo: true,
@@ -67,6 +67,7 @@ export default function Cadastro() {
         nome: form.nomeOficina,
         email: form.email,
         papel: 'dono',
+        plano: 'GRATUITO',
         permissoes: {
           dashboard: true,
           os: true,
@@ -117,7 +118,7 @@ export default function Cadastro() {
             CADASTRO REALIZADO!
           </h1>
           <p style={{ color: '#888', marginBottom: '30px', lineHeight: '1.6' }}>
-            Sua oficina tem <strong style={{ color: 'white' }}>10 dias grátis</strong> com acesso completo a todos os módulos de Inteligência Artificial.
+            Sua oficina tem <strong style={{ color: 'white' }}>15 dias grátis</strong> com acesso completo a todos os módulos de Inteligência Artificial.
           </p>
           <div style={{ background: '#111', padding: '20px', borderRadius: '10px', marginBottom: '30px', border: '1px solid #333' }}>
             <p style={{ color: '#888', fontSize: '12px', margin: '0 0 5px 0' }}>ACESSE COM</p>
@@ -147,7 +148,7 @@ export default function Cadastro() {
             EXPRESS<span style={{ color: '#FF0033' }}> IA</span>
           </h1>
           <div style={{ background: '#00E67622', border: '1px solid #00E676', padding: '12px 20px', borderRadius: '8px', display: 'inline-block' }}>
-            <span style={{ color: '#00E676', fontWeight: 'bold', fontSize: '14px' }}>✅ 10 DIAS GRÁTIS — SEM CARTÃO</span>
+            <span style={{ color: '#00E676', fontWeight: 'bold', fontSize: '14px' }}>✅ 15 DIAS GRÁTIS — SEM CARTÃO</span>
           </div>
         </div>
 
@@ -192,7 +193,7 @@ export default function Cadastro() {
           )}
 
           <button onClick={handleCadastro} disabled={loading} style={{ width: '100%', padding: '18px', background: loading ? '#333' : '#FF0033', color: 'white', border: 'none', borderRadius: '10px', fontSize: '16px', fontWeight: '900', cursor: loading ? 'not-allowed' : 'pointer', letterSpacing: '1px', boxShadow: loading ? 'none' : '0 0 20px #FF003366' }}>
-            {loading ? 'CRIANDO CONTA...' : 'COMEÇAR 10 DIAS GRÁTIS →'}
+            {loading ? 'CRIANDO CONTA...' : 'COMEÇAR 15 DIAS GRÁTIS →'}
           </button>
 
           <p style={{ textAlign: 'center', color: '#555', fontSize: '12px', marginTop: '20px' }}>

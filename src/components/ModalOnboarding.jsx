@@ -31,7 +31,7 @@ O diferencial? O botão EDITAR permite atualizar a O.S. a cada nova etapa, mante
     texto: `A visão gerencial do dono. Acompanhe a saúde operacional e defina as metas de crescimento da oficina.`,
   },
   {
-    titulo: '6. Contador 🧮',
+    titulo: '6. Assistente Fiscal 📋',
     texto: `Organização total de caixa e recibos. Tenha clareza financeira para tomadas de decisão seguras.`,
   },
   {

@@ -531,7 +531,7 @@ export default function Admin() {
     pneus: 'Pneus', desmanche: 'Desmanche', escapamento: 'Escapamento',
     lavajato: 'Lava Jato', estetica: 'Estética',
     copiloto: 'Copiloto IA', secretaria: 'Secretária IA', administrador: 'Administrador IA',
-    contador: 'Contador IA', mercadolivre: 'Mercado Livre',
+    contador: 'Assistente Fiscal IA', mercadolivre: 'Compras',
   };
 
   const dispararLembreteOleo = (os) => {
@@ -582,8 +582,8 @@ export default function Admin() {
     oleo: '🛢️ ÓLEO', alinhamento: '⚙️ ALINHAMENTO', revisao: '🛡️ REVISÃO', eletrica: '⚡ ELÉTRICA',
     ar_condicionado: '❄️ AR-COND.', pneus: '🛞 PNEUS', escapamento: '🪛 ESCAPAMENTO', estetica: '✨ ESTÉTICA',
     lavajato: '🚿 LAVA JATO', desmanche: '🚗 DESMANCHE', copiloto: '👨‍🔧 COPILOTO',
-    secretaria: '👩‍💼 SECRETÁRIA', administrador: '👔 ADMINISTRADOR', contador: '🧮 CONTADOR',
-    mercadolivre: '📦 MERCADO LIVRE', mercado_livre: '🛒 MERCADO LIVRE',
+    secretaria: '👩‍💼 SECRETÁRIA', administrador: '👔 ADMINISTRADOR', contador: '📋 ASSIST. FISCAL',
+    mercadolivre: '📦 COMPRAS', mercado_livre: '📦 COMPRAS',
     financeiro: '📊 FINANCEIRO', estoque: '📦 ESTOQUE', leads: '👥 CLIENTES', historico: '📋 HISTÓRICO',
     tarefa: '📋 TAREFA', notafiscal: '📄 NOTA FISCAL', retorno: '📅 RETORNO', patrimonio: '📊 PATRIMÔNIO', fornecedores: '🤝 FORNECEDORES',
     precificacao: '💰 PRECIFICAÇÃO',
@@ -825,7 +825,7 @@ export default function Admin() {
                 <div className="bg-[#FFE600] p-2 rounded-lg">
                   <ShoppingCart size={20} color="#FFE600" />
                 </div>
-                <span className="font-black text-yellow-500 uppercase tracking-tighter">Catálogo Inteligente Mercado Livre</span>
+                <span className="font-black text-yellow-500 uppercase tracking-tighter">Central de Suprimentos IA</span>
               </div>
               <button
                 onClick={() => setShowMLModal(false)}

@@ -1,4 +1,4 @@
-﻿/* eslint-disable react/prop-types */
+/* eslint-disable react/prop-types */
 import React, { useState } from "react";
 import {
     Calculator, Receipt, TrendingUp, TrendingDown,
@@ -74,7 +74,7 @@ export default function Contador({ oficinaId }) {
                             <Calculator className="text-white" size={48} />
                         </div>
                         <div>
-                            <h1 className="text-4xl font-black text-white uppercase italic tracking-tighter">Contador IA</h1>
+                            <h1 className="text-4xl font-black text-white uppercase italic tracking-tighter">Assistente Fiscal IA</h1>
                             <p className="text-amber-100 font-bold mt-2 uppercase tracking-widest text-sm flex items-center gap-2">
                                 <Sparkles size={16} /> Gestão Financeira, Caixa e Recibos
                             </p>

@@ -56,8 +56,8 @@ const SECOES = [
             { id: 'copiloto', label: 'Copiloto IA', icon: '👨‍🔧' },
             { id: 'secretaria', label: 'Secretária IA', icon: '👩‍💼' },
             { id: 'administrador', label: 'Administrador IA', icon: '👔' },
-            { id: 'contador', label: 'Contador IA', icon: '🧮' },
-            { id: 'mercadolivre', label: 'Mercado Livre', icon: '📦' },
+            { id: 'contador', label: 'Assistente Fiscal IA', icon: '📋' },
+            { id: 'mercadolivre', label: 'Compras', icon: '📦' },
         ],
     },
 ];
@@ -67,6 +67,7 @@ const IA_MODULOS = ['copiloto', 'secretaria', 'administrador', 'contador', 'merc
 const DIA_MS = 24 * 60 * 60 * 1000;
 
 const FALLBACK_PLANOS = {
+    gratis: { preco: 0, slots: 1, func: 1 },
     essencial: { preco: 99, slots: 1, func: 3 },
     profissional: { preco: 149, slots: 3, func: 5 },
     especialista: { preco: 249, slots: 5, func: 8 },
@@ -135,7 +136,9 @@ const ModuleRow = ({ mod, ativo, isFixo, bloqueado, iaPago, isPrime, onToggle })
 export default function ModuloMeuPlano({ dadosOficina, planosSistema, onModulosChange }) {
     const [configMaster, setConfigMaster] = useState({ modulosBase: FALLBACK_FIXOS, planos: {} });
     const [_carregandoConfig, setCarregandoConfig] = useState(true);
-    const [planoSelecionado, setPlanoSelecionado] = useState(dadosOficina?.plano || 'essencial');
+    const planoAtual = dadosOficina?.plano || 'GRATUITO';
+    const isGratuito = planoAtual === 'GRATUITO' || planoAtual === 'gratis';
+    const [planoSelecionado, setPlanoSelecionado] = useState(isGratuito ? 'essencial' : planoAtual);
     const [selecionados, setSelecionados] = useState([...FALLBACK_FIXOS]);
     const [ciclo, setCiclo] = useState('mensal');
     const [salvando, setSalvando] = useState(false);
@@ -180,7 +183,9 @@ export default function ModuloMeuPlano({ dadosOficina, planosSistema, onModulosC
         } else {
             setSelecionados([...modulosBase]);
         }
-        if (dadosOficina?.plano) setPlanoSelecionado(dadosOficina.plano);
+        if (dadosOficina?.plano && dadosOficina.plano !== 'GRATUITO' && dadosOficina.plano !== 'gratis') {
+            setPlanoSelecionado(dadosOficina.plano);
+        }
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [dadosOficina?.modulosOperacionais, dadosOficina?.plano]);
 
@@ -228,14 +233,49 @@ export default function ModuloMeuPlano({ dadosOficina, planosSistema, onModulosC
                 <p style={{ color: '#666', fontSize: '12px' }}>Escolha seu plano e os módulos extras que sua oficina oferece</p>
             </div>
 
-            {/* SELETOR DE PLANO */}
+            {/* PLANO GRATUITO — Banner separado */}
+            {isGratuito && (
+                <div style={{
+                    background: 'linear-gradient(135deg, #001a08, #002210)',
+                    border: '2px solid #22c55e',
+                    borderRadius: '14px', padding: '18px 20px', marginBottom: '20px',
+                    boxShadow: '0 4px 20px rgba(34,197,94,0.15)',
+                }}
+                >
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '12px' }}>
+                        <div style={{ width: '40px', height: '40px', background: '#22c55e22', border: '1.5px solid #22c55e', borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                            <span style={{ fontSize: '20px' }}>🎁</span>
+                        </div>
+                        <div>
+                            <p style={{ color: '#22c55e', fontSize: '12px', fontWeight: '900', textTransform: 'uppercase', letterSpacing: '1px', margin: '0 0 2px' }}>Plano Atual: GRATUITO</p>
+                            <p style={{ color: '#555', fontSize: '10px', margin: 0 }}>Clientes, Visão Geral e Financeiro básico disponíveis</p>
+                        </div>
+                        <span style={{ marginLeft: 'auto', background: '#22c55e22', color: '#22c55e', fontSize: '9px', fontWeight: '900', padding: '4px 10px', borderRadius: '20px', border: '1px solid #22c55e44', whiteSpace: 'nowrap' }}>✅ ATIVO</span>
+                    </div>
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '8px' }}>
+                        {[{ icon: '👥', label: 'Clientes' }, { icon: '📊', label: 'Visão Geral' }, { icon: '💸', label: 'Financeiro Básico' }].map(m => (
+                            <div key={m.label} style={{ background: '#001a0855', border: '1px solid #22c55e33', borderRadius: '8px', padding: '8px', textAlign: 'center' }}>
+                                <div style={{ fontSize: '16px', marginBottom: '4px' }}>{m.icon}</div>
+                                <p style={{ color: '#22c55e', fontSize: '9px', fontWeight: '800', margin: 0 }}>{m.label}</p>
+                            </div>
+                        ))}
+                    </div>
+                    <p style={{ color: '#444', fontSize: '10px', marginTop: '10px', marginBottom: 0, lineHeight: '1.5' }}>
+                        📦 Limite de <strong style={{ color: '#888' }}>3 O.S. por mês</strong>. Na sua 2ª O.S. você receberá um aviso. Ao atingir o limite, faça upgrade sem perder nenhum dado.
+                    </p>
+                </div>
+            )}
+
+            {/* SELETOR DE PLANO — apenas planos pagos */}
             <div style={{ background: '#111', borderRadius: '14px', border: '1px solid #222', padding: '16px', marginBottom: '20px' }}>
                 <p style={{ color: '#555', fontSize: '10px', fontWeight: '900', textTransform: 'uppercase', letterSpacing: '2px', marginBottom: '12px' }}>
-                    Seu plano atual: <span style={{ color: corDestaque }}>{isPrime ? '👑 PRIME IA' : planoSelecionado.toUpperCase()}</span>
+                    {isGratuito ? '🚀 Faça upgrade para:' : <>Seu plano atual: <span style={{ color: corDestaque }}>{isPrime ? '👑 PRIME IA' : planoSelecionado.toUpperCase()}</span></>}
                 </p>
 
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(100px, 1fr))', gap: '8px', marginBottom: '12px' }}>
-                    {Object.entries(planosConfig).map(([chave, p]) => {
+                    {Object.entries(planosConfig)
+                        .filter(([chave]) => chave !== 'gratis' && chave !== 'GRATUITO')
+                        .map(([chave, p]) => {
                         const ativo = planoSelecionado === chave;
                         const cor = chave === 'planoPrimeIA' ? '#a855f7' : chave === 'master' ? '#D4AF37' : GREEN;
                         return (
@@ -349,7 +389,7 @@ export default function ModuloMeuPlano({ dadosOficina, planosSistema, onModulosC
                             textTransform: 'uppercase', cursor: salvando ? 'not-allowed' : 'pointer',
                             boxShadow: '0 6px 24px #FF003344', opacity: salvando ? 0.5 : 1,
                         }}>
-                            🚀 Testar Tudo + 🧠 IA (10 Dias Grátis)
+                            🚀 Testar Tudo + 🧠 IA (15 Dias Grátis)
                         </button>
                     </div>
                 </div>

@@ -83,7 +83,8 @@ const APP_BASE_URL = 'https://oficina.expresstech.com.br';
 const SERVICOS_ESTETICA_ABAS = [
   'mecanica', 'hibrido', 'eletrico', 'moto', 'funilaria', 'amortecedor',
   'injecao', 'eletrica', 'alinhamento', 'oleo', 'revisao', 'ar_condicionado',
-  'pneus', 'desmanche', 'escapamento', 'lavajato', 'estetica'
+  'pneus', 'escapamento', 'lavajato', 'estetica'
+  // 'desmanche' movido para Gestão
 ];
 
 const MAPA_MODULOS_SERVICOS = {
@@ -100,7 +101,7 @@ const MAPA_MODULOS_SERVICOS = {
   revisao: ['revisao', 'REVISÃO', 'REVISAO'],
   ar_condicionado: ['ar_condicionado', 'AR-CONDICIONADO'],
   pneus: ['pneus', 'PNEUS'],
-  desmanche: ['desmanche', 'DESMANCHE'],
+  // desmanche removido daqui — agora é aba de Gestão
   escapamento: ['escapamento', 'ESCAPAMENTO'],
   lavajato: ['lavajato', 'LAVA JATO'],
   estetica: ['estetica', 'ESTÉTICA', 'ESTETICA'],
@@ -116,13 +117,14 @@ const LABELS_ABAS = {
   escapamento: '🪛 ESCAPAMENTO', estetica: '✨ ESTÉTICA',
   lavajato: '🚿 LAVA JATO', desmanche: '🚗 DESMANCHE',
   copiloto: '👨‍🔧 COPILOTO', secretaria: '👩‍💼 SECRETÁRIA',
-  administrador: '👔 ADMINISTRADOR', contador: '🧮 CONTADOR',
-  mercadolivre: '📦 MERCADO LIVRE', mercado_livre: '🛒 MERCADO LIVRE',
+  administrador: '👔 ADMINISTRADOR', contador: '📋 ASSIST. FISCAL',
+  mercadolivre: '📦 COMPRAS', mercado_livre: '📦 COMPRAS',
   financeiro: '📊 FINANCEIRO', estoque: '📦 ESTOQUE',
   leads: '👥 CLIENTES', historico: '📋 HISTÓRICO',
   tarefa: '📋 TAREFA', notafiscal: '📄 NOTA FISCAL',
   retorno: '📅 RETORNO', patrimonio: '📊 PATRIMÔNIO',
   fornecedores: '🤝 FORNECEDORES', precificacao: '💰 PRECIFICAÇÃO',
+  desmanche: '🏗️ DESMANCHE',
   equipe: '👥 EQUIPE', config: '⚙️ AJUSTES',
   marketing: '📣 MARKETING', estrategia: '🚀 ESTRATÉGIA',
   ajuda: '❓ AJUDA', master: '👑 MASTER', meuplano: '💰 MEU PLANO',
@@ -136,8 +138,8 @@ const LABELS_ABAS_MODAL = {
   pneus: 'Pneus', desmanche: 'Desmanche', escapamento: 'Escapamento',
   lavajato: 'Lava Jato', estetica: 'Estética',
   copiloto: 'Copiloto IA', secretaria: 'Secretária IA',
-  administrador: 'Administrador IA', contador: 'Contador IA',
-  mercadolivre: 'Mercado Livre',
+  administrador: 'Administrador IA', contador: 'Assistente Fiscal IA',
+  mercadolivre: 'Compras',
 };
 
 // Mapa de módulos passado ao GerenciadorDeModulos
@@ -465,6 +467,14 @@ export default function Admin() {
     if (isTrial) return true;
     if (dadosOficina?.papel === 'master' || dadosOficina?.plano === 'master') return true;
     if (dadosOficina?.modulosPermitidos === 'ALL') return true;
+
+    // Lógica para Plano Gratuito
+    if (dadosOficina?.plano === 'GRATUITO') {
+      const modulosGratis = ['dashboard', 'clientes', 'os', 'oleo', 'alinhamento'];
+      if (modulosGratis.includes(idAba)) return true;
+      return false;
+    }
+
     const abasVitais = ['dashboard', 'mecanica', 'clientes', 'ajuda', 'meuplano', 'config'];
     if (abasVitais.includes(idAba)) return true;
     if ((dadosOficina?.modulosOperacionais || []).includes(idAba)) return true;
@@ -585,6 +595,7 @@ export default function Admin() {
           moduloLiberado={moduloLiberado}
           lidarModuloBloqueado={lidarModuloBloqueado}
           LABELS_ABAS={LABELS_ABAS}
+          dadosOficina={dadosOficina}
         />
       )}
 
@@ -697,7 +708,7 @@ export default function Admin() {
                 <div className="bg-[#FFE600] p-2 rounded-lg">
                   <ShoppingCart size={20} color="#FFE600" />
                 </div>
-                <span className="font-black text-yellow-500 uppercase tracking-tighter">Catálogo Inteligente Mercado Livre</span>
+                <span className="font-black text-yellow-500 uppercase tracking-tighter">Central de Suprimentos IA</span>
               </div>
               <button
                 onClick={() => setShowMLModal(false)}

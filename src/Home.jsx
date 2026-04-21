@@ -6,7 +6,7 @@ export default function Home() {
 
   return (
     <div className="min-h-screen bg-[#050505] text-white font-sans selection:bg-blue-500 selection:text-white">
-      
+
       {/* NAVEGAÇÃO */}
       <nav className="flex justify-between items-center px-8 py-6 max-w-7xl mx-auto">
         <div className="flex items-center gap-2">
@@ -17,23 +17,23 @@ export default function Home() {
             EXPRESS <span className="text-blue-500">AI</span>
           </span>
         </div>
-        
+
         {/* MENU CENTRAL */}
         <div className="hidden md:flex gap-8 text-sm font-semibold text-gray-400">
-          <button onClick={() => window.scrollTo(0,0)} className="text-blue-400 cursor-default">Início</button>
+          <button onClick={() => window.scrollTo(0, 0)} className="text-blue-400 cursor-default">Início</button>
           <button onClick={() => navigate('/servicos')} className="hover:text-blue-400 transition-colors cursor-pointer">Nossos Serviços</button>
           <button onClick={() => navigate('/sobre')} className="hover:text-blue-400 transition-colors cursor-pointer">Sobre Nós</button>
         </div>
 
         <div className="flex gap-4">
           {/* BOTÃO CORRIGIDO PARA ABRIR O LOGIN DO ADMIN */}
-          <button 
+          <button
             onClick={() => navigate('/admin')}
             className="px-5 py-2 text-sm font-bold text-gray-300 hover:text-white transition-colors"
           >
             Login
           </button>
-          <button 
+          <button
             onClick={() => navigate('/cadastro')}
             className="px-5 py-2 text-sm font-bold bg-white text-black rounded-full hover:bg-gray-200 transition-all shadow-[0_0_20px_rgba(255,255,255,0.2)]"
           >
@@ -45,31 +45,31 @@ export default function Home() {
       {/* HERO SECTION (CABEÇALHO PRINCIPAL) */}
       <header className="relative pt-20 pb-32 overflow-hidden flex flex-col items-center justify-center text-center px-4">
         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-blue-600/20 rounded-full blur-[120px] pointer-events-none"></div>
-        
+
         <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-500/10 border border-blue-500/20 text-blue-400 text-xs font-bold mb-8 uppercase tracking-widest">
           <span className="w-2 h-2 rounded-full bg-blue-500 animate-pulse"></span>
           Agência de Tecnologia e Automação
         </div>
-        
+
         <h1 className="text-5xl md:text-7xl font-black mb-6 leading-tight max-w-4xl z-10">
           Escale o seu negócio com <br className="hidden md:block" />
           <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 via-purple-500 to-blue-600">
             Inteligência Artificial
           </span>
         </h1>
-        
+
         <p className="text-gray-400 text-lg md:text-xl max-w-2xl mb-10 z-10">
           A Express AI desenvolve sistemas SaaS de alta performance, automações de vendas e estratégias de tráfego inteligente para transformar empresas comuns em líderes de mercado.
         </p>
-        
+
         <div className="flex flex-col sm:flex-row gap-4 z-10">
-          <button 
+          <button
             onClick={() => document.getElementById('solucoes').scrollIntoView({ behavior: 'smooth' })}
             className="px-8 py-4 bg-blue-600 text-white font-bold rounded-full hover:bg-blue-500 transition-all shadow-[0_0_30px_rgba(37,99,235,0.4)] transform hover:scale-105"
           >
             Explorar Soluções
           </button>
-          <button 
+          <button
             onClick={() => window.open('https://wa.me/5534991439845?text=Olá, quero saber mais sobre a Express AI', '_blank')}
             className="px-8 py-4 bg-[#111] border border-[#333] text-white font-bold rounded-full hover:bg-[#222] transition-all"
           >
@@ -84,7 +84,7 @@ export default function Home() {
           <div className="flex items-center gap-2 mb-4">
             <span className="text-blue-500 font-bold uppercase tracking-widest text-sm">Produto Estrela</span>
           </div>
-          
+
           <div className="grid md:grid-cols-2 gap-16 items-center">
             <div>
               <h2 className="text-4xl font-black mb-6">
@@ -93,7 +93,7 @@ export default function Home() {
               <p className="text-gray-400 text-lg mb-8 leading-relaxed">
                 O primeiro sistema ERP para oficinas mecânicas do Brasil movido a Inteligência Artificial. Diga adeus ao papel e aos orçamentos amadores. Transforme a sua oficina em uma concessionária digital.
               </p>
-              
+
               <ul className="space-y-4 mb-10">
                 <li className="flex items-center gap-3 text-gray-300">
                   <span className="text-green-500 text-xl">✓</span> IA que lê o painel do veículo e extrai o KM.
@@ -108,15 +108,15 @@ export default function Home() {
                   <span className="text-green-500 text-xl">✓</span> Cobrança via PIX integrada ao caixa financeiro.
                 </li>
               </ul>
-              
-              <button 
+
+              <button
                 onClick={() => navigate('/cadastro')}
                 className="px-8 py-4 bg-[#FF0033] text-white font-bold rounded-lg hover:bg-red-700 transition-all shadow-[0_0_20px_rgba(255,0,51,0.3)]"
               >
-                TESTAR OFICINA IA GRÁTIS POR 10 DIAS
+                TESTAR EXPRESS AUTO TECH GRÁTIS POR 15 DIAS
               </button>
             </div>
-            
+
             {/* Mockup / Representação do Sistema */}
             <div className="relative rounded-2xl overflow-hidden border border-[#333] shadow-2xl shadow-blue-900/20 bg-[#111] p-6 transform rotate-2 hover:rotate-0 transition-all duration-500">
               <div className="flex gap-2 mb-4 border-b border-[#222] pb-4">
@@ -149,7 +149,7 @@ export default function Home() {
           <p className="text-gray-400 max-w-2xl mx-auto mb-16">
             Nós não apenas criamos softwares, nós construímos ecossistemas digitais completos para alavancar as suas vendas locais.
           </p>
-          
+
           <div className="grid md:grid-cols-3 gap-8 text-left">
             <div className="bg-[#111] p-8 rounded-2xl border border-[#222] hover:border-blue-500 transition-colors group">
               <div className="w-14 h-14 bg-blue-900/30 flex items-center justify-center rounded-xl text-3xl mb-6 group-hover:scale-110 transition-transform">
@@ -160,7 +160,7 @@ export default function Home() {
                 Dominamos as pesquisas locais. Otimizamos o seu perfil para que a sua empresa seja a primeira a aparecer quando o cliente pesquisar no Google Maps.
               </p>
             </div>
-            
+
             <div className="bg-[#111] p-8 rounded-2xl border border-[#222] hover:border-purple-500 transition-colors group">
               <div className="w-14 h-14 bg-purple-900/30 flex items-center justify-center rounded-xl text-3xl mb-6 group-hover:scale-110 transition-transform">
                 🎯
@@ -170,7 +170,7 @@ export default function Home() {
                 Gestão inteligente de anúncios no Google Ads e Meta Ads. Colocamos a sua marca diretamente à frente de quem já quer comprar.
               </p>
             </div>
-            
+
             <div className="bg-[#111] p-8 rounded-2xl border border-[#222] hover:border-green-500 transition-colors group">
               <div className="w-14 h-14 bg-green-900/30 flex items-center justify-center rounded-xl text-3xl mb-6 group-hover:scale-110 transition-transform">
                 🌐
@@ -181,8 +181,8 @@ export default function Home() {
               </p>
             </div>
           </div>
-          
-          <button 
+
+          <button
             onClick={() => navigate('/servicos')}
             className="mt-12 px-8 py-3 border border-blue-500 text-blue-400 font-bold rounded-full hover:bg-blue-900/20 transition-all"
           >
@@ -199,7 +199,7 @@ export default function Home() {
           <p className="text-gray-300 text-lg mb-10">
             Seja para adotar o Oficina IA ou para escalar as suas vendas com as nossas estratégias de tráfego, a Express AI é a sua parceira tecnológica.
           </p>
-          <button 
+          <button
             onClick={() => window.open('https://wa.me/5534991439845?text=Olá,%20quero%20agendar%20uma%20consultoria%20com%20a%20Express%20AI', '_blank')}
             className="px-10 py-5 bg-white text-black font-extrabold text-lg rounded-full hover:bg-gray-200 transition-all shadow-[0_0_40px_rgba(255,255,255,0.3)] transform hover:scale-105"
           >
