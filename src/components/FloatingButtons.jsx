@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { ShoppingCart, Bot, CheckSquare, Wallet, UserPlus, X } from 'lucide-react';
-import AbaAjudaIA from '../AbaAjudaIA';
+import AbaAjudaIA from './AbaAjudaIA';
 
 export default function FloatingButtons({ abaAtiva }) {
     const [chatAberto, setChatAberto] = useState(false);

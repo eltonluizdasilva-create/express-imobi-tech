@@ -415,15 +415,16 @@ export default function OSModulo({
                   style={{
                     padding: '8px 4px',
                     borderRadius: '10px',
-                    background: ativo ? `${cor}22` : '#0a0a0a',
-                    border: `1px solid ${ativo ? cor : '#222'}`,
-                    color: ativo ? 'white' : '#777',
+                    background: ativo ? `${cor}33` : '#0a0a0a',
+                    border: `1px solid ${ativo ? cor : '#444'}`,
+                    boxShadow: ativo ? `0 0 15px ${cor}44` : '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
+                    color: ativo ? 'white' : '#999',
                     display: 'flex',
                     flexDirection: 'column',
                     alignItems: 'center',
                     gap: '2px',
                     cursor: 'pointer',
-                    transition: 'all 0.2s',
+                    transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
                   }}
                 >
                   <span style={{ fontSize: '16px' }}>{setor.icon}</span>

@@ -1,6 +1,6 @@
 import React, { useState, useRef } from 'react';
 import { Sparkles, X, Mic, ShoppingCart } from 'lucide-react';
-import AbaAjudaIA from '../AbaAjudaIA';
+import AbaAjudaIA from './AbaAjudaIA';
 
 export default function ChatFlutuanteIA() {
     const [aberto, setAberto] = useState(false);

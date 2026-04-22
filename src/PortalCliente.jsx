@@ -4,7 +4,7 @@ import { db } from './lib/firebase';
 import { collectionGroup, query, where, getDocs } from 'firebase/firestore';
 import { useGroq } from './hooks/useGroq';
 import ChecklistViagem from './ChecklistViagem';
-import AbaAjudaIA from './AbaAjudaIA';
+import AbaAjudaIA from './components/AbaAjudaIA';
 import { ArrowLeft } from 'lucide-react';
 
 // ==========================================

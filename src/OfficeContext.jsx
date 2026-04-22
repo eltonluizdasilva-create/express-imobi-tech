@@ -70,7 +70,7 @@ import TarefaTab from './Tarefas';
 import NotaFiscal from './NotaFiscal';
 import AbaEstrategia from './Estrategia';
 import { sincronizarRetornosAutomaticos } from './lib/retornos';
-import AbaAjudaIA from './AbaAjudaIA';
+import AbaAjudaIA from './components/AbaAjudaIA';
 import FloatingButtons from './components/FloatingButtons';
 
 const AJUDA_ITENS = [

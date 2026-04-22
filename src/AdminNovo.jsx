@@ -69,7 +69,7 @@ import AbaEstrategia from './Estrategia';
 import OSModulo from './components/admin/OS';
 import ListaOS from './components/admin/ListaOS';
 import Precificacao from './components/admin/Precificacao';
-import AbaAjudaIA from './AbaAjudaIA';
+import AbaAjudaIA from './components/AbaAjudaIA';
 
 // Novo componente de gerenciamento de módulos
 import GerenciadorDeModulos from './components/admin/GerenciadorDeModulos';
