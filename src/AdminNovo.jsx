@@ -579,32 +579,22 @@ export default function Admin() {
         irParaNovaOS={irParaNovaOS}
         entrarModoFoco={entrarModoFoco}
       />
-
-      {/* Barra de Modo Foco */}
+      {/* Barra de Modo Foco - Agora apenas com o indicador visual à direita */}
       {modoFoco && (
-        <div className="px-4 py-3 bg-neutral-900 border-b border-neutral-800 flex items-center justify-between">
-          <button
-            onClick={() => { setAbaAtiva('lista'); sairModoFoco(); }}
-            className="text-red-500 text-xs font-bold uppercase tracking-wider flex items-center gap-2 hover:text-red-400"
-          >
-            ← VOLTAR À LISTA DE O.S.
-          </button>
+        <div className="px-4 py-3 bg-neutral-900 border-b border-neutral-800 flex items-center justify-end">
           <span className="text-neutral-500 text-[10px]">MODO FOCO ATIVADO</span>
         </div>
       )}
 
-      {/* Menu de Navegação estilo pílula */}
-      {!modoFoco && (
-        <MenuNavegacao
-          t={t} servicosVisiveis={servicosVisiveis}
-          MAIN={MAIN} MASTER={MASTER} papelLogado={papelLogado}
-          abaAtiva={abaAtiva} setAbaAtiva={setAbaAtiva}
-          moduloLiberado={moduloLiberado}
-          lidarModuloBloqueado={lidarModuloBloqueado}
-          LABELS_ABAS={LABELS_ABAS}
-          dadosOficina={dadosOficina}
-        />
-      )}
+      {/* Menu de Navegação estilo pílula - AGORA SEMPRE VISÍVEL (Removida a condição !modoFoco) */}
+      <MenuNavegacao
+        t={t} servicosVisiveis={servicosVisiveis}
+        MAIN={MAIN} MASTER={MASTER} papelLogado={papelLogado}
+        abaAtiva={abaAtiva} setAbaAtiva={setAbaAtiva}
+        moduloLiberado={moduloLiberado}
+        lidarModuloBloqueado={lidarModuloBloqueado}
+        LABELS_ABAS={LABELS_ABAS}
+      />
 
       <AvisoIA abaAtiva={abaAtiva} />
 

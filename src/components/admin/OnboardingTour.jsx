@@ -335,8 +335,9 @@ export default React.memo(function OnboardingTour({
         onClick={reiniciarTour}
         style={{
           position: 'fixed',
-          right: 20,
           bottom: 20,
+          left: '50%', // Move para o centro
+          transform: 'translateX(-50%)', // Alinha perfeitamente no meio
           zIndex: TOUR_Z_INDEX - 1,
           border: '1px solid #ff2d55',
           borderRadius: 999,
