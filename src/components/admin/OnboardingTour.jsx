@@ -6,118 +6,58 @@ const TOUR_Z_INDEX = 10000000;
 
 // Lista completa atualizada com todas as abas do novo ecossistema
 const PASSOS_TOUR = [
+
   {
-    titulo: 'Passo 1: Foco em Ajustes (O Cérebro) ⚙️',
-    texto: 'Cadastre os dados da sua empresa uma única vez e tenha recibos personalizados e chaves PIX integradas. Transforme cada atendimento em uma entrega profissional que reforça a confiança da sua marca.',
+    titulo: '🚀 1. O Portal do Cliente: Seu Diferencial!',
+    texto: 'O fim das ligações chatas e clientes toda hora na sua porta! Envie fotos, status e orçamentos direto para o celular do cliente. Ele acompanha tudo online e você valoriza sua mão de obra.',
   },
   {
-    titulo: 'Passo 2: Foco na Nova O.S. (O Coração) 🚗',
-    texto: 'Este é o coração do app. Ao gerar uma O.S., você cria uma central de controle onde pode editar serviços, mandar mensagens, anexar fotos e gerar uma senha para o cliente acompanhar tudo online.',
+    titulo: '📅 2. Retorno: O Dinheiro que Volta',
+    texto: 'Chega de oficina vazia! Nossa IA monitora revisões, trocas de óleo, baterias e muito mais, avisando quando é hora de trazer o cliente de volta. Agenda cheia de forma automática.',
   },
   {
-    titulo: 'Passo 3: Tour pelas Abas (Passeio Funcional) 🛠️',
-    texto: 'Agora você tem uma visão geral da plataforma. Vamos percorrer IA, Gestão, Sistema e Indicadores para você dominar cada recurso do seu novo ecossistema de trabalho.',
-  },
-  // ==========================================
-  // 🧠 INTELIGÊNCIA ARTIFICIAL
-  // ==========================================
-  {
-    titulo: '👨‍🔧 Copiloto - Seu Assistente',
-    texto: 'Aqui você consegue um diagnóstico rápido para qualquer problema. A IA analisa a situação e oferece soluções práticas. Use sempre que tiver dúvida no pátio!',
+    titulo: '📝 3. Checklist Digital: Sua Proteção',
+    texto: 'Evite prejuízos e reclamações. Registre fotos e o estado do veículo na entrada. É a prova real que profissionaliza o recebimento e protege seu bolso contra problemas que já estavam lá.',
   },
   {
-    titulo: '👩‍💼 Secretária - Comunicação',
-    texto: 'Deixe a IA gerenciar sua comunicação com clientes. Templates automáticos, mensagens em massa e acompanhamento de conversas - tudo organizado.',
+    titulo: '🔑 4. Portal do Cliente Exclusivo',
+    texto: 'Seu cliente recebe uma senha para acompanhar o status, fotos e laudos em tempo real. Menos cobrança no seu ouvido e muito mais autoridade para sua marca.',
   },
   {
-    titulo: '👔 Administrador - Metas e Objetivos',
-    texto: 'Defina metas para sua oficina e acompanhe o progresso em tempo real. Conhecer seus números é o primeiro passo para crescer!',
+    titulo: '📈 5. Termômetro de Lucro',
+    texto: 'Pare de trabalhar de graça! Saiba exatamente qual serviço te dá lucro real e qual está apenas ocupando espaço no elevador. Tome decisões baseadas em números e não em achismo.',
   },
   {
-    titulo: '📋 Assist. Fiscal - Caixa e Recibos',
-    texto: 'Gerencie suas finanças com inteligência. Recibos, cupons e relatórios de caixa organizados para trazer clareza para o seu negócio.',
+    titulo: '📦 6. Estoque: Onde está seu Dinheiro?',
+    texto: 'Peça parada é prejuízo. Saiba exatamente o que você tem, evite compras em duplicidade e garanta que nenhuma peça saia da oficina sem ser cobrada na O.S.',
   },
   {
-    titulo: '📦 Compras - Reposição Inteligente',
-    texto: 'A IA ajuda você a gerenciar pedidos com fornecedores e cotações, buscando sempre o melhor custo-benefício e evitando a falta de peças.',
+    titulo: '✅ 7. Aprovação em 1 Clique (WhatsApp)',
+    texto: 'Agilidade é lucro. O cliente recebe o orçamento pelo WhatsApp e aprova com um toque. O carro não fica parado e o pátio gira muito mais rápido.',
   },
   {
-    titulo: '📅 Retorno - Fidelização Ativa',
-    texto: 'Automatize o pós-venda. O sistema gerencia retornos, lembra o cliente de revisões futuras e ajuda a manter a agenda da oficina sempre cheia.',
+    titulo: '⛓️ 8. Peças Pendentes: Fim do Gargalo',
+    texto: 'Monitore o que trava sua produtividade. Saiba quais carros estão parados esperando peças e cobre seus fornecedores com dados reais. Elimine o tempo ocioso.',
   },
   {
-    titulo: '🚀 Estratégia - Crescimento',
-    texto: 'Insights gerados por IA para alavancar sua oficina. Descubra tendências, identifique gargalos operacionais e encontre oportunidades ocultas.',
+    titulo: '🎯 9. Tudo à Mão: Atalhos Inteligentes',
+    texto: 'Nossos botões flutuantes conectam tarefas, financeiro e clientes. Tudo fácil de acessar! Tire dúvidas ou faça compras sem sair da tela onde você está trabalhando.',
   },
   {
-    titulo: '💰 Precificação - Proteja sua Margem',
-    texto: 'Calcule o preço ideal para serviços e peças com segurança. A IA ajuda a garantir orçamentos precisos para você nunca deixar dinheiro na mesa.',
-  },
-  // ==========================================
-  // 📋 GESTÃO
-  // ==========================================
-  {
-    titulo: '📊 Visão Geral - O Painel',
-    texto: 'Um dashboard completo com os indicadores vitais da sua oficina. Monitore faturamento, O.S. abertas e produtividade em um único lugar.',
+    titulo: '🎁 10. Liberdade: Comece Totalmente Grátis',
+    texto: 'Teste o Premium por 15 dias. Depois, você decide: faça o upgrade ou continue usando nossas diversas ferramentas gratuitas para sempre. Você tem o controle do seu crescimento.',
   },
   {
-    titulo: '📦 Estoque - Controle Absoluto',
-    texto: 'Organize seu inventário e reduza desperdícios. Controle a disponibilidade de peças para evitar que os mecânicos fiquem parados esperando material.',
+    titulo: '🧠 Passo 1: O Cérebro (Ajustes) ⚙️',
+    texto: 'Hora de dar vida ao sistema! Cadastre sua logo, chave PIX e dados. Isso ativa seus recibos profissionais e o Portal do Cliente. É aqui que sua oficina vira elite.',
   },
   {
-    titulo: '📊 Financeiro - A Saúde do Negócio',
-    texto: 'Acompanhe todas as receitas e despesas. Entenda exatamente a movimentação do seu caixa no dia a dia com relatórios claros.',
+    titulo: '🚗 Passo 2: O Coração (Ordem de Serviço)',
+    texto: 'Tudo começa aqui. Abra O.S. completas com fotos e peças. Gerencie sua equipe e mantenha o cliente informado em tempo real com transparência total.',
   },
   {
-    titulo: '🏗️ Desmanche - Gestão de Lotes',
-    texto: 'Controle completo para operações de desmanche. Gerencie a entrada de veículos, catalogação de peças e a rentabilidade de cada sucata.',
-  },
-  {
-    titulo: '👥 Clientes - Sua Base de Ouro',
-    texto: 'Cadastro detalhado, preferências e informações de contato. Mantenha os dados dos seus clientes sempre atualizados para um atendimento VIP.',
-  },
-  {
-    titulo: '📋 Tarefa - Ritmo do Pátio',
-    texto: 'Distribua serviços, defina prioridades e acompanhe a execução das tarefas da equipe para manter a produtividade da oficina em alta.',
-  },
-  {
-    titulo: '📄 Nota Fiscal - Sem Burocracia',
-    texto: 'Módulo dedicado para a emissão de notas fiscais, integrado ao seu faturamento para manter a operação legalizada sem dor de cabeça.',
-  },
-  {
-    titulo: '📊 Patrimônio - Seus Ativos',
-    texto: 'Gerencie ferramentas, elevadores e equipamentos de diagnóstico. Tenha o controle do que pertence à oficina e o status de manutenção de cada item.',
-  },
-  {
-    titulo: '🤝 Fornecedores - Parceiros',
-    texto: 'Centralize contatos e condições de pagamento dos seus parceiros de autopeças e serviços terceirizados.',
-  },
-  {
-    titulo: '📋 Histórico - Memória da Oficina',
-    texto: 'Acesse rapidamente qualquer Ordem de Serviço ou veículo que já passou pela sua oficina. O arquivo digital completo da sua operação.',
-  },
-  // ==========================================
-  // ⚙️ SISTEMA
-  // ==========================================
-  {
-    titulo: '💰 Meu Plano - Sua Assinatura',
-    texto: 'Consulte seu plano ativo, verifique benefícios e acompanhe o status da sua assinatura da Oficina IA sempre que precisar.',
-  },
-  {
-    titulo: '⚙️ Ajustes - Configurações',
-    texto: 'Personalize o sistema com as informações da sua oficina, horários de funcionamento e preferências operacionais.',
-  },
-  {
-    titulo: '👥 Equipe - Permissões',
-    texto: 'Cadastre colaboradores e controle exatamente o que cada um pode ver ou editar dentro do sistema. Segurança total para os seus dados.',
-  },
-  {
-    titulo: '📣 Marketing - Destaque sua Marca',
-    texto: 'Ferramentas e campanhas para alavancar o nome da sua oficina, atrair novos clientes e profissionalizar a presença digital do seu negócio.',
-  },
-  {
-    titulo: '❓ Ajuda - Suporte e Manuais',
-    texto: 'Surgiu alguma dúvida? Esta área concentra tutoriais, manuais e o caminho direto para falar com nosso suporte técnico.',
+    titulo: '❓ Passo 3: Dúvidas e Suporte ⚡',
+    texto: 'Nunca fique travado! Use a aba Ajuda para tutoriais e conte com os botões flutuantes para navegar rápido. Estamos aqui para fazer sua oficina decolar!',
   },
 ];
 
@@ -292,12 +232,6 @@ export default React.memo(function OnboardingTour({
     }
   }, [setMostrarOnboarding]);
 
-  const reiniciarTour = useCallback(() => {
-    localStorage.removeItem(TOUR_STORAGE_KEY);
-    setPassoAtual(0);
-    setAberto(true); // Força a reabertura imediata
-  }, []);
-
   const irParaAnterior = useCallback(() => {
     setPassoAtual((p) => Math.max(0, p - 1));
   }, []);
@@ -329,29 +263,6 @@ export default React.memo(function OnboardingTour({
         onFechar={fecharTour}
       />
 
-      {/* Botão sempre visível para rever o tour */}
-      <button
-        type="button"
-        onClick={reiniciarTour}
-        style={{
-          position: 'fixed',
-          bottom: 20,
-          left: '50%', // Move para o centro
-          transform: 'translateX(-50%)', // Alinha perfeitamente no meio
-          zIndex: TOUR_Z_INDEX - 1,
-          border: '1px solid #ff2d55',
-          borderRadius: 999,
-          background: '#0f172a',
-          color: '#ff2d55',
-          cursor: 'pointer',
-          fontSize: 12,
-          fontWeight: 700,
-          padding: '10px 16px',
-          boxShadow: '0 12px 30px rgba(0, 0, 0, 0.28)',
-        }}
-      >
-        Rever passo a passo
-      </button>
     </>
   );
 });

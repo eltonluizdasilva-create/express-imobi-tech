@@ -80,7 +80,7 @@ const ESTILO_BIBLIOTECA = `
   }
 `;
 
-export default function BibliotecaTreinamento({ onOpenChat }) {
+export default function BibliotecaTreinamento() {
   const [links, setLinks] = useState({});
   const [textos, setTextos] = useState({});
 
@@ -119,41 +119,13 @@ export default function BibliotecaTreinamento({ onOpenChat }) {
     );
   };
 
-  const reiniciarTour = () => {
-    window.dispatchEvent(new CustomEvent('reiniciarOnboarding'));
-  };
 
   return (
     <div className="container-biblioteca">
       <style>{ESTILO_BIBLIOTECA}</style>
       <div className="wrapper">
 
-        {/* ── BOTÃO REINICIAR TOUR ── */}
-        <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '24px' }}>
-          <button
-            onClick={reiniciarTour}
-            style={{
-              background: 'transparent',
-              border: '2px solid #ff3131',
-              color: '#ff3131',
-              padding: '12px 28px',
-              borderRadius: '10px',
-              fontWeight: 'bold',
-              fontSize: '12px',
-              cursor: 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '8px',
-              letterSpacing: '1px',
-              textTransform: 'uppercase',
-              transition: 'all 0.2s',
-            }}
-            onMouseEnter={e => { e.currentTarget.style.background = '#ff3131'; e.currentTarget.style.color = 'white'; }}
-            onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = '#ff3131'; }}
-          >
-            🔁 Rever Tour de Apresentação
-          </button>
-        </div>
+
 
         {/* ── VÍDEO PRINCIPAL DE INTRODUÇÃO ── */}
         <div className="video-principal">
@@ -163,12 +135,10 @@ export default function BibliotecaTreinamento({ onOpenChat }) {
           <div style={{ flex: 1 }}>
             <h1 style={{ margin: 0, fontSize: '24px', fontWeight: '900' }}>DOMINANDO O OFICINA IA</h1>
             <p style={{ margin: '5px 0 0', color: '#888', fontSize: '14px' }}>
-              {textos.principal || "Assista ao tour completo e entenda o fluxo de trabalho do sistema."}
+
             </p>
           </div>
-          <a href={links.principal || "#"} target="_blank" rel="noreferrer" className="botao-video ativo" style={{ background: '#ff3131', color: 'white', padding: '15px 30px', fontSize: '14px' }}>
-            <Play size={16} fill="white" /> AULA PRINCIPAL
-          </a>
+
         </div>
 
         <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '30px' }}>
@@ -179,37 +149,132 @@ export default function BibliotecaTreinamento({ onOpenChat }) {
         {/* ==========================================
             FERRAMENTA GRÁTIS OFICINA IA
         ========================================== */}
+        {/* ==========================================
+            FERRAMENTA GRÁTIS: SUA OFICINA ORGANIZADA
+        ========================================== */}
         <div style={{
-          background: 'linear-gradient(145deg, #1a1a1a, #0d0d0d)',
-          border: '2px solid #22c55e',
+          background: 'linear-gradient(145deg, rgba(255,215,0,0.06) 0%, rgba(255,160,0,0.04) 50%, #0a0a0a 100%)',
           borderRadius: '24px',
+          border: '1px solid rgba(255,215,0,0.25)',
           padding: '30px',
           marginBottom: '50px',
-          boxShadow: '0 10px 40px rgba(34,197,94,0.1)'
+          position: 'relative',
+          overflow: 'hidden',
+          boxShadow: '0 0 30px rgba(255,215,0,0.05)'
         }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '15px', marginBottom: '20px' }}>
-            <div style={{ width: '50px', height: '50px', background: '#22c55e', borderRadius: '15px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              <Sparkles size={28} color="black" />
+          <h3 style={{
+            color: '#FFD700', margin: '0 0 10px 0', fontSize: '24px', fontWeight: '900',
+            textShadow: '0 0 30px rgba(255,215,0,0.4)', letterSpacing: '-0.5px'
+          }}>
+            🎁 Ferramenta Grátis: Sua Oficina Organizada
+          </h3>
+          <p style={{ color: '#aaa', fontSize: '14px', lineHeight: '1.6', margin: '0 0 25px 0', fontWeight: '500' }}>
+            Acesso vitalício para organizar sua oficina. Você decide quando crescer.
+          </p>
+
+          {/* SEÇÃO 1: O QUE VOCÊ LEVA */}
+          <div style={{ marginBottom: '32px' }}>
+            <p style={{
+              color: '#FFD700', fontSize: '12px', fontWeight: '900',
+              textTransform: 'uppercase', marginBottom: '16px', letterSpacing: '2px',
+              display: 'flex', alignItems: 'center', gap: '10px'
+            }}>
+              <span style={{ height: '1px', flex: 1, background: 'linear-gradient(90deg, rgba(255,215,0,0.3), transparent)' }}></span>
+              🛠️ O que você leva sem custo (Para Sempre)
+              <span style={{ height: '1px', flex: 1, background: 'linear-gradient(-90deg, rgba(255,215,0,0.3), transparent)' }}></span>
+            </p>
+
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '12px' }}>
+              {[
+                { icon: '👥', label: 'Clientes', desc: 'Cadastro e gestão ilimitada da sua base de contatos. Tenha o histórico de quem frequenta sua oficina sempre à mão.' },
+                { icon: '💰', label: 'Financeiro', desc: 'Controle total de entradas e saídas. Organize seu fluxo de caixa e pare de perder dinheiro por falta de anotação.' },
+                { icon: '📊', label: 'Visão Geral', desc: 'Um dashboard intuitivo para você acompanhar a saúde e a produtividade da sua oficina em tempo real.' },
+                { icon: '📋', label: 'Tarefa', desc: 'Organize o dia a dia da sua equipe, distribuindo atividades e acompanhando o que precisa ser feito.' },
+                { icon: '📊', label: 'Patrimônio', desc: 'Faça o inventário das suas ferramentas, elevadores e equipamentos. Proteja os ativos da sua empresa.' },
+                { icon: '🤝', label: 'Fornecedores', desc: 'Tenha sua lista de parceiros e autopeças organizada para cotações rápidas e eficientes.' },
+                { icon: '📋', label: 'Histórico', desc: 'Auditoria completa de tudo o que acontece no sistema para garantir total segurança e transparência.' },
+              ].map(item => (
+                <div key={item.label} style={{
+                  background: 'rgba(255,255,255,0.02)',
+                  backdropFilter: 'blur(10px)',
+                  padding: '16px',
+                  borderRadius: '16px',
+                  border: '1px solid rgba(255,255,255,0.05)',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: '6px'
+                }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                    <div style={{
+                      width: '32px', height: '32px', background: 'rgba(255,215,0,0.1)',
+                      borderRadius: '10px', display: 'flex', alignItems: 'center',
+                      justifyContent: 'center', fontSize: '16px'
+                    }}>
+                      {item.icon}
+                    </div>
+                    <span style={{ color: '#fff', fontSize: '13px', fontWeight: '900', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                      {item.label}
+                    </span>
+                  </div>
+                  <p style={{ color: '#777', fontSize: '11px', margin: 0, lineHeight: '1.6', fontWeight: '500' }}>
+                    {item.desc}
+                  </p>
+                </div>
+              ))}
             </div>
-            <h2 style={{ margin: 0, fontSize: '22px', fontWeight: '900', color: '#22c55e' }}>FERRAMENTA GRÁTIS OFICINA IA</h2>
           </div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '20px' }}>
-            <div>
-              <h4 style={{ color: '#fff', fontSize: '14px', fontWeight: '800', marginBottom: '8px' }}>O que é?</h4>
-              <p style={{ color: '#888', fontSize: '12px', lineHeight: '1.6', margin: 0 }}>Acesso vitalício ao controle de Clientes e Visão Geral da sua oficina.</p>
-            </div>
-            <div>
-              <h4 style={{ color: '#fff', fontSize: '14px', fontWeight: '800', marginBottom: '8px' }}>Financeiro Grátis</h4>
-              <p style={{ color: '#888', fontSize: '12px', lineHeight: '1.6', margin: 0 }}>Liberamos o registro básico de entradas e saídas para você organizar sua oficina sem custo inicial.</p>
-            </div>
-            <div>
-              <h4 style={{ color: '#fff', fontSize: '14px', fontWeight: '800', marginBottom: '8px' }}>Sem Pressão</h4>
-              <p style={{ color: '#888', fontSize: '12px', lineHeight: '1.6', margin: 0 }}>Use o tempo que precisar para conhecer o sistema. O limite do plano gratuito é de <strong style={{ color: '#fff' }}>3 ordens de serviço por mês</strong>. Se sua oficina tiver um movimento maior, escolha um dos nossos planos Pro para continuar cadastrando seus serviços.</p>
-            </div>
-            <div>
-              <h4 style={{ color: '#fff', fontSize: '14px', fontWeight: '800', marginBottom: '8px' }}>Seus Dados Seguros</h4>
-              <p style={{ color: '#888', fontSize: '12px', lineHeight: '1.6', margin: 0 }}>Se decidir fazer o upgrade depois, nada se perde. Todo seu histórico continua com você.</p>
+          {/* SEÇÃO 2: BENEFÍCIOS E LIBERDADE */}
+          <div>
+            <p style={{
+              color: '#FFD700', fontSize: '12px', fontWeight: '900',
+              textTransform: 'uppercase', marginBottom: '16px', letterSpacing: '2px',
+              display: 'flex', alignItems: 'center', gap: '10px'
+            }}>
+              <span style={{ height: '1px', flex: 1, background: 'linear-gradient(90deg, rgba(255,215,0,0.3), transparent)' }}></span>
+              🚀 Benefícios e Liberdade
+              <span style={{ height: '1px', flex: 1, background: 'linear-gradient(-90deg, rgba(255,215,0,0.3), transparent)' }}></span>
+            </p>
+
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '12px' }}>
+              <div style={{
+                background: 'linear-gradient(135deg, rgba(34,197,94,0.08), rgba(34,197,94,0.02))',
+                padding: '16px', borderRadius: '16px', border: '1px solid rgba(34,197,94,0.15)'
+              }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '6px' }}>
+                  <span style={{ fontSize: '16px' }}>📍</span>
+                  <span style={{ color: '#4ade80', fontSize: '13px', fontWeight: '900', textTransform: 'uppercase' }}>1 O.S. / mês</span>
+                </div>
+                <p style={{ color: '#666', fontSize: '11px', margin: 0, lineHeight: '1.5', fontWeight: '500' }}>
+                  Perfeito para quem está começando ou quer testar o fluxo de orçamentos e recibos profissionais.
+                </p>
+              </div>
+
+              <div style={{
+                background: 'linear-gradient(135deg, rgba(168,85,247,0.08), rgba(168,85,247,0.02))',
+                padding: '16px', borderRadius: '16px', border: '1px solid rgba(168,85,247,0.15)'
+              }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '6px' }}>
+                  <span style={{ fontSize: '16px' }}>🧠</span>
+                  <span style={{ color: '#c084fc', fontSize: '13px', fontWeight: '900', textTransform: 'uppercase' }}>15 Dias de Trial</span>
+                </div>
+                <p style={{ color: '#666', fontSize: '11px', margin: 0, lineHeight: '1.5', fontWeight: '500' }}>
+                  Experimente todas as ferramentas avançadas e nossa Inteligência Artificial por 15 dias sem compromisso.
+                </p>
+              </div>
+
+              <div style={{
+                background: 'linear-gradient(135deg, rgba(255,255,255,0.05), rgba(255,255,255,0.01))',
+                padding: '16px', borderRadius: '16px', border: '1px solid rgba(255,255,255,0.1)'
+              }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '6px' }}>
+                  <span style={{ fontSize: '16px' }}>🔓</span>
+                  <span style={{ color: '#eee', fontSize: '13px', fontWeight: '900', textTransform: 'uppercase' }}>Sem Bloqueios</span>
+                </div>
+                <p style={{ color: '#666', fontSize: '11px', margin: 0, lineHeight: '1.5', fontWeight: '500' }}>
+                  Suas abas de gestão (Ajustes, Equipe, Marketing e Ajuda) nunca exibem cadeado. O sistema é seu, a liberdade também.
+                </p>
+              </div>
             </div>
           </div>
         </div>
@@ -526,7 +591,7 @@ export default function BibliotecaTreinamento({ onOpenChat }) {
 
         <div className="item-biblioteca">
           <div className="icone-box"><ShoppingCart size={20} color="#ffc107" /></div>
-          <div className="label-nome">📦 Mercado Livre</div>
+          <div className="label-nome">📦 Compras</div>
           {renderBotaoVideo(links.mercadolivre)}
           <div className="box-resumo">{textos.mercadolivre || "Integração para pesquisa ágil de peças, facilitando cotações e repasse de preços para o cliente."}</div>
         </div>

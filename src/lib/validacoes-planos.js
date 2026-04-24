@@ -9,9 +9,9 @@ export const LIMITES_PLANOS = {
   GRATUITO: {
     funcionarios: 1,
     abas: 1,
-    os_mes: 3,          // ← máximo de O.S. por mês no plano grátis
-    alerta_em: 2,       // ← avisa quando a oficina abrir a 2ª O.S.
-    descricao: 'Até 3 Ordens de Serviço por mês',
+    os_mes: 1,          // ← máximo de O.S. por mês no plano grátis
+    alerta_em: 1,       // ← avisa quando a oficina abrir a 2ª O.S.
+    descricao: 'Até 1 Ordem de Serviço por mês',
   },
   essencial: {
     funcionarios: 1,

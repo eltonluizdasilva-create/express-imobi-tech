@@ -261,7 +261,7 @@ export default function ModuloMeuPlano({ dadosOficina, planosSistema, onModulosC
                         ))}
                     </div>
                     <p style={{ color: '#444', fontSize: '10px', marginTop: '10px', marginBottom: 0, lineHeight: '1.5' }}>
-                        📦 Limite de <strong style={{ color: '#888' }}>3 O.S. por mês</strong>. Na sua 2ª O.S. você receberá um aviso. Ao atingir o limite, faça upgrade sem perder nenhum dado.
+                        📦 Limite de <strong style={{ color: '#888' }}>1 O.S. por mês</strong>. Ao atingir o limite, faça upgrade sem perder nenhum dado.
                     </p>
                 </div>
             )}
@@ -276,26 +276,26 @@ export default function ModuloMeuPlano({ dadosOficina, planosSistema, onModulosC
                     {Object.entries(planosConfig)
                         .filter(([chave]) => chave !== 'gratis' && chave !== 'GRATUITO')
                         .map(([chave, p]) => {
-                        const ativo = planoSelecionado === chave;
-                        const cor = chave === 'planoPrimeIA' ? '#a855f7' : chave === 'master' ? '#D4AF37' : GREEN;
-                        return (
-                            <button key={chave} onClick={() => setPlanoSelecionado(chave)} style={{
-                                background: ativo ? `${cor}15` : '#0a0a0a',
-                                border: `1.5px solid ${ativo ? cor : '#222'}`,
-                                borderRadius: '12px', padding: '10px 8px', cursor: 'pointer', transition: 'all 0.15s',
-                            }}>
-                                <p style={{ color: ativo ? cor : '#444', fontSize: '9px', fontWeight: '900', textTransform: 'uppercase', margin: '0 0 2px 0' }}>
-                                    {chave === 'planoPrimeIA' ? '👑 PRIME IA' : chave}
-                                </p>
-                                <p style={{ color: ativo ? cor : '#333', fontSize: '14px', fontWeight: '900', margin: 0 }}>
-                                    R$ {p.preco}<span style={{ fontSize: '9px', color: '#444' }}>/m</span>
-                                </p>
-                                <p style={{ color: ativo ? '#888' : '#555', fontSize: '8px', margin: '2px 0 0' }}>
-                                    {p.slots >= 999 ? '∞ abas' : `${p.slots} aba${p.slots > 1 ? 's' : ''}`} | {p.func} func.
-                                </p>
-                            </button>
-                        );
-                    })}
+                            const ativo = planoSelecionado === chave;
+                            const cor = chave === 'planoPrimeIA' ? '#a855f7' : chave === 'master' ? '#D4AF37' : GREEN;
+                            return (
+                                <button key={chave} onClick={() => setPlanoSelecionado(chave)} style={{
+                                    background: ativo ? `${cor}15` : '#0a0a0a',
+                                    border: `1.5px solid ${ativo ? cor : '#222'}`,
+                                    borderRadius: '12px', padding: '10px 8px', cursor: 'pointer', transition: 'all 0.15s',
+                                }}>
+                                    <p style={{ color: ativo ? cor : '#444', fontSize: '9px', fontWeight: '900', textTransform: 'uppercase', margin: '0 0 2px 0' }}>
+                                        {chave === 'planoPrimeIA' ? '👑 PRIME IA' : chave}
+                                    </p>
+                                    <p style={{ color: ativo ? cor : '#333', fontSize: '14px', fontWeight: '900', margin: 0 }}>
+                                        R$ {p.preco}<span style={{ fontSize: '9px', color: '#444' }}>/m</span>
+                                    </p>
+                                    <p style={{ color: ativo ? '#888' : '#555', fontSize: '8px', margin: '2px 0 0' }}>
+                                        {p.slots >= 999 ? '∞ abas' : `${p.slots} aba${p.slots > 1 ? 's' : ''}`} | {p.func} func.
+                                    </p>
+                                </button>
+                            );
+                        })}
                 </div>
 
                 {/* CICLO */}

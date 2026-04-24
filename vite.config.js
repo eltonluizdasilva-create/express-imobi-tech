@@ -4,14 +4,19 @@ import { VitePWA } from 'vite-plugin-pwa'
 
 export default defineConfig({
   base: './',
+  // ADICIONE ESTE BLOCO SERVER AQUI
+  server: {
+    headers: {
+      "Cross-Origin-Opener-Policy": "same-origin-allow-popups",
+    },
+  },
   plugins: [
     react(),
     VitePWA({
       registerType: 'autoUpdate',
       includeAssets: ['favicon.ico', 'apple-touch-icon.png', 'masked-icon.svg'],
-      // ADICIONE ESTE BLOCO WORKBOX ABAIXO
       workbox: {
-        maximumFileSizeToCacheInBytes: 4000000, // Aumenta o limite para 4MB
+        maximumFileSizeToCacheInBytes: 4000000,
         globPatterns: ['**/*.{js,css,html,ico,png,svg}']
       },
       manifest: {

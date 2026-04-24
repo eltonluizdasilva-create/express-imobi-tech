@@ -77,8 +77,13 @@ import GerenciadorDeModulos from './components/admin/GerenciadorDeModulos';
 // ─── Constantes ────────────────────────────────────────────────────────────────
 
 const { MAIN, GREEN, MASTER } = COLORS;
-const isTrial = true;
+const isTrial = false;
 const APP_BASE_URL = 'https://oficina.expresstech.com.br';
+const MODULOS_GRATIS_VITALICIOS = [
+  'meuplano', 'config', 'equipe', 'marketing', 'ajuda',
+  'patrimonio', 'fornecedores', 'historico', 'tarefa',
+  'clientes', 'dashboard', 'financeiro', 'os'
+];
 
 const SERVICOS_ESTETICA_ABAS = [
   'mecanica', 'hibrido', 'eletrico', 'moto', 'funilaria', 'amortecedor',
@@ -143,29 +148,68 @@ const LABELS_ABAS_MODAL = {
 };
 
 // Mapa de módulos passado ao GerenciadorDeModulos
+// Componente auxiliar para renderizar a Triagem (O.S. + Lista)
+const TriagemWrapper = (props) => (
+  <div className="flex flex-col w-full gap-8">
+    <OSModulo {...props} />
+    <ListaOS {...props} />
+  </div>
+);
+
 const MODULOS_MAP = {
-  Mecanica, HibridoEV, VeiculoEletrico, MotoModulo, FunilariaModulo,
-  AmortecedorModulo, InjecaoModulo, EletricaModulo, OleoModulo,
-  AlinhamentoModulo, RevisaoModulo, ArCondicionado, PneusModulo,
-  Escapamento, Estetica, LavaJato, Desmanche, CopilotoModulo,
-  Secretaria, Administrador, Contador, MarketingModulo, MercadoLivre,
-  Financeiro, Estoque, LeadsPage, Historico, Equipe,
-  ConfiguracoesPage, ModuloMeuPlano, MasterPanel, Dashboard,
-  OSModulo, ListaOS, Precificacao, GestaoRetorno, OficinaPatrimonio,
-  Fornecedores, Ajuda, AbaEstrategia, TarefaTab, NotaFiscal, AbaAjudaIA,
+  dashboard: Dashboard,
+  os: TriagemWrapper,
+  lista: ListaOS,
+  mecanica: Mecanica,
+  hibrido: HibridoEV,
+  eletrico: VeiculoEletrico,
+  moto: MotoModulo,
+  funilaria: FunilariaModulo,
+  amortecedor: AmortecedorModulo,
+  injecao: InjecaoModulo,
+  eletrica: EletricaModulo,
+  oleo: OleoModulo,
+  alinhamento: AlinhamentoModulo,
+  revisao: RevisaoModulo,
+  ar_condicionado: ArCondicionado,
+  pneus: PneusModulo,
+  escapamento: Escapamento,
+  estetica: Estetica,
+  lavajato: LavaJato,
+  desmanche: Desmanche,
+  copiloto: CopilotoModulo,
+  secretaria: Secretaria,
+  administrador: Administrador,
+  contador: Contador,
+  financeiro: Financeiro,
+  estoque: Estoque,
+  clientes: LeadsPage,
+  leads: LeadsPage,
+  historico: Historico,
+  retorno: GestaoRetorno,
+  patrimonio: OficinaPatrimonio,
+  fornecedores: Fornecedores,
+  equipe: Equipe,
+  marketing: MarketingModulo,
+  estrategia: AbaEstrategia,
+  precificacao: Precificacao,
+  tarefa: TarefaTab,
+  notafiscal: NotaFiscal,
+  mercadolivre: MercadoLivre,
+  mercado_livre: MercadoLivre,
+  ajuda: Ajuda,
+  config: ConfiguracoesPage,
+  ConfiguracoesPage: ConfiguracoesPage, // Suporte para ambos os nomes
+  meuplano: ModuloMeuPlano,
+  master: MasterPanel,
 };
+
 
 // ─── Componente Principal ──────────────────────────────────────────────────────
 
 export default function Admin() {
-  // ── Cleanup Onboarding ──────────────────────────────────────────────────────
-  useEffect(() => {
-    localStorage.setItem('onboarding_completed', 'true');
-    localStorage.setItem('driver_tour_finished', 'true');
-    console.log("Limpeza de Cache de Onboarding executada com sucesso.");
-  }, []);
-
   // ── Auth Context ──────────────────────────────────────────────────────────
+  const auth = useAuth();
   const {
     logado, carregandoAuth, papelLogado, permissoesLogado,
     dadosOficina, bloqueado,
@@ -182,7 +226,7 @@ export default function Admin() {
     setModulosOperacionais,
     setDataFimTrial,
     setMostrarOnboarding,
-  } = useAuth();
+  } = auth || {};
 
   // ── Estado Global da O.S. (preservado entre abas) ─────────────────────────
   const [dadosOSGlobal, setDadosOSGlobal] = useState({
@@ -190,49 +234,12 @@ export default function Admin() {
     modelo: '', veiculo: '', oficinaId: '', km: '', senha_web: ''
   });
 
-  useEffect(() => {
-    if (currentUserId) {
-      localStorage.setItem('oficinaId', currentUserId);
-      setDadosOSGlobal(prev => ({ ...prev, oficinaId: currentUserId }));
-    }
-  }, [currentUserId]);
-
   // ── Navegação e UI ────────────────────────────────────────────────────────
   const [abaAtiva, setAbaAtiva] = useState('dashboard');
+  const [setupConcluido, setSetupConcluido] = useState(false);
   const [showMLModal, setShowMLModal] = useState(false);
   const [tema, setTema] = useState('escuro');
-  const toggleTema = () => setTema(prev => prev === 'escuro' ? 'claro' : 'escuro');
-
-  // ── Modo Foco ─────────────────────────────────────────────────────────────
   const [modoFoco, setModoFoco] = useState(false);
-  const entrarModoFoco = () => { setModoFoco(true); window.scrollTo(0, 0); };
-  const sairModoFoco = () => { setModoFoco(false); window.scrollTo(0, 0); };
-
-  // ── Event Listeners globais ───────────────────────────────────────────────
-  useEffect(() => {
-    const handleAbrirML = () => setShowMLModal(true);
-    const handleMudarAba = (e) => { setAbaAtiva(e.detail); window.scrollTo(0, 0); };
-    const handleModoFoco = () => { setModoFoco(true); window.scrollTo(0, 0); };
-
-    window.addEventListener('abrirMercadoLivreModal', handleAbrirML);
-    window.addEventListener('mudarAba', handleMudarAba);
-    window.addEventListener('ativarModoFoco', handleModoFoco);
-
-    return () => {
-      window.removeEventListener('abrirMercadoLivreModal', handleAbrirML);
-      window.removeEventListener('mudarAba', handleMudarAba);
-      window.removeEventListener('ativarModoFoco', handleModoFoco);
-    };
-  }, []);
-
-  // 🧹 LIMPEZA DE CACHE - Forçar sistema a sair do loop
-  useEffect(() => {
-    if (logado && currentUserId) {
-      console.log('🧹 Limpeza de Cache de Onboarding...');
-      localStorage.removeItem('oficina_ia_tour_feito');
-      // localStorage.removeItem(`onboarding_complete_${currentUserId}`); // O banco agora é o mestre com ramoAtuacao
-    }
-  }, [logado, currentUserId]);
 
   // ── Listas de dados ───────────────────────────────────────────────────────
   const [listaCarros, setListaCarros] = useState([]);
@@ -275,6 +282,78 @@ export default function Admin() {
   const [trialExpirou, setTrialExpirou] = useState(false);
   const trialExpiraouRef = useRef(false);
 
+  // ── Cleanup Onboarding ──────────────────────────────────────────────────────
+  useEffect(() => {
+    // Só executa se tivermos os dados da oficina carregados
+    if (!dadosOficina) return;
+
+    // Não executa para master
+    if (dadosOficina?.papel === 'master') return;
+
+    // Só executa se ainda não estiver marcado como completado nesta sessão
+    if (localStorage.getItem('onboarding_completed') !== 'true') {
+      localStorage.setItem('onboarding_completed', 'true');
+      localStorage.setItem('driver_tour_finished', 'true');
+      console.log("Limpeza de Cache de Onboarding executada.");
+    }
+  }, [dadosOficina]);
+
+  useEffect(() => {
+    if (currentUserId && dadosOSGlobal.oficinaId !== currentUserId) {
+      localStorage.setItem('oficinaId', currentUserId);
+      setDadosOSGlobal(prev => ({ ...prev, oficinaId: currentUserId }));
+    }
+  }, [currentUserId, dadosOSGlobal.oficinaId]);
+
+  // Verificação de Trava de Setup Inicial (Logo, PIX e Nome)
+  useEffect(() => {
+    // Se dadosOficina ainda não carregou, não fazemos nada para evitar saltos
+    if (!dadosOficina) return;
+
+    const isSetupOk = !!(dadosOficina?.logo && dadosOficina?.pix && dadosOficina?.nome);
+    setSetupConcluido(isSetupOk);
+
+    // Só redireciona automaticamente se estivermos no dashboard e o setup não estiver ok
+    if (!isSetupOk && (abaAtiva === 'dashboard' || abaAtiva === 'dashboardTab')) {
+      console.log("Setup incompleto detectado. Sugerindo aba de ajustes.");
+      setAbaAtiva('config');
+    }
+  }, [dadosOficina, abaAtiva]); // Adicionado abaAtiva para permitir a lógica de "se estiver no dashboard"
+
+  const toggleTema = () => setTema(prev => prev === 'escuro' ? 'claro' : 'escuro');
+
+  // ── Modo Foco ─────────────────────────────────────────────────────────────
+  const entrarModoFoco = () => { setModoFoco(true); window.scrollTo(0, 0); };
+  const sairModoFoco = () => { setModoFoco(false); window.scrollTo(0, 0); };
+
+  // ── Event Listeners globais ───────────────────────────────────────────────
+  useEffect(() => {
+    const handleAbrirML = () => setShowMLModal(true);
+    const handleMudarAba = (e) => { setAbaAtiva(e.detail); window.scrollTo(0, 0); };
+    const handleModoFoco = () => { setModoFoco(true); window.scrollTo(0, 0); };
+
+    window.addEventListener('abrirMercadoLivreModal', handleAbrirML);
+    window.addEventListener('mudarAba', handleMudarAba);
+    window.addEventListener('ativarModoFoco', handleModoFoco);
+
+    return () => {
+      window.removeEventListener('abrirMercadoLivreModal', handleAbrirML);
+      window.removeEventListener('mudarAba', handleMudarAba);
+      window.removeEventListener('ativarModoFoco', handleModoFoco);
+    };
+  }, []);
+
+  // 🧹 LIMPEZA DE CACHE - Forçar sistema a sair do loop
+  useEffect(() => {
+    if (!dadosOficina || dadosOficina?.papel === 'master') return;
+    if (logado && currentUserId && localStorage.getItem('oficina_ia_tour_feito')) {
+      console.log('🧹 Limpeza de Cache de Onboarding...');
+      localStorage.removeItem('oficina_ia_tour_feito');
+    }
+  }, [logado, currentUserId, dadosOficina]);
+
+
+  // ── Trial ─────────────────────────────────────────────────────────────────
   useEffect(() => {
     if (!logado || !currentUserId || !dataFimTrial) return;
     if (trialExpiraouRef.current) return;
@@ -283,7 +362,10 @@ export default function Admin() {
     trialExpiraouRef.current = true;
     setTrialExpirou(true);
     updateDoc(doc(db, 'usuarios', currentUserId), {
-      modulosPermitidos: null, dataFimTrial: null,
+      modulosPermitidos: null,
+      dataFimTrial: null,
+      plano: 'GRATUITO',
+      modulosOperacionais: MODULOS_GRATIS_VITALICIOS,
     }, { merge: true }).catch(err => console.error('Erro ao expirar trial:', err));
   }, [dataFimTrial, logado, currentUserId]);
 
@@ -322,8 +404,9 @@ export default function Admin() {
 
   // ── IDs e carga de dados ──────────────────────────────────────────────────
   const oficinaId = useMemo(() => {
-    return dadosOficina?.id || localStorage.getItem('oficinaId');
-  }, [dadosOficina]);
+    return dadosOficina?.id || currentUserId || localStorage.getItem('oficinaId');
+  }, [dadosOficina, currentUserId]);
+
 
   const { carregarOS, carregarFinanceiro, carregarEstoque, carregarConfig, carregarPlanos } =
     useCarregamentoInicial(oficinaId, {
@@ -477,12 +560,12 @@ export default function Admin() {
 
     // Lógica para Plano Gratuito
     if (dadosOficina?.plano === 'GRATUITO') {
-      const modulosGratis = ['dashboard', 'clientes', 'os', 'oleo', 'alinhamento'];
+      const modulosGratis = ['dashboard', 'clientes', 'os', 'meuplano', 'config', 'equipe', 'marketing', 'ajuda', 'patrimonio', 'fornecedores', 'historico', 'tarefa', 'financeiro'];
       if (modulosGratis.includes(idAba)) return true;
       return false;
     }
 
-    const abasVitais = ['dashboard', 'mecanica', 'clientes', 'ajuda', 'meuplano', 'config'];
+    const abasVitais = ['dashboard', 'clientes', 'os', 'meuplano', 'config', 'equipe', 'marketing', 'ajuda', 'patrimonio', 'fornecedores', 'historico', 'tarefa', 'financeiro'];
     if (abasVitais.includes(idAba)) return true;
     if ((dadosOficina?.modulosOperacionais || []).includes(idAba)) return true;
     return false;
@@ -514,9 +597,32 @@ export default function Admin() {
     [resumoEdicaoAtiva]);
 
   // ── Telas de estado especial ──────────────────────────────────────────────
-  if (carregandoAuth) return (
-    <div style={{ minHeight: '100vh', background: 'black', color: MAIN, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '18px', fontWeight: 'bold' }}>
-      ⏳ INICIANDO SISTEMA...
+  // Adicionado loading de segurança para identificar o papel do usuário
+  if (carregandoAuth || (logado && !dadosOficina)) return (
+    <div style={{ minHeight: '100vh', background: 'black', color: MAIN, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', fontSize: '18px', fontWeight: 'bold', gap: '20px' }}>
+      <div style={{ width: '40px', height: '40px', border: `4px solid ${MAIN}`, borderTopColor: 'transparent', borderRadius: '50%', animation: 'spin 1s linear infinite' }} className="animate-spin" />
+      <div style={{ textAlign: 'center' }}>
+        <p>⏳ IDENTIFICANDO PERFIL...</p>
+        <p style={{ fontSize: '12px', color: '#666', marginTop: '10px' }}>Se travar aqui, verifique sua conexão ou permissões do Firebase.</p>
+      </div>
+
+      <div style={{ display: 'flex', gap: '15px', marginTop: '20px' }}>
+        <button
+          onClick={() => {
+            console.log("Forçando entrada via bypass...");
+            setDadosOficina({ id: currentUserId, papel: 'master', plano: 'master', nome: 'Bypass Admin' });
+          }}
+          style={{ background: '#333', color: 'white', border: 'none', padding: '10px 20px', borderRadius: '8px', cursor: 'pointer', fontSize: '14px' }}
+        >
+          🚀 ENTRAR À FORÇA (Bypass)
+        </button>
+        <button
+          onClick={fazerLogout}
+          style={{ background: 'transparent', color: MAIN, border: `1px solid ${MAIN}`, padding: '10px 20px', borderRadius: '8px', cursor: 'pointer', fontSize: '14px' }}
+        >
+          Sair do Sistema
+        </button>
+      </div>
     </div>
   );
 
@@ -602,6 +708,7 @@ export default function Admin() {
       <GerenciadorDeModulos
         abaAtiva={abaAtiva}
         setAbaAtiva={setAbaAtiva}
+        setupConcluido={setupConcluido}
         dadosOSGlobal={dadosOSGlobal}
         setDadosOSGlobal={setDadosOSGlobal}
         modulos={MODULOS_MAP}
@@ -726,11 +833,13 @@ export default function Admin() {
 
       <FloatingButtons abaAtiva={abaAtiva} />
 
-      <OnboardingTour
-        setAbaAtiva={setAbaAtiva}
-        setMostrarOnboarding={setMostrarOnboarding}
-        modalBemVindoAberto={mostrarOnboarding}
-      />
+      {dadosOficina?.papel !== 'master' && (
+        <OnboardingTour
+          setAbaAtiva={setAbaAtiva}
+          setMostrarOnboarding={setMostrarOnboarding}
+          modalBemVindoAberto={mostrarOnboarding}
+        />
+      )}
     </div>
   );
 }

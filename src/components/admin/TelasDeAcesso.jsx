@@ -16,7 +16,7 @@ export function TelaTrialExpirou({ setTrialExpirou }) {
           PERÍODO DE TESTE ENCERRADO
         </h2>
         <p style={{ color: '#888', fontSize: '13px', lineHeight: '1.7', marginBottom: '24px' }}>
-          Seu trial de 10 dias com <strong style={{ color: 'white' }}>TODAS as funcionalidades liberadas</strong> chegou ao fim.<br /><br />
+          Seu trial de 15 dias com <strong style={{ color: 'white' }}>TODAS as funcionalidades liberadas</strong> chegou ao fim.<br /><br />
           As abas extras foram <strong style={{ color: '#FF0033' }}>bloqueadas</strong>.<br />
           Volte ao plano contratado para continuar.
         </p>

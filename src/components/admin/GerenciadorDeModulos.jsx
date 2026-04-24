@@ -18,6 +18,7 @@ export default function GerenciadorDeModulos(props) {
     const {
         abaAtiva,
         setAbaAtiva,
+        setupConcluido,
         dadosOSGlobal,
         setDadosOSGlobal,
         modulos,
@@ -136,205 +137,65 @@ export default function GerenciadorDeModulos(props) {
         modulosOperacionais,
     };
 
-    // ── Switch de renderização ────────────────────────────────────────────────
-    switch (abaAtiva) {
+    // ── Renderização Dinâmica ────────────────────────────────────────────────
+    return (
+        <main className="flex-1 overflow-y-auto bg-black p-4 relative">
+            {(() => {
+                // Renderiza a aba ativa. A lógica de redirecionamento agora fica no AdminNovo.jsx.
+                const moduloParaRenderizar = abaAtiva;
 
-        // DASHBOARD
-        case 'dashboard':
-            return <modulos.Dashboard {...propsDashboard} />;
+                
+                // Busca dinâmica no mapa de componentes (modulos é o MODULOS_MAP do AdminNovo)
+                const ComponenteDinamico = modulos[moduloParaRenderizar];
 
-        // TRIAGEM / NOVA O.S.
+                if (ComponenteDinamico) {
+                    return (
+                        <div className="animate-fade-in">
+                            <ComponenteDinamico
+                                {...props} // Passa todas as props (incluindo oficinaId, abaAtiva, etc.)
+                                // Passa flag para abrir o modal de onboarding automaticamente
+                                modoOnboarding={!setupConcluido}
+                                // Props agrupadas para compatibilidade legada se necessário
+                                {...propsComuns}
+                                // Props específicas que alguns componentes esperavam diretamente
+                                osParaEditar={osParaEditar}
+                                onCancelar={onCancelar}
+                                subAbaEletrica={subAbaEletrica}
+                                setSubAbaEletrica={setSubAbaEletrica}
+                                servicosAlinhamento={servicosAlinhamento}
+                                setServicosAlinhamento={setServicosAlinhamento}
+                                extrasAlinhamento={extrasAlinhamento}
+                                setExtrasAlinhamento={setExtrasAlinhamento}
+                                estadoPneus={estadoPneus}
+                                setEstadoPneus={setEstadoPneus}
+                            />
+                        </div>
+                    );
+                }
 
-        case 'os':
-            return (
-                <div className="flex flex-col w-full gap-8">
-                    {/* A Busca e Formulário no topo */}
-                    <modulos.OSModulo {...propsOS} />
-
-                    {/* A Lista de Cards logo abaixo */}
-                    <modulos.ListaOS {...propsListaOS} />
-                </div>
-            );
-
-        // LISTA DE O.S.
-        case 'lista':
-            return <modulos.ListaOS {...propsListaOS} />;
-
-        // ── MÓDULOS TÉCNICOS ──────────────────────────────────────────────────
-
-        case 'mecanica':
-            return <modulos.Mecanica {...propsComuns} osParaEditar={osParaEditar} onCancelar={onCancelar} />;
-
-        case 'hibrido':
-            return <modulos.HibridoEV {...propsComuns} osParaEditar={osParaEditar} onCancelar={onCancelar} />;
-
-        case 'eletrico':
-            return <modulos.VeiculoEletrico {...propsComuns} osParaEditar={osParaEditar} onCancelar={onCancelar} />;
-
-        case 'moto':
-            return <modulos.MotoModulo {...propsComuns} osParaEditar={osParaEditar} onCancelar={onCancelar} />;
-
-        case 'funilaria':
-            return <modulos.FunilariaModulo {...propsComuns} osParaEditar={osParaEditar} onCancelar={onCancelar} />;
-
-        case 'amortecedor':
-            return <modulos.AmortecedorModulo {...propsComuns} osParaEditar={osParaEditar} onCancelar={onCancelar} />;
-
-        case 'injecao':
-            return <modulos.InjecaoModulo {...propsComuns} osParaEditar={osParaEditar} onCancelar={onCancelar} />;
-
-        case 'eletrica':
-            return (
-                <modulos.EletricaModulo
-                    {...propsComuns}
-                    osParaEditar={osParaEditar}
-                    onCancelar={onCancelar}
-                    subAbaEletrica={subAbaEletrica}
-                    setSubAbaEletrica={setSubAbaEletrica}
-                />
-            );
-
-        case 'oleo':
-            return <modulos.OleoModulo {...propsComuns} osParaEditar={osParaEditar} onCancelar={onCancelar} />;
-
-        case 'alinhamento':
-            return (
-                <modulos.AlinhamentoModulo
-                    {...propsComuns}
-                    osParaEditar={osParaEditar}
-                    onCancelar={onCancelar}
-                    servicosAlinhamento={servicosAlinhamento}
-                    setServicosAlinhamento={setServicosAlinhamento}
-                    extrasAlinhamento={extrasAlinhamento}
-                    setExtrasAlinhamento={setExtrasAlinhamento}
-                    estadoPneus={estadoPneus}
-                    setEstadoPneus={setEstadoPneus}
-                />
-            );
-
-        case 'revisao':
-            return <modulos.RevisaoModulo {...propsComuns} osParaEditar={osParaEditar} onCancelar={onCancelar} />;
-
-        case 'ar_condicionado':
-            return <modulos.ArCondicionado {...propsComuns} osParaEditar={osParaEditar} onCancelar={onCancelar} />;
-
-        case 'pneus':
-            return (
-                <modulos.PneusModulo
-                    {...propsComuns}
-                    osParaEditar={osParaEditar}
-                    onCancelar={onCancelar}
-                    estadoPneus={estadoPneus}
-                    setEstadoPneus={setEstadoPneus}
-                />
-            );
-
-        case 'escapamento':
-            return <modulos.Escapamento {...propsComuns} osParaEditar={osParaEditar} onCancelar={onCancelar} />;
-
-        case 'estetica':
-            return <modulos.Estetica {...propsComuns} osParaEditar={osParaEditar} onCancelar={onCancelar} />;
-
-        case 'lavajato':
-            return <modulos.LavaJato {...propsComuns} osParaEditar={osParaEditar} onCancelar={onCancelar} />;
-
-        case 'desmanche':
-            // Desmanche está em Gestão — precisa passar db explicitamente
-            return <modulos.Desmanche {...propsComuns} db={db} />;
-
-        // ── MÓDULOS IA ────────────────────────────────────────────────────────
-
-        case 'copiloto':
-            return <modulos.CopilotoModulo {...propsComuns} />;
-
-        case 'secretaria':
-            return <modulos.Secretaria {...propsComuns} listaCarros={listaCarros} />;
-
-        case 'administrador':
-            return <modulos.Administrador {...propsComuns} />;
-
-        case 'contador':
-            return <modulos.Contador {...propsComuns} listaFinanceiro={listaFinanceiro} />;
-
-        // ── GESTÃO ────────────────────────────────────────────────────────────
-
-        case 'financeiro':
-            return <modulos.Financeiro {...propsComuns} listaFinanceiro={listaFinanceiro} />;
-
-        case 'estoque':
-            return <modulos.Estoque {...propsComuns} listaEstoque={listaEstoque} />;
-
-        case 'clientes':
-        case 'leads':
-            return <modulos.LeadsPage {...propsComuns} />;
-
-        case 'historico':
-            return <modulos.Historico {...propsComuns} listaCarros={listaCarros} />;
-
-        case 'retorno':
-            return <modulos.GestaoRetorno {...propsComuns} listaCarros={listaCarros} />;
-
-        case 'patrimonio':
-            return <modulos.OficinaPatrimonio {...propsComuns} />;
-
-        case 'fornecedores':
-            return <modulos.Fornecedores {...propsComuns} />;
-
-        case 'equipe':
-            return <modulos.Equipe {...propsComuns} />;
-
-        case 'marketing':
-            return <modulos.MarketingModulo {...propsComuns} listaCarros={listaCarros} />;
-
-        case 'estrategia':
-            return <modulos.AbaEstrategia {...propsComuns} />;
-
-        case 'precificacao':
-            return <modulos.Precificacao {...propsComuns} />;
-
-        case 'tarefa':
-            return <modulos.TarefaTab {...propsComuns} />;
-
-        case 'notafiscal':
-            return <modulos.NotaFiscal {...propsComuns} />;
-
-        case 'mercadolivre':
-        case 'mercado_livre':
-            return <modulos.MercadoLivre buscaMercado={buscaMercado} />;
-
-        // ── SISTEMA ───────────────────────────────────────────────────────────
-
-        case 'ajuda':
-            return <modulos.Ajuda {...propsComuns} />;
-
-        case 'config':
-            return (
-                <modulos.ConfiguracoesPage
-                    {...propsComuns}
-                    tema={tema}
-                    toggleTema={toggleTema}
-                    dadosOficina={dadosOficina}
-                />
-            );
-
-        case 'meuplano':
-            return (
-                <modulos.ModuloMeuPlano
-                    {...propsComuns}
-                    dataFimTrial={dataFimTrial}
-                    isTrial={isTrial}
-                    verificarLicenca={verificarLicenca}
-                />
-            );
-
-        case 'master':
-            return <modulos.MasterPanel {...propsComuns} />;
-
-        default:
-            return (
-                <div className="flex items-center justify-center p-12 text-zinc-500 text-sm">
-                    Módulo <strong className="mx-1 text-zinc-300">"{abaAtiva}"</strong> não encontrado.
-                </div>
-            );
-    }
+                // Fallback de segurança para abas que "somem" ou não registradas
+                console.error(`Erro: O módulo "${abaAtiva}" não foi encontrado no MODULOS_MAP.`);
+                return (
+                    <div className="flex flex-col items-center justify-center h-full border-2 border-dashed border-neutral-900 rounded-3xl p-12">
+                        <div className="bg-red-500/10 p-4 rounded-full mb-4">
+                            <span className="text-4xl">⚠️</span>
+                        </div>
+                        <p className="text-red-600 font-black uppercase italic tracking-widest text-center">
+                            Módulo [ {abaAtiva} ] não registrado ou em manutenção
+                        </p>
+                        <p className="text-neutral-500 text-xs mt-2 mb-6">
+                            Verifique se o componente está importado e mapeado no AdminNovo.jsx
+                        </p>
+                        <button
+                            onClick={() => setAbaAtiva('dashboard')}
+                            className="bg-white text-black px-8 py-3 rounded-full font-black uppercase tracking-tighter hover:scale-105 transition-all shadow-lg"
+                        >
+                            Retornar à Base
+                        </button>
+                    </div>
+                );
+            })()}
+        </main>
+    );
 }
+

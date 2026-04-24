@@ -67,16 +67,40 @@ export function AuthProvider({ children }) {
             const oficinaSnap = await getDoc(doc(db, 'oficinas', userOficinaId));
             if (oficinaSnap.exists()) {
               setDadosOficina({ ...oficinaSnap.data(), id: userOficinaId });
+            } else {
+              // 🚀 BLINDAGEM 1: Se a oficina do cara foi apagada do banco, salva o sistema do loop!
+              setDadosOficina({
+                id: userOficinaId,
+                plano: isMaster ? 'master' : 'grátis',
+                nome: isMaster ? 'Admin Master' : 'Minha Oficina',
+                papel: isMaster ? 'master' : 'dono'
+              });
             }
+          } else {
+            // 🚀 BLINDAGEM 2: Se logou mas não tem nenhum ID atrelado (dados corrompidos)
+            setDadosOficina({
+              id: user.uid,
+              plano: isMaster ? 'master' : 'grátis',
+              nome: isMaster ? 'Admin Master' : 'Oficina Padrão',
+              papel: isMaster ? 'master' : 'dono'
+            });
           }
-        } else if (isMaster) {
-          setPapelLogado('master');
-          setMostrarOnboarding(false);
-          setDadosOficina({ id: user.uid, plano: 'master', nome: 'Admin Master' });
+        } else {
+          // 🚀 BLINDAGEM 3: Usuário recém-criado que ainda não salvou documento no Firestore
+          if (isMaster) {
+            setPapelLogado('master');
+            setMostrarOnboarding(false);
+            setDadosOficina({ id: user.uid, plano: 'master', nome: 'Admin Master' });
+          } else {
+            setPapelLogado('dono');
+            setMostrarOnboarding(true);
+            setDadosOficina({ id: user.uid, plano: 'grátis', nome: 'Nova Oficina' });
+          }
         }
-        setCarregandoAuth(false);
       } catch (err) {
         console.error("Erro Auth:", err);
+      } finally {
+        // 🚀 A GARANTIA FINAL: Independente do que aconteça, tira a tela de "Identificando"
         setCarregandoAuth(false);
       }
     });

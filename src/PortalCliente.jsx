@@ -325,8 +325,8 @@ function DoutorIA({ theme, onBack }) {
                     <button
                         onClick={toggleGravacao}
                         className={`w-40 h-40 rounded-full flex flex-col items-center justify-center transition-all border-4 ${gravando
-                                ? 'bg-blue-900/20 border-blue-500 shadow-[0_0_40px_rgba(59,130,246,0.6)] animate-pulse'
-                                : 'bg-[#050505] border-neutral-800 hover:border-blue-500 hover:shadow-[0_0_20px_rgba(59,130,246,0.3)]'
+                            ? 'bg-blue-900/20 border-blue-500 shadow-[0_0_40px_rgba(59,130,246,0.6)] animate-pulse'
+                            : 'bg-[#050505] border-neutral-800 hover:border-blue-500 hover:shadow-[0_0_20px_rgba(59,130,246,0.3)]'
                             }`}
                     >
                         <span className="text-5xl mb-2">🎙️</span>
@@ -631,7 +631,7 @@ export default function PortalCliente() {
             {/* HEADER */}
             <header className="w-full px-8 py-5 flex justify-between items-center border-b border-neutral-900 sticky top-0 bg-[#050505] z-50 font-black">
                 <h1 className="text-xl font-black text-red-600 tracking-[0.3em] uppercase cursor-pointer" onClick={() => window.location.reload()}>🔧 OFICINA IA</h1>
-                <button onClick={() => navigate('/login-admin')} className="bg-[#eab308] text-black px-6 py-2 rounded-lg text-[10px] uppercase shadow-lg shadow-yellow-600/20 hover:scale-105 transition-all">🏢 ÁREA ADMIN</button>
+                <button onClick={() => navigate('/login-admin')} className="bg-[#eab308] text-black px-6 py-2 rounded-lg text-[10px] uppercase shadow-lg shadow-yellow-600/20 hover:scale-105 transition-all">🏢 EMPRESAS</button>
             </header>
 
             <main className="flex-1 p-6 md:p-12 overflow-y-auto bg-[#050505]">

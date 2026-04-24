@@ -241,6 +241,8 @@ function ReminderCard({ title, subtitle, meta, onClick, t }) {
 }
 
 function ChartCard({ dados, t }) {
+    if (!dados || dados.length === 0) return null;
+    
     return (
         <div style={{
             background: t.card,
@@ -268,8 +270,8 @@ function ChartCard({ dados, t }) {
                     </span>
                 </div>
             </div>
-            <div style={{ width: '100%', height: '290px' }}>
-                <ResponsiveContainer width="100%" height="100%">
+            <div style={{ width: '100%', height: '290px', minWidth: '0' }}>
+                <ResponsiveContainer width="99%" height={290}>
                     <AreaChart data={dados} margin={{ top: 10, right: 8, left: 0, bottom: 0 }}>
                         <defs>
                             <linearGradient id="realArea" x1="0" y1="0" x2="0" y2="1">
@@ -304,6 +306,8 @@ function ChartCard({ dados, t }) {
 }
 
 function TinyRevenueChart({ dados, t }) {
+    if (!dados || dados.length === 0) return null;
+
     return (
         <div style={{
             background: t.cardSoft,
@@ -315,8 +319,8 @@ function TinyRevenueChart({ dados, t }) {
                 Últimos 7 dias
             </p>
             <h3 style={{ margin: '10px 0 18px', color: t.text, fontSize: '1.05rem' }}>Pulso de receita</h3>
-            <div style={{ width: '100%', height: '190px' }}>
-                <ResponsiveContainer width="100%" height="100%">
+            <div style={{ width: '100%', height: '190px', minWidth: '0' }}>
+                <ResponsiveContainer width="99%" height={190}>
                     <BarChart data={dados}>
                         <CartesianGrid stroke={t.grid} vertical={false} />
                         <XAxis dataKey="data" stroke={t.textMute} tickLine={false} axisLine={false} fontSize={10} />
@@ -367,13 +371,9 @@ export default function DashboardTab({
 
     useEffect(() => { setMounted(true); }, []);
 
-    // Verificação de segurança: garante que dono só acessa o próprio painel
-    useEffect(() => {
-        const auth = getAuth();
-        if (auth.currentUser && oficinaId && auth.currentUser.uid !== oficinaId) {
-            navigate('/');
-        }
-    }, [oficinaId, navigate]);
+    // Verificação de segurança: removida para evitar loops de redirecionamento. 
+    // O PrivateRoute no App.jsx já garante que apenas usuários autorizados acessem esta área.
+
 
     // ── Cálculos financeiros ─────────────────────────────────────────────────
     const financeiro = useMemo(() => {

@@ -58,6 +58,12 @@ const CATEGORIAS = [
 
 const FALLBACK_FIXOS = ['mecanica', 'clientes'];
 const IA_MODULOS = ['copiloto', 'secretaria', 'administrador', 'contador', 'mercadolivre'];
+const MODULOS_GRATIS_VITALICIOS = [
+  'meuplano', 'config', 'equipe', 'marketing', 'ajuda',
+  'patrimonio', 'fornecedores', 'historico', 'tarefa',
+  'clientes', 'dashboard', 'financeiro'
+];
+
 const DIA_MS = 24 * 60 * 60 * 1000;
 
 const FALLBACK_PLANOS = {
@@ -88,7 +94,9 @@ export default function ModuloMeuPlano({ dadosOficina, planosSistema, onModulosC
   const isUnlimited = planoLimite >= 999;
   const ehMaster = dadosOficina?.papel === 'master' || dadosOficina?.plano === 'master';
 
-  const extrasSelecionados = selecionados.filter(id => !modulosBase.includes(id)).length;
+  const extrasSelecionados = selecionados.filter(id =>
+    !modulosBase.includes(id) && !MODULOS_GRATIS_VITALICIOS.includes(id)
+  ).length;
   const limiteAtingido = !isUnlimited && extrasSelecionados >= planoLimite;
   const usaIA = selecionados.some(id => IA_MODULOS.includes(id));
   const valorIA = isPrime ? 0 : (usaIA ? 100 : 0);
@@ -125,7 +133,7 @@ export default function ModuloMeuPlano({ dadosOficina, planosSistema, onModulosC
 
   const toggle = (id) => {
     if (modulosBase.includes(id)) return;
-    if (limiteAtingido && !selecionados.includes(id)) return;
+    if (!ehMaster && limiteAtingido && !selecionados.includes(id)) return;
     setSelecionados(prev =>
       prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]
     );
@@ -188,8 +196,9 @@ export default function ModuloMeuPlano({ dadosOficina, planosSistema, onModulosC
   const renderCard = (mod) => {
     const cor = mod.cor;
     const isFixo = modulosBase.includes(mod.id);
-    const ativo = selecionados.includes(mod.id) || modulosBase.includes(mod.id);
-    const bloqueado = !isFixo && limiteAtingido && !ativo;
+    const isGratisVitalicio = MODULOS_GRATIS_VITALICIOS.includes(mod.id);
+    const ativo = selecionados.includes(mod.id) || modulosBase.includes(mod.id) || isGratisVitalicio;
+    const bloqueado = ehMaster ? false : (!isFixo && !isGratisVitalicio && limiteAtingido && !ativo);
 
     return (
       <div
@@ -225,8 +234,8 @@ export default function ModuloMeuPlano({ dadosOficina, planosSistema, onModulosC
         }}>
           {mod.label}
         </span>
-        {isFixo ? (
-          <span style={{ color: cor, fontSize: '8px', fontWeight: '900', marginLeft: 'auto', flexShrink: 0 }}>FIXO</span>
+        {isFixo || isGratisVitalicio ? (
+          <span style={{ color: cor, fontSize: '8px', fontWeight: '900', marginLeft: 'auto', flexShrink: 0 }}>LIVRE</span>
         ) : (
           <Lock size={10} color={bloqueado ? '#222' : '#333'} style={{ flexShrink: 0, marginLeft: 'auto' }} />
         )}
@@ -272,25 +281,122 @@ export default function ModuloMeuPlano({ dadosOficina, planosSistema, onModulosC
           🌟 SEM CUSTO
         </div>
 
-        <h3 style={{ color: '#FFD700', margin: '0 0 10px 0', fontSize: '18px', fontWeight: '900', textShadow: '0 0 20px rgba(255,215,0,0.3)' }}>
-          🎁 Ferramenta Grátis EXPRESS AUTO TECH
+        <h3 style={{
+          color: '#FFD700', margin: '0 0 10px 0', fontSize: '22px', fontWeight: '900',
+          textShadow: '0 0 30px rgba(255,215,0,0.4)', letterSpacing: '-0.5px'
+        }}>
+          🎁 Ferramenta Grátis: Sua Oficina Organizada
         </h3>
-        <p style={{ color: '#888', fontSize: '13px', lineHeight: '1.5', margin: '0 0 15px 0' }}>
-          Acesso vitalício ao controle de Clientes e Visão Geral. Registro básico de entradas e saídas para organizar sua oficina sem custo inicial.
+        <p style={{ color: '#aaa', fontSize: '14px', lineHeight: '1.6', margin: '0 0 25px 0', fontWeight: '500' }}>
+          Acesso vitalício para organizar sua oficina. Você decide quando crescer.
         </p>
 
-        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px' }}>
-          <div style={{ background: '#1a1a1a', padding: '8px 12px', borderRadius: '8px', display: 'flex', alignItems: 'center', gap: '6px' }}>
-            <Check size={14} color={GREEN} />
-            <span style={{ color: '#eee', fontSize: '12px', fontWeight: 'bold' }}>3 OS / mês</span>
+        {/* SEÇÃO 1: O QUE VOCÊ LEVA */}
+        <div style={{ marginBottom: '32px' }}>
+          <p style={{
+            color: '#FFD700', fontSize: '12px', fontWeight: '900',
+            textTransform: 'uppercase', marginBottom: '16px', letterSpacing: '2px',
+            display: 'flex', alignItems: 'center', gap: '10px'
+          }}>
+            <span style={{ height: '1px', flex: 1, background: 'linear-gradient(90deg, rgba(255,215,0,0.3), transparent)' }}></span>
+            🛠️ O que você leva sem custo (Para Sempre)
+            <span style={{ height: '1px', flex: 1, background: 'linear-gradient(-90deg, rgba(255,215,0,0.3), transparent)' }}></span>
+          </p>
+
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '12px' }}>
+            {[
+              { icon: '👥', label: 'Clientes', desc: 'Cadastro e gestão ilimitada da sua base de contatos. Tenha o histórico de quem frequenta sua oficina sempre à mão.' },
+              { icon: '💰', label: 'Financeiro', desc: 'Controle total de entradas e saídas. Organize seu fluxo de caixa e pare de perder dinheiro por falta de anotação.' },
+              { icon: '📊', label: 'Visão Geral', desc: 'Um dashboard intuitivo para você acompanhar a saúde e a produtividade da sua oficina em tempo real.' },
+              { icon: '📋', label: 'Tarefa', desc: 'Organize o dia a dia da sua equipe, distribuindo atividades e acompanhando o que precisa ser feito.' },
+              { icon: '📊', label: 'Patrimônio', desc: 'Faça o inventário das suas ferramentas, elevadores e equipamentos. Proteja os ativos da sua empresa.' },
+              { icon: '🤝', label: 'Fornecedores', desc: 'Tenha sua lista de parceiros e autopeças organizada para cotações rápidas e eficientes.' },
+              { icon: '📋', label: 'Histórico', desc: 'Auditoria completa de tudo o que acontece no sistema para garantir total segurança e transparência.' },
+            ].map(item => (
+              <div key={item.label} style={{
+                background: 'rgba(255,255,255,0.02)',
+                backdropFilter: 'blur(10px)',
+                padding: '16px',
+                borderRadius: '16px',
+                border: '1px solid rgba(255,255,255,0.05)',
+                display: 'flex',
+                flexDirection: 'column',
+                gap: '6px',
+                transition: 'transform 0.2s, background 0.2s',
+                cursor: 'default'
+              }}
+              >
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                  <div style={{
+                    width: '32px', height: '32px', background: 'rgba(255,215,0,0.1)',
+                    borderRadius: '10px', display: 'flex', alignItems: 'center',
+                    justifyContent: 'center', fontSize: '16px', boxShadow: '0 4px 12px rgba(0,0,0,0.2)'
+                  }}>
+                    {item.icon}
+                  </div>
+                  <span style={{ color: '#fff', fontSize: '13px', fontWeight: '900', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                    {item.label}
+                  </span>
+                </div>
+                <p style={{ color: '#777', fontSize: '11px', margin: 0, lineHeight: '1.6', fontWeight: '500' }}>
+                  {item.desc}
+                </p>
+              </div>
+            ))}
           </div>
-          <div style={{ background: '#1a1a1a', padding: '8px 12px', borderRadius: '8px', display: 'flex', alignItems: 'center', gap: '6px' }}>
-            <Check size={14} color={GREEN} />
-            <span style={{ color: '#eee', fontSize: '12px', fontWeight: 'bold' }}>Financeiro Básico</span>
-          </div>
-          <div style={{ background: '#1a1a1a', padding: '8px 12px', borderRadius: '8px', display: 'flex', alignItems: 'center', gap: '6px' }}>
-            <Check size={14} color={GREEN} />
-            <span style={{ color: '#eee', fontSize: '12px', fontWeight: 'bold' }}>Clientes e Visão Geral</span>
+        </div>
+
+        {/* SEÇÃO 2: BENEFÍCIOS E LIBERDADE */}
+        <div>
+          <p style={{
+            color: '#FFD700', fontSize: '12px', fontWeight: '900',
+            textTransform: 'uppercase', marginBottom: '16px', letterSpacing: '2px',
+            display: 'flex', alignItems: 'center', gap: '10px'
+          }}>
+            <span style={{ height: '1px', flex: 1, background: 'linear-gradient(90deg, rgba(255,215,0,0.3), transparent)' }}></span>
+            🚀 Benefícios e Liberdade
+            <span style={{ height: '1px', flex: 1, background: 'linear-gradient(-90deg, rgba(255,215,0,0.3), transparent)' }}></span>
+          </p>
+
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '12px' }}>
+            <div style={{
+              background: 'linear-gradient(135deg, rgba(34,197,94,0.08), rgba(34,197,94,0.02))',
+              padding: '16px', borderRadius: '16px', border: '1px solid rgba(34,197,94,0.15)'
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '6px' }}>
+                <span style={{ fontSize: '16px' }}>📍</span>
+                <span style={{ color: '#4ade80', fontSize: '13px', fontWeight: '900', textTransform: 'uppercase' }}>1 O.S. / mês</span>
+              </div>
+              <p style={{ color: '#666', fontSize: '11px', margin: 0, lineHeight: '1.5', fontWeight: '500' }}>
+                Perfeito para quem está começando ou quer testar o fluxo de orçamentos e recibos profissionais.
+              </p>
+            </div>
+
+            <div style={{
+              background: 'linear-gradient(135deg, rgba(168,85,247,0.08), rgba(168,85,247,0.02))',
+              padding: '16px', borderRadius: '16px', border: '1px solid rgba(168,85,247,0.15)'
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '6px' }}>
+                <span style={{ fontSize: '16px' }}>🧠</span>
+                <span style={{ color: '#c084fc', fontSize: '13px', fontWeight: '900', textTransform: 'uppercase' }}>15 Dias de Trial</span>
+              </div>
+              <p style={{ color: '#666', fontSize: '11px', margin: 0, lineHeight: '1.5', fontWeight: '500' }}>
+                Experimente todas as ferramentas avançadas e nossa Inteligência Artificial por 15 dias sem compromisso.
+              </p>
+            </div>
+
+            <div style={{
+              background: 'linear-gradient(135deg, rgba(255,255,255,0.05), rgba(255,255,255,0.01))',
+              padding: '16px', borderRadius: '16px', border: '1px solid rgba(255,255,255,0.1)'
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '6px' }}>
+                <span style={{ fontSize: '16px' }}>🔓</span>
+                <span style={{ color: '#eee', fontSize: '13px', fontWeight: '900', textTransform: 'uppercase' }}>Sem Bloqueios</span>
+              </div>
+              <p style={{ color: '#666', fontSize: '11px', margin: 0, lineHeight: '1.5', fontWeight: '500' }}>
+                Suas abas de gestão (Ajustes, Equipe, Marketing e Ajuda) nunca exibem cadeado. O sistema é seu, a liberdade também.
+              </p>
+            </div>
           </div>
         </div>
       </div>
