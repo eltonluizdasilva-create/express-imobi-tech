@@ -313,11 +313,8 @@ export default function Admin() {
     const isSetupOk = !!(dadosOficina?.logo && dadosOficina?.pix && dadosOficina?.nome);
     setSetupConcluido(isSetupOk);
 
-    // Só redireciona automaticamente se estivermos no dashboard e o setup não estiver ok
-    if (!isSetupOk && (abaAtiva === 'dashboard' || abaAtiva === 'dashboardTab')) {
-      console.log("Setup incompleto detectado. Sugerindo aba de ajustes.");
-      setAbaAtiva('config');
-    }
+    // Redirecionamento automático removido pelo Antigravity para permitir navegação livre
+
   }, [dadosOficina, abaAtiva]); // Adicionado abaAtiva para permitir a lógica de "se estiver no dashboard"
 
   const toggleTema = () => setTema(prev => prev === 'escuro' ? 'claro' : 'escuro');
@@ -554,24 +551,13 @@ export default function Admin() {
   };
 
   const moduloLiberado = (idAba) => {
-    if (isTrial) return true;
-    if (dadosOficina?.papel === 'master' || dadosOficina?.plano === 'master') return true;
-    if (dadosOficina?.modulosPermitidos === 'ALL') return true;
-
-    // Lógica para Plano Gratuito
-    if (dadosOficina?.plano === 'GRATUITO') {
-      const modulosGratis = ['dashboard', 'clientes', 'os', 'meuplano', 'config', 'equipe', 'marketing', 'ajuda', 'patrimonio', 'fornecedores', 'historico', 'tarefa', 'financeiro'];
-      if (modulosGratis.includes(idAba)) return true;
-      return false;
-    }
-
-    const abasVitais = ['dashboard', 'clientes', 'os', 'meuplano', 'config', 'equipe', 'marketing', 'ajuda', 'patrimonio', 'fornecedores', 'historico', 'tarefa', 'financeiro'];
-    if (abasVitais.includes(idAba)) return true;
-    if ((dadosOficina?.modulosOperacionais || []).includes(idAba)) return true;
-    return false;
+    // Aplicação do Antigravity: Liberação total para o cliente explorar
+    // Retornamos true para qualquer aba, ignorando bloqueios de plano.
+    return true; 
   };
 
   const lidarModuloBloqueado = (aba) => {
+    // No Antigravity, nenhum módulo é bloqueado, então esta função é neutra
     if (isTrial) return;
     if (dadosOficina?.plano === 'master' || dadosOficina?.plano === 'prime') return;
     setModalUpgradeAba(aba);

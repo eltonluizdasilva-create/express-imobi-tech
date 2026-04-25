@@ -269,10 +269,14 @@ export default React.memo(function OnboardingTour({
     setTourConcluido(true);
     setAberto(false);
 
+    if (typeof setAbaAtiva === 'function') {
+      setAbaAtiva('dashboard');
+    }
+
     if (typeof setMostrarOnboarding === 'function') {
       setMostrarOnboarding(false);
     }
-  }, [setMostrarOnboarding]);
+  }, [setAbaAtiva, setMostrarOnboarding]);
 
   const irParaAnterior = useCallback(() => {
     setPassoAtual((p) => Math.max(0, p - 1));

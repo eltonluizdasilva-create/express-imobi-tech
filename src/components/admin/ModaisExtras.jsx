@@ -103,6 +103,7 @@ export default function ModaisExtras({
       {mostrarOnboarding && (
         <ModalOnboarding
           planoLimite={planosSistema?.planos?.essencial?.slots || 5}
+          setAbaAtiva={setAbaAtiva}
           onComplete={(modulos) => {
             setModulosOperacionais(modulos);
             setMostrarOnboarding(false);
