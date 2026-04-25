@@ -388,16 +388,9 @@ export default function Admin() {
   }, [modulosOperacionais, dadosOficina?.modulosOperacionais]);
 
   const servicosVisiveis = useMemo(() => {
-    const modulosNormalizados = new Set(
-      modulosUsuario.filter(Boolean).map(m => String(m).trim().toLowerCase())
-    );
-    return SERVICOS_ESTETICA_ABAS.filter(aba =>
-      (MAPA_MODULOS_SERVICOS[aba] || [aba]).some(nome =>
-        modulosNormalizados.has(String(nome).trim().toLowerCase())
-      )
-    );
-  }, [modulosUsuario]);
-
+    // Retorna a lista completa sem filtros para que o cliente veja todo o potencial do sistema
+    return SERVICOS_ESTETICA_ABAS;
+  }, []);
   // ── IDs e carga de dados ──────────────────────────────────────────────────
   const oficinaId = useMemo(() => {
     return dadosOficina?.id || currentUserId || localStorage.getItem('oficinaId');
