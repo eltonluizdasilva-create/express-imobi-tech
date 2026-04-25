@@ -77,7 +77,7 @@ import GerenciadorDeModulos from './components/admin/GerenciadorDeModulos';
 // ─── Constantes ────────────────────────────────────────────────────────────────
 
 const { MAIN, GREEN, MASTER } = COLORS;
-const isTrial = false;
+const isTrial = true;
 const APP_BASE_URL = 'https://oficina.expresstech.com.br';
 const MODULOS_GRATIS_VITALICIOS = [
   'meuplano', 'config', 'equipe', 'marketing', 'ajuda',
@@ -282,21 +282,19 @@ export default function Admin() {
   const [trialExpirou, setTrialExpirou] = useState(false);
   const trialExpiraouRef = useRef(false);
 
-  // ── Cleanup Onboarding ──────────────────────────────────────────────────────
+  // 🚀 GATILHO AUTOMÁTICO DO TOUR (Abre de primeira!)
   useEffect(() => {
-    // Só executa se tivermos os dados da oficina carregados
-    if (!dadosOficina) return;
+    // Se o cliente estiver logado, o perfil estiver carregado e ele NÃO for master
+    if (logado && dadosOficina && dadosOficina.papel !== 'master') {
+      // Verifica na memória se ele já terminou o tour antes
+      const tourFeito = localStorage.getItem('driver_tour_finished');
 
-    // Não executa para master
-    if (dadosOficina?.papel === 'master') return;
-
-    // Só executa se ainda não estiver marcado como completado nesta sessão
-    if (localStorage.getItem('onboarding_completed') !== 'true') {
-      localStorage.setItem('onboarding_completed', 'true');
-      localStorage.setItem('driver_tour_finished', 'true');
-      console.log("Limpeza de Cache de Onboarding executada.");
+      // Se ainda não fez, abre a tela do Passo 1 imediatamente
+      if (tourFeito !== 'true') {
+        setMostrarOnboarding(true);
+      }
     }
-  }, [dadosOficina]);
+  }, [logado, dadosOficina, setMostrarOnboarding]);
 
   useEffect(() => {
     if (currentUserId && dadosOSGlobal.oficinaId !== currentUserId) {
@@ -313,9 +311,10 @@ export default function Admin() {
     const isSetupOk = !!(dadosOficina?.logo && dadosOficina?.pix && dadosOficina?.nome);
     setSetupConcluido(isSetupOk);
 
-    // Redirecionamento automático removido pelo Antigravity para permitir navegação livre
+    // Redirecionamento automático desativado para permitir navegação livre
+    // O cliente pode clicar em Visão Geral e permanecer lá mesmo sem preencher nome ou logo da oficina
 
-  }, [dadosOficina, abaAtiva]); // Adicionado abaAtiva para permitir a lógica de "se estiver no dashboard"
+  }, [dadosOficina, abaAtiva]);
 
   const toggleTema = () => setTema(prev => prev === 'escuro' ? 'claro' : 'escuro');
 
@@ -551,16 +550,30 @@ export default function Admin() {
   };
 
   const moduloLiberado = (idAba) => {
-    // Aplicação do Antigravity: Liberação total para o cliente explorar
-    // Retornamos true para qualquer aba, ignorando bloqueios de plano.
-    return true; 
+    // 1. Se for Master, acesso total vitalício
+    if (dadosOficina?.papel === 'master' || dadosOficina?.plano === 'master') return true;
+
+    // 2. Se estiver no Trial (15 dias) e a data for válida, LIBERADO
+    // Isso faz o selo "9 DIAS GRÁTIS" reaparecer no Header
+    if (isTrial && isLicencaAtiva) return true;
+
+    // 3. Abas básicas que nunca devem ser bloqueadas
+    if (['dashboard', 'config', 'ajuda', 'meuplano'].includes(idAba)) return true;
+
+    // 4. Se o tempo de teste acabou: BLOQUEIA (Mostra Upgrade Necessário)
+    return false;
   };
 
-  const lidarModuloBloqueado = (aba) => {
-    // No Antigravity, nenhum módulo é bloqueado, então esta função é neutra
-    if (isTrial) return;
-    if (dadosOficina?.plano === 'master' || dadosOficina?.plano === 'prime') return;
-    setModalUpgradeAba(aba);
+  const lidarModuloBloqueado = (idAba) => {
+    // Se estiver no período de trial com licença ativa, não bloqueia nada
+    if (isTrial && isLicencaAtiva) return;
+
+    // Se for uma aba de acesso livre, não bloqueia
+    if (['dashboard', 'config', 'ajuda', 'meuplano'].includes(idAba)) return;
+
+    // Caso contrário, mostra o modal de upgrade
+    setModalUpgradeAba(idAba);
+    setToastModuloBloqueado({ tipo: 'bloqueado', aba: idAba });
   };
 
   // ── Resumo da O.S. em edição (Maestro) ───────────────────────────────────
@@ -829,3 +842,6 @@ export default function Admin() {
     </div>
   );
 }
+
+
+
