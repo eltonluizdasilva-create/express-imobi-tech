@@ -1,12 +1,33 @@
+/* eslint-disable no-unused-vars */
 import React, { useState, useEffect, useMemo } from 'react';
 import { db } from '../../lib/firebase';
 import { doc, getDoc, setDoc, collection, query, where, getDocs } from 'firebase/firestore';
-import { Calculator, DollarSign, Save, TrendingUp, Clock, MessageCircle, FileText, Zap, AlertTriangle, CheckCircle, TrendingDown } from 'lucide-react';
+import { 
+  Calculator, 
+  DollarSign, 
+  Save, 
+  TrendingUp, 
+  Clock, 
+  Zap, 
+  AlertTriangle, 
+  CheckCircle2, 
+  TrendingDown, 
+  PieChart, 
+  Target, 
+  Info, 
+  Sparkles,
+  ArrowRight,
+  ShieldCheck,
+  Percent,
+  Wallet,
+  Activity,
+  ChevronRight,
+  Monitor
+} from 'lucide-react';
 
-export default function Precificacao({ oficinaId: oficinaIdProp, config, t, verificarLicenca }) {
-  const oficinaId = oficinaIdProp;
+export default function Precificacao({ oficinaId, config, t, verificarLicenca }) {
 
-  // ========== DADOS DE CUSTOS (EXISTENTE) ==========
+  // ========== DADOS DE CUSTOS ==========
   const [custos, setCustos] = useState({
     aluguel: '',
     luzAguaNet: '',
@@ -15,7 +36,7 @@ export default function Precificacao({ oficinaId: oficinaIdProp, config, t, veri
     horasTrabalhadas: '160'
   });
 
-  // ========== DADOS DE SERVIÇO EXPANDIDO ==========
+  // ========== DADOS DE SERVIÇO ==========
   const [servico, setServico] = useState({
     nomeServico: '',
     custoPeca: '',
@@ -50,7 +71,6 @@ export default function Precificacao({ oficinaId: oficinaIdProp, config, t, veri
     const carregarDados = async () => {
       if (!oficinaId) return;
       try {
-        // Carregar custos
         const docRef = doc(db, 'oficinas', oficinaId, 'configuracoes', 'precificacao');
         const snapshot = await getDoc(docRef);
         if (snapshot.exists()) {
@@ -63,8 +83,6 @@ export default function Precificacao({ oficinaId: oficinaIdProp, config, t, veri
             horasTrabalhadas: String(data.horasTrabalhadas || '160')
           });
         }
-
-        // Carregar histórico real de serviços finalizados
         await carregarHistoricoServicos();
       } catch (err) {
         console.error('Erro ao carregar dados:', err);
@@ -73,11 +91,9 @@ export default function Precificacao({ oficinaId: oficinaIdProp, config, t, veri
     carregarDados();
   }, [oficinaId]);
 
-  // ========== HISTÓRICO REAL DO FIREBASE ==========
   const carregarHistoricoServicos = async () => {
     if (!oficinaId) return;
     try {
-      // Busca todas as O.S. finalizadas da oficina
       const osRef = collection(db, 'ordensServico');
       const q = query(
         osRef,
@@ -86,53 +102,37 @@ export default function Precificacao({ oficinaId: oficinaIdProp, config, t, veri
       );
       const snap = await getDocs(q);
 
-      if (snap.empty) return; // sem dados reais: sugestões fixas permanecem como fallback
+      if (snap.empty) return;
 
-      // Agrupa por nomeServico e acumula valores
       const grupos = {};
       snap.forEach((docSnap) => {
         const os = docSnap.data();
-        // Tenta extrair o nome do serviço de diferentes campos possíveis
-        const nome = (
-          os.nomeServico ||
-          os.setor ||
-          os.tipo ||
-          'outros'
-        ).toLowerCase().trim();
+        const nome = (os.nomeServico || os.setor || os.tipo || 'outros').toLowerCase().trim();
 
         if (!grupos[nome]) {
-          grupos[nome] = {
-            quantidade: 0,
-            somaTempo: 0,
-            somaCustoPeca: 0,
-            somaPrecoCliente: 0,
-          };
+          grupos[nome] = { quantidade: 0, somaTempo: 0, somaCustoPeca: 0, somaPrecoCliente: 0 };
         }
 
         grupos[nome].quantidade += 1;
         grupos[nome].somaTempo += Number(os.tempoExecucao) || 0;
         grupos[nome].somaCustoPeca += Number(os.custoPeca) || 0;
-        grupos[nome].somaPrecoCliente +=
-          Number(os.precoCliente || os.total || os.valorTotal) || 0;
+        grupos[nome].somaPrecoCliente += Number(os.precoCliente || os.total || os.valorTotal) || 0;
       });
 
-      // Calcula médias e classifica variação
       const historico = {};
       Object.entries(grupos).forEach(([nome, g]) => {
         const n = g.quantidade;
-        const tempo_medio = n > 0 ? g.somaTempo / n : 0;
-        const custo_peca_medio = n > 0 ? g.somaCustoPeca / n : 0;
-        const preco_medio = n > 0 ? g.somaPrecoCliente / n : 0;
-
-        // Classifica variação pelo volume de O.S.
-        const variacao = n >= 15 ? 'baixa' : n >= 6 ? 'média' : 'alta';
-
-        historico[nome] = { quantidade: n, tempo_medio, custo_peca_medio, preco_medio, variacao };
+        historico[nome] = { 
+          quantidade: n, 
+          tempo_medio: n > 0 ? g.somaTempo / n : 0, 
+          custo_peca_medio: n > 0 ? g.somaCustoPeca / n : 0, 
+          preco_medio: n > 0 ? g.somaPrecoCliente / n : 0,
+          variacao: n >= 15 ? 'baixa' : n >= 6 ? 'média' : 'alta'
+        };
       });
 
       setHistoricoServicos(historico);
 
-      // Atualiza também os serviçosSugeridos com dados reais quando possível
       setServicaosSugeridos(prev =>
         prev.map(svc => {
           const chaveReal = Object.keys(historico).find(k =>
@@ -150,13 +150,11 @@ export default function Precificacao({ oficinaId: oficinaIdProp, config, t, veri
         })
       );
     } catch (err) {
-      console.error('[Precificacao] Erro ao carregar histórico de O.S.:', err);
-      // Sem dados reais: o sugestaoIA já verifica se historicoServicos[id] existe
-      // e retorna null, mantendo os valores padrão dos servicosSugeridos.
+      console.error('[Precificacao] Erro ao carregar histórico:', err);
     }
   };
 
-  // ========== CÁLCULOS PRINCIPAIS (EXISTENTES, OTIMIZADOS) ==========
+  // ========== CÁLCULOS PRINCIPAIS ==========
   const custoHoraTecnica = useMemo(() => {
     const totalDespesas = (Number(custos.aluguel) || 0) + (Number(custos.luzAguaNet) || 0) +
       (Number(custos.folhaPagamento) || 0) + (Number(custos.outrosCustos) || 0);
@@ -190,26 +188,25 @@ export default function Precificacao({ oficinaId: oficinaIdProp, config, t, veri
 
   const lucroLiquido = useMemo(() => {
     const custoPeca = Number(servico.custoPeca) || 0;
-    return precoCliente - custoPeca - custoMaoObra;
-  }, [precoCliente, servico, custoMaoObra]);
+    return precoCliente - custoPeca - custoMaoObra - impostos;
+  }, [precoCliente, servico, custoMaoObra, impostos]);
 
   const percentuais = useMemo(() => {
     if (precoCliente <= 0) return { peca: 0, maoObra: 0, impostos: 0, lucro: 0 };
-    const peca = (custoPecaComMargem / precoCliente) * 100;
-    const maoObra = (custoMaoObra / precoCliente) * 100;
-    const imp = (impostos / precoCliente) * 100;
-    const lucro = (lucroLiquido / precoCliente) * 100;
-    return { peca, maoObra, impostos: imp, lucro };
+    return {
+      peca: (custoPecaComMargem / precoCliente) * 100,
+      maoObra: (custoMaoObra / precoCliente) * 100,
+      impostos: (impostos / precoCliente) * 100,
+      lucro: (lucroLiquido / precoCliente) * 100
+    };
   }, [precoCliente, custoPecaComMargem, custoMaoObra, impostos, lucroLiquido]);
 
   // ========== SUGESTÃO INTELIGENTE IA ==========
   const sugestaoIA = useMemo(() => {
     if (!servicoSelecionado) return null;
-
-    const historico = historicoServicos[servicoSelecionado.id];
+    const historico = historicoServicos[servicoSelecionado.id] || historicoServicos[servicoSelecionado.nome.toLowerCase()];
     if (!historico) return null;
 
-    // Sugestões baseadas no histórico
     const tempoSugerido = historico.tempo_medio;
     const custoPecaSugerido = historico.custo_peca_medio;
     const precoSugerido = historico.preco_medio;
@@ -220,8 +217,7 @@ export default function Precificacao({ oficinaId: oficinaIdProp, config, t, veri
     const impostosSugeridos = custoTotalSugerido * (Number(servico.taxaImposto) / 100 || 0);
     const precoIASugerido = precoSugerido + impostosSugeridos;
 
-    // Calcular margem
-    const lucroSugeridoIA = precoIASugerido - custoPecaSugerido - custoMaoObraSugerida;
+    const lucroSugeridoIA = precoIASugerido - custoPecaSugerido - custoMaoObraSugerida - impostosSugeridos;
     const margemSugeridaIA = (lucroSugeridoIA / precoIASugerido) * 100;
 
     return {
@@ -236,35 +232,25 @@ export default function Precificacao({ oficinaId: oficinaIdProp, config, t, veri
     };
   }, [servicoSelecionado, historicoServicos, custoHoraTecnica, servico.taxaImposto]);
 
-  // ========== INDICADOR DE SAÚDE DO LUCRO ==========
   const saudeLucro = useMemo(() => {
     const margemPercent = percentuais.lucro;
-
-    if (margemPercent >= 20) {
-      return { status: 'excelente', cor: '#22c55e', label: '✓ Excelente', icon: '🟢' };
-    } else if (margemPercent >= 15) {
-      return { status: 'bom', cor: '#84cc16', label: '✓ Bom', icon: '🟡' };
-    } else if (margemPercent >= 10) {
-      return { status: 'atencao', cor: '#f59e0b', label: '⚠ Atenção', icon: '🟠' };
-    } else if (margemPercent > 0) {
-      return { status: 'critico', cor: '#ef4444', label: '✗ Crítico', icon: '🔴' };
-    } else {
-      return { status: 'prejuizo', cor: '#7c2d12', label: '✗ Prejuízo', icon: '⚫' };
-    }
+    if (margemPercent >= 20) return { status: 'excelente', cor: '#22c55e', label: 'Excelente', icon: '💎' };
+    if (margemPercent >= 15) return { status: 'bom', cor: '#84cc16', label: 'Bom', icon: '✅' };
+    if (margemPercent >= 10) return { status: 'atencao', cor: '#f59e0b', label: 'Atenção', icon: '⚠️' };
+    if (margemPercent > 0) return { status: 'critico', cor: '#ef4444', label: 'Crítico', icon: '🚨' };
+    return { status: 'prejuizo', cor: '#ef4444', label: 'Prejuízo', icon: '💀' };
   }, [percentuais.lucro]);
 
-  // ========== FUNÇÕES DE AÇÃO ==========
   const salvarCustos = async () => {
     if (!oficinaId) return;
     setSalvando(true);
     try {
       const docRef = doc(db, 'oficinas', oficinaId, 'configuracoes', 'precificacao');
       await setDoc(docRef, custos);
-      setMensagem('✓ Custos salvos com sucesso!');
+      setMensagem('Custos operacionais salvos!');
       setTimeout(() => setMensagem(''), 3000);
     } catch (err) {
-      setMensagem('✗ Erro ao salvar custos');
-      console.error(err);
+      setMensagem('Erro ao salvar custos');
     } finally {
       setSalvando(false);
     }
@@ -272,7 +258,6 @@ export default function Precificacao({ oficinaId: oficinaIdProp, config, t, veri
 
   const aplicarSugestaoIA = () => {
     if (!sugestaoIA) return;
-
     setServico({
       ...servico,
       custoPeca: String(sugestaoIA.custoPecaSugerido.toFixed(2)),
@@ -283,699 +268,291 @@ export default function Precificacao({ oficinaId: oficinaIdProp, config, t, veri
     setMostrarSugestao(false);
   };
 
-  const limparSugestaoIA = () => {
-    setUsarSugestaoIA(false);
-    setPrecoAjustado('');
-    setMostrarSugestao(false);
-  };
-
   const formatarMoeda = (valor) => {
-    return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(valor);
-  };
-
-  // ========== ESTILOS ==========
-  const inputStyle = {
-    width: '100%',
-    padding: '10px 14px',
-    background: '#1a1a1a',
-    border: '1px solid #333',
-    borderRadius: '8px',
-    color: '#fff',
-    fontSize: '14px',
-    outline: 'none',
-    transition: 'all 0.2s'
-  };
-
-  const inputStyleFocus = {
-    ...inputStyle,
-    borderColor: '#a855f7',
-    boxShadow: '0 0 0 3px rgba(168, 85, 247, 0.1)'
-  };
-
-  const labelStyle = {
-    display: 'block',
-    fontSize: '11px',
-    fontWeight: 'bold',
-    color: '#888',
-    textTransform: 'uppercase',
-    letterSpacing: '1px',
-    marginBottom: '6px'
-  };
-
-  const cardStyle = {
-    background: '#111',
-    border: '1px solid #222',
-    borderRadius: '12px',
-    padding: '16px'
-  };
-
-  const badgeStyle = {
-    display: 'inline-block',
-    padding: '4px 12px',
-    borderRadius: '12px',
-    fontSize: '10px',
-    fontWeight: 'bold',
-    backgroundColor: 'rgba(168, 85, 247, 0.2)',
-    color: '#c4b5fd',
-    marginLeft: '8px',
-    border: '1px solid rgba(168, 85, 247, 0.5)'
+    return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(valor || 0);
   };
 
   return (
-    <div style={{ padding: '20px', maxWidth: '1400px', margin: '0 auto' }}>
-      {/* HEADER */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '24px' }}>
-        <div style={{ background: '#a855f7', padding: '10px', borderRadius: '10px' }}>
-          <Calculator size={24} color="white" />
-        </div>
-        <div>
-          <h2 style={{ margin: 0, color: '#fff', fontSize: '22px', fontWeight: 'bold' }}>PRECIFICAÇÃO INTELIGENTE</h2>
-          <p style={{ margin: 0, color: '#666', fontSize: '12px' }}>IA para sugerir preços | Margens em tempo real</p>
-        </div>
-      </div>
+    <div className="mx-auto max-w-7xl space-y-8 px-4 pb-24 pt-4 text-slate-100 md:px-8 font-sans">
+      
+      {/* HERO SECTION */}
+      <section className="overflow-hidden rounded-[28px] border border-amber-500/20 bg-[radial-gradient(circle_at_top_left,_rgba(245,158,11,0.15),_transparent_32%),radial-gradient(circle_at_bottom_right,_rgba(245,158,11,0.1),_transparent_28%),linear-gradient(135deg,_rgba(15,23,42,0.98),_rgba(3,7,18,0.96))] p-6 shadow-[0_30px_120px_-40px_rgba(245,158,11,0.35)]">
+        <div className="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
+          <div className="max-w-2xl">
+            <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-amber-500/20 bg-amber-500/10 px-3 py-1 text-xs font-semibold uppercase tracking-[0.3em] text-amber-300">
+              <Target size={14} />
+              Inteligência Financeira 2.0
+            </div>
+            <h1 className="text-3xl font-black tracking-tight text-white md:text-5xl uppercase italic">
+              Precificação <span className="text-amber-500 text-transparent bg-clip-text bg-gradient-to-r from-amber-400 to-amber-600">Inteligente</span>.
+            </h1>
+            <p className="mt-3 max-w-xl text-sm leading-6 text-slate-300 md:text-base">
+              Domine suas margens. Calcule o custo real da sua hora técnica e receba sugestões baseadas no histórico da sua oficina.
+            </p>
+          </div>
 
-      {/* NOTIFICAÇÃO */}
+          <div className="grid min-w-[280px] gap-3 sm:grid-cols-2">
+            <QuickHighlight
+              label="Custo Hora"
+              value={formatarMoeda(custoHoraTecnica)}
+              tone="info"
+              helper="Valor base operacional"
+            />
+            <QuickHighlight
+              label="Eficiência"
+              value={`${Math.round(percentuais.lucro)}%`}
+              tone={percentuais.lucro > 15 ? 'success' : 'danger'}
+              helper="Margem de lucro atual"
+            />
+          </div>
+        </div>
+      </section>
+
+      {/* METRIC CARDS */}
+      <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+        <MetricCard title="Total Despesas" value={formatarMoeda((Number(custos.aluguel) || 0) + (Number(custos.luzAguaNet) || 0) + (Number(custos.folhaPagamento) || 0) + (Number(custos.outrosCustos) || 0))} detail="Custo fixo mensal" icon={<Wallet size={20} />} tone="danger" />
+        <MetricCard title="Horas Úteis" value={`${custos.horasTrabalhadas}h`} detail="Capacidade mensal" icon={<Clock size={20} />} tone="info" />
+        <MetricCard title="Preço Sugerido" value={formatarMoeda(precoCliente)} detail="Valor final ao cliente" icon={<TrendingUp size={20} />} tone="success" />
+        <MetricCard title="Lucro Líquido" value={formatarMoeda(lucroLiquido)} detail="Sobra real no caixa" icon={<DollarSign size={20} />} tone="success" />
+      </section>
+
       {mensagem && (
-        <div style={{
-          marginBottom: '16px',
-          padding: '12px 16px',
-          background: mensagem.includes('✓') ? 'rgba(34, 197, 94, 0.1)' : 'rgba(239, 68, 68, 0.1)',
-          border: `1px solid ${mensagem.includes('✓') ? '#22c55e' : '#ef4444'}`,
-          borderRadius: '8px',
-          color: mensagem.includes('✓') ? '#86efac' : '#fca5a5',
-          fontSize: '13px'
-        }}>
-          {mensagem}
+        <div className="flex items-center gap-3 p-4 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 animate-in fade-in duration-300">
+          <CheckCircle2 size={18} />
+          <p className="text-xs font-bold uppercase tracking-widest">{mensagem}</p>
         </div>
       )}
 
-      <div style={{
-        display: 'grid',
-        gridTemplateColumns: 'repeat(auto-fit, minmax(400px, 1fr))',
-        gap: '24px'
-      }}>
+      <div className="grid gap-8 lg:grid-cols-3">
+        
+        {/* COL 1: OPERATIONAL COSTS */}
+        <div className="space-y-6">
+          <div className="rounded-[32px] border border-slate-800 bg-slate-950/80 p-8 shadow-2xl relative overflow-hidden">
+            <div className="absolute top-0 left-0 w-1.5 h-full bg-rose-500"></div>
+            <h4 className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-600 mb-8 flex items-center gap-2">
+              <DollarSign size={14} className="text-rose-500" /> Custos Operacionais
+            </h4>
 
-        {/* ========== COLUNA 1: CUSTOS E CONFIG ==========*/}
-        <div>
-          <div style={cardStyle}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '16px' }}>
-              <DollarSign size={18} color="#a855f7" />
-              <h3 style={{ margin: 0, color: '#fff', fontSize: '16px', fontWeight: 'bold' }}>Custos Operacionais</h3>
+            <div className="space-y-6">
+              <div className="grid gap-4 sm:grid-cols-2">
+                <Field label="Aluguel (R$)" value={custos.aluguel} onChange={v => setCustos({...custos, aluguel: v})} placeholder="3000" icon={<Monitor size={12} />} />
+                <Field label="Luz, Água e Net" value={custos.luzAguaNet} onChange={v => setCustos({...custos, luzAguaNet: v})} placeholder="800" icon={<Activity size={12} />} />
+                <Field label="Folha Pagamento" value={custos.folhaPagamento} onChange={v => setCustos({...custos, folhaPagamento: v})} placeholder="8000" icon={<Wallet size={12} />} />
+                <Field label="Outros Custos" value={custos.outrosCustos} onChange={v => setCustos({...custos, outrosCustos: v})} placeholder="1200" icon={<Info size={12} />} />
+              </div>
+              <Field label="Horas Trabalhadas/Mês" value={custos.horasTrabalhadas} onChange={v => setCustos({...custos, horasTrabalhadas: v})} placeholder="160" icon={<Clock size={12} />} />
+              
+              <div className="p-6 rounded-2xl bg-slate-900 border border-slate-800 space-y-2">
+                <p className="text-[10px] font-black uppercase tracking-widest text-slate-500">Valor da Sua Hora Técnica</p>
+                <p className="text-3xl font-black text-rose-500">{formatarMoeda(custoHoraTecnica)}</p>
+                <p className="text-[10px] text-slate-600 leading-relaxed italic">Base indispensável para garantir que nenhum serviço dê prejuízo.</p>
+              </div>
+
+              <button 
+                onClick={salvarCustos}
+                disabled={salvando}
+                className="w-full py-4 bg-slate-800 hover:bg-rose-600 text-rose-500 hover:text-white font-black text-xs uppercase tracking-widest rounded-xl transition-all border border-rose-500/20 flex items-center justify-center gap-2"
+              >
+                {salvando ? <Activity className="animate-spin" size={16} /> : <Save size={16} />}
+                {salvando ? 'Salvando...' : 'Salvar Configuração'}
+              </button>
             </div>
-
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
-              <div>
-                <label style={labelStyle}>Aluguel (R$/mês)</label>
-                <input
-                  type="number"
-                  value={custos.aluguel}
-                  onChange={(e) => setCustos({ ...custos, aluguel: e.target.value })}
-                  style={inputStyle}
-                  placeholder="3000"
-                />
-              </div>
-              <div>
-                <label style={labelStyle}>Luz, Água e Net</label>
-                <input
-                  type="number"
-                  value={custos.luzAguaNet}
-                  onChange={(e) => setCustos({ ...custos, luzAguaNet: e.target.value })}
-                  style={inputStyle}
-                  placeholder="800"
-                />
-              </div>
-              <div>
-                <label style={labelStyle}>Folha de Pagamento</label>
-                <input
-                  type="number"
-                  value={custos.folhaPagamento}
-                  onChange={(e) => setCustos({ ...custos, folhaPagamento: e.target.value })}
-                  style={inputStyle}
-                  placeholder="8000"
-                />
-              </div>
-              <div>
-                <label style={labelStyle}>Outros Custos</label>
-                <input
-                  type="number"
-                  value={custos.outrosCustos}
-                  onChange={(e) => setCustos({ ...custos, outrosCustos: e.target.value })}
-                  style={inputStyle}
-                  placeholder="1200"
-                />
-              </div>
-            </div>
-
-            <div style={{ marginTop: '12px' }}>
-              <label style={labelStyle}>Horas Trabalhadas/Mês</label>
-              <input
-                type="number"
-                value={custos.horasTrabalhadas}
-                onChange={(e) => setCustos({ ...custos, horasTrabalhadas: e.target.value })}
-                style={inputStyle}
-              />
-            </div>
-
-            <div style={{
-              marginTop: '16px',
-              padding: '12px',
-              background: '#0a0a0a',
-              borderRadius: '8px',
-              border: '1px solid #333'
-            }}>
-              <div style={{ color: '#666', fontSize: '10px', textTransform: 'uppercase', letterSpacing: '1px' }}>
-                Custo da Hora Técnica
-              </div>
-              <div style={{ color: '#a855f7', fontSize: '20px', fontWeight: 'bold', marginTop: '4px' }}>
-                {formatarMoeda(custoHoraTecnica)}
-              </div>
-              <p style={{ color: '#555', fontSize: '9px', margin: '6px 0 0 0' }}>
-                💡 Esta é a base para calcular o preço mínimo de qualquer serviço
-              </p>
-            </div>
-
-            <button
-              onClick={salvarCustos}
-              disabled={salvando}
-              style={{
-                width: '100%',
-                marginTop: '16px',
-                padding: '12px',
-                background: salvando ? '#555' : '#a855f7',
-                color: 'white',
-                border: 'none',
-                borderRadius: '8px',
-                fontSize: '13px',
-                fontWeight: 'bold',
-                cursor: salvando ? 'not-allowed' : 'pointer',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                gap: '8px',
-                transition: 'all 0.2s'
-              }}
-            >
-              <Save size={16} />
-              {salvando ? 'Salvando...' : 'Salvar Custos'}
-            </button>
           </div>
         </div>
 
-        {/* ========== COLUNA 2: SERVIÇO + SUGESTÃO IA ==========*/}
-        <div>
-          <div style={cardStyle}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '16px' }}>
-              <Zap size={18} color="#f59e0b" />
-              <h3 style={{ margin: 0, color: '#fff', fontSize: '16px', fontWeight: 'bold' }}>
-                Serviço & IA
-                {servicoSelecionado && <span style={badgeStyle}>IA Ativa</span>}
-              </h3>
-            </div>
+        {/* COL 2: SERVICE & IA */}
+        <div className="space-y-6">
+          <div className="rounded-[32px] border border-slate-800 bg-slate-950/80 p-8 shadow-2xl relative overflow-hidden">
+            <div className="absolute top-0 left-0 w-1.5 h-full bg-amber-500"></div>
+            <h4 className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-600 mb-8 flex items-center gap-2">
+              <Zap size={14} className="text-amber-500" /> Serviço & IA
+            </h4>
 
-            {/* SELETOR DE SERVIÇO */}
-            <div style={{ marginBottom: '16px' }}>
-              <label style={labelStyle}>Selecione um Serviço</label>
-              <div style={{
-                position: 'relative',
-                background: '#1a1a1a',
-                border: '1px solid #333',
-                borderRadius: '8px',
-                overflow: 'hidden'
-              }}>
-                <select
+            <div className="space-y-6">
+              <div className="space-y-2">
+                <label className="text-[10px] font-black uppercase tracking-widest text-slate-500 px-2 flex items-center gap-2">
+                  <Calculator size={12} /> Seleção Inteligente
+                </label>
+                <select 
                   value={servicoSelecionado?.id || ''}
-                  onChange={(e) => {
-                    const selecionado = servicosSugeridos.find(s => s.id === e.target.value);
-                    setServicoSelecionado(selecionado || null);
-                    setMostrarSugestao(!!selecionado);
-                    if (selecionado) {
-                      setServico({ ...servico, nomeServico: selecionado.nome });
-                    }
+                  onChange={e => {
+                    const sel = servicosSugeridos.find(s => s.id === e.target.value);
+                    setServicoSelecionado(sel || null);
+                    setMostrarSugestao(!!sel);
+                    if (sel) setServico({...servico, nomeServico: sel.nome});
                   }}
-                  style={{
-                    width: '100%',
-                    padding: '10px 14px',
-                    background: 'transparent',
-                    border: 'none',
-                    color: '#fff',
-                    fontSize: '14px',
-                    cursor: 'pointer',
-                    outline: 'none',
-                    appearance: 'none',
-                    backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23888' d='M6 9L1 4h10z'/%3E%3C/svg%3E")`,
-                    backgroundRepeat: 'no-repeat',
-                    backgroundPosition: 'right 10px center',
-                    paddingRight: '32px'
-                  }}
+                  className="w-full bg-slate-900 border border-slate-800 text-white p-4 rounded-2xl outline-none focus:border-amber-500 transition-all font-bold text-sm appearance-none cursor-pointer"
                 >
-                  <option value="">-- Selecione um Serviço --</option>
-                  {servicosSugeridos.map((svc) => (
-                    <option key={svc.id} value={svc.id}>
-                      {svc.icon} {svc.nome}
-                    </option>
-                  ))}
+                  <option value="">-- Selecionar Serviço --</option>
+                  {servicosSugeridos.map(s => <option key={s.id} value={s.id}>{s.icon} {s.nome}</option>)}
                 </select>
               </div>
-            </div>
 
-            {/* SUGESTÃO IA - Card destacado */}
-            {mostrarSugestao && sugestaoIA && (
-              <div style={{
-                marginBottom: '16px',
-                padding: '14px',
-                background: 'linear-gradient(135deg, rgba(245, 158, 11, 0.1), rgba(168, 85, 247, 0.1))',
-                border: '2px solid rgba(245, 158, 11, 0.3)',
-                borderRadius: '10px'
-              }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start', marginBottom: '12px' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                    <Zap size={16} color="#f59e0b" />
-                    <div>
-                      <div style={{ color: '#f59e0b', fontSize: '12px', fontWeight: 'bold' }}>SUGESTÃO INTELIGENTE</div>
-                      <div style={{ color: '#999', fontSize: '9px', marginTop: '2px' }}>
-                        Baseado em {sugestaoIA.serviceCount} serviços anteriores
+              {mostrarSugestao && sugestaoIA && (
+                <div className="rounded-3xl border-2 border-amber-500/30 bg-amber-500/5 p-6 space-y-6 shadow-lg shadow-amber-500/5 animate-in zoom-in-95 duration-300">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 bg-amber-500/10 rounded-xl flex items-center justify-center text-amber-500 border border-amber-500/20">
+                        <Sparkles size={20} />
+                      </div>
+                      <div>
+                        <p className="text-[10px] font-black uppercase tracking-widest text-amber-500">Sugestão da IA</p>
+                        <p className="text-xs text-slate-400">Baseado em {sugestaoIA.serviceCount} O.S.</p>
                       </div>
                     </div>
+                    <div className="px-3 py-1 bg-emerald-500/10 border border-emerald-500/20 rounded-full text-[10px] font-black text-emerald-500">
+                      {Math.round(sugestaoIA.confianca)}% CONFIANÇA
+                    </div>
                   </div>
-                  <div style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '4px',
-                    padding: '4px 8px',
-                    background: 'rgba(34, 197, 94, 0.2)',
-                    borderRadius: '6px'
-                  }}>
-                    <CheckCircle size={14} color="#22c55e" />
-                    <span style={{ color: '#22c55e', fontSize: '10px', fontWeight: 'bold' }}>
-                      {Math.round(sugestaoIA.confianca)}% Confiança
-                    </span>
+
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="p-3 bg-black/40 rounded-xl border border-slate-800">
+                      <p className="text-[9px] font-black text-slate-500 uppercase mb-1">Preço Sugerido</p>
+                      <p className="text-lg font-black text-amber-400">{formatarMoeda(sugestaoIA.precoSugerido)}</p>
+                    </div>
+                    <div className="p-3 bg-black/40 rounded-xl border border-slate-800">
+                      <p className="text-[9px] font-black text-slate-500 uppercase mb-1">Margem Projetada</p>
+                      <p className="text-lg font-black text-emerald-400">{sugestaoIA.margemSugerida.toFixed(1)}%</p>
+                    </div>
+                  </div>
+
+                  <div className="flex gap-2">
+                    <button onClick={aplicarSugestaoIA} className="flex-1 py-3 bg-amber-500 text-slate-950 font-black text-[10px] uppercase tracking-widest rounded-xl shadow-lg shadow-amber-500/20 hover:scale-[1.02] transition-all">Aceitar Sugestão</button>
+                    <button onClick={() => setMostrarSugestao(false)} className="px-4 py-3 bg-slate-800 text-slate-400 font-black text-[10px] uppercase tracking-widest rounded-xl hover:bg-slate-700">Ignorar</button>
                   </div>
                 </div>
+              )}
 
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', marginBottom: '12px' }}>
-                  <div style={{ padding: '8px', background: 'rgba(0,0,0,0.3)', borderRadius: '6px' }}>
-                    <div style={{ color: '#888', fontSize: '9px' }}>⏱️ Tempo</div>
-                    <div style={{ color: '#fff', fontSize: '13px', fontWeight: 'bold', marginTop: '2px' }}>
-                      {sugestaoIA.tempoSugerido.toFixed(1)}h
-                    </div>
-                  </div>
-                  <div style={{ padding: '8px', background: 'rgba(0,0,0,0.3)', borderRadius: '6px' }}>
-                    <div style={{ color: '#888', fontSize: '9px' }}>💰 Custo Peça</div>
-                    <div style={{ color: '#fff', fontSize: '13px', fontWeight: 'bold', marginTop: '2px' }}>
-                      {formatarMoeda(sugestaoIA.custoPecaSugerido)}
-                    </div>
-                  </div>
-                  <div style={{ padding: '8px', background: 'rgba(0,0,0,0.3)', borderRadius: '6px' }}>
-                    <div style={{ color: '#888', fontSize: '9px' }}>💵 Preço Sugerido</div>
-                    <div style={{ color: '#f59e0b', fontSize: '14px', fontWeight: 'bold', marginTop: '2px' }}>
-                      {formatarMoeda(sugestaoIA.precoSugerido)}
-                    </div>
-                  </div>
-                  <div style={{ padding: '8px', background: 'rgba(0,0,0,0.3)', borderRadius: '6px' }}>
-                    <div style={{ color: '#888', fontSize: '9px' }}>📊 Margem IA</div>
-                    <div style={{ color: '#22c55e', fontSize: '14px', fontWeight: 'bold', marginTop: '2px' }}>
-                      {sugestaoIA.margemSugerida.toFixed(1)}%
-                    </div>
-                  </div>
-                </div>
-
-                <div style={{ display: 'flex', gap: '8px' }}>
-                  <button
-                    onClick={aplicarSugestaoIA}
-                    style={{
-                      flex: 1,
-                      padding: '10px',
-                      background: '#f59e0b',
-                      color: 'black',
-                      border: 'none',
-                      borderRadius: '6px',
-                      fontSize: '12px',
-                      fontWeight: 'bold',
-                      cursor: 'pointer',
-                      transition: 'all 0.2s'
-                    }}
-                  >
-                    ✓ Aceitar Sugestão
-                  </button>
-                  <button
-                    onClick={() => setMostrarSugestao(false)}
-                    style={{
-                      flex: 1,
-                      padding: '10px',
-                      background: '#333',
-                      color: '#fff',
-                      border: 'none',
-                      borderRadius: '6px',
-                      fontSize: '12px',
-                      fontWeight: 'bold',
-                      cursor: 'pointer',
-                      transition: 'all 0.2s'
-                    }}
-                  >
-                    ✗ Descartar
-                  </button>
-                </div>
-              </div>
-            )}
-
-            {/* INPUTS MANUAIS */}
-            <div style={{ marginBottom: '12px' }}>
-              <label style={labelStyle}>Nome do Serviço</label>
-              <input
-                type="text"
-                value={servico.nomeServico}
-                onChange={(e) => setServico({ ...servico, nomeServico: e.target.value })}
-                style={inputStyle}
-                placeholder="ex: Troca de Óleo"
-              />
-            </div>
-
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
-              <div>
-                <label style={labelStyle}>Custo Peça (R$)</label>
-                <input
-                  type="number"
-                  step="0.01"
-                  value={servico.custoPeca}
-                  onChange={(e) => setServico({ ...servico, custoPeca: e.target.value })}
-                  style={inputStyle}
-                  placeholder="0"
-                />
-              </div>
-              <div>
-                <label style={labelStyle}>Margem Peça (%)</label>
-                <input
-                  type="number"
-                  step="1"
-                  value={servico.margemPeca}
-                  onChange={(e) => setServico({ ...servico, margemPeca: e.target.value })}
-                  style={inputStyle}
-                  placeholder="30"
-                />
-              </div>
-              <div>
-                <label style={labelStyle}>Tempo de Execução (h)</label>
-                <input
-                  type="number"
-                  step="0.25"
-                  value={servico.tempoExecucao}
-                  onChange={(e) => setServico({ ...servico, tempoExecucao: e.target.value })}
-                  style={inputStyle}
-                  placeholder="1"
-                />
-              </div>
-              <div>
-                <label style={labelStyle}>Taxa/Imposto (%)</label>
-                <input
-                  type="number"
-                  step="0.1"
-                  value={servico.taxaImposto}
-                  onChange={(e) => setServico({ ...servico, taxaImposto: e.target.value })}
-                  style={inputStyle}
-                  placeholder="0"
-                />
+              <Field label="Nome do Serviço" value={servico.nomeServico} onChange={v => setServico({...servico, nomeServico: v})} placeholder="Ex: Troca de Óleo" icon={<ArrowRight size={12} />} />
+              
+              <div className="grid gap-4 sm:grid-cols-2">
+                <Field label="Custo Peça (R$)" value={servico.custoPeca} onChange={v => setServico({...servico, custoPeca: v})} placeholder="0.00" icon={<Wallet size={12} />} />
+                <Field label="Margem Peça (%)" value={servico.margemPeca} onChange={v => setServico({...servico, margemPeca: v})} placeholder="30" icon={<Percent size={12} />} />
+                <Field label="Tempo Execução (h)" value={servico.tempoExecucao} onChange={v => setServico({...servico, tempoExecucao: v})} placeholder="1.0" icon={<Clock size={12} />} />
+                <Field label="Impostos (%)" value={servico.taxaImposto} onChange={v => setServico({...servico, taxaImposto: v})} placeholder="0" icon={<Activity size={12} />} />
               </div>
             </div>
-
-            {/* STATUS IA ATIVO */}
-            {usarSugestaoIA && (
-              <div style={{
-                marginTop: '12px',
-                padding: '10px',
-                background: 'rgba(245, 158, 11, 0.1)',
-                border: '1px solid rgba(245, 158, 11, 0.3)',
-                borderRadius: '6px',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'space-between'
-              }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  <Zap size={14} color="#f59e0b" />
-                  <span style={{ color: '#f59e0b', fontSize: '12px', fontWeight: 'bold' }}>
-                    💡 Sugestão IA Aplicada
-                  </span>
-                </div>
-                <button
-                  onClick={limparSugestaoIA}
-                  style={{
-                    padding: '4px 8px',
-                    background: 'transparent',
-                    color: '#f59e0b',
-                    border: '1px solid #f59e0b',
-                    borderRadius: '4px',
-                    fontSize: '10px',
-                    fontWeight: 'bold',
-                    cursor: 'pointer'
-                  }}
-                >
-                  Limpar
-                </button>
-              </div>
-            )}
           </div>
         </div>
 
-        {/* ========== COLUNA 3: RESULTADOS E ANÁLISE ==========*/}
-        <div>
-          <div style={cardStyle}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '16px' }}>
-              <TrendingUp size={18} color="#22c55e" />
-              <h3 style={{ margin: 0, color: '#fff', fontSize: '16px', fontWeight: 'bold' }}>Análise de Lucro</h3>
-            </div>
+        {/* COL 3: PROFIT ANALYSIS */}
+        <div className="space-y-6">
+          <div className="rounded-[32px] border border-slate-800 bg-slate-950/80 p-8 shadow-2xl relative overflow-hidden">
+            <div className="absolute top-0 left-0 w-1.5 h-full bg-emerald-500"></div>
+            <h4 className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-600 mb-8 flex items-center gap-2">
+              <TrendingUp size={14} className="text-emerald-500" /> Análise de Lucro
+            </h4>
 
-            {/* INDICADOR SAÚDE DO LUCRO */}
-            <div style={{
-              padding: '16px',
-              background: `linear-gradient(135deg, ${saudeLucro.cor}22 0%, ${saudeLucro.cor}11 100%)`,
-              border: `2px solid ${saudeLucro.cor}`,
-              borderRadius: '10px',
-              marginBottom: '16px',
-              textAlign: 'center'
-            }}>
-              <div style={{ fontSize: '32px', marginBottom: '8px' }}>{saudeLucro.icon}</div>
-              <div style={{ color: saudeLucro.cor, fontSize: '12px', fontWeight: 'bold', textTransform: 'uppercase', letterSpacing: '1px' }}>
-                {saudeLucro.label}
+            <div className="space-y-8">
+              <div className={`p-8 rounded-[40px] border-2 bg-gradient-to-br transition-all duration-500 text-center ${saudeLucro.status === 'prejuizo' ? 'border-rose-500/50 from-rose-500/20 to-transparent' : 'border-emerald-500/30 from-emerald-500/10 to-transparent'}`}>
+                <div className="text-5xl mb-4 animate-bounce-slow">{saudeLucro.icon}</div>
+                <p className={`text-[10px] font-black uppercase tracking-[0.3em] mb-2 ${saudeLucro.status === 'prejuizo' ? 'text-rose-500' : 'text-emerald-500'}`}>Saúde do Lucro: {saudeLucro.label}</p>
+                <p className="text-6xl font-black text-white tracking-tighter">{percentuais.lucro.toFixed(1)}<span className="text-2xl text-slate-500">%</span></p>
+                <p className="text-xs text-slate-500 mt-4 uppercase tracking-widest font-bold">Margem Líquida Real</p>
               </div>
-              <div style={{ color: '#fff', fontSize: '28px', fontWeight: 'bold', marginTop: '8px' }}>
-                {percentuais.lucro.toFixed(1)}%
-              </div>
-              <div style={{ color: '#888', fontSize: '10px', marginTop: '6px' }}>
-                Margem de Lucro Líquida
-              </div>
-            </div>
 
-            {/* ALERTAS */}
-            {percentuais.lucro < 20 && percentuais.lucro > 0 && (
-              <div style={{
-                marginBottom: '12px',
-                padding: '10px 12px',
-                background: 'rgba(245, 158, 11, 0.1)',
-                border: '1px solid rgba(245, 158, 11, 0.5)',
-                borderRadius: '6px',
-                display: 'flex',
-                gap: '8px',
-                alignItems: 'flex-start'
-              }}>
-                <AlertTriangle size={14} color="#f59e0b" style={{ marginTop: '2px', flexShrink: 0 }} />
-                <div style={{ fontSize: '11px', color: '#f59e0b' }}>
-                  <strong>Alerta:</strong> Margem abaixo de 20%. Considere aumentar o preço ou reduzir custos.
+              {saudeLucro.status === 'prejuizo' ? (
+                <div className="p-4 rounded-2xl bg-rose-500/10 border border-rose-500/30 flex gap-4 items-center">
+                  <TrendingDown className="text-rose-500 shrink-0" size={24} />
+                  <p className="text-xs text-rose-200 font-bold leading-relaxed">
+                    CRÍTICO: Este serviço gera prejuízo. Aumente o preço ou reduza custos imediatamente!
+                  </p>
                 </div>
-              </div>
-            )}
-
-            {percentuais.lucro <= 0 && (
-              <div style={{
-                marginBottom: '12px',
-                padding: '10px 12px',
-                background: 'rgba(239, 68, 68, 0.1)',
-                border: '1px solid rgba(239, 68, 68, 0.5)',
-                borderRadius: '6px',
-                display: 'flex',
-                gap: '8px',
-                alignItems: 'flex-start'
-              }}>
-                <TrendingDown size={14} color="#ef4444" style={{ marginTop: '2px', flexShrink: 0 }} />
-                <div style={{ fontSize: '11px', color: '#ef4444' }}>
-                  <strong>Crítico:</strong> Este serviço geraria prejuízo! Aumentar preço agora.
+              ) : percentuais.lucro < 20 ? (
+                <div className="p-4 rounded-2xl bg-amber-500/10 border border-amber-500/30 flex gap-4 items-center">
+                  <AlertTriangle className="text-amber-500 shrink-0" size={24} />
+                  <p className="text-xs text-amber-200 font-bold leading-relaxed">
+                    ATENÇÃO: Sua margem está abaixo da meta de 20%. Verifique seus custos fixos.
+                  </p>
                 </div>
-              </div>
-            )}
-
-            {/* COMPARAÇÃO: IA vs MANUAL */}
-            {sugestaoIA && usarSugestaoIA && (
-              <div style={{
-                marginBottom: '12px',
-                padding: '12px',
-                background: '#0a0a0a',
-                border: '1px solid #333',
-                borderRadius: '8px'
-              }}>
-                <div style={{ color: '#666', fontSize: '10px', fontWeight: 'bold', marginBottom: '8px', textTransform: 'uppercase' }}>
-                  📊 Comparação: Sugestão IA vs Seu Ajuste
-                </div>
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
-                  <div style={{ padding: '8px', background: 'rgba(245, 158, 11, 0.2)', borderRadius: '6px' }}>
-                    <div style={{ color: '#f59e0b', fontSize: '9px', fontWeight: 'bold' }}>IA Sugeriu</div>
-                    <div style={{ color: '#fff', fontSize: '14px', fontWeight: 'bold', marginTop: '4px' }}>
-                      {formatarMoeda(sugestaoIA.precoSugerido)}
-                    </div>
-                  </div>
-                  <div style={{ padding: '8px', background: 'rgba(168, 85, 247, 0.2)', borderRadius: '6px' }}>
-                    <div style={{ color: '#c4b5fd', fontSize: '9px', fontWeight: 'bold' }}>Você Ajustou</div>
-                    <div style={{ color: '#fff', fontSize: '14px', fontWeight: 'bold', marginTop: '4px' }}>
-                      {formatarMoeda(precoCliente)}
-                    </div>
-                  </div>
-                </div>
-                <div style={{ marginTop: '8px', padding: '8px', background: 'rgba(0,0,0,0.3)', borderRadius: '6px', fontSize: '9px', color: '#888' }}>
-                  Diferença: <strong style={{ color: precoCliente > sugestaoIA.precoSugerido ? '#22c55e' : '#ef4444' }}>
-                    {precoCliente > sugestaoIA.precoSugerido ? '+' : ''}{formatarMoeda(precoCliente - sugestaoIA.precoSugerido)}
-                  </strong>
-                </div>
-              </div>
-            )}
-
-            {/* CÁLCULOS DETALHADOS */}
-            <div style={{ marginBottom: '12px' }}>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
-                <div style={{ padding: '10px', background: '#0a0a0a', borderRadius: '6px', textAlign: 'center' }}>
-                  <div style={{ color: '#666', fontSize: '9px', textTransform: 'uppercase' }}>Peça c/ Margem</div>
-                  <div style={{ color: '#fff', fontSize: '14px', fontWeight: 'bold', marginTop: '4px' }}>
-                    {formatarMoeda(custoPecaComMargem)}
-                  </div>
-                </div>
-                <div style={{ padding: '10px', background: '#0a0a0a', borderRadius: '6px', textAlign: 'center' }}>
-                  <div style={{ color: '#666', fontSize: '9px', textTransform: 'uppercase' }}>Mão de Obra</div>
-                  <div style={{ color: '#fff', fontSize: '14px', fontWeight: 'bold', marginTop: '4px' }}>
-                    {formatarMoeda(custoMaoObra)}
-                  </div>
-                </div>
-                <div style={{ padding: '10px', background: '#0a0a0a', borderRadius: '6px', textAlign: 'center' }}>
-                  <div style={{ color: '#666', fontSize: '9px', textTransform: 'uppercase' }}>Impostos</div>
-                  <div style={{ color: '#fff', fontSize: '14px', fontWeight: 'bold', marginTop: '4px' }}>
-                    {formatarMoeda(impostos)}
-                  </div>
-                </div>
-                <div style={{ padding: '10px', background: '#0a0a0a', borderRadius: '6px', textAlign: 'center' }}>
-                  <div style={{ color: '#666', fontSize: '9px', textTransform: 'uppercase' }}>Lucro Líquido</div>
-                  <div style={{ color: '#22c55e', fontSize: '14px', fontWeight: 'bold', marginTop: '4px' }}>
-                    {formatarMoeda(lucroLiquido)}
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* PREÇO FINAL */}
-            <div style={{
-              padding: '16px',
-              background: 'linear-gradient(135deg, #166534 0%, #14532d 100%)',
-              border: '2px solid #22c55e',
-              borderRadius: '10px',
-              textAlign: 'center'
-            }}>
-              <div style={{ color: '#86efac', fontSize: '10px', fontWeight: 'bold', textTransform: 'uppercase', letterSpacing: '1px' }}>
-                Preço Final do Serviço
-              </div>
-              <div style={{ color: '#fff', fontSize: '32px', fontWeight: 'bold', marginTop: '8px' }}>
-                {formatarMoeda(precoCliente)}
-              </div>
-              {usarSugestaoIA && (
-                <div style={{ color: '#86efac', fontSize: '9px', marginTop: '6px' }}>
-                  ✓ Baseado em sugestão IA
+              ) : (
+                <div className="p-4 rounded-2xl bg-emerald-500/10 border border-emerald-500/30 flex gap-4 items-center">
+                  <ShieldCheck className="text-emerald-500 shrink-0" size={24} />
+                  <p className="text-xs text-emerald-200 font-bold leading-relaxed">
+                    EXCELENTE: Serviço lucrativo e seguro para sua saúde financeira.
+                  </p>
                 </div>
               )}
-            </div>
 
-            {/* RAIO-X DO DINHEIRO */}
-            {precoCliente > 0 && (
-              <div style={{ marginTop: '16px', padding: '12px', background: '#0a0a0a', borderRadius: '8px', border: '1px solid #222' }}>
-                <div style={{ color: '#888', fontSize: '10px', fontWeight: 'bold', marginBottom: '10px', textTransform: 'uppercase' }}>
-                  💰 Distribuição do Preço
+              <div className="space-y-4 pt-6 border-t border-slate-800">
+                <div className="flex justify-between items-center text-xs">
+                  <span className="text-slate-500 font-black uppercase tracking-widest flex items-center gap-2"><ArrowRight size={12} className="text-rose-500" /> Custo Mão de Obra</span>
+                  <span className="text-white font-mono">{formatarMoeda(custoMaoObra)}</span>
                 </div>
-                <div style={{ display: 'flex', gap: '6px', height: '28px', borderRadius: '6px', overflow: 'hidden', marginBottom: '10px' }}>
-                  <div style={{ width: `${percentuais.peca}%`, background: '#3b82f6', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '8px', fontWeight: 'bold', color: 'white' }}>
-                    {percentuais.peca > 8 ? 'Peça' : ''}
-                  </div>
-                  <div style={{ width: `${percentuais.maoObra}%`, background: '#8b5cf6', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '8px', fontWeight: 'bold', color: 'white' }}>
-                    {percentuais.maoObra > 8 ? 'M.O.' : ''}
-                  </div>
-                  <div style={{ width: `${percentuais.impostos}%`, background: '#f59e0b', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '8px', fontWeight: 'bold', color: 'black' }}>
-                    {percentuais.impostos > 8 ? 'Taxa' : ''}
-                  </div>
-                  <div style={{ width: `${percentuais.lucro}%`, background: '#22c55e', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '8px', fontWeight: 'bold', color: 'black' }}>
-                    {percentuais.lucro > 8 ? 'Lucro' : ''}
-                  </div>
+                <div className="flex justify-between items-center text-xs">
+                  <span className="text-slate-500 font-black uppercase tracking-widest flex items-center gap-2"><ArrowRight size={12} className="text-amber-500" /> Custo Peças (c/ margem)</span>
+                  <span className="text-white font-mono">{formatarMoeda(custoPecaComMargem)}</span>
                 </div>
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '6px', fontSize: '10px' }}>
-                  <span style={{ color: '#3b82f6' }}>🔵 Peça: {percentuais.peca.toFixed(1)}%</span>
-                  <span style={{ color: '#8b5cf6' }}>🟣 M.O.: {percentuais.maoObra.toFixed(1)}%</span>
-                  <span style={{ color: '#f59e0b' }}>🟠 Taxa: {percentuais.impostos.toFixed(1)}%</span>
-                  <span style={{ color: '#22c55e' }}>🟢 Lucro: {percentuais.lucro.toFixed(1)}%</span>
+                <div className="flex justify-between items-center text-xs">
+                  <span className="text-slate-500 font-black uppercase tracking-widest flex items-center gap-2"><ArrowRight size={12} className="text-cyan-500" /> Impostos</span>
+                  <span className="text-white font-mono">{formatarMoeda(impostos)}</span>
+                </div>
+                <div className="pt-4 border-t border-slate-800 flex justify-between items-center">
+                  <span className="text-white font-black uppercase tracking-widest flex items-center gap-2"><PieChart size={16} className="text-emerald-500" /> Preço Ideal ao Cliente</span>
+                  <span className="text-3xl font-black text-emerald-500">{formatarMoeda(precoCliente)}</span>
                 </div>
               </div>
-            )}
+            </div>
           </div>
         </div>
       </div>
-
-      {/* ========== SEÇÃO DE AÇÕES (Rodapé) ==========*/}
-      {servico.nomeServico && precoCliente > 0 && (
-        <div style={{ marginTop: '24px', display: 'flex', gap: '12px' }}>
-          <button
-            onClick={() => {
-              const telefone = config?.telefone || '';
-              const msg = `Olá! O orçamento para *${servico.nomeServico}* ficou em *${formatarMoeda(precoCliente)}* (Peças + Mão de obra inclusas). 💼`;
-              if (telefone) {
-                const telLimpo = telefone.replace(/\D/g, '');
-                window.open(`https://wa.me/55${telLimpo}?text=${encodeURIComponent(msg)}`, '_blank');
-              } else {
-                alert('Configure o telefone da oficina em Configurações.');
-              }
-            }}
-            style={{
-              flex: 1,
-              padding: '14px',
-              background: '#22c55e',
-              color: 'black',
-              border: 'none',
-              borderRadius: '8px',
-              fontSize: '13px',
-              fontWeight: 'bold',
-              cursor: 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              gap: '8px',
-              transition: 'all 0.2s'
-            }}
-          >
-            <MessageCircle size={18} />
-            Enviar por WhatsApp
-          </button>
-          <button
-            onClick={() => verificarLicenca ? verificarLicenca('criar ordens de serviço') : alert('Em breve: Integração com O.S.!')}
-            style={{
-              flex: 1,
-              padding: '14px',
-              background: '#a855f7',
-              color: 'white',
-              border: 'none',
-              borderRadius: '8px',
-              fontSize: '13px',
-              fontWeight: 'bold',
-              cursor: 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              gap: '8px',
-              transition: 'all 0.2s'
-            }}
-          >
-            <FileText size={18} />
-            Criar O.S.
-          </button>
-        </div>
-      )}
     </div>
+  );
+}
+
+// SHARED COMPONENTS
+
+function MetricCard({ title, value, detail, icon, tone }) {
+  const tones = {
+    info: 'border-cyan-400/20 bg-cyan-400/10 text-cyan-200',
+    success: 'border-emerald-400/20 bg-emerald-400/10 text-emerald-200',
+    danger: 'border-rose-400/20 bg-rose-400/10 text-rose-200',
+    warning: 'border-amber-400/20 bg-amber-400/10 text-amber-100'
+  };
+
+  return (
+    <div className="rounded-[24px] border border-slate-800 bg-slate-950/90 p-5 shadow-2xl shadow-slate-950/30">
+      <div className="flex items-start justify-between gap-4">
+        <div>
+          <p className="text-xs font-bold uppercase tracking-[0.22em] text-slate-500">{title}</p>
+          <h3 className="mt-3 text-2xl font-black text-white">{value}</h3>
+          <p className="mt-2 text-sm text-slate-400">{detail}</p>
+        </div>
+        <div className={`rounded-2xl border p-3 ${tones[tone]}`}>{icon}</div>
+      </div>
+    </div>
+  );
+}
+
+function QuickHighlight({ label, value, helper, tone }) {
+  const tones = {
+    danger: 'border-rose-400/20 bg-rose-400/10 text-rose-100',
+    success: 'border-emerald-400/20 bg-emerald-400/10 text-emerald-100',
+    info: 'border-cyan-400/20 bg-cyan-400/10 text-cyan-100'
+  };
+
+  return (
+    <div className={`rounded-2xl border p-4 backdrop-blur ${tones[tone]}`}>
+      <p className="text-xs uppercase tracking-[0.24em] opacity-80">{label}</p>
+      <p className="mt-2 text-2xl font-black">{value}</p>
+      <p className="mt-1 text-sm opacity-80">{helper}</p>
+    </div>
+  );
+}
+
+function Field({ label, value, onChange, placeholder, type = 'text', icon }) {
+  return (
+    <label className="block space-y-2">
+      <span className="block text-[10px] font-black uppercase tracking-[0.2em] text-slate-500 flex items-center gap-2 px-1">
+        {icon}{label}
+      </span>
+      <input
+        type={type}
+        value={value}
+        placeholder={placeholder}
+        onChange={event => onChange(event.target.value)}
+        className="w-full rounded-2xl border border-slate-800 bg-slate-900/50 px-4 py-4 text-sm text-white outline-none transition focus:border-amber-500/60 placeholder:text-slate-800 font-bold"
+      />
+    </label>
   );
 }

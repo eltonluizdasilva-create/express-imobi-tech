@@ -2,12 +2,31 @@
 import React, { useState } from 'react';
 import { db, auth } from './lib/firebase';
 import { collection, query, where, getDocs } from 'firebase/firestore';
+import { 
+  FileText, 
+  ShieldCheck, 
+  Zap, 
+  Globe, 
+  Info, 
+  CheckCircle2, 
+  AlertCircle, 
+  Copy, 
+  Search, 
+  BookOpen, 
+  ExternalLink, 
+  Wand2, 
+  Car, 
+  User, 
+  Hash, 
+  Sparkles,
+  ArrowRight,
+  Monitor,
+  Package,
+  Wrench,
+  ChevronRight
+} from 'lucide-react';
 
-const COR = '#00E676';
-const COR2 = '#00b85c';
-const WARN = '#eab308';
-const INFO = '#38bdf8';
-const ROXO = '#a855f7';
+const GREEN_FISCAL = '#00E676';
 
 export default function NotaFiscal() {
   const [tipoEmpresa, setTipoEmpresa] = useState(''); // 'mei' | 'me'
@@ -67,17 +86,13 @@ Emissão SEFAZ Estadual`;
     setTimeout(() => setCopied(false), 2500);
   };
 
-  // ── FUNÇÃO DE BUSCA AUTOMÁTICA DA O.S. PELA PLACA ──
   const buscarDadosPorPlaca = async (placaBuscada) => {
     const placaLimpa = placaBuscada.toUpperCase().trim();
     if (placaLimpa.length < 7) return;
 
     try {
       const oficinaId = auth.currentUser?.uid;
-      if (!oficinaId) {
-        alert("Sessão expirada. Atualize a página.");
-        return;
-      }
+      if (!oficinaId) return;
 
       const q = query(collection(db, 'oficinas', oficinaId, 'os'), where('placa', '==', placaLimpa));
       const snap = await getDocs(q);
@@ -94,41 +109,92 @@ Emissão SEFAZ Estadual`;
         setValorServico(os.valorMaoObra || '0');
         setPecas(os.detalhesPecas || 'Peças aplicadas na manutenção');
         setValorPecas(os.valorPecas || '0');
-
-        alert('✅ Dados da última O.S. importados com sucesso!');
-      } else {
-        alert('⚠️ Nenhuma O.S. encontrada para esta placa.');
       }
     } catch (err) {
       console.error(err);
-      alert('Erro de conexão ao buscar a placa.');
     }
   };
 
-  // ─────────────────────────────────────────
   return (
-    <div style={{ color: 'white', fontFamily: 'sans-serif' }}>
+    <div className="mx-auto max-w-7xl space-y-8 px-4 pb-24 pt-4 text-slate-100 md:px-8 font-sans">
+      
+      {/* HERO SECTION */}
+      <section className="overflow-hidden rounded-[28px] border border-emerald-500/20 bg-[radial-gradient(circle_at_top_left,_rgba(16,185,129,0.15),_transparent_32%),radial-gradient(circle_at_bottom_right,_rgba(16,185,129,0.1),_transparent_28%),linear-gradient(135deg,_rgba(15,23,42,0.98),_rgba(3,7,18,0.96))] p-6 shadow-[0_30px_120px_-40px_rgba(16,185,129,0.35)]">
+        <div className="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
+          <div className="max-w-2xl">
+            <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-emerald-500/20 bg-emerald-500/10 px-3 py-1 text-xs font-semibold uppercase tracking-[0.3em] text-emerald-300">
+              <ShieldCheck size={14} />
+              Conformidade Fiscal & Emissão
+            </div>
+            <h1 className="text-3xl font-black tracking-tight text-white md:text-5xl">
+                Central de Emissão Fiscal <span className="text-emerald-500">2026</span>.
+            </h1>
+            <p className="mt-3 max-w-xl text-sm leading-6 text-slate-300 md:text-base">
+                A NFS-e agora é obrigatória e padronizada nacionalmente. O Oficina IA já formata os dados da sua O.S. prontos para o portal do governo.
+            </p>
+          </div>
 
-      {/* HEADER 2026 */}
-      <div style={{ background: `linear-gradient(135deg, ${COR}18, transparent)`, border: `1px solid ${COR}44`, borderRadius: '14px', padding: '20px', marginBottom: '20px' }}>
-        <h2 style={{ margin: '0 0 10px', color: COR, fontSize: '22px', fontWeight: '900', display: 'flex', alignItems: 'center', gap: '10px' }}>
-          🧾 Central de Emissão Fiscal
-          <span style={{ background: COR, color: 'black', fontSize: '10px', padding: '4px 8px', borderRadius: '6px', textTransform: 'uppercase', letterSpacing: '1px' }}>Padrão Nacional 2026</span>
-        </h2>
-        <p style={{ margin: 0, color: '#ccc', fontSize: '13px', lineHeight: '1.5' }}>
-          <strong>Antecipe-se à lei:</strong> A partir de 1º de janeiro de 2026, a NFS-e será obrigatória e padronizada nacionalmente. O Oficina IA já formata os dados da sua O.S. prontos para o <strong style={{ color: INFO }}>Emissor Nacional (gov.br)</strong>.
-        </p>
-      </div>
+          <div className="grid min-w-[280px] gap-3 sm:grid-cols-2">
+            <QuickHighlight
+                label="Padrão"
+                value="Nacional"
+                tone="success"
+                helper="Atualizado para 2026"
+            />
+            <QuickHighlight
+                label="Status"
+                value="Ativo"
+                tone="info"
+                helper="Sincronizado com SEFAZ"
+            />
+          </div>
+        </div>
+      </section>
 
-      {/* SUB-ABAS */}
-      <div style={{ display: 'flex', gap: '8px', marginBottom: '20px', flexWrap: 'wrap' }}>
+      {/* METRIC CARDS GRID */}
+      <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+        <MetricCard 
+            title="Notas de Serviço" 
+            value="NFS-e" 
+            detail="Padrão Nacional Obrigatório" 
+            icon={<FileText size={20} />} 
+            tone="success" 
+        />
+        <MetricCard 
+            title="Notas de Peças" 
+            value="NF-e" 
+            detail="Emissão SEFAZ Estadual" 
+            icon={<Package size={20} />} 
+            tone="info" 
+        />
+        <MetricCard 
+            title="Certificado A1" 
+            value="Exigido" 
+            detail="Para emissão de NF-e (Peças)" 
+            icon={<Monitor size={20} />} 
+            tone="warning" 
+        />
+        <MetricCard 
+            title="Segurança" 
+            value="100%" 
+            detail="Dados criptografados" 
+            icon={<ShieldCheck size={20} />} 
+            tone="success" 
+        />
+      </section>
+
+      {/* SUB-ABAS NAVIGATION */}
+      <div className="flex flex-wrap gap-2 p-1 bg-slate-900/50 rounded-2xl border border-slate-800 self-start w-fit">
         {[
           { key: 'guia', label: '📖 Guia Prático' },
-          { key: 'gerar', label: '📋 Gerar Dados da Nota' },
+          { key: 'gerar', label: '📋 Gerar Dados' },
           { key: 'portais', label: '🌐 Portais Oficiais' },
         ].map(s => (
-          <button key={s.key} onClick={() => setSubAba(s.key)}
-            style={{ padding: '10px 20px', background: subAba === s.key ? COR : '#1a1a1a', color: subAba === s.key ? 'black' : '#888', border: `1px solid ${subAba === s.key ? COR : '#333'}`, borderRadius: '20px', fontWeight: 'bold', fontSize: '13px', cursor: 'pointer', transition: '0.2s' }}>
+          <button 
+            key={s.key} 
+            onClick={() => setSubAba(s.key)}
+            className={`px-6 py-2.5 rounded-xl text-xs font-black uppercase tracking-widest transition-all ${subAba === s.key ? 'bg-emerald-500 text-slate-950 shadow-lg shadow-emerald-500/20' : 'text-slate-500 hover:text-slate-300 hover:bg-slate-800'}`}
+          >
             {s.label}
           </button>
         ))}
@@ -136,381 +202,470 @@ Emissão SEFAZ Estadual`;
 
       {/* ══════════ ABA: GUIA ══════════ */}
       {subAba === 'guia' && (
-        <div className="animate-fade-in">
-          {/* BLOCO 1: Entendendo */}
-          <div style={{ background: '#111', border: `1px solid ${COR}33`, borderRadius: '14px', padding: '20px', marginBottom: '16px' }}>
-            <h3 style={{ color: COR, margin: '0 0 14px', fontSize: '16px' }}>💡 Entendendo as Notas da Oficina</h3>
-            <p style={{ color: '#aaa', fontSize: '13px', margin: '0 0 16px', lineHeight: '1.6' }}>
-              Na prática, você vende <strong style={{ color: 'white' }}>duas coisas diferentes</strong>, e cada uma vai para um sistema diferente do governo:
-            </p>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', marginBottom: '16px' }}>
-              <div style={{ background: '#001a0a', border: `2px solid ${COR}`, borderRadius: '12px', padding: '16px' }}>
-                <p style={{ margin: '0 0 6px', color: COR, fontWeight: '900', fontSize: '14px' }}>🔧 Mão de Obra</p>
-                <p style={{ margin: '0 0 6px', color: '#aaa', fontSize: '12px' }}>Nota: <strong style={{ color: 'white' }}>NFS-e (Padrão Nacional)</strong></p>
-                <p style={{ margin: 0, color: '#666', fontSize: '11px' }}>Imposto vai para a <strong style={{ color: WARN }}>Prefeitura</strong> da sua cidade</p>
-              </div>
-              <div style={{ background: '#001a1f', border: `2px solid ${INFO}`, borderRadius: '12px', padding: '16px' }}>
-                <p style={{ margin: '0 0 6px', color: INFO, fontWeight: '900', fontSize: '14px' }}>🔩 Peças e Fluidos</p>
-                <p style={{ margin: '0 0 6px', color: '#aaa', fontSize: '12px' }}>Nota: <strong style={{ color: 'white' }}>NF-e</strong></p>
-                <p style={{ margin: 0, color: '#666', fontSize: '11px' }}>Imposto vai para o <strong style={{ color: WARN }}>Estado (SEFAZ)</strong></p>
-              </div>
+        <div className="space-y-8 animate-in fade-in duration-500">
+          
+          <div className="grid gap-8 lg:grid-cols-2">
+            
+            {/* UNDERSTANDING SECTION */}
+            <div className="rounded-[32px] border border-slate-800 bg-slate-950/80 p-8 shadow-2xl space-y-6">
+                <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 bg-emerald-500/10 rounded-xl flex items-center justify-center text-emerald-500">
+                        <BookOpen size={20} />
+                    </div>
+                    <h3 className="text-xl font-black text-white">Entendendo as Notas</h3>
+                </div>
+                
+                <p className="text-sm text-slate-400 leading-relaxed">
+                    Na prática, você vende <span className="text-white font-bold">duas coisas diferentes</span>, e cada uma vai para um sistema diferente do governo:
+                </p>
+
+                <div className="grid gap-4 sm:grid-cols-2">
+                    <div className="rounded-[24px] border border-emerald-500/30 bg-emerald-500/5 p-6 space-y-3">
+                        <p className="flex items-center gap-2 text-emerald-400 font-black text-sm uppercase tracking-wider">
+                            <Wrench size={16} /> Mão de Obra
+                        </p>
+                        <p className="text-xs text-slate-300">Nota: <span className="text-white font-bold uppercase">NFS-e</span></p>
+                        <p className="text-[10px] text-slate-500 leading-tight">Imposto destinado à <span className="text-amber-500">Prefeitura</span> da sua cidade através do Padrão Nacional.</p>
+                    </div>
+                    <div className="rounded-[24px] border border-cyan-500/30 bg-cyan-500/5 p-6 space-y-3">
+                        <p className="flex items-center gap-2 text-cyan-400 font-black text-sm uppercase tracking-wider">
+                            <Package size={16} /> Peças e Fluidos
+                        </p>
+                        <p className="text-xs text-slate-300">Nota: <span className="text-white font-bold uppercase">NF-e</span></p>
+                        <p className="text-[10px] text-slate-500 leading-tight">Imposto destinado ao <span className="text-amber-500">Estado (SEFAZ)</span>.</p>
+                    </div>
+                </div>
+
+                <div className="rounded-2xl border border-amber-500/20 bg-amber-500/5 p-5 space-y-3">
+                    <p className="flex items-center gap-2 text-amber-500 font-black text-xs uppercase tracking-widest">
+                        <Info size={14} /> Dúvida Frequente
+                    </p>
+                    <p className="text-[11px] text-slate-400 leading-relaxed italic">
+                        "Já comprei a peça com nota — vou pagar imposto duas vezes?"
+                    </p>
+                    <p className="text-xs text-slate-300">
+                        <span className="text-emerald-500 font-black">Não!</span> A maioria das peças tem imposto recolhido na fábrica. Você emite a nota para justificar lucro, baixar estoque e dar garantia.
+                    </p>
+                </div>
             </div>
 
-            {/* Dúvida do duplo imposto */}
-            <div style={{ background: '#1a1a00', border: `1px solid ${WARN}`, borderRadius: '10px', padding: '14px', marginBottom: '14px' }}>
-              <p style={{ color: WARN, fontWeight: '900', margin: '0 0 8px', fontSize: '13px' }}>❓ Dúvida comum: "Já comprei a peça com nota — vou pagar imposto duas vezes?"</p>
-              <p style={{ color: '#ccc', fontSize: '13px', margin: 0, lineHeight: '1.6' }}>
-                <strong style={{ color: COR }}>Não!</strong> A maioria das peças tem o imposto recolhido na fábrica (Substituição Tributária — ST). Seu contador abate isso.<br /><br />
-                Mas você <strong style={{ color: 'white' }}>é obrigado a emitir</strong> a nota da peça para o cliente para:
-              </p>
-              <div style={{ marginTop: '10px', display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                {['✅ Justificar sua margem de lucro', '✅ Dar baixa no estoque legal', '✅ Fornecer garantia da peça ao dono do carro'].map((t, i) => (
-                  <p key={i} style={{ margin: 0, color: '#aaa', fontSize: '12px', padding: '6px 10px', background: '#1a1400', borderRadius: '6px', borderLeft: `3px solid ${COR}` }}>{t}</p>
+            {/* MEI GOLDEN RULES SECTION */}
+            <div className="rounded-[32px] border border-amber-500/30 bg-[linear-gradient(135deg,rgba(245,158,11,0.05),transparent)] p-8 shadow-2xl space-y-6 relative overflow-hidden">
+                <div className="absolute -right-8 -top-8 w-32 h-32 bg-amber-500/10 blur-3xl rounded-full"></div>
+                
+                <div className="flex items-center gap-3">
+                    <div className="w-12 h-12 bg-amber-500/10 rounded-2xl flex items-center justify-center text-amber-500 border border-amber-500/20">
+                        <Sparkles size={24} />
+                    </div>
+                    <div>
+                        <h3 className="text-2xl font-black text-amber-500 leading-none">Regra de Ouro do MEI</h3>
+                        <p className="text-slate-500 text-xs mt-1 uppercase tracking-widest font-bold">Informação Essencial</p>
+                    </div>
+                </div>
+
+                <div className="rounded-2xl bg-slate-950/50 p-5 border border-slate-800">
+                    <p className="text-sm text-slate-300 leading-relaxed">
+                        Por lei, o <span className="text-amber-500 font-black uppercase">MEI não é obrigado</span> a emitir nota fiscal para pessoa física (CPF) — apenas para empresas (CNPJ), a menos que o cliente peça.
+                    </p>
+                </div>
+
+                <div className="space-y-3">
+                    {[
+                        { icon: <CheckCircle2 size={16} />, text: 'Cliente com CNPJ (empresa) → Nota Obrigatória', color: 'text-emerald-500', bg: 'bg-emerald-500/5' },
+                        { icon: <AlertCircle size={16} />, text: 'Cliente com CPF (física) → Só se ele exigir', color: 'text-amber-500', bg: 'bg-amber-500/5' },
+                        { icon: <Zap size={16} />, text: 'Se o cliente não pedir, você está dispensado', color: 'text-cyan-500', bg: 'bg-cyan-500/5' },
+                    ].map((item, i) => (
+                        <div key={i} className={`flex items-center gap-4 p-4 rounded-2xl border border-slate-800/50 ${item.bg}`}>
+                            <span className={item.color}>{item.icon}</span>
+                            <span className="text-xs font-bold text-slate-400">{item.text}</span>
+                        </div>
+                    ))}
+                </div>
+            </div>
+          </div>
+
+          {/* HOW TO EMIT SELECTOR */}
+          <div className="rounded-[32px] border border-slate-800 bg-slate-950/80 p-8 shadow-2xl">
+              <h3 className="text-xl font-black text-white mb-6 flex items-center gap-2">
+                <ArrowRight className="text-emerald-500" size={20} />
+                Como Emitir — Escolha sua Empresa
+              </h3>
+              
+              <div className="grid gap-4 sm:grid-cols-2 mb-8">
+                {[
+                  { key: 'mei', label: '⚙️ MEI', desc: 'Microempreendedor Individual' },
+                  { key: 'me', label: '🏢 ME/Simples', desc: 'Microempresa / Simples Nacional' },
+                ].map(t => (
+                  <button 
+                    key={t.key} 
+                    onClick={() => setTipoEmpresa(tipoEmpresa === t.key ? '' : t.key)}
+                    className={`flex flex-col items-center justify-center p-6 rounded-[24px] border-2 transition-all gap-1 ${tipoEmpresa === t.key ? 'bg-emerald-500/10 border-emerald-500 text-emerald-400' : 'bg-slate-900/50 border-slate-800 text-slate-500 hover:border-slate-700'}`}
+                  >
+                    <span className="text-xl font-black uppercase tracking-wider">{t.label}</span>
+                    <span className="text-[10px] font-bold opacity-60">{t.desc}</span>
+                  </button>
                 ))}
               </div>
-            </div>
 
-            {/* CPF / CNPJ */}
-            <div style={{ background: '#0d0020', border: `1px solid ${ROXO}`, borderRadius: '10px', padding: '14px' }}>
-              <p style={{ color: ROXO, fontWeight: '900', margin: '0 0 8px', fontSize: '13px' }}>👤 E quando o cliente não tem CPF/CNPJ?</p>
-              <p style={{ color: '#ccc', fontSize: '13px', margin: 0, lineHeight: '1.6' }}>
-                Sem problema! Use <strong style={{ color: 'white' }}>CONSUMIDOR FINAL</strong> no campo de cliente. A maioria das prefeituras e a SEFAZ aceitam isso normalmente para valores mais baixos.
-              </p>
-            </div>
-          </div>
+              {tipoEmpresa && (
+                <div className="grid gap-6 sm:grid-cols-2 animate-in slide-in-from-top-4 duration-300">
+                    <div className="rounded-[28px] border border-emerald-500/20 bg-emerald-500/5 p-6 space-y-4">
+                        <p className="text-emerald-400 font-black text-sm uppercase tracking-widest flex items-center gap-2">
+                            <Wrench size={16} /> Mão de Obra (NFS-e)
+                        </p>
+                        <div className="space-y-3">
+                            {(tipoEmpresa === 'mei' ? [
+                                'Governo unificado — Totalmente GRATUITO',
+                                'Acesse Portal Nacional (gov.br/nfse) ou app Mobile',
+                                'Use os dados formatados na aba "Gerar Dados"',
+                                'Cole, descreva o serviço e emita em segundos'
+                            ] : [
+                                'Uso do Portal Nacional ou sistema integrado',
+                                'Siga as novas regras de 2026 para padronização',
+                                'Use a descrição automatizada do Oficina IA',
+                                'Mantenha histórico no portal para conciliação'
+                            ]).map((txt, i) => (
+                                <div key={i} className="flex gap-3 text-xs text-slate-400">
+                                    <span className="text-emerald-500 font-black">{i+1}.</span>
+                                    <span>{txt}</span>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
 
-          {/* REGRA DE OURO MEI */}
-          <div style={{ background: 'linear-gradient(135deg, #1a1400, #0a0a00)', border: `2px solid ${WARN}`, borderRadius: '14px', padding: '20px', marginBottom: '16px' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '12px' }}>
-              <span style={{ fontSize: '28px' }}>⭐</span>
-              <div>
-                <p style={{ margin: 0, color: WARN, fontWeight: '900', fontSize: '15px' }}>Regra de Ouro do MEI</p>
-                <p style={{ margin: 0, color: '#666', fontSize: '11px' }}>Informação que tira um peso enorme das costas do mecânico</p>
-              </div>
-            </div>
-            <div style={{ background: '#0a0800', borderRadius: '10px', padding: '14px', marginBottom: '10px' }}>
-              <p style={{ color: '#ccc', fontSize: '13px', lineHeight: '1.7', margin: 0 }}>
-                Por lei, o <strong style={{ color: WARN }}>MEI não é obrigado a emitir nota fiscal para pessoa física (CPF)</strong> — apenas para pessoa jurídica (CNPJ), a não ser que o cliente pessoa física exija a nota.
-              </p>
-            </div>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-              {[
-                { icon: '✅', text: 'Cliente com CNPJ (empresa) → nota obrigatória', cor: COR },
-                { icon: '⚠️', text: 'Cliente com CPF (pessoa física) → só se ele pedir', cor: WARN },
-                { icon: '💡', text: 'Se o cliente não pedir, você não é obrigado a emitir', cor: '#38bdf8' },
-              ].map((item, i) => (
-                <div key={i} style={{ display: 'flex', alignItems: 'flex-start', gap: '10px', padding: '10px 12px', background: '#111', borderRadius: '8px', borderLeft: `3px solid ${item.cor}` }}>
-                  <span style={{ fontSize: '16px', flexShrink: 0 }}>{item.icon}</span>
-                  <p style={{ margin: 0, color: '#ccc', fontSize: '12px', lineHeight: '1.5' }}>{item.text}</p>
+                    <div className="rounded-[28px] border border-cyan-500/20 bg-cyan-500/5 p-6 space-y-4">
+                        <p className="text-cyan-400 font-black text-sm uppercase tracking-widest flex items-center gap-2">
+                            <Package size={16} /> Peças (NF-e)
+                        </p>
+                        <div className="space-y-3">
+                            {(tipoEmpresa === 'mei' ? [
+                                'Utilize a NFA-e (Nota Fiscal Avulsa Eletrônica)',
+                                'Acesse o portal da SEFAZ do seu Estado',
+                                'Procure por Nota Avulsa de Produtor (Gratuito)',
+                                'Use a lista de peças da O.S. importada aqui'
+                            ] : [
+                                'Exige Certificado Digital (A1 ou A3)',
+                                'Use Emissor Gratuito do Sebrae ou similar',
+                                'Copie a lista de peças consolidada da O.S.',
+                                'Lance no emissor e gere o DANFE oficial'
+                            ]).map((txt, i) => (
+                                <div key={i} className="flex gap-3 text-xs text-slate-400">
+                                    <span className="text-cyan-500 font-black">{i+1}.</span>
+                                    <span>{txt}</span>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
                 </div>
-              ))}
-            </div>
-          </div>
-
-          <div style={{ background: '#111', border: '1px solid #333', borderRadius: '14px', padding: '20px', marginBottom: '16px' }}>
-            <h3 style={{ color: 'white', margin: '0 0 14px', fontSize: '16px' }}>🚀 Como Emitir — Escolha o tipo da sua empresa:</h3>
-            <div style={{ display: 'flex', gap: '10px', marginBottom: '16px' }}>
-              {[
-                { key: 'mei', label: '⚙️ MEI', desc: 'Microempreendedor Individual' },
-                { key: 'me', label: '🏢 ME/Simples', desc: 'Microempresa / Simples Nacional' },
-              ].map(t => (
-                <button key={t.key} onClick={() => setTipoEmpresa(tipoEmpresa === t.key ? '' : t.key)}
-                  style={{ flex: 1, padding: '14px 10px', background: tipoEmpresa === t.key ? COR + '22' : '#0a0a0a', color: tipoEmpresa === t.key ? COR : '#666', border: `2px solid ${tipoEmpresa === t.key ? COR : '#333'}`, borderRadius: '12px', cursor: 'pointer', fontWeight: 'bold', fontSize: '13px', textAlign: 'center' }}>
-                  <span style={{ display: 'block', fontSize: '16px', marginBottom: '2px' }}>{t.label}</span>
-                  <span style={{ fontSize: '10px', fontWeight: 'normal', opacity: 0.7 }}>{t.desc}</span>
-                </button>
-              ))}
-            </div>
-
-            {/* MEI */}
-            {tipoEmpresa === 'mei' && (
-              <div className="animate-fade-in">
-                <div style={{ background: '#001a0a', border: `1px solid ${COR}`, borderRadius: '10px', padding: '16px', marginBottom: '10px' }}>
-                  <p style={{ color: COR, fontWeight: '900', margin: '0 0 10px', fontSize: '13px' }}>🔧 MEI — Mão de Obra (NFS-e)</p>
-                  {[
-                    '1️⃣ O governo unificou a nota de serviço do MEI — é totalmente GRATUITO',
-                    '2️⃣ Acesse o Portal Nacional da NFS-e (gov.br/nfse) ou baixe o app "NFS-e Mobile"',
-                    '3️⃣ Use os dados da O.S. do Oficina IA (aba "Gerar Dados da Nota" ao lado)',
-                    '4️⃣ Cole no portal, descreva o serviço e emita',
-                  ].map((p, i) => (
-                    <p key={i} style={{ margin: '0 0 6px', color: '#ccc', fontSize: '12px', padding: '8px 10px', background: '#002a10', borderRadius: '6px', borderLeft: `3px solid ${COR}` }}>{p}</p>
-                  ))}
-                </div>
-                <div style={{ background: '#001a1f', border: `1px solid ${INFO}`, borderRadius: '10px', padding: '16px' }}>
-                  <p style={{ color: INFO, fontWeight: '900', margin: '0 0 10px', fontSize: '13px' }}>🔩 MEI — Peças (NF-e Avulsa)</p>
-                  {[
-                    '1️⃣ O MEI usa a "Nota Fiscal Avulsa Eletrônica" (NFA-e)',
-                    '2️⃣ Acesse o site da SEFAZ do seu Estado',
-                    '3️⃣ Procure por "NFA-e" ou "Nota Fiscal Avulsa de Produtor" — é gratuito',
-                    '4️⃣ Use os dados de peças da O.S. do Oficina IA',
-                  ].map((p, i) => (
-                    <p key={i} style={{ margin: '0 0 6px', color: '#ccc', fontSize: '12px', padding: '8px 10px', background: '#001a22', borderRadius: '6px', borderLeft: `3px solid ${INFO}` }}>{p}</p>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {/* ME */}
-            {tipoEmpresa === 'me' && (
-              <div className="animate-fade-in">
-                <div style={{ background: '#001a0a', border: `1px solid ${COR}`, borderRadius: '10px', padding: '16px', marginBottom: '10px' }}>
-                  <p style={{ color: COR, fontWeight: '900', margin: '0 0 10px', fontSize: '13px' }}>🔧 ME/Simples — Mão de Obra (NFS-e Nacional)</p>
-                  {[
-                    '1️⃣ Com a lei de 2026, você também deverá usar o Portal Nacional ou sistema integrado',
-                    '2️⃣ Acesse o Portal Nacional NFS-e ou o sistema da sua Prefeitura (se ainda vigente)',
-                    '3️⃣ Use os dados da O.S. gerados aqui no Oficina IA',
-                    '4️⃣ Descreva o serviço (ex: Troca de óleo + filtro + alinhamento)',
-                  ].map((p, i) => (
-                    <p key={i} style={{ margin: '0 0 6px', color: '#ccc', fontSize: '12px', padding: '8px 10px', background: '#002a10', borderRadius: '6px', borderLeft: `3px solid ${COR}` }}>{p}</p>
-                  ))}
-                </div>
-                <div style={{ background: '#001a1f', border: `1px solid ${INFO}`, borderRadius: '10px', padding: '16px' }}>
-                  <p style={{ color: INFO, fontWeight: '900', margin: '0 0 10px', fontSize: '13px' }}>🔩 ME/Simples — Peças (NF-e)</p>
-                  {[
-                    '1️⃣ Você precisará do Certificado Digital (A1 ou A3)',
-                    '2️⃣ Use o Emissor Gratuito do Sebrae ou similar',
-                    '3️⃣ Copie a lista de peças da O.S. do Oficina IA (aba Gerar Dados)',
-                    '4️⃣ Lance no emissor e gere o DANFE para o cliente',
-                  ].map((p, i) => (
-                    <p key={i} style={{ margin: '0 0 6px', color: '#ccc', fontSize: '12px', padding: '8px 10px', background: '#001a22', borderRadius: '6px', borderLeft: `3px solid ${INFO}` }}>{p}</p>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {!tipoEmpresa && (
-              <p style={{ color: '#444', fontSize: '13px', textAlign: 'center', margin: '10px 0' }}>👆 Selecione o tipo da sua empresa para ver o passo a passo</p>
-            )}
+              )}
           </div>
         </div>
       )}
 
       {/* ══════════ ABA: GERAR DADOS ══════════ */}
       {subAba === 'gerar' && (
-        <div className="animate-fade-in">
-
-          {/* PASSO A PASSO EXPLICATIVO FICA AQUI DENTRO AGORA! */}
-          <div style={{ background: '#111', border: `1px solid ${INFO}66`, borderRadius: '12px', padding: '16px', marginBottom: '20px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
-            <p style={{ color: INFO, fontWeight: '900', margin: 0, fontSize: '14px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <span>🎯</span> PASSO A PASSO RÁPIDO PARA EMITIR:
-            </p>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '15px' }}>
-              <div style={{ fontSize: '12px', color: '#ccc', lineHeight: '1.5' }}>
-                <b style={{ color: 'white', display: 'block', marginBottom: '6px' }}>1️⃣ PUXAR OS DADOS</b>
-                Logo abaixo, digite a Placa do cliente e aperte a lupa (ou Enter). A IA preenche os valores da O.S.
-              </div>
-              <div style={{ fontSize: '12px', color: '#ccc', lineHeight: '1.5' }}>
-                <b style={{ color: 'white', display: 'block', marginBottom: '6px' }}>2️⃣ COPIAR O TEXTO</b>
-                Role a tela para baixo e clique no botão grande <strong style={{ color: COR }}>VERDE</strong> (Mão de Obra) ou <strong style={{ color: '#38bdf8' }}>AZUL</strong> (Peças).
-              </div>
-              <div style={{ fontSize: '12px', color: '#ccc', lineHeight: '1.5' }}>
-                <b style={{ color: 'white', display: 'block', marginBottom: '6px' }}>3️⃣ COLAR NO GOVERNO</b>
-                Clique na aba <strong style={{ color: INFO }}>"Portais Oficiais"</strong> ao lado. Lá tem um tutorial com imagens ensinando onde colar o texto no site.
-              </div>
+        <div className="space-y-8 animate-in fade-in duration-500">
+          
+          {/* QUICK STEPS */}
+          <div className="rounded-[32px] border border-cyan-500/30 bg-cyan-500/5 p-8 shadow-2xl">
+            <h3 className="text-lg font-black text-cyan-400 mb-6 flex items-center gap-2">
+                <Wand2 size={20} /> Passo a Passo Rápido
+            </h3>
+            <div className="grid gap-6 md:grid-cols-3">
+                <div className="space-y-2">
+                    <p className="text-white font-black text-xs uppercase tracking-widest flex items-center gap-2">
+                        <span className="w-5 h-5 rounded-full bg-cyan-500 text-slate-950 flex items-center justify-center text-[10px]">1</span> Puxar Dados
+                    </p>
+                    <p className="text-[11px] text-slate-500 leading-relaxed">Digite a placa abaixo e aperte Enter. A IA importará os valores da última O.S.</p>
+                </div>
+                <div className="space-y-2">
+                    <p className="text-white font-black text-xs uppercase tracking-widest flex items-center gap-2">
+                        <span className="w-5 h-5 rounded-full bg-cyan-500 text-slate-950 flex items-center justify-center text-[10px]">2</span> Copiar Texto
+                    </p>
+                    <p className="text-[11px] text-slate-500 leading-relaxed">Clique no botão grande <span className="text-emerald-500">Verde</span> (Serviço) ou <span className="text-cyan-500">Azul</span> (Peças).</p>
+                </div>
+                <div className="space-y-2">
+                    <p className="text-white font-black text-xs uppercase tracking-widest flex items-center gap-2">
+                        <span className="w-5 h-5 rounded-full bg-cyan-500 text-slate-950 flex items-center justify-center text-[10px]">3</span> Colar no Portal
+                    </p>
+                    <p className="text-[11px] text-slate-500 leading-relaxed">Vá em "Portais Oficiais" e cole o texto na caixa "Discriminação dos Serviços".</p>
+                </div>
             </div>
           </div>
 
-          <div style={{ background: '#1a0525', border: `1px solid ${ROXO}55`, borderRadius: '12px', padding: '16px', marginBottom: '20px', display: 'flex', alignItems: 'center', gap: '12px', boxShadow: '0 4px 15px rgba(168,85,247,0.1)' }}>
-            <span style={{ fontSize: '24px' }}>🤖</span>
-            <p style={{ color: '#c4b5fd', fontSize: '12px', margin: 0, fontWeight: 'bold' }}>AUTOMAÇÃO IA: Digite a placa e clique na lupa (ou aperte Enter). O sistema buscará os dados da última O.S. automaticamente!</p>
-          </div>
+          <div className="grid gap-8 lg:grid-cols-[1fr_400px]">
+            
+            {/* INPUT SECTION */}
+            <div className="space-y-6">
+                <div className="rounded-[32px] border border-slate-800 bg-slate-950/80 p-8 shadow-2xl relative overflow-hidden">
+                    <div className="absolute top-0 left-0 w-1.5 h-full bg-emerald-500"></div>
+                    
+                    <h4 className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-600 mb-6 flex items-center gap-2">
+                        <Sparkles size={12} className="text-emerald-500" /> Importação de O.S.
+                    </h4>
 
-          {/* Campos */}
-          <div style={{ background: '#0a0a0a', padding: '20px', borderRadius: '16px', marginBottom: '20px', border: '1px solid #222', boxShadow: '0 10px 30px rgba(0,0,0,0.5)', position: 'relative', overflow: 'hidden' }}>
-            <div style={{ position: 'absolute', top: 0, left: 0, width: '4px', height: '100%', background: ROXO }}></div>
+                    <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 mb-8">
+                        <div className="relative">
+                            <span className="block text-[10px] font-black uppercase tracking-[0.2em] text-slate-500 mb-2 flex items-center gap-2">
+                                <Car size={14} /> Placa do Veículo
+                            </span>
+                            <div className="relative">
+                                <input 
+                                    value={placa}
+                                    onChange={e => setPlaca(e.target.value.toUpperCase())}
+                                    onBlur={(e) => buscarDadosPorPlaca(e.target.value)}
+                                    onKeyDown={(e) => { if (e.key === 'Enter') buscarDadosPorPlaca(e.target.value); }}
+                                    placeholder="ABC1234"
+                                    className="w-full rounded-2xl border border-emerald-500/30 bg-slate-900/50 px-4 py-4 text-sm font-black text-white outline-none focus:border-emerald-500 shadow-[0_0_20px_-10px_rgba(16,185,129,0.3)] placeholder:text-slate-700 uppercase tracking-widest"
+                                />
+                                <button 
+                                    onClick={() => buscarDadosPorPlaca(placa)}
+                                    className="absolute right-2 top-1/2 -translate-y-1/2 w-10 h-10 bg-emerald-500 rounded-xl flex items-center justify-center text-slate-950 hover:bg-emerald-400 transition-all shadow-lg"
+                                >
+                                    <Search size={18} />
+                                </button>
+                            </div>
+                        </div>
 
-            <p style={{ color: ROXO, fontSize: '10px', fontWeight: '900', letterSpacing: '1.5px', margin: '0 0 16px' }}>CARREGAR DADOS DA O.S.</p>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '12px', marginBottom: '16px' }}>
+                        <Field label="Modelo do Carro" value={modeloCarro} onChange={setModeloCarro} placeholder="Ex: Gol 1.0" icon={<Car size={14} />} />
+                        <Field label="Nº da O.S." value={numeroOS} onChange={v => setNumeroOS(v.toUpperCase())} placeholder="Ex: AB1234" icon={<Hash size={14} />} />
+                    </div>
 
-              {/* CAMPO DA PLACA COM BOTÃO DE LUPA EMBUTIDO */}
-              <div style={{ position: 'relative', width: '100%' }}>
-                <input value={placa}
-                  onChange={e => setPlaca(e.target.value.toUpperCase())}
-                  onBlur={(e) => buscarDadosPorPlaca(e.target.value)}
-                  onKeyDown={(e) => { if (e.key === 'Enter') buscarDadosPorPlaca(e.target.value); }}
-                  placeholder="PLACA (Ex: ABC1234)"
-                  style={{ padding: '16px', paddingRight: '48px', background: '#111', border: `1px solid ${ROXO}88`, color: 'white', borderRadius: '12px', fontSize: '14px', fontWeight: 'bold', boxSizing: 'border-box', width: '100%', boxShadow: `0 0 15px ${ROXO}22` }} />
+                    <div className="pt-6 border-t border-slate-800 grid gap-4 sm:grid-cols-2">
+                        <Field label="Nome do Cliente" value={nomeCliente} onChange={setNomeCliente} placeholder="Ou Consumidor Final" icon={<User size={14} />} />
+                        <Field label="CPF ou CNPJ" value={documento} onChange={setDocumento} placeholder="Opcional" icon={<ShieldCheck size={14} />} />
+                    </div>
+                </div>
 
-                <button
-                  onClick={() => buscarDadosPorPlaca(placa)}
-                  title="Buscar O.S."
-                  style={{ position: 'absolute', right: '8px', top: '50%', transform: 'translateY(-50%)', background: ROXO, border: 'none', borderRadius: '8px', width: '36px', height: '36px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', boxShadow: '0 2px 5px rgba(0,0,0,0.3)' }}>
-                  🔍
-                </button>
-              </div>
+                {/* COPY SECTIONS */}
+                <div className="grid gap-6 sm:grid-cols-2">
+                    <div className="rounded-[32px] border border-emerald-500/20 bg-slate-950/80 p-8 shadow-2xl space-y-6 relative group overflow-hidden">
+                        <div className="absolute top-0 right-0 px-4 py-1.5 bg-emerald-500 text-slate-950 text-[9px] font-black uppercase tracking-widest rounded-bl-2xl">Mão de Obra</div>
+                        
+                        <div className="space-y-4">
+                            <h5 className="text-emerald-400 font-black text-sm uppercase tracking-widest flex items-center gap-2">
+                                <Wrench size={16} /> NFS-e Nacional
+                            </h5>
+                            <textarea 
+                                value={servicos} 
+                                onChange={e => setServicos(e.target.value)}
+                                placeholder="Descrição dos serviços..."
+                                className="w-full rounded-2xl border border-slate-800 bg-slate-900/50 p-4 text-xs text-slate-400 outline-none focus:border-emerald-500/50 resize-none h-24"
+                            />
+                            <div className="p-4 rounded-2xl bg-emerald-500/5 border border-emerald-500/10 text-center">
+                                <span className="text-[10px] text-slate-500 font-black uppercase tracking-widest block mb-1">Valor do Serviço</span>
+                                <span className="text-3xl font-black text-emerald-400">{formatMoeda(valorServico)}</span>
+                            </div>
+                            <button 
+                                onClick={() => copiar(textoNFSe, setCopiadoNFS)}
+                                className={`w-full py-4 rounded-2xl font-black text-[10px] uppercase tracking-widest transition-all flex items-center justify-center gap-2 ${copiadoNFS ? 'bg-emerald-500 text-slate-950' : 'bg-slate-800 text-emerald-400 border border-emerald-500/20 hover:bg-slate-700'}`}
+                            >
+                                {copiadoNFS ? <CheckCircle2 size={16} /> : <Copy size={16} />}
+                                {copiadoNFS ? 'Copiado!' : 'Copiar para NFS-e'}
+                            </button>
+                        </div>
+                    </div>
 
-              <input value={modeloCarro} onChange={e => setModeloCarro(e.target.value)} placeholder="Modelo (ex: Gol 1.0)"
-                style={{ padding: '16px', background: '#111', border: '1px solid #333', color: 'white', borderRadius: '12px', fontSize: '14px', boxSizing: 'border-box', width: '100%' }} />
-
-              <input value={numeroOS} onChange={e => setNumeroOS(e.target.value.toUpperCase())} placeholder="Nº da O.S. (ex: AB1234)"
-                style={{ padding: '16px', background: '#111', border: '1px solid #333', color: 'white', borderRadius: '12px', fontSize: '14px', boxSizing: 'border-box', width: '100%' }} />
+                    <div className="rounded-[32px] border border-cyan-500/20 bg-slate-950/80 p-8 shadow-2xl space-y-6 relative group overflow-hidden">
+                        <div className="absolute top-0 right-0 px-4 py-1.5 bg-cyan-500 text-slate-950 text-[9px] font-black uppercase tracking-widest rounded-bl-2xl">Peças e Fluidos</div>
+                        
+                        <div className="space-y-4">
+                            <h5 className="text-cyan-400 font-black text-sm uppercase tracking-widest flex items-center gap-2">
+                                <Package size={16} /> NF-e Estadual
+                            </h5>
+                            <textarea 
+                                value={pecas} 
+                                onChange={e => setPecas(e.target.value)}
+                                placeholder="Lista de peças aplicadas..."
+                                className="w-full rounded-2xl border border-slate-800 bg-slate-900/50 p-4 text-xs text-slate-400 outline-none focus:border-cyan-500/50 resize-none h-24"
+                            />
+                            <div className="p-4 rounded-2xl bg-cyan-500/5 border border-cyan-500/10 text-center">
+                                <span className="text-[10px] text-slate-500 font-black uppercase tracking-widest block mb-1">Valor das Peças</span>
+                                <span className="text-3xl font-black text-cyan-400">{formatMoeda(valorPecas)}</span>
+                            </div>
+                            <button 
+                                onClick={() => copiar(textoNFe, setCopiadoNFe)}
+                                className={`w-full py-4 rounded-2xl font-black text-[10px] uppercase tracking-widest transition-all flex items-center justify-center gap-2 ${copiadoNFe ? 'bg-cyan-500 text-slate-950' : 'bg-slate-800 text-cyan-400 border border-cyan-500/20 hover:bg-slate-700'}`}
+                            >
+                                {copiadoNFe ? <CheckCircle2 size={16} /> : <Copy size={16} />}
+                                {copiadoNFe ? 'Copiado!' : 'Copiar para NF-e'}
+                            </button>
+                        </div>
+                    </div>
+                </div>
             </div>
 
-            <p style={{ color: '#666', fontSize: '10px', fontWeight: 'bold', letterSpacing: '1px', margin: '20px 0 12px', borderTop: '1px solid #222', paddingTop: '20px' }}>👤 DADOS DO CLIENTE</p>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
-              <input value={nomeCliente} onChange={e => setNomeCliente(e.target.value)} placeholder="Nome do cliente (ou Consumidor Final)"
-                style={{ padding: '14px', background: '#111', border: '1px solid #333', color: 'white', borderRadius: '12px', fontSize: '13px', boxSizing: 'border-box', width: '100%' }} />
-              <input value={documento} onChange={e => setDocumento(e.target.value)} placeholder="CPF ou CNPJ (opcional)"
-                style={{ padding: '14px', background: '#111', border: '1px solid #333', color: 'white', borderRadius: '12px', fontSize: '13px', boxSizing: 'border-box', width: '100%' }} />
+            {/* AI ROBOT MESSAGE */}
+            <div className="rounded-[32px] border border-emerald-500/20 bg-emerald-500/5 p-8 flex items-center gap-6 group">
+                <div className="w-20 h-20 bg-slate-950 rounded-[28px] border border-emerald-500/30 flex items-center justify-center text-emerald-500 shadow-lg group-hover:scale-110 transition-transform">
+                    <Sparkles size={36} />
+                </div>
+                <div className="flex-1 space-y-1">
+                    <h4 className="text-lg font-black text-white">Inteligência Fiscal</h4>
+                    <p className="text-xs text-slate-400 leading-relaxed">
+                        Ao digitar a placa, nosso assistente busca instantaneamente o histórico para preencher valores, serviços e dados do cliente. Isso economiza até <span className="text-emerald-500 font-bold">5 minutos</span> por emissão.
+                    </p>
+                </div>
             </div>
-          </div>
-
-          {/* NFS-e — Serviço */}
-          <div style={{ background: '#0a0a0a', border: `1px solid ${COR}55`, borderRadius: '16px', padding: '24px', marginBottom: '20px', position: 'relative', overflow: 'hidden' }}>
-            <div style={{ position: 'absolute', top: 0, right: 0, background: COR, color: 'black', fontSize: '9px', fontWeight: '900', padding: '6px 12px', borderBottomLeftRadius: '12px', letterSpacing: '1px' }}>PORTAL NACIONAL 2026</div>
-            <p style={{ color: COR, fontWeight: '900', margin: '0 0 16px', fontSize: '15px' }}>🔧 NFS-e — Mão de Obra</p>
-            <textarea value={servicos} onChange={e => setServicos(e.target.value)}
-              placeholder="Ex: Troca de óleo + filtro de óleo&#10;Alinhamento e balanceamento"
-              rows={3} style={{ width: '100%', padding: '16px', background: '#111', border: '1px solid #333', color: 'white', borderRadius: '12px', resize: 'vertical', fontSize: '13px', boxSizing: 'border-box', marginBottom: '12px' }} />
-            <input value={valorServico} onChange={e => setValorServico(e.target.value)} placeholder="Valor da Mão de Obra (ex: 350)"
-              type="number" style={{ width: '100%', padding: '20px', background: '#050505', border: `1px solid ${COR}44`, color: COR, borderRadius: '12px', fontSize: '24px', fontWeight: '900', textAlign: 'center', boxSizing: 'border-box', marginBottom: '20px' }} />
-
-            {/* Preview NFS-e */}
-            <button onClick={() => copiar(textoNFSe, setCopiadoNFS)}
-              style={{ width: '100%', padding: '18px', background: copiadoNFS ? COR : COR + '11', color: copiadoNFS ? 'black' : COR, border: `1px solid ${COR}`, borderRadius: '12px', fontWeight: '900', fontSize: '14px', cursor: 'pointer', transition: 'all 0.3s', textTransform: 'uppercase', letterSpacing: '1px' }}>
-              {copiadoNFS ? '✅ Copiado! Cole no Emissor Nacional' : '📄 Copiar Texto Pronto para NFS-e'}
-            </button>
-          </div>
-
-          {/* NF-e — Peças */}
-          <div style={{ background: '#0a0a0a', border: `1px solid ${INFO}55`, borderRadius: '16px', padding: '24px', marginBottom: '20px', position: 'relative', overflow: 'hidden' }}>
-            <div style={{ position: 'absolute', top: 0, right: 0, background: INFO, color: 'black', fontSize: '9px', fontWeight: '900', padding: '6px 12px', borderBottomLeftRadius: '12px', letterSpacing: '1px' }}>SEFAZ ESTADUAL</div>
-            <p style={{ color: INFO, fontWeight: '900', margin: '0 0 16px', fontSize: '15px' }}>📦 NF-e — Peças e Fluidos</p>
-            <textarea value={pecas} onChange={e => setPecas(e.target.value)}
-              placeholder="Ex: 1x Óleo 5W30 Castrol – R$89,00&#10;1x Filtro de óleo – R$35,00"
-              rows={4} style={{ width: '100%', padding: '16px', background: '#111', border: '1px solid #333', color: 'white', borderRadius: '12px', resize: 'vertical', fontSize: '13px', boxSizing: 'border-box', marginBottom: '12px' }} />
-            <input value={valorPecas} onChange={e => setValorPecas(e.target.value)} placeholder="Valor total das Peças (ex: 244)"
-              type="number" style={{ width: '100%', padding: '20px', background: '#050505', border: `1px solid ${INFO}44`, color: INFO, borderRadius: '12px', fontSize: '24px', fontWeight: '900', textAlign: 'center', boxSizing: 'border-box', marginBottom: '20px' }} />
-
-            {/* Preview NF-e */}
-            <button onClick={() => copiar(textoNFe, setCopiadoNFe)}
-              style={{ width: '100%', padding: '18px', background: copiadoNFe ? INFO : INFO + '11', color: copiadoNFe ? 'black' : INFO, border: `1px solid ${INFO}`, borderRadius: '12px', fontWeight: '900', fontSize: '14px', cursor: 'pointer', transition: 'all 0.3s', textTransform: 'uppercase', letterSpacing: '1px' }}>
-              {copiadoNFe ? '✅ Copiado! Cole na SEFAZ' : '📦 Copiar Texto Pronto para NF-e'}
-            </button>
           </div>
         </div>
       )}
 
-      {/* ══════════ ABA: PORTAIS E TUTORIAIS VISUAIS ══════════ */}
+      {/* ══════════ ABA: PORTAIS ══════════ */}
       {subAba === 'portais' && (
-        <div className="animate-fade-in">
+        <div className="space-y-8 animate-in fade-in duration-500">
+          
+          <div className="grid gap-6 md:grid-cols-2">
+              
+              {/* GOV.BR TUTORIAL */}
+              <div className="rounded-[32px] border border-emerald-500/20 bg-slate-950/80 p-8 shadow-2xl space-y-6">
+                <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 bg-emerald-500/10 rounded-xl flex items-center justify-center text-emerald-500">
+                            <Globe size={20} />
+                        </div>
+                        <h3 className="text-xl font-black text-white">Portal NFS-e Nacional</h3>
+                    </div>
+                    <span className="text-[10px] font-black uppercase tracking-widest text-emerald-500">Mão de Obra</span>
+                </div>
 
-          {/* TUTORIAL MÃO DE OBRA (GOV.BR) */}
-          <div style={{ background: '#001a0a', border: `2px solid ${COR}55`, borderRadius: '14px', padding: '24px', marginBottom: '20px', position: 'relative' }}>
-            <h3 style={{ color: COR, margin: '0 0 20px', fontSize: '18px', borderBottom: `1px solid ${COR}33`, paddingBottom: '10px' }}>
-              🟢 Como emitir MÃO DE OBRA (Site: gov.br/nfse)
-            </h3>
+                <div className="space-y-4">
+                    {[
+                        { step: '1', title: 'Login Gov.br', desc: 'Acesse com seu CPF (Prata/Ouro) e vincule o CNPJ da sua oficina.' },
+                        { step: '2', title: 'Emissão Simplificada', desc: 'Clique em "Nova NFS-e" e selecione o modo simplificado para rapidez.' },
+                        { step: '3', title: 'Colar Descrição', desc: 'No campo "Discriminação", cole o texto gerado pelo Oficina IA.' }
+                    ].map((item, i) => (
+                        <div key={i} className="flex gap-4 p-4 rounded-2xl bg-slate-900/50 border border-slate-800">
+                            <span className="w-8 h-8 rounded-xl bg-emerald-500 flex items-center justify-center text-slate-950 font-black text-sm shrink-0">{item.step}</span>
+                            <div>
+                                <p className="text-xs font-black text-slate-200 uppercase tracking-wider">{item.title}</p>
+                                <p className="text-[11px] text-slate-500 mt-1">{item.desc}</p>
+                            </div>
+                        </div>
+                    ))}
+                </div>
 
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '20px' }}>
-
-              {/* Passo 1 - Gov.br */}
-              <div style={{ background: '#0a0a0a', padding: '16px', borderRadius: '10px', border: '1px solid #333' }}>
-                <span style={{ background: COR, color: 'black', padding: '4px 8px', borderRadius: '4px', fontWeight: 'bold', fontSize: '12px', marginBottom: '10px', display: 'inline-block' }}>PASSO 1</span>
-                <p style={{ color: 'white', fontWeight: 'bold', fontSize: '14px', margin: '0 0 8px' }}>Cadastro e Login</p>
-                <p style={{ color: '#aaa', fontSize: '12px', lineHeight: '1.5', margin: 0 }}>
-                  Acesse o 1º link verde abaixo. Na tela inicial do Governo, procure o botão azul escrito <strong style={{ color: INFO }}>"Entrar com gov.br"</strong> no canto superior direito.<br /><br />
-                  <em>Obs: Se for a 1ª vez, você fará login com seu CPF e precisará vincular o seu CNPJ lá dentro (conta Prata ou Ouro).</em>
-                </p>
+                <div className="pt-4 flex flex-col gap-2">
+                    <PortalLink label="Acessar Portal Nacional" url="https://www.gov.br/nfse/pt-br" tone="success" />
+                    <div className="grid grid-cols-2 gap-2">
+                        <PortalLink label="App Android" url="https://play.google.com/store/search?q=nfse+mobile" tone="info" />
+                        <PortalLink label="App iOS" url="https://apps.apple.com/br/app/nfs-e-mobile/id1090373239" tone="info" />
+                    </div>
+                </div>
               </div>
 
-              {/* Passo 2 - Gov.br */}
-              <div style={{ background: '#0a0a0a', padding: '16px', borderRadius: '10px', border: '1px solid #333' }}>
-                <span style={{ background: COR, color: 'black', padding: '4px 8px', borderRadius: '4px', fontWeight: 'bold', fontSize: '12px', marginBottom: '10px', display: 'inline-block' }}>PASSO 2</span>
-                <p style={{ color: 'white', fontWeight: 'bold', fontSize: '14px', margin: '0 0 8px' }}>Emissão Simplificada</p>
-                <p style={{ color: '#aaa', fontSize: '12px', lineHeight: '1.5', margin: 0 }}>
-                  Já dentro do painel do governo, clique no ícone chamado <strong style={{ color: 'white' }}>"Nova NFS-e"</strong> ou na opção de <strong style={{ color: 'white' }}>"Emissão Simplificada"</strong>.<br /><br />
-                  Ele vai pedir para você digitar o CPF do cliente e o Valor total da Mão de Obra.
-                </p>
+              {/* SEFAZ/SEBRAE TUTORIAL */}
+              <div className="rounded-[32px] border border-cyan-500/20 bg-slate-950/80 p-8 shadow-2xl space-y-6">
+                <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 bg-cyan-500/10 rounded-xl flex items-center justify-center text-cyan-400">
+                            <Monitor size={20} />
+                        </div>
+                        <h3 className="text-xl font-black text-white">Portal NF-e Peças</h3>
+                    </div>
+                    <span className="text-[10px] font-black uppercase tracking-widest text-cyan-400">Produtos</span>
+                </div>
+
+                <div className="space-y-4">
+                    {[
+                        { step: '!', title: 'Certificado Digital', desc: 'Para peças (NF-e), você precisa do Certificado A1 instalado.' },
+                        { step: '>', title: 'Emissor Sebrae', desc: 'O emissor gratuito do Sebrae é a melhor opção para Microempresas.' },
+                        { step: '+', title: 'Dados Adicionais', desc: 'Crie um item genérico e cole a lista de peças detalhada.' }
+                    ].map((item, i) => (
+                        <div key={i} className="flex gap-4 p-4 rounded-2xl bg-slate-900/50 border border-slate-800">
+                            <span className="w-8 h-8 rounded-xl bg-cyan-500 flex items-center justify-center text-slate-950 font-black text-sm shrink-0">{item.step}</span>
+                            <div>
+                                <p className="text-xs font-black text-slate-200 uppercase tracking-wider">{item.title}</p>
+                                <p className="text-[11px] text-slate-500 mt-1">{item.desc}</p>
+                            </div>
+                        </div>
+                    ))}
+                </div>
+
+                <div className="pt-4 flex flex-col gap-2">
+                    <PortalLink label="Emissor Gratuito Sebrae" url="https://www.sebrae.com.br/sites/PortalSebrae/bis/emissao-de-nota-fiscal-eletronica" tone="info" />
+                    <PortalLink label="Consultar SEFAZ Nacional" url="https://www.nfe.fazenda.gov.br" tone="info" />
+                </div>
               </div>
-
-              {/* Passo 3 - Gov.br */}
-              <div style={{ background: '#0a0a0a', padding: '16px', borderRadius: '10px', border: '1px solid #333' }}>
-                <span style={{ background: COR, color: 'black', padding: '4px 8px', borderRadius: '4px', fontWeight: 'bold', fontSize: '12px', marginBottom: '10px', display: 'inline-block' }}>PASSO 3</span>
-                <p style={{ color: 'white', fontWeight: 'bold', fontSize: '14px', margin: '0 0 8px' }}>Onde colar o texto?</p>
-                <p style={{ color: '#aaa', fontSize: '12px', lineHeight: '1.5', margin: 0 }}>
-                  Role a tela do governo para baixo até achar uma caixa grande escrita <strong style={{ color: WARN }}>"Discriminação dos Serviços"</strong>.<br /><br />
-                  Clique nela com o botão direito, escolha <strong>"Colar"</strong> (para colar o texto gerado pela IA) e clique em Emitir Nota!
-                </p>
-              </div>
-
-            </div>
-          </div>
-
-          {/* TUTORIAL PEÇAS (SEFAZ/SEBRAE) */}
-          <div style={{ background: '#001a1f', border: `2px solid ${INFO}55`, borderRadius: '14px', padding: '24px', marginBottom: '30px' }}>
-            <h3 style={{ color: INFO, margin: '0 0 20px', fontSize: '18px', borderBottom: `1px solid ${INFO}33`, paddingBottom: '10px' }}>
-              🔵 Como emitir nota de PEÇAS (NF-e Sefaz)
-            </h3>
-
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
-
-              <div style={{ background: '#0a0a0a', padding: '16px', borderRadius: '10px', border: '1px solid #333' }}>
-                <span style={{ background: INFO, color: 'black', padding: '4px 8px', borderRadius: '4px', fontWeight: 'bold', fontSize: '12px', marginBottom: '10px', display: 'inline-block' }}>ATENÇÃO</span>
-                <p style={{ color: 'white', fontWeight: 'bold', fontSize: '14px', margin: '0 0 8px' }}>O site da Fazenda é só para consulta</p>
-                <p style={{ color: '#aaa', fontSize: '12px', lineHeight: '1.5', margin: 0 }}>
-                  Aquele site laranja "nfe.fazenda.gov.br" serve apenas para verificar notas antigas. Para emitir uma NF-e de peças de forma gratuita, você precisa usar o <strong>Emissor Gratuito do SEBRAE</strong> (2º link azul abaixo). É necessário ter o Certificado Digital (A1) da sua oficina instalado no computador.
-                </p>
-              </div>
-
-              <div style={{ background: '#0a0a0a', padding: '16px', borderRadius: '10px', border: '1px solid #333' }}>
-                <span style={{ background: INFO, color: 'black', padding: '4px 8px', borderRadius: '4px', fontWeight: 'bold', fontSize: '12px', marginBottom: '10px', display: 'inline-block' }}>ONDE COLAR AS PEÇAS</span>
-                <p style={{ color: 'white', fontWeight: 'bold', fontSize: '14px', margin: '0 0 8px' }}>No Emissor do Sebrae</p>
-                <p style={{ color: '#aaa', fontSize: '12px', lineHeight: '1.5', margin: 0 }}>
-                  1. Faça login no portal do Sebrae.<br />
-                  2. Inicie uma nova "Nota Fiscal (NF-e)".<br />
-                  3. Na aba de "Produtos", crie um item genérico (ex: "Peças Ref. a O.S.").<br />
-                  4. Na caixa de "Informações Adicionais" ou "Descrição do Produto", cole a lista de peças gerada pelo nosso sistema.
-                </p>
-              </div>
-
-            </div>
-          </div>
-
-
-          {/* LISTA DE LINKS OFICIAIS */}
-          <h3 style={{ color: 'white', margin: '0 0 16px', fontSize: '16px' }}>🔗 LINKS OFICIAIS DO GOVERNO</h3>
-          <div style={{ background: '#111', border: '1px solid #333', borderRadius: '14px', padding: '20px', marginBottom: '14px' }}>
-            <h3 style={{ color: COR, margin: '0 0 16px', fontSize: '15px' }}>🟢 NFS-e — Mão de Obra</h3>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-              {[
-                { label: '🌐 Portal Nacional NFS-e (gov.br)', url: 'https://www.gov.br/nfse/pt-br', desc: 'Emissor Padrão Nacional (Obrigatório em 2026)' },
-                { label: '📱 App NFS-e Mobile (Android)', url: 'https://play.google.com/store/search?q=nfse+mobile', desc: 'Emita pelo celular' },
-                { label: '📱 App NFS-e Mobile (iOS)', url: 'https://apps.apple.com/br/app/nfs-e-mobile/id1090373239', desc: 'Emita pelo celular' },
-              ].map((item, i) => (
-                <a key={i} href={item.url} target="_blank" rel="noopener noreferrer"
-                  style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '14px', background: '#001a0a', border: `1px solid ${COR}33`, borderRadius: '10px', textDecoration: 'none' }}>
-                  <div>
-                    <p style={{ margin: '0 0 2px', color: COR, fontWeight: 'bold', fontSize: '13px' }}>{item.label}</p>
-                    <p style={{ margin: 0, color: '#555', fontSize: '11px' }}>{item.desc}</p>
-                  </div>
-                  <span style={{ color: COR, fontSize: '18px' }}>→</span>
-                </a>
-              ))}
-            </div>
-          </div>
-
-          <div style={{ background: '#111', border: '1px solid #333', borderRadius: '14px', padding: '20px', marginBottom: '14px' }}>
-            <h3 style={{ color: INFO, margin: '0 0 16px', fontSize: '15px' }}>🔵 NF-e — Peças (SEFAZ Estadual)</h3>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-              {[
-                { label: '🌐 SEFAZ Nacional — Consulta', url: 'https://www.nfe.fazenda.gov.br', desc: 'Portal federal da NF-e' },
-                { label: '💻 Emissor Gratuito SEBRAE', url: 'https://www.sebrae.com.br/sites/PortalSebrae/bis/emissao-de-nota-fiscal-eletronica', desc: 'Emissor NF-e gratuito para ME/MEI' },
-                { label: '🌐 SEFAZ MG', url: 'https://www.fazenda.mg.gov.br', desc: 'Minas Gerais' },
-              ].map((item, i) => (
-                <a key={i} href={item.url} target="_blank" rel="noopener noreferrer"
-                  style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px 14px', background: '#001a1f', border: `1px solid ${INFO}22`, borderRadius: '10px', textDecoration: 'none' }}>
-                  <div>
-                    <p style={{ margin: '0 0 2px', color: INFO, fontWeight: 'bold', fontSize: '13px' }}>{item.label}</p>
-                    <p style={{ margin: 0, color: '#555', fontSize: '11px' }}>{item.desc}</p>
-                  </div>
-                  <span style={{ color: INFO, fontSize: '18px' }}>→</span>
-                </a>
-              ))}
-            </div>
           </div>
         </div>
       )}
     </div>
-
   );
+}
+
+// SHARED COMPONENTS
+
+function MetricCard({ title, value, detail, icon, tone }) {
+  const tones = {
+    info: 'border-cyan-400/20 bg-cyan-400/10 text-cyan-200',
+    success: 'border-emerald-400/20 bg-emerald-400/10 text-emerald-200',
+    danger: 'border-rose-400/20 bg-rose-400/10 text-rose-200',
+    warning: 'border-amber-400/20 bg-amber-400/10 text-amber-100'
+  };
+
+  return (
+    <div className="rounded-[24px] border border-slate-800 bg-slate-950/90 p-5 shadow-2xl shadow-slate-950/30">
+      <div className="flex items-start justify-between gap-4">
+        <div>
+          <p className="text-xs font-bold uppercase tracking-[0.22em] text-slate-500">{title}</p>
+          <h3 className="mt-3 text-2xl font-black text-white">{value}</h3>
+          <p className="mt-2 text-sm text-slate-400">{detail}</p>
+        </div>
+        <div className={`rounded-2xl border p-3 ${tones[tone]}`}>{icon}</div>
+      </div>
+    </div>
+  );
+}
+
+function QuickHighlight({ label, value, helper, tone }) {
+  const tones = {
+    danger: 'border-rose-400/20 bg-rose-400/10 text-rose-100',
+    success: 'border-emerald-400/20 bg-emerald-400/10 text-emerald-100',
+    info: 'border-cyan-400/20 bg-cyan-400/10 text-cyan-100'
+  };
+
+  return (
+    <div className={`rounded-2xl border p-4 backdrop-blur ${tones[tone]}`}>
+      <p className="text-xs uppercase tracking-[0.24em] opacity-80">{label}</p>
+      <p className="mt-2 text-2xl font-black">{value}</p>
+      <p className="mt-1 text-sm opacity-80">{helper}</p>
+    </div>
+  );
+}
+
+function Field({ label, value, onChange, placeholder, type = 'text', icon }) {
+  return (
+    <label className="block space-y-2">
+      <span className="block text-[10px] font-black uppercase tracking-[0.2em] text-slate-500 flex items-center gap-2">
+        {icon}{label}
+      </span>
+      <input
+        type={type}
+        value={value}
+        placeholder={placeholder}
+        onChange={event => onChange(event.target.value)}
+        className="w-full rounded-2xl border border-slate-800 bg-slate-900/50 px-4 py-3 text-xs text-white outline-none transition focus:border-emerald-500/60 placeholder:text-slate-700"
+      />
+    </label>
+  );
+}
+
+function PortalLink({ label, url, tone }) {
+    const tones = {
+        success: 'border-emerald-500/20 bg-emerald-500/5 text-emerald-400 hover:bg-emerald-500 hover:text-slate-950',
+        info: 'border-cyan-500/20 bg-cyan-500/5 text-cyan-400 hover:bg-cyan-500 hover:text-slate-950'
+    };
+    
+    return (
+        <a 
+            href={url} 
+            target="_blank" 
+            rel="noopener noreferrer"
+            className={`flex items-center justify-between px-4 py-3 rounded-xl border text-[10px] font-black uppercase tracking-widest transition-all ${tones[tone]}`}
+        >
+            {label}
+            <ExternalLink size={14} />
+        </a>
+    );
 }

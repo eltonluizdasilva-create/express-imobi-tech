@@ -1,13 +1,28 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { db } from './lib/firebase';
 import { collection, addDoc, getDocs, query, orderBy, deleteDoc, doc, updateDoc, Timestamp } from 'firebase/firestore';
+import { 
+  ClipboardList, 
+  Sparkles, 
+  Clock, 
+  CheckCircle2, 
+  AlertCircle, 
+  Plus, 
+  Calendar, 
+  Trash2, 
+  ChevronDown, 
+  ChevronUp, 
+  Mic, 
+  Save, 
+  X,
+  Type,
+  AlignLeft
+} from 'lucide-react';
 
 const TAREFA_COLOR = '#10b981';
-const WARN_RED = '#ef4444';
+const WARN_RED = '#f43f5e';
 const WARN_YELLOW = '#f59e0b';
-const GREEN_MONEY = '#00E676';
 const BLUE_INFO = '#3b82f6';
-const MAIN = '#FF0033';
 
 function useVoz() {
   const [campoOuvindo, setCampoOuvindo] = useState(null);
@@ -126,224 +141,332 @@ export default function TarefaTab({ oficinaId }) {
     return `${dia}/${mes} ${hora}:${minuto}`;
   };
 
-  const tarefasFiltradas = tarefas.filter(t => {
-    if (filtroStatus === 'pendentes') return t.status === 'pendente';
-    if (filtroStatus === 'concluidas') return t.status === 'concluida';
-    return true;
-  });
+  const tarefasFiltradas = useMemo(() => {
+    return tarefas.filter(t => {
+      if (filtroStatus === 'pendentes') return t.status === 'pendente';
+      if (filtroStatus === 'concluidas') return t.status === 'concluida';
+      return true;
+    });
+  }, [tarefas, filtroStatus]);
+
+  const pendentesCount = useMemo(() => tarefas.filter(t => t.status === 'pendente').length, [tarefas]);
+  const concluidasCount = useMemo(() => tarefas.filter(t => t.status === 'concluida').length, [tarefas]);
+  const urgentesCount = useMemo(() => tarefas.filter(t => { 
+    const s = calcularStatusTarefa(t.dataHora); 
+    return (s === 'urgente' || s === 'vencida') && t.status === 'pendente'; 
+  }).length, [tarefas]);
 
   const paletaStatus = {
-    vencida: { borda: WARN_RED, bg: '#1a0000', badge: WARN_RED, emoji: '🔴', label: 'VENCIDA' },
-    urgente: { borda: WARN_RED, bg: '#1a0500', badge: WARN_RED, emoji: '🚨', label: 'URGENTE' },
-    aviso: { borda: WARN_YELLOW, bg: '#1a1500', badge: WARN_YELLOW, emoji: '⚠️', label: 'PRÓXIMA' },
-    ok: { borda: '#333', bg: '#111', badge: '#555', emoji: '✅', label: 'OK' },
-    sem_data: { borda: BLUE_INFO, bg: '#00051a', badge: BLUE_INFO, emoji: '📝', label: 'SEM DATA' },
+    vencida: { border: 'border-rose-500/30', bg: 'bg-rose-500/5', badge: 'text-rose-400 border-rose-400/20 bg-rose-400/10', icon: <AlertCircle size={14} />, label: 'VENCIDA' },
+    urgente: { border: 'border-rose-400/30', bg: 'bg-rose-400/5', badge: 'text-rose-400 border-rose-400/20 bg-rose-400/10', icon: <AlertCircle size={14} />, label: 'URGENTE' },
+    aviso: { border: 'border-amber-400/30', bg: 'bg-amber-400/5', badge: 'text-amber-400 border-amber-400/20 bg-amber-400/10', icon: <Clock size={14} />, label: 'PRÓXIMA' },
+    ok: { border: 'border-emerald-500/20', bg: 'bg-slate-900/40', badge: 'text-emerald-400 border-emerald-400/20 bg-emerald-400/10', icon: <CheckCircle2 size={14} />, label: 'EM DIA' },
+    sem_data: { border: 'border-slate-800', bg: 'bg-slate-900/40', badge: 'text-slate-400 border-slate-700 bg-slate-800/50', icon: <ClipboardList size={14} />, label: 'SEM DATA' },
   };
 
-  const micBtn = (campo, setter) => (
-    <button
-      onClick={() => ouvirCampo(campo, setter)}
-      title="Gravar voz"
-      style={{
-        background: campoOuvindo === campo ? MAIN : '#222',
-        border: 'none', borderRadius: '8px',
-        color: campoOuvindo === campo ? 'white' : '#888',
-        padding: '0 12px', fontSize: '16px', cursor: 'pointer',
-        flexShrink: 0, transition: 'all 0.2s',
-      }}
-    >
-      {campoOuvindo === campo ? '🔴' : '🎤'}
-    </button>
-  );
-
   return (
-    <div style={{ padding: '20px', background: '#0a0a0a', borderRadius: '12px', color: 'white' }}>
-      {/* HEADER */}
-      <div style={{ marginBottom: '24px' }}>
-        <h1 style={{ fontSize: '24px', fontWeight: '900', margin: '0 0 6px 0', color: TAREFA_COLOR }}>
-          📋 TAREFAS
-        </h1>
-        <p style={{ color: '#666', fontSize: '12px', margin: 0 }}>Gerencie suas tarefas e avisos</p>
-      </div>
+    <div className="mx-auto max-w-7xl space-y-8 px-4 pb-24 pt-4 text-slate-100 md:px-8 font-sans">
+      
+      {/* HERO SECTION */}
+      <section className="overflow-hidden rounded-[28px] border border-emerald-500/20 bg-[radial-gradient(circle_at_top_left,_rgba(16,185,129,0.15),_transparent_32%),radial-gradient(circle_at_bottom_right,_rgba(16,185,129,0.1),_transparent_28%),linear-gradient(135deg,_rgba(15,23,42,0.98),_rgba(3,7,18,0.96))] p-6 shadow-[0_30px_120px_-40px_rgba(16,185,129,0.3)]">
+        <div className="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
+          <div className="max-w-2xl">
+            <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-emerald-500/20 bg-emerald-500/10 px-3 py-1 text-xs font-semibold uppercase tracking-[0.3em] text-emerald-300">
+              <Sparkles size={14} />
+              Gestão de Alta Performance
+            </div>
+            <h1 className="text-3xl font-black tracking-tight text-white md:text-5xl">
+              Organize suas tarefas e mantenha sua oficina em dia.
+            </h1>
+            <p className="mt-3 max-w-xl text-sm leading-6 text-slate-300 md:text-base">
+              Controle prazos, agende compromissos e garanta que nenhuma pendência seja esquecida no dia a dia.
+            </p>
+          </div>
 
-      {/* FORMULÁRIO */}
-      <div style={{ background: '#111', border: `1px solid ${TAREFA_COLOR}22`, borderRadius: '12px', padding: '18px', marginBottom: '24px' }}>
-        <h2 style={{ fontSize: '14px', fontWeight: '800', margin: '0 0 14px 0', color: TAREFA_COLOR, textTransform: 'uppercase' }}>
-          ➕ Nova Tarefa
-        </h2>
-
-        {/* TÍTULO */}
-        <div style={{ marginBottom: '12px' }}>
-          <label style={{ display: 'block', fontSize: '11px', fontWeight: '700', color: '#888', marginBottom: '5px', textTransform: 'uppercase' }}>
-            📌 Título
-          </label>
-          <div style={{ display: 'flex', gap: '6px' }}>
-            <input
-              type="text"
-              placeholder="Ex: Reunião com cliente, Revisar peças..."
-              value={novoTitulo}
-              onChange={(e) => setNovoTitulo(e.target.value)}
-              onKeyPress={(e) => e.key === 'Enter' && adicionarTarefa()}
-              style={{ flex: 1, padding: '10px 12px', background: '#0a0a0a', border: `1px solid ${TAREFA_COLOR}44`, borderRadius: '8px', color: 'white', fontSize: '13px', outline: 'none' }}
-            />
-            {micBtn('tituloTarefa', setNovoTitulo)}
+          <div className="flex gap-4">
+             <button 
+                onClick={() => setFiltroStatus('pendentes')}
+                className="group relative flex items-center gap-2 overflow-hidden rounded-2xl bg-emerald-500 px-6 py-4 font-black text-slate-950 transition-all hover:bg-emerald-400 active:scale-95"
+             >
+               <span className="relative z-10">Ver Pendentes</span>
+               <div className="absolute -right-2 -top-2 opacity-10 transition-transform group-hover:scale-110">
+                 <ClipboardList size={60} />
+               </div>
+             </button>
           </div>
         </div>
+      </section>
 
-        {/* DESCRIÇÃO */}
-        <div style={{ marginBottom: '12px' }}>
-          <label style={{ display: 'block', fontSize: '11px', fontWeight: '700', color: '#888', marginBottom: '5px', textTransform: 'uppercase' }}>
-            📝 Descrição (opcional)
-          </label>
-          <div style={{ display: 'flex', gap: '6px' }}>
-            <textarea
-              placeholder="Detalhes adicionais..."
-              value={novaDescricao}
-              onChange={(e) => setNovaDescricao(e.target.value)}
-              style={{ flex: 1, padding: '10px 12px', background: '#0a0a0a', border: `1px solid ${TAREFA_COLOR}44`, borderRadius: '8px', color: 'white', fontSize: '13px', outline: 'none', minHeight: '60px', resize: 'vertical' }}
-            />
-            {micBtn('descTarefa', setNovaDescricao)}
+      {/* METRIC CARDS GRID */}
+      <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+        <MetricCard 
+          title="Pendentes" 
+          value={pendentesCount} 
+          detail="Tarefas aguardando ação" 
+          icon={<Clock size={20} />} 
+          tone="warning" 
+        />
+        <MetricCard 
+          title="Concluídas" 
+          value={concluidasCount} 
+          detail="Tarefas finalizadas" 
+          icon={<CheckCircle2 size={20} />} 
+          tone="success" 
+        />
+        <MetricCard 
+          title="Urgentes" 
+          value={urgentesCount} 
+          detail="Vencidas ou próximas do prazo" 
+          icon={<AlertCircle size={20} />} 
+          tone="danger" 
+        />
+        <MetricCard 
+          title="Total Geral" 
+          value={tarefas.length} 
+          detail="Histórico de produtividade" 
+          icon={<ClipboardList size={20} />} 
+          tone="info" 
+        />
+      </section>
+
+      <div className="grid gap-8 lg:grid-cols-[1.2fr_0.8fr]">
+        {/* TASK LIST AREA */}
+        <div className="space-y-6">
+          <div className="flex items-center justify-between">
+            <h3 className="text-xl font-black text-white">Suas Tarefas</h3>
+            <div className="flex gap-2">
+              {[['todas', 'Todas'], ['pendentes', 'Pendentes'], ['concluidas', 'Concluídas']].map(([f, label]) => (
+                <button 
+                  key={f} 
+                  onClick={() => setFiltroStatus(f)} 
+                  className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all border ${filtroStatus === f ? 'bg-emerald-500 border-emerald-400 text-slate-950' : 'bg-slate-900 border-slate-800 text-slate-500 hover:text-white'}`}
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
           </div>
-        </div>
 
-        {/* DATA E HORA */}
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', marginBottom: '14px' }}>
-          <div>
-            <label style={{ display: 'block', fontSize: '11px', fontWeight: '700', color: '#888', marginBottom: '5px', textTransform: 'uppercase' }}>
-              📅 Data
-            </label>
-            <input
-              type="date"
-              value={novaData}
-              onChange={(e) => setNovaData(e.target.value)}
-              style={{ width: '100%', padding: '10px 12px', background: '#0a0a0a', border: `1px solid ${TAREFA_COLOR}44`, borderRadius: '8px', color: 'white', fontSize: '13px', outline: 'none', boxSizing: 'border-box' }}
-            />
-          </div>
-          <div>
-            <label style={{ display: 'block', fontSize: '11px', fontWeight: '700', color: '#888', marginBottom: '5px', textTransform: 'uppercase' }}>
-              🕐 Hora
-            </label>
-            <input
-              type="time"
-              value={novaHora}
-              onChange={(e) => setNovaHora(e.target.value)}
-              style={{ width: '100%', padding: '10px 12px', background: '#0a0a0a', border: `1px solid ${TAREFA_COLOR}44`, borderRadius: '8px', color: 'white', fontSize: '13px', outline: 'none', boxSizing: 'border-box' }}
-            />
-          </div>
-        </div>
+          <div className="space-y-4">
+            {tarefasFiltradas.length === 0 && (
+              <div className="flex flex-col items-center justify-center py-20 border-2 border-dashed border-slate-800 rounded-[32px] bg-slate-900/20 text-slate-500">
+                <ClipboardList size={32} className="mb-2 opacity-20" />
+                <p>Nenhuma tarefa encontrada.</p>
+              </div>
+            )}
+            {tarefasFiltradas.map(tarefa => {
+              const statusTarefa = calcularStatusTarefa(tarefa.dataHora);
+              const paleta = paletaStatus[statusTarefa];
+              const expandida = expandidos[tarefa.id];
+              return (
+                <div 
+                  key={tarefa.id} 
+                  className={`group relative overflow-hidden rounded-[24px] border ${paleta.border} ${paleta.bg} p-5 transition-all hover:border-emerald-500/30 shadow-xl shadow-slate-950/20`}
+                >
+                  <div className="flex items-start justify-between gap-4">
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-3 flex-wrap mb-2">
+                        <h4 className={`text-lg font-black text-white ${tarefa.status === 'concluida' ? 'line-through opacity-50' : ''}`}>
+                          {tarefa.titulo}
+                        </h4>
+                        <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-wider border ${paleta.badge}`}>
+                          {paleta.icon}
+                          {paleta.label}
+                        </span>
+                      </div>
+                      
+                      <div className="flex items-center gap-4 text-xs font-bold text-slate-400">
+                        {tarefa.dataHora && (
+                          <span className="flex items-center gap-1.5">
+                            <Calendar size={12} className="text-emerald-500" />
+                            {formatarDataHora(tarefa.dataHora)}
+                          </span>
+                        )}
+                        <span className="flex items-center gap-1.5">
+                          <div className={`w-1.5 h-1.5 rounded-full ${tarefa.status === 'concluida' ? 'bg-emerald-500' : 'bg-amber-500'}`} />
+                          {tarefa.status === 'concluida' ? 'Concluída' : 'Pendente'}
+                        </span>
+                      </div>
 
-        {/* BOTÃO SALVAR */}
-        <button
-          onClick={adicionarTarefa}
-          disabled={carregando}
-          style={{
-            width: '100%', padding: '14px', borderRadius: '10px',
-            background: carregando ? '#0a4a2a' : TAREFA_COLOR,
-            color: 'black', border: 'none',
-            fontWeight: '900', fontSize: '13px', textTransform: 'uppercase',
-            cursor: carregando ? 'not-allowed' : 'pointer',
-            opacity: carregando ? 0.6 : 1,
-            boxShadow: `0 4px 16px ${TAREFA_COLOR}33`,
-          }}
-        >
-          {carregando ? '⏳ Salvando...' : '💾 Salvar Tarefa'}
-        </button>
-      </div>
+                      {tarefa.descricao && !expandida && (
+                        <p className="mt-2 text-sm text-slate-500 truncate max-w-lg">
+                          {tarefa.descricao}
+                        </p>
+                      )}
+                    </div>
 
-      {/* FILTROS */}
-      <div style={{ display: 'flex', gap: '8px', marginBottom: '16px', flexWrap: 'wrap' }}>
-        {[['todas', '📋', TAREFA_COLOR], ['pendentes', '⏳', WARN_YELLOW], ['concluidas', '✅', GREEN_MONEY]].map(([f, icon, cor]) => (
-          <button key={f} onClick={() => setFiltroStatus(f)}
-            style={{
-              padding: '7px 14px', borderRadius: '20px',
-              background: filtroStatus === f ? cor : '#1a1a1a',
-              color: filtroStatus === f ? 'black' : '#666',
-              border: `1px solid ${filtroStatus === f ? cor : '#333'}`,
-              fontWeight: '700', fontSize: '11px', cursor: 'pointer',
-            }}>
-            {icon} {f.charAt(0).toUpperCase() + f.slice(1)} ({f === 'todas' ? tarefas.length : tarefas.filter(t => f === 'pendentes' ? t.status === 'pendente' : t.status === 'concluida').length})
-          </button>
-        ))}
-      </div>
-
-      {/* LISTA */}
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-        {tarefasFiltradas.length === 0 && (
-          <div style={{ background: '#111', border: '1px solid #222', borderRadius: '12px', padding: '30px', textAlign: 'center', color: '#444' }}>
-            <p style={{ fontSize: '16px', margin: 0 }}>📭 Nenhuma tarefa</p>
-          </div>
-        )}
-        {tarefasFiltradas.map(tarefa => {
-          const statusTarefa = calcularStatusTarefa(tarefa.dataHora);
-          const paleta = paletaStatus[statusTarefa];
-          const expandida = expandidos[tarefa.id];
-          return (
-            <div key={tarefa.id} style={{ background: paleta.bg, border: `1px solid ${paleta.borda}`, borderRadius: '12px', padding: '14px' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '10px' }}>
-                <div style={{ flex: 1 }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap', marginBottom: '4px' }}>
-                    <span style={{ fontSize: '14px', fontWeight: '800', color: 'white', textDecoration: tarefa.status === 'concluida' ? 'line-through' : 'none' }}>
-                      {tarefa.titulo}
-                    </span>
-                    <span style={{ background: `${paleta.badge}22`, color: paleta.badge, border: `1px solid ${paleta.badge}44`, padding: '2px 8px', borderRadius: '20px', fontSize: '8px', fontWeight: '800', textTransform: 'uppercase' }}>
-                      {paleta.emoji} {paleta.label}
-                    </span>
+                    <div className="flex gap-2 shrink-0">
+                      <button 
+                        onClick={() => setExpandidos(prev => ({ ...prev, [tarefa.id]: !prev[tarefa.id] }))}
+                        className="w-10 h-10 rounded-xl border border-slate-800 bg-slate-900/50 flex items-center justify-center text-slate-500 hover:text-white transition-colors"
+                      >
+                        {expandida ? <ChevronUp size={18} /> : <ChevronDown size={18} />}
+                      </button>
+                      <button 
+                        onClick={() => deletarTarefa(tarefa.id)}
+                        className="w-10 h-10 rounded-xl border border-rose-500/10 bg-rose-500/5 flex items-center justify-center text-rose-500 hover:bg-rose-500 hover:text-white transition-all opacity-0 group-hover:opacity-100"
+                      >
+                        <Trash2 size={16} />
+                      </button>
+                    </div>
                   </div>
-                  {tarefa.dataHora && <p style={{ color: paleta.badge, fontSize: '11px', fontWeight: '700', margin: 0 }}>🕐 {formatarDataHora(tarefa.dataHora)}</p>}
-                  {tarefa.descricao && <p style={{ color: '#555', fontSize: '11px', margin: '4px 0 0', lineHeight: '1.4' }}>{tarefa.descricao.substring(0, 80)}{tarefa.descricao.length > 80 ? '...' : ''}</p>}
+
+                  {expandida && (
+                    <div className="mt-5 pt-5 border-t border-slate-800/50 space-y-4 animate-in slide-in-from-top-2 duration-200">
+                      {tarefa.descricao && (
+                        <div className="bg-slate-900/80 p-4 rounded-2xl border border-slate-800/50">
+                          <p className="text-sm leading-relaxed text-slate-300 whitespace-pre-wrap">
+                            {tarefa.descricao}
+                          </p>
+                        </div>
+                      )}
+                      
+                      <div className="flex gap-3">
+                        {tarefa.status === 'pendente' ? (
+                          <button 
+                            onClick={() => atualizarStatusTarefa(tarefa.id, 'concluida')}
+                            className="flex-1 inline-flex items-center justify-center gap-2 rounded-xl bg-emerald-500 px-4 py-3 text-xs font-black text-slate-950 transition-all hover:bg-emerald-400 active:scale-95"
+                          >
+                            <CheckCircle2 size={16} /> Marcar como Concluída
+                          </button>
+                        ) : (
+                          <button 
+                            onClick={() => atualizarStatusTarefa(tarefa.id, 'pendente')}
+                            className="flex-1 inline-flex items-center justify-center gap-2 rounded-xl border border-amber-500/20 bg-amber-500/10 px-4 py-3 text-xs font-black text-amber-400 transition-all hover:bg-amber-500/20 active:scale-95"
+                          >
+                            <Clock size={16} /> Reabrir Tarefa
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  )}
                 </div>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', flexShrink: 0 }}>
-                  <button onClick={() => setExpandidos(prev => ({ ...prev, [tarefa.id]: !prev[tarefa.id] }))}
-                    style={{ background: '#1e1e1e', border: '1px solid #333', borderRadius: '6px', color: '#666', padding: '4px 8px', fontSize: '11px', cursor: 'pointer' }}>
-                    {expandida ? '▲' : '▼'}
+              );
+            })}
+          </div>
+        </div>
+
+        {/* NEW TASK FORM AREA */}
+        <div className="lg:sticky lg:top-8 self-start">
+          <div className="rounded-[32px] border border-emerald-500/20 bg-slate-950/80 p-8 shadow-2xl backdrop-blur-xl">
+            <div className="mb-8 flex items-center justify-between">
+              <div>
+                <h2 className="text-2xl font-black text-white">Nova Tarefa</h2>
+                <p className="text-slate-500 text-sm mt-1">Organize seu próximo passo</p>
+              </div>
+              <div className="w-12 h-12 bg-emerald-500/10 rounded-2xl flex items-center justify-center text-emerald-500 border border-emerald-500/20">
+                <Plus size={24} />
+              </div>
+            </div>
+
+            <div className="space-y-6">
+              <Field 
+                label="Título da Tarefa *" 
+                value={novoTitulo} 
+                onChange={setNovoTitulo} 
+                placeholder="Ex: Ligar para fornecedor..." 
+                icon={<Type size={16} />}
+                showMic 
+                onMic={() => ouvirCampo('tituloTarefa', setNovoTitulo)} 
+                ouvindo={campoOuvindo === 'tituloTarefa'}
+              />
+
+              <div className="space-y-2">
+                <span className="text-xs font-black uppercase tracking-[0.2em] text-slate-500 flex items-center justify-between">
+                  <div className="flex items-center gap-2"><AlignLeft size={14} /> Descrição</div>
+                  <button 
+                    onClick={() => ouvirCampo('descTarefa', setNovaDescricao)} 
+                    className={`flex items-center gap-1.5 transition-colors ${campoOuvindo === 'descTarefa' ? 'text-rose-500 animate-pulse' : 'text-slate-600 hover:text-emerald-400'}`}
+                  >
+                    <Mic size={14} /> {campoOuvindo === 'descTarefa' ? 'Ouvindo...' : 'Voz'}
                   </button>
-                  <button onClick={() => deletarTarefa(tarefa.id)}
-                    style={{ background: '#1a0000', border: '1px solid #3a0000', borderRadius: '6px', color: '#ef4444', padding: '4px 8px', fontSize: '11px', cursor: 'pointer' }}>
-                    🗑️
-                  </button>
-                </div>
+                </span>
+                <textarea
+                  value={novaDescricao}
+                  onChange={(e) => setNovaDescricao(e.target.value)}
+                  rows={3} 
+                  className="w-full rounded-2xl border border-slate-800 bg-slate-900/50 px-4 py-3 text-sm text-white outline-none focus:border-emerald-500/60 resize-none transition-all placeholder:text-slate-700" 
+                  placeholder="Detalhes opcionais..."
+                />
               </div>
 
-              {expandida && (
-                <div style={{ marginTop: '10px', paddingTop: '10px', borderTop: '1px solid #222' }}>
-                  {tarefa.descricao && <p style={{ color: '#888', fontSize: '12px', margin: '0 0 6px', lineHeight: '1.5' }}>{tarefa.descricao}</p>}
-                  <p style={{ color: '#555', fontSize: '11px', margin: '0 0 8px' }}>Status: {tarefa.status === 'concluida' ? '✅ Concluída' : '⏳ Pendente'}</p>
-                  <div style={{ display: 'flex', gap: '8px' }}>
-                    {tarefa.status === 'pendente' ? (
-                      <button onClick={() => atualizarStatusTarefa(tarefa.id, 'concluida')}
-                        style={{ flex: 1, padding: '8px', background: GREEN_MONEY, color: 'black', border: 'none', borderRadius: '8px', fontWeight: '800', fontSize: '11px', cursor: 'pointer' }}>
-                        ✅ Concluir
-                      </button>
-                    ) : (
-                      <button onClick={() => atualizarStatusTarefa(tarefa.id, 'pendente')}
-                        style={{ flex: 1, padding: '8px', background: WARN_YELLOW, color: 'black', border: 'none', borderRadius: '8px', fontWeight: '800', fontSize: '11px', cursor: 'pointer' }}>
-                        ⏳ Reabrir
-                      </button>
-                    )}
-                  </div>
-                </div>
-              )}
-            </div>
-          );
-        })}
-      </div>
+              <div className="grid gap-4 grid-cols-2">
+                <Field 
+                  label="Data" 
+                  type="date" 
+                  value={novaData} 
+                  onChange={setNovaData} 
+                  icon={<Calendar size={16} />}
+                />
+                <Field 
+                  label="Hora" 
+                  type="time" 
+                  value={novaHora} 
+                  onChange={setNovaHora} 
+                  icon={<Clock size={16} />}
+                />
+              </div>
 
-      {/* ESTATÍSTICAS */}
-      {tarefas.length > 0 && (
-        <div style={{ marginTop: '24px', background: '#111', border: `1px solid #222`, borderRadius: '12px', padding: '14px', display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '10px' }}>
-          {[
-            ['Total', tarefas.length, TAREFA_COLOR],
-            ['Pendentes', tarefas.filter(t => t.status === 'pendente').length, WARN_YELLOW],
-            ['Concluídas', tarefas.filter(t => t.status === 'concluida').length, GREEN_MONEY],
-            ['Urgentes', tarefas.filter(t => { const s = calcularStatusTarefa(t.dataHora); return (s === 'urgente' || s === 'vencida') && t.status === 'pendente'; }).length, WARN_RED],
-          ].map(([label, val, cor]) => (
-            <div key={label} style={{ textAlign: 'center' }}>
-              <p style={{ color: '#555', fontSize: '10px', margin: '0 0 2px', textTransform: 'uppercase' }}>{label}</p>
-              <p style={{ color: cor, fontSize: '18px', fontWeight: '900', margin: 0 }}>{val}</p>
+              <button 
+                onClick={adicionarTarefa} 
+                disabled={carregando}
+                className="w-full rounded-2xl bg-emerald-500 py-5 font-black text-sm uppercase tracking-widest text-slate-950 hover:bg-emerald-400 shadow-lg shadow-emerald-500/20 active:scale-[0.98] transition-all disabled:opacity-50 flex items-center justify-center gap-2 mt-4"
+              >
+                {carregando ? '⏳ Processando...' : <><Save size={20} /> Salvar Tarefa</>}
+              </button>
             </div>
-          ))}
+          </div>
         </div>
-      )}
+      </div>
     </div>
+  );
+}
+
+// SHARED COMPONENTS
+
+function MetricCard({ title, value, detail, icon, tone }) {
+  const tones = {
+    info: 'border-cyan-400/20 bg-cyan-400/10 text-cyan-200',
+    success: 'border-emerald-400/20 bg-emerald-400/10 text-emerald-200',
+    danger: 'border-rose-400/20 bg-rose-400/10 text-rose-200',
+    warning: 'border-amber-300/20 bg-amber-300/10 text-amber-100'
+  };
+
+  return (
+    <div className="rounded-[24px] border border-slate-800 bg-slate-950/90 p-5 shadow-2xl shadow-slate-950/30">
+      <div className="flex items-start justify-between gap-4">
+        <div>
+          <p className="text-xs font-bold uppercase tracking-[0.22em] text-slate-500">{title}</p>
+          <h3 className="mt-3 text-2xl font-black text-white">{value}</h3>
+          <p className="mt-2 text-sm text-slate-400">{detail}</p>
+        </div>
+        <div className={`rounded-2xl border p-3 ${tones[tone]}`}>{icon}</div>
+      </div>
+    </div>
+  );
+}
+
+function Field({ label, value, onChange, placeholder, type = 'text', icon, showMic, onMic, ouvindo }) {
+  return (
+    <label className="block space-y-2">
+      <span className="block text-xs font-black uppercase tracking-[0.2em] text-slate-500 flex justify-between items-center">
+        <div className="flex items-center gap-2">{icon}{label}</div>
+        {showMic && (
+          <button 
+            onClick={onMic} 
+            className={`flex items-center gap-1.5 transition-colors ${ouvindo ? 'text-rose-500 animate-pulse' : 'text-slate-600 hover:text-emerald-400'}`}
+          >
+            <Mic size={14} /> {ouvindo ? 'Ouvindo...' : 'Voz'}
+          </button>
+        )}
+      </span>
+      <input
+        type={type}
+        value={value}
+        placeholder={placeholder}
+        onChange={event => onChange(event.target.value)}
+        className="w-full rounded-2xl border border-slate-800 bg-slate-900/50 px-4 py-3 text-sm text-white outline-none transition focus:border-emerald-500/60 placeholder:text-slate-700"
+      />
+    </label>
   );
 }

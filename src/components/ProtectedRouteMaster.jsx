@@ -6,7 +6,7 @@ import {
 import { getAuth, signOut, onAuthStateChanged } from 'firebase/auth';
 import { getFirestore, collection, query, where, getDocs } from 'firebase/firestore';
 import { useNavigate } from 'react-router-dom';
-import BibliotecaTreinamento from './Ajuda';
+import BibliotecaTreinamento from './admin/Ajuda';
 
 export default function DashboardOficina() {
   const [activeTab, setActiveTab] = useState('visao-geral');

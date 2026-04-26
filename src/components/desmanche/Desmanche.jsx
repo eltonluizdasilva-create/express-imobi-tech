@@ -1,13 +1,25 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { collection, getDocs, getDoc, doc, addDoc, updateDoc, setDoc, deleteDoc, query, where } from 'firebase/firestore';
+import { 
+  Car, 
+  Settings, 
+  Search, 
+  Users, 
+  Sparkles, 
+  TrendingUp, 
+  TrendingDown, 
+  DollarSign, 
+  Package,
+  ArrowUpRight,
+  Plus
+} from 'lucide-react';
 import AbaVeiculos from './AbaVeiculos';
 import AbaPecas from './AbaPecas';
 import AbaParceiros from './AbaParceiros';
 import AbaBuscaRede from './AbaBuscaRede';
 
 const COR = '#ef4444';
-const COR2 = '#f97316';
-const VERDE = '#00E676';
+const VERDE = '#10b981';
 
 export default function Desmanche({
   oficinaId,
@@ -52,10 +64,8 @@ export default function Desmanche({
     }
   };
 
-  const formatarMoeda = v => Number(v || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 });
-
-  const totalInvestido = veiculos.reduce((s, v) => s + (Number(v.valorLeilao) || 0), 0);
-  const totalVendas = pecas.filter(p => p.status === 'vendida').reduce((s, p) => s + (Number(p.preco) || 0), 0);
+  const totalInvestido = useMemo(() => veiculos.reduce((s, v) => s + (Number(v.valorLeilao) || 0), 0), [veiculos]);
+  const totalVendas = useMemo(() => pecas.filter(p => p.status === 'vendida').reduce((s, p) => s + (Number(p.preco) || 0), 0), [pecas]);
   const lucro = totalVendas - totalInvestido;
   const pecasDisponiveis = pecas.filter(p => p.status === 'disponivel').length;
   const pecasVendidas = pecas.filter(p => p.status === 'vendida').length;
@@ -135,102 +145,193 @@ export default function Desmanche({
     } catch (e) { alert('Erro: ' + e.message); }
   };
 
+  const formatCurrency = (value) => {
+    return new Intl.NumberFormat('pt-BR', {
+      style: 'currency',
+      currency: 'BRL'
+    }).format(value || 0);
+  };
+
   return (
-    <div style={{ color: 'white', fontFamily: 'sans-serif', paddingBottom: '40px' }}>
-      <div style={{
-        background: 'linear-gradient(135deg,#1a0000,#0d0d0d)',
-        border: `1px solid ${COR}33`,
-        borderRadius: '16px', padding: '22px', marginBottom: '22px',
-      }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '14px' }}>
-          <div>
-            <h2 style={{ color: 'white', margin: '0 0 4px 0', fontSize: '22px' }}>
-              🚗 <span style={{ color: COR }}>Desmanche</span>
-            </h2>
-            <p style={{ color: '#555', fontSize: '12px', margin: 0 }}>
-              Gestão de veículos, peças e parceiros
+    <div className="mx-auto max-w-7xl space-y-8 px-4 pb-24 pt-4 text-slate-100 md:px-8 font-sans">
+      
+      {/* HERO SECTION */}
+      <section className="overflow-hidden rounded-[28px] border border-rose-500/20 bg-[radial-gradient(circle_at_top_left,_rgba(244,63,94,0.18),_transparent_32%),radial-gradient(circle_at_bottom_right,_rgba(249,115,22,0.15),_transparent_28%),linear-gradient(135deg,_rgba(15,23,42,0.98),_rgba(3,7,18,0.96))] p-6 shadow-[0_30px_120px_-40px_rgba(244,63,94,0.45)]">
+        <div className="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
+          <div className="max-w-2xl">
+            <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-rose-500/20 bg-rose-500/10 px-3 py-1 text-xs font-semibold uppercase tracking-[0.3em] text-rose-300">
+              <Sparkles size={14} />
+              Operação de Desmonte em Tempo Real
+            </div>
+            <h1 className="text-3xl font-black tracking-tight text-white md:text-5xl">
+              Gestão inteligente de veículos, peças e rede de parceiros.
+            </h1>
+            <p className="mt-3 max-w-xl text-sm leading-6 text-slate-300 md:text-base">
+              Controle seu estoque de desmanche, acompanhe a rentabilidade por veículo e conecte-se com sua rede de oficinas parceiras.
             </p>
           </div>
-          <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
-            {[
-              { label: 'Investido', valor: `R$ ${formatarMoeda(totalInvestido)}`, cor: COR },
-              { label: 'Vendido', valor: `R$ ${formatarMoeda(totalVendas)}`, cor: VERDE },
-              { label: 'Lucro', valor: `R$ ${formatarMoeda(lucro)}`, cor: lucro >= 0 ? VERDE : COR },
-              { label: 'Peças Disp.', valor: pecasDisponiveis, cor: '#f97316' },
-              { label: 'Vendidas', valor: pecasVendidas, cor: VERDE },
-            ].map(({ label, valor, cor }) => (
-              <div key={label} style={{
-                background: '#111', border: `1px solid ${cor}22`,
-                borderRadius: '10px', padding: '10px 14px', textAlign: 'center', minWidth: '80px',
-              }}>
-                <p style={{ color: '#555', fontSize: '10px', margin: '0 0 2px 0', fontWeight: 'bold', textTransform: 'uppercase' }}>{label}</p>
-                <p style={{ color: cor, fontSize: '15px', fontWeight: '900', margin: 0 }}>{valor}</p>
-              </div>
-            ))}
+
+          <div className="grid min-w-[280px] gap-3 sm:grid-cols-2">
+            <QuickHighlight
+              label="Investimento"
+              value={formatCurrency(totalInvestido)}
+              tone="danger"
+              helper="Total em leilão"
+            />
+            <QuickHighlight
+              label="Vendido"
+              value={formatCurrency(totalVendas)}
+              tone="success"
+              helper="Retorno acumulado"
+            />
           </div>
         </div>
-      </div>
+      </section>
 
-      <div style={{ display: 'flex', gap: '8px', marginBottom: '22px', overflowX: 'auto', paddingBottom: '4px' }}>
+      {/* METRIC CARDS GRID */}
+      <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+        <MetricCard 
+          title="Investimento Total" 
+          value={formatCurrency(totalInvestido)} 
+          detail="Capital investido em veículos" 
+          icon={<DollarSign size={20} />} 
+          tone="danger" 
+        />
+        <MetricCard 
+          title="Faturamento Bruto" 
+          value={formatCurrency(totalVendas)} 
+          detail="Total de peças vendidas" 
+          icon={<TrendingUp size={20} />} 
+          tone="success" 
+        />
+        <MetricCard 
+          title="Lucro Estimado" 
+          value={formatCurrency(lucro)} 
+          detail={lucro >= 0 ? "Resultado positivo" : "Abaixo do investimento"} 
+          icon={<ArrowUpRight size={20} />} 
+          tone={lucro >= 0 ? "success" : "danger"} 
+        />
+        <MetricCard 
+          title="Peças Disponíveis" 
+          value={pecasDisponiveis} 
+          detail={`${pecasVendidas} peças já vendidas`} 
+          icon={<Package size={20} />} 
+          tone="warning" 
+        />
+      </section>
+
+      {/* SUB-ABA NAVIGATION */}
+      <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide">
         {[
-          { key: 'veiculos', label: '🚗 Veículos', count: veiculos.length },
-          { key: 'pecas', label: '🔩 Peças', count: pecasDisponiveis },
-          { key: 'busca', label: '🔍 Buscar na Rede', count: null },
-          { key: 'parceiros', label: '🔧 Parceiros', count: parceiros.length },
-        ].map(({ key, label, count }) => (
-          <button key={key} onClick={() => setSubAba(key)} style={{
-            padding: '10px 18px',
-            background: subAba === key ? COR : '#1a1a1a',
-            color: subAba === key ? 'white' : '#777',
-            border: `1px solid ${subAba === key ? COR : '#2a2a2a'}`,
-            borderRadius: '20px', fontWeight: 'bold',
-            fontSize: '12px', cursor: 'pointer', whiteSpace: 'nowrap',
-            transition: 'all 0.2s',
-          }}>
-            {label}{count !== null ? ` (${count})` : ''}
+          { key: 'veiculos', label: 'Veículos', icon: <Car size={16} />, count: veiculos.length },
+          { key: 'pecas', label: 'Peças', icon: <Settings size={16} />, count: pecasDisponiveis },
+          { key: 'busca', label: 'Buscar na Rede', icon: <Search size={16} />, count: null },
+          { key: 'parceiros', label: 'Parceiros', icon: <Users size={16} />, count: parceiros.length },
+        ].map(({ key, label, icon, count }) => (
+          <button 
+            key={key} 
+            onClick={() => setSubAba(key)} 
+            className={`flex items-center gap-2 px-6 py-3 rounded-2xl font-bold text-sm transition-all whitespace-nowrap border ${subAba === key ? 'bg-rose-500 border-rose-400 text-white shadow-lg shadow-rose-500/30' : 'bg-slate-900/50 border-slate-800 text-slate-400 hover:border-slate-700 hover:text-white'}`}
+          >
+            {icon}
+            {label}
+            {count !== null && (
+              <span className={`ml-1 px-2 py-0.5 rounded-full text-[10px] ${subAba === key ? 'bg-white/20 text-white' : 'bg-slate-800 text-slate-500'}`}>
+                {count}
+              </span>
+            )}
           </button>
         ))}
       </div>
 
-      {carregando && <p style={{ color: '#555', textAlign: 'center' }}>Carregando...</p>}
-
-      {subAba === 'veiculos' && (
-        <AbaVeiculos
-          db={db}
-          oficinaId={oficinaId}
-          veiculos={veiculos}
-          pecas={pecas}
-          onReload={carregarTudo}
-          onAbrirLightbox={abrirLightbox}
-          onPublicarChegada={publicarChegada}
-        />
+      {carregando && (
+        <div className="flex flex-col items-center justify-center py-20 gap-4">
+          <div className="w-10 h-10 border-4 border-rose-500 border-t-transparent rounded-full animate-spin"></div>
+          <p className="text-slate-500 font-bold uppercase tracking-widest text-xs">Carregando dados...</p>
+        </div>
       )}
 
-      {subAba === 'pecas' && (
-        <AbaPecas
-          db={db}
-          oficinaId={oficinaId}
-          pecas={pecas}
-          veiculos={veiculos}
-          onReload={carregarTudo}
-          onAbrirLightbox={abrirLightbox}
-          dadosOficina={dadosOficina}
-          carregarFinanceiro={carregarFinanceiro}
-        />
-      )}
+      {!carregando && (
+        <div className="mt-4">
+          {subAba === 'veiculos' && (
+            <AbaVeiculos
+              db={db}
+              oficinaId={oficinaId}
+              veiculos={veiculos}
+              pecas={pecas}
+              onReload={carregarTudo}
+              onAbrirLightbox={abrirLightbox}
+              onPublicarChegada={publicarChegada}
+            />
+          )}
 
-      {subAba === 'busca' && (
-        <AbaBuscaRede db={db} />
-      )}
+          {subAba === 'pecas' && (
+            <AbaPecas
+              db={db}
+              oficinaId={oficinaId}
+              pecas={pecas}
+              veiculos={veiculos}
+              onReload={carregarTudo}
+              onAbrirLightbox={abrirLightbox}
+              dadosOficina={dadosOficina}
+              carregarFinanceiro={carregarFinanceiro}
+            />
+          )}
 
-      {subAba === 'parceiros' && (
-        <AbaParceiros
-          db={db}
-          oficinaId={oficinaId}
-          parceiros={parceiros}
-          onReload={carregarTudo}
-        />
+          {subAba === 'busca' && (
+            <AbaBuscaRede db={db} />
+          )}
+
+          {subAba === 'parceiros' && (
+            <AbaParceiros
+              db={db}
+              oficinaId={oficinaId}
+              parceiros={parceiros}
+              onReload={carregarTudo}
+            />
+          )}
+        </div>
       )}
+    </div>
+  );
+}
+
+// SHARED UI COMPONENTS
+
+function MetricCard({ title, value, detail, icon, tone }) {
+  const tones = {
+    info: 'border-cyan-400/20 bg-cyan-400/10 text-cyan-200',
+    success: 'border-emerald-400/20 bg-emerald-400/10 text-emerald-200',
+    danger: 'border-rose-400/20 bg-rose-400/10 text-rose-200',
+    warning: 'border-amber-300/20 bg-amber-300/10 text-amber-100'
+  };
+
+  return (
+    <div className="rounded-[24px] border border-slate-800 bg-slate-950/90 p-5 shadow-2xl shadow-slate-950/30">
+      <div className="flex items-start justify-between gap-4">
+        <div>
+          <p className="text-xs font-bold uppercase tracking-[0.22em] text-slate-500">{title}</p>
+          <h3 className="mt-3 text-2xl font-black text-white">{value}</h3>
+          <p className="mt-2 text-sm text-slate-400">{detail}</p>
+        </div>
+        <div className={`rounded-2xl border p-3 ${tones[tone]}`}>{icon}</div>
+      </div>
+    </div>
+  );
+}
+
+function QuickHighlight({ label, value, helper, tone }) {
+  const tones = {
+    danger: 'border-rose-400/20 bg-rose-400/10 text-rose-100',
+    success: 'border-emerald-400/20 bg-emerald-400/10 text-emerald-100',
+    info: 'border-cyan-400/20 bg-cyan-400/10 text-cyan-100'
+  };
+
+  return (
+    <div className={`rounded-2xl border p-4 backdrop-blur ${tones[tone]}`}>
+      <p className="text-xs uppercase tracking-[0.24em] opacity-80">{label}</p>
+      <p className="mt-2 text-2xl font-black">{value}</p>
+      <p className="mt-1 text-sm opacity-80">{helper}</p>
     </div>
   );
 }

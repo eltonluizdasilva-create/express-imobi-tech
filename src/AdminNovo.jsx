@@ -42,7 +42,7 @@ import Contador from './components/Contador';
 import GestaoRetorno from './components/GestaoRetorno';
 import OficinaPatrimonio from './components/OficinaPatrimonio';
 import Fornecedores from './components/Fornecedores';
-import Ajuda from './components/Ajuda';
+import Ajuda from './components/admin/Ajuda.jsx';
 import MasterPanel from './components/MasterPanel';
 import QuickActions from './components/QuickActions';
 import ModalOnboarding from './components/ModalOnboarding';
@@ -692,6 +692,7 @@ export default function Admin() {
         moduloLiberado={moduloLiberado}
         lidarModuloBloqueado={lidarModuloBloqueado}
         LABELS_ABAS={LABELS_ABAS}
+        dadosOficina={dadosOficina}
       />
 
       <AvisoIA abaAtiva={abaAtiva} />

@@ -1,7 +1,32 @@
+/* eslint-disable no-unused-vars */
 import React, { useState, useEffect } from 'react';
 import { db } from './lib/firebase';
 import { collection, getDocs, query, orderBy } from 'firebase/firestore';
-import { MessageCircle, Sparkles, X, Send, Clock, Car, User, Wrench, Zap, TrendingUp, AlertCircle, CheckCircle, Target, Radio } from 'lucide-react';
+import { 
+  MessageCircle, 
+  Sparkles, 
+  X, 
+  Send, 
+  Clock, 
+  Car, 
+  User, 
+  Wrench, 
+  Zap, 
+  TrendingUp, 
+  AlertCircle, 
+  CheckCircle, 
+  Target, 
+  Radio, 
+  Rocket, 
+  Brain, 
+  ArrowUpRight, 
+  ShieldCheck, 
+  Cpu, 
+  Gauge, 
+  Filter, 
+  History, 
+  MessageSquare
+} from 'lucide-react';
 
 const SERVICOS_BASE = [
   'troca de óleo', 'óleo', 'oleo', 'revisão', 'revisao', 'freio', 'suspensão', 'suspensao',
@@ -62,7 +87,7 @@ function tempoDecorrido(dataStr) {
   const diffMeses = Math.floor(diffDias / 30);
 
   if (diffDias < 0) return null;
-  return { dias: diffDias, meses: diffMeses, texto: diffMeses >= 6 ? `${diffMeses} meses` : `${diffMeses} meses` };
+  return { dias: diffDias, meses: diffMeses, texto: `${diffMeses} meses` };
 }
 
 export default function AbaEstrategia({ oficinaId }) {
@@ -70,7 +95,7 @@ export default function AbaEstrategia({ oficinaId }) {
   const [loading, setLoading] = useState(true);
   const [modal, setModal] = useState(null);
   const [modalHistorico, setModalHistorico] = useState(null);
-  const [filtro, setFiltro] = useState('todos'); // 'todos', 'quente', 'morno', 'frio'
+  const [filtro, setFiltro] = useState('todos'); 
   const [enviadas, setEnviadas] = useState([]);
   const [pilotoAutomatico, setPilotoAutomatico] = useState(false);
   const [animando, setAnimando] = useState(false);
@@ -88,12 +113,8 @@ export default function AbaEstrategia({ oficinaId }) {
 
         snap.forEach((doc) => {
           const d = doc.data();
-
           const info = tempoDecorrido(d.data_registro || d.data);
           if (!info) return;
-
-          const limite = filtro === 6 ? -9999 : -9999;
-          if (info.dias < limite) return;
 
           const servico = detectarServico(d.checklist || d.diagnostico || d.detalhesPecas || '');
           const valor = Number(d.total) || 0;
@@ -126,46 +147,27 @@ export default function AbaEstrategia({ oficinaId }) {
     buscarOportunidades();
   }, [oficinaId]);
 
-  // ========== CÁLCULOS DE POTENCIAL FINANCEIRO ==========
   const oportunidadesQuentes = oportunidades.filter(o => o.meses >= 6);
   const oportunidadesMornas = oportunidades.filter(o => o.meses >= 3 && o.meses < 6);
   const oportunidadesFrias = oportunidades.filter(o => o.meses < 3);
 
   const potencial3Meses = oportunidadesMornas.reduce((acc, o) => acc + (o.valor || 0), 0);
   const potencial6Meses = oportunidadesQuentes.reduce((acc, o) => acc + (o.valor || 0), 0);
-  const potencialFrio = oportunidadesFrias.reduce((acc, o) => acc + (o.valor || 0), 0);
-  const potencialTotal = potencial3Meses + potencial6Meses + potencialFrio;
+  const potencialTotal = oportunidades.reduce((acc, o) => acc + (o.valor || 0), 0);
 
-  // ========== FILTRO DE STATUS ==========
   const oportunidadesFiltradas = (() => {
     switch (filtro) {
-      case 'quente':
-        return oportunidadesQuentes;
-      case 'morno':
-        return oportunidadesMornas;
-      case 'frio':
-        return oportunidadesFrias;
-      default:
-        return oportunidades;
+      case 'quente': return oportunidadesQuentes;
+      case 'morno': return oportunidadesMornas;
+      case 'frio': return oportunidadesFrias;
+      default: return oportunidades;
     }
   })();
 
-  const abrirModal = (opp) => setModal(opp);
-  const fecharModal = () => setModal(null);
-  const abrirModalHistorico = (opp) => setModalHistorico(opp);
-  const fecharModalHistorico = () => setModalHistorico(null);
-
-  const mensagemIA = (opp) => {
-    const texto = gerarMensagem(opp.cliente, opp.veiculo, opp.tempo.meses);
-    return texto;
-  };
-
   const enviarWhatsApp = (opp) => {
-    const texto = encodeURIComponent(mensagemIA(opp));
+    const texto = encodeURIComponent(gerarMensagem(opp.cliente, opp.veiculo, opp.tempo.meses));
     window.open(`https://wa.me/55${(opp.telefone || '').replace(/\D/g, '')}?text=${texto}`, '_blank');
     setEnviadas(prev => [...prev, opp.id]);
-
-    // Simular piloto automático
     if (pilotoAutomatico) {
       setAnimando(true);
       setTimeout(() => setAnimando(false), 2000);
@@ -173,369 +175,326 @@ export default function AbaEstrategia({ oficinaId }) {
   };
 
   const formatarMoeda = (valor) => {
-    return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(valor);
+    return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(valor || 0);
   };
 
-  const getStatusColor = (meses) => {
-    if (meses >= 6) return { bg: 'bg-red-600/10', border: 'border-red-600/30', text: 'text-red-500', label: '🔴 QUENTE', badge: 'bg-red-600' };
-    if (meses >= 3) return { bg: 'bg-yellow-600/10', border: 'border-yellow-600/30', text: 'text-yellow-500', label: '🟡 MORNO', badge: 'bg-yellow-600' };
-    return { bg: 'bg-gray-600/10', border: 'border-gray-600/30', text: 'text-gray-500', label: '⚪ FRIO', badge: 'bg-gray-600' };
+  const getStatusInfo = (meses) => {
+    if (meses >= 6) return { color: 'rose', label: 'Quente', icon: '🔴', tone: 'danger' };
+    if (meses >= 3) return { color: 'amber', label: 'Morno', icon: '🟡', tone: 'warning' };
+    return { color: 'slate', label: 'Frio', icon: '⚪', tone: 'info' };
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-black via-zinc-950 to-black text-white p-6 pb-40 font-sans">
-
-      {/* ========== CABEÇALHO COM PILOTO AUTOMÁTICO ========== */}
-      <div className="mb-8 flex justify-between items-start">
-        <div>
-          <h1 className="text-4xl font-black mb-2">🚀 MÁQUINA DE RETORNO R$</h1>
-          <p className="text-sm text-zinc-400">Identifica e recupera carteira de clientes com ROI automático</p>
-        </div>
-
-        {/* TOGGLE PILOTO AUTOMÁTICO */}
-        <button
-          onClick={() => setPilotoAutomatico(!pilotoAutomatico)}
-          className={`flex items-center gap-3 px-6 py-3 rounded-2xl font-bold transition-all ${pilotoAutomatico
-            ? 'bg-green-600/20 border border-green-600/50 text-green-400'
-            : 'bg-zinc-800/60 border border-zinc-700/50 text-zinc-400 hover:text-zinc-300'
-            }`}
-        >
-          <Radio size={18} className={pilotoAutomatico ? 'animate-pulse' : ''} />
-          {pilotoAutomatico ? 'PILOTO AUTOMÁTICO ATIVO' : 'Ativar Piloto Automático'}
-        </button>
-      </div>
-
-      {/* ========== PAINEL DE POTENCIAL FINANCEIRO (TOPO) ========== */}
-      {oportunidades.length > 0 && (
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
-          {/* CARD: PRÓXIMOS 3 MESES */}
-          <div className="bg-gradient-to-br from-green-600/20 to-emerald-600/10 rounded-3xl border border-green-600/30 p-6 relative overflow-hidden">
-            <div className="absolute top-0 right-0 w-32 h-32 bg-green-600/5 rounded-full -mr-16 -mt-16" />
-            <div className="relative">
-              <div className="flex items-center gap-2 mb-2">
-                <Target size={16} className="text-green-400" />
-                <p className="text-[10px] text-green-400 font-bold uppercase tracking-wider">Próximos 3 Meses</p>
-              </div>
-              <p className="text-3xl font-black text-white mb-2">{formatarMoeda(potencial3Meses)}</p>
-              <p className="text-xs text-green-400/80">{oportunidadesMornas.length} clientes para reativar</p>
+    <div className="mx-auto max-w-7xl space-y-8 px-4 pb-24 pt-4 text-slate-100 md:px-8 font-sans">
+      
+      {/* HERO SECTION */}
+      <section className="overflow-hidden rounded-[28px] border border-indigo-500/20 bg-[radial-gradient(circle_at_top_left,_rgba(79,70,229,0.15),_transparent_32%),radial-gradient(circle_at_bottom_right,_rgba(79,70,229,0.1),_transparent_28%),linear-gradient(135deg,_rgba(15,23,42,0.98),_rgba(3,7,18,0.96))] p-6 shadow-[0_30px_120px_-40px_rgba(79,70,229,0.35)]">
+        <div className="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
+          <div className="max-w-2xl">
+            <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-indigo-500/20 bg-indigo-500/10 px-3 py-1 text-xs font-semibold uppercase tracking-[0.3em] text-indigo-300">
+              <Rocket size={14} />
+              Motor de Retenção Ativo
             </div>
+            <h1 className="text-3xl font-black tracking-tight text-white md:text-5xl uppercase italic">
+              Máquina de <span className="text-indigo-500 text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 to-indigo-600">Retorno R$</span>.
+            </h1>
+            <p className="mt-3 max-w-xl text-sm leading-6 text-slate-300 md:text-base">
+              Identifique automaticamente clientes que precisam voltar e aumente seu faturamento com mensagens IA personalizadas.
+            </p>
           </div>
 
-          {/* CARD: PRÓXIMOS 6 MESES */}
-          <div className="bg-gradient-to-br from-orange-600/20 to-red-600/10 rounded-3xl border border-orange-600/30 p-6 relative overflow-hidden">
-            <div className="absolute top-0 right-0 w-32 h-32 bg-orange-600/5 rounded-full -mr-16 -mt-16" />
-            <div className="relative">
-              <div className="flex items-center gap-2 mb-2">
-                <AlertCircle size={16} className="text-orange-400" />
-                <p className="text-[10px] text-orange-400 font-bold uppercase tracking-wider">Próximos 6 Meses</p>
-              </div>
-              <p className="text-3xl font-black text-white mb-2">{formatarMoeda(potencial6Meses)}</p>
-              <p className="text-xs text-orange-400/80">{oportunidadesQuentes.length} clientes QUENTES 🔴</p>
-            </div>
-          </div>
-
-          {/* CARD: ACIMA DE 12 MESES */}
-          <div className="bg-gradient-to-br from-purple-600/20 to-blue-600/10 rounded-3xl border border-purple-600/30 p-6 relative overflow-hidden">
-            <div className="absolute top-0 right-0 w-32 h-32 bg-purple-600/5 rounded-full -mr-16 -mt-16" />
-            <div className="relative">
-              <div className="flex items-center gap-2 mb-2">
-                <TrendingUp size={16} className="text-purple-400" />
-                <p className="text-[10px] text-purple-400 font-bold uppercase tracking-wider">Potencial Total</p>
-              </div>
-              <p className="text-3xl font-black text-white mb-2">{formatarMoeda(potencialTotal)}</p>
-              <p className="text-xs text-purple-400/80">{oportunidades.length} oportunidades na carteira</p>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* ========== SEMÁFORO DE STATUS INTELIGENTE ========== */}
-      {oportunidades.length > 0 && (
-        <div className="mb-8 bg-zinc-900/50 border border-zinc-800 rounded-2xl p-4">
-          <p className="text-xs font-bold text-zinc-500 uppercase tracking-wider mb-4">Filtro de Prioridade</p>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+          <div className="flex items-center gap-4">
             <button
-              onClick={() => setFiltro('todos')}
-              className={`py-3 px-4 rounded-xl font-bold text-sm transition-all ${filtro === 'todos'
-                ? 'bg-white text-black'
-                : 'bg-zinc-800 text-zinc-400 hover:text-white hover:bg-zinc-700'
-                }`}
+              onClick={() => setPilotoAutomatico(!pilotoAutomatico)}
+              className={`group relative flex items-center gap-3 overflow-hidden rounded-2xl border px-6 py-3 transition-all duration-300 ${
+                pilotoAutomatico 
+                  ? 'border-emerald-500/30 bg-emerald-500/10 text-emerald-400 shadow-[0_0_20px_rgba(16,185,129,0.2)]' 
+                  : 'border-slate-800 bg-slate-900/50 text-slate-400'
+              }`}
             >
-              📊 Todos ({oportunidades.length})
-            </button>
-            <button
-              onClick={() => setFiltro('quente')}
-              className={`py-3 px-4 rounded-xl font-bold text-sm transition-all ${filtro === 'quente'
-                ? 'bg-red-600 text-white'
-                : 'bg-red-600/10 text-red-400 hover:bg-red-600/20'
-                }`}
-            >
-              🔴 Quente ({oportunidadesQuentes.length})
-            </button>
-            <button
-              onClick={() => setFiltro('morno')}
-              className={`py-3 px-4 rounded-xl font-bold text-sm transition-all ${filtro === 'morno'
-                ? 'bg-yellow-600 text-white'
-                : 'bg-yellow-600/10 text-yellow-400 hover:bg-yellow-600/20'
-                }`}
-            >
-              🟡 Morno ({oportunidadesMornas.length})
-            </button>
-            <button
-              onClick={() => setFiltro('frio')}
-              className={`py-3 px-4 rounded-xl font-bold text-sm transition-all ${filtro === 'frio'
-                ? 'bg-gray-600 text-white'
-                : 'bg-gray-600/10 text-gray-400 hover:bg-gray-600/20'
-                }`}
-            >
-              ⚪ Frio ({oportunidadesFrias.length})
+              <div className={`absolute inset-0 bg-emerald-500/5 transition-opacity ${pilotoAutomatico ? 'opacity-100' : 'opacity-0'}`} />
+              <Radio size={18} className={pilotoAutomatico ? 'animate-pulse' : ''} />
+              <span className="relative text-xs font-black uppercase tracking-widest">
+                {pilotoAutomatico ? 'Piloto Automático Ativo' : 'Ativar Piloto Automático'}
+              </span>
             </button>
           </div>
         </div>
-      )}
+      </section>
 
-      {/* ========== CARDS DE CLIENTES ========== */}
+      {/* GROWTH METRICS */}
+      <section className="grid gap-4 md:grid-cols-3">
+        <MetricCard title="Próximos 3 Meses" value={formatarMoeda(potencial3Meses)} detail={`${oportunidadesMornas.length} clientes mornos`} icon={<Gauge size={20} />} tone="warning" />
+        <MetricCard title="Próximos 6 Meses" value={formatarMoeda(potencial6Meses)} detail={`${oportunidadesQuentes.length} clientes quentes`} icon={<AlertCircle size={20} />} tone="danger" />
+        <MetricCard title="Potencial Total" value={formatarMoeda(potencialTotal)} detail="Carteira de oportunidades" icon={<TrendingUp size={20} />} tone="success" />
+      </section>
+
+      {/* FILTER BAR */}
+      <section className="flex flex-col gap-4 rounded-3xl border border-slate-800 bg-slate-950/50 p-3 md:flex-row md:items-center">
+        <div className="flex items-center gap-3 px-3 text-slate-500">
+          <Filter size={16} />
+          <span className="text-[10px] font-black uppercase tracking-widest">Prioridade:</span>
+        </div>
+        <div className="grid flex-1 grid-cols-2 gap-2 md:flex">
+          <FilterButton label="Todos" count={oportunidades.length} active={filtro === 'todos'} onClick={() => setFiltro('todos')} color="indigo" />
+          <FilterButton label="Quente" count={oportunidadesQuentes.length} active={filtro === 'quente'} onClick={() => setFiltro('quente')} color="rose" />
+          <FilterButton label="Morno" count={oportunidadesMornas.length} active={filtro === 'morno'} onClick={() => setFiltro('morno')} color="amber" />
+          <FilterButton label="Frio" count={oportunidadesFrias.length} active={filtro === 'frio'} onClick={() => setFiltro('frio')} color="slate" />
+        </div>
+      </section>
+
+      {/* MAIN CONTENT AREA */}
       {loading ? (
-        <div className="flex items-center justify-center py-20">
-          <div className="text-center">
-            <Sparkles className="w-12 h-12 mx-auto animate-spin text-red-500 mb-4" />
-            <p className="text-zinc-400">Carregando oportunidades...</p>
-          </div>
+        <div className="flex h-64 flex-col items-center justify-center space-y-4">
+          <div className="h-12 w-12 animate-spin rounded-full border-4 border-indigo-500 border-t-transparent"></div>
+          <p className="text-[10px] font-black uppercase tracking-widest text-slate-500">Calculando Oportunidades...</p>
         </div>
       ) : oportunidadesFiltradas.length === 0 ? (
-        <div className="bg-zinc-900 rounded-3xl border border-zinc-800 p-16 text-center relative overflow-hidden">
-          <div className="absolute inset-0 bg-gradient-to-br from-purple-600/5 to-blue-600/5 pointer-events-none rounded-3xl" />
-          <div className="relative">
-            <div className="w-20 h-20 bg-gradient-to-br from-purple-600/20 to-blue-600/20 rounded-full flex items-center justify-center mx-auto mb-6 border border-purple-600/20">
-              <Sparkles size={36} className="text-purple-500" />
+        <section className="group relative overflow-hidden rounded-[40px] border border-slate-800 bg-slate-950 p-12 text-center shadow-2xl">
+          <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,_rgba(79,70,229,0.08),_transparent_70%)]" />
+          <div className="relative space-y-6">
+            <div className="mx-auto flex h-24 w-24 items-center justify-center rounded-full bg-indigo-500/10 border border-indigo-500/20 shadow-[0_0_50px_rgba(79,70,229,0.15)] group-hover:scale-110 transition-transform duration-500">
+              <Brain size={48} className="text-indigo-500 animate-pulse" />
             </div>
-            <h3 className="text-2xl font-black text-white mb-3">
-              Seu Cérebro de Retenção está sendo treinado...
-            </h3>
-            <p className="text-zinc-400 text-sm leading-relaxed mb-6 max-w-2xl mx-auto">
-              O Oficina IA analisa automaticamente o histórico dos seus clientes para prever quem precisa voltar. Conforme você registra e conclui Ordens de Serviço, nosso sistema identificará serviços (como troca de óleo e revisões) realizados há mais de 3, 6 ou 12 meses.
-              <br /><br />
-              Quando for o momento exato de chamar o cliente de volta, os cards aparecerão aqui com mensagens de WhatsApp geradas por Inteligência Artificial prontas para envio!
-            </p>
-            <div className="bg-black/60 border border-zinc-700 rounded-2xl px-5 py-3 inline-flex items-center gap-3">
-              <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
-              <p className="text-[11px] text-zinc-400 font-medium">
-                Continue cadastrando suas O.S. diariamente na aba <span className="text-red-400 font-bold">Mecânica</span> ou <span className="text-red-400 font-bold">Óleo</span>
+            <div className="space-y-2">
+              <h3 className="text-2xl font-black text-white md:text-3xl">Seu Cérebro de Retenção está sendo treinado...</h3>
+              <p className="mx-auto max-w-2xl text-sm leading-relaxed text-slate-400">
+                O Oficina IA analisa automaticamente o histórico dos seus clientes para prever quem precisa voltar. 
+                Quando houver dados suficientes de Ordens de Serviço finalizadas, as oportunidades aparecerão aqui.
               </p>
             </div>
+            <div className="inline-flex items-center gap-3 rounded-2xl border border-indigo-500/20 bg-indigo-500/5 px-6 py-3">
+              <div className="h-2 w-2 animate-pulse rounded-full bg-indigo-500" />
+              <p className="text-[10px] font-black uppercase tracking-[0.2em] text-indigo-300">Aguardando mais Ordens de Serviço</p>
+            </div>
           </div>
-        </div>
+        </section>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-          {oportunidadesFiltradas.map((opp) => {
-            const jaEnviada = enviadas.includes(opp.id);
-            const statusColor = getStatusColor(opp.meses);
-
-            return (
-              <div
-                key={opp.id}
-                className={`${statusColor.bg} border ${statusColor.border} rounded-3xl p-6 hover:border-white/20 transition-all relative overflow-hidden group`}
-              >
-                <div className="absolute top-0 right-0 w-24 h-24 bg-white/5 rounded-full -mr-12 -mt-12 group-hover:bg-white/10 transition-all" />
-
-                {/* BADGE STATUS */}
-                <div className="absolute top-4 right-4 flex items-center gap-2 bg-black/40 rounded-full px-3 py-1 text-xs font-black">
-                  <span className={`w-2 h-2 ${statusColor.badge} rounded-full`} />
-                  <span className={statusColor.text}>{statusColor.label}</span>
-                </div>
-
-                <div className="relative">
-                  {/* CLIENTE */}
-                  <div className="flex items-start gap-3 mb-4">
-                    <div className={`w-12 h-12 ${statusColor.bg} rounded-full flex items-center justify-center border ${statusColor.border} flex-shrink-0`}>
-                      <User size={18} className={statusColor.text} />
-                    </div>
-                    <div className="min-w-0 flex-1">
-                      <p className="text-sm font-black truncate">{opp.cliente}</p>
-                      <p className="text-[10px] text-zinc-500 uppercase font-bold tracking-widest truncate">{opp.placa}</p>
-                    </div>
-                  </div>
-
-                  {/* VEÍCULO */}
-                  <div className="flex items-center gap-2 mb-3 text-zinc-400">
-                    <Car size={14} className="flex-shrink-0" />
-                    <p className="text-xs truncate">{opp.veiculo}</p>
-                  </div>
-
-                  {/* SERVIÇO */}
-                  <div className="flex items-center gap-2 mb-4 text-zinc-500">
-                    <Wrench size={14} className="flex-shrink-0" />
-                    <p className="text-[10px] font-bold uppercase tracking-widest truncate">{opp.servico}</p>
-                  </div>
-
-                  {/* TEMPO */}
-                  <div className="flex items-center gap-2 mb-5 bg-black/40 rounded-xl px-3 py-2">
-                    <Clock size={14} className={statusColor.text} />
-                    <p className="text-[10px] text-zinc-400 font-bold">
-                      Último contato: <span className={`${statusColor.text} font-black`}>{opp.tempo.texto}</span>
-                    </p>
-                  </div>
-
-                  {/* VALOR DO ÚLTMO SERVIÇO */}
-                  <div className="bg-black/40 rounded-xl px-3 py-2 mb-5">
-                    <p className="text-[9px] text-zinc-600 font-bold uppercase tracking-widest mb-1">Valor do último serviço</p>
-                    <p className="text-lg font-black text-white">{formatarMoeda(opp.valor)}</p>
-                  </div>
-
-                  {/* BOTÕES */}
-                  <div className="flex gap-2">
-                    <button
-                      onClick={() => abrirModalHistorico(opp)}
-                      className="flex-1 py-2 bg-zinc-800/60 hover:bg-zinc-700/60 rounded-xl text-[10px] font-black uppercase tracking-widest text-zinc-300 transition-colors border border-zinc-700/50"
-                    >
-                      📊 Ver Histórico
-                    </button>
-                    <button
-                      onClick={() => abrirModal(opp)}
-                      className={`flex-1 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all flex items-center justify-center gap-1 ${statusColor.badge} text-white hover:opacity-90 shadow-lg`}
-                    >
-                      <Sparkles size={12} />
-                      {jaEnviada ? 'Editar' : 'Mensagem IA'}
-                    </button>
-                  </div>
-                </div>
-              </div>
-            );
-          })}
-        </div>
+        <section className="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
+          {oportunidadesFiltradas.map((opp) => (
+            <OpportunityCard 
+              key={opp.id} 
+              opp={opp} 
+              info={getStatusInfo(opp.meses)} 
+              jaEnviada={enviadas.includes(opp.id)}
+              onAction={() => setModal(opp)}
+              onHistory={() => setModalHistorico(opp)}
+              formatarMoeda={formatarMoeda}
+            />
+          ))}
+        </section>
       )}
 
-      {/* ========== MODAL: HISTÓRICO RÁPIDO ========== */}
+      {/* MODAL: HISTÓRICO RÁPIDO */}
       {modalHistorico && (
-        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4" onClick={fecharModalHistorico}>
-          <div
-            className="bg-zinc-900 rounded-3xl border border-zinc-800 w-full max-w-md p-8 relative"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <button
-              onClick={fecharModalHistorico}
-              className="absolute top-4 right-4 w-8 h-8 bg-zinc-800 rounded-full flex items-center justify-center hover:bg-zinc-700 transition-colors"
-            >
-              <X size={14} />
-            </button>
-
-            <div className="mb-6">
-              <h3 className="text-lg font-black text-white mb-1">📊 Histórico do Cliente</h3>
-              <p className="text-[10px] text-zinc-600 font-bold uppercase tracking-widest">{modalHistorico.cliente} — {modalHistorico.placa}</p>
-            </div>
-
-            {/* FREQUÊNCIA */}
-            <div className="bg-blue-600/10 border border-blue-600/30 rounded-2xl p-4 mb-4">
-              <p className="text-[10px] text-blue-400 font-bold uppercase tracking-widest mb-2">Frequência</p>
-              <p className="text-2xl font-black text-white">{modalHistorico.frequencia}x</p>
-              <p className="text-[9px] text-blue-400/70">visitas na oficina</p>
-            </div>
-
-            {/* ÚLTIMO SERVIÇO */}
-            <div className="bg-purple-600/10 border border-purple-600/30 rounded-2xl p-4 mb-4">
-              <p className="text-[10px] text-purple-400 font-bold uppercase tracking-widest mb-2">Último Serviço</p>
-              <p className="text-sm font-black text-white capitalize mb-1">{modalHistorico.servico}</p>
-              <p className="text-[9px] text-purple-400/70">
-                {typeof modalHistorico.ultimaData === 'object' && modalHistorico.ultimaData.toDate
-                  ? modalHistorico.ultimaData.toDate().toLocaleDateString('pt-BR')
-                  : String(modalHistorico.ultimaData).substring(0, 10)}
-              </p>
-            </div>
-
-            {/* LTV (LIFETIME VALUE) */}
-            <div className="bg-green-600/10 border border-green-600/30 rounded-2xl p-4 mb-4">
-              <p className="text-[10px] text-green-400 font-bold uppercase tracking-widest mb-2">LTV (Valor Total)</p>
-              <p className="text-2xl font-black text-white">{formatarMoeda(modalHistorico.ltv)}</p>
-              <p className="text-[9px] text-green-400/70">investido na oficina</p>
-            </div>
-
-            {/* PRÓXIMA DATA ESTIMADA */}
-            <div className="bg-orange-600/10 border border-orange-600/30 rounded-2xl p-4 mb-6">
-              <p className="text-[10px] text-orange-400 font-bold uppercase tracking-widest mb-2">Próxima Data Estimada</p>
-              <p className="text-lg font-black text-white">
-                {modalHistorico.meses >= 6 ? '🔴 AGORA' : modalHistorico.meses >= 3 ? '🟡 Este mês' : '⚪ Próximos dias'}
-              </p>
-              <p className="text-[9px] text-orange-400/70">baseado no histórico</p>
-            </div>
-
-            <button
-              onClick={fecharModalHistorico}
-              className="w-full py-3 bg-white text-black rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-zinc-200 transition-colors"
-            >
-              Fechar
-            </button>
-          </div>
-        </div>
-      )}
-
-      {/* ========== MODAL: MENSAGEM IA ========== */}
-      {modal && (
-        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4" onClick={fecharModal}>
-          <div
-            className="bg-zinc-900 rounded-3xl border border-zinc-800 w-full max-w-lg p-8 relative"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <button
-              onClick={fecharModal}
-              className="absolute top-4 right-4 w-8 h-8 bg-zinc-800 rounded-full flex items-center justify-center hover:bg-zinc-700 transition-colors"
-            >
-              <X size={14} />
-            </button>
-
-            <div className="mb-6">
-              <h3 className="text-lg font-black text-red-500 uppercase tracking-tight mb-1">🤖 Sugestão de Mensagem</h3>
-              <p className="text-[10px] text-zinc-600 font-bold uppercase tracking-widest">{modal.cliente} — {modal.veiculo}</p>
-            </div>
-
-            {/* PREVIEW DA MENSAGEM */}
-            <div className="bg-black/60 rounded-2xl border border-zinc-800 p-4 mb-5">
-              <p className="text-[11px] text-zinc-400 font-mono whitespace-pre-wrap leading-relaxed">
-                {mensagemIA(modal)}
-              </p>
-            </div>
-
-            {/* STATUS PILOTO AUTOMÁTICO */}
-            {pilotoAutomatico && (
-              <div className="bg-green-600/10 border border-green-600/30 rounded-2xl p-3 mb-5 flex items-center gap-2">
-                <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
-                <p className="text-[10px] text-green-400 font-bold">Piloto Automático enviará para WhatsApp</p>
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 p-4 backdrop-blur-sm animate-in fade-in duration-300" onClick={() => setModalHistorico(null)}>
+          <div className="relative w-full max-w-md overflow-hidden rounded-[32px] border border-slate-800 bg-slate-950 p-8 shadow-2xl animate-in zoom-in-95 duration-300" onClick={e => e.stopPropagation()}>
+            <div className="mb-8 flex items-start justify-between">
+              <div>
+                <p className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-500">Auditoria de Retenção</p>
+                <h3 className="mt-1 text-2xl font-black text-white">{modalHistorico.cliente}</h3>
               </div>
-            )}
-
-            <p className="text-[9px] text-zinc-700 font-bold uppercase tracking-widest mb-5">
-              💡 A mensagem é apenas uma sugestão. Personalize antes de enviar.
-            </p>
-
-            {/* AÇÕES */}
-            <div className="flex gap-3">
-              <button
-                onClick={fecharModal}
-                className="flex-1 py-3 bg-zinc-800 hover:bg-zinc-700 rounded-2xl text-[10px] font-black uppercase tracking-widest text-zinc-400 transition-colors"
-              >
-                Fechar
+              <button onClick={() => setModalHistorico(null)} className="rounded-full bg-slate-900 p-2 text-slate-500 hover:text-white transition-colors">
+                <X size={20} />
               </button>
-              <button
-                onClick={() => { enviarWhatsApp(modal); fecharModal(); }}
-                className="flex-1 py-3 bg-green-600 hover:bg-green-500 rounded-2xl text-[10px] font-black uppercase tracking-widest text-white flex items-center justify-center gap-2 transition-colors shadow-lg shadow-green-600/20"
-              >
-                <Send size={14} />
-                Enviar WhatsApp
+            </div>
+
+            <div className="space-y-4">
+              <HistoryRow label="Frequência" value={`${modalHistorico.frequencia}x visitas`} icon={<ArrowUpRight size={14} />} color="indigo" />
+              <HistoryRow label="LTV Total" value={formatarMoeda(modalHistorico.ltv)} icon={<TrendingUp size={14} />} color="emerald" />
+              <HistoryRow label="Último Serviço" value={modalHistorico.servico} icon={<Wrench size={14} />} color="amber" />
+              <HistoryRow label="Próxima Data" value={modalHistorico.meses >= 6 ? 'IMEDIATO' : 'Em breve'} icon={<Gauge size={14} />} color={modalHistorico.meses >= 6 ? 'rose' : 'slate'} />
+            </div>
+
+            <button onClick={() => setModalHistorico(null)} className="mt-8 w-full py-4 bg-slate-900 hover:bg-slate-800 text-white font-black text-xs uppercase tracking-widest rounded-2xl transition-all border border-slate-800">
+              Fechar Auditoria
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL: MENSAGEM IA */}
+      {modal && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 p-4 backdrop-blur-sm animate-in fade-in duration-300" onClick={() => setModal(null)}>
+          <div className="relative w-full max-w-lg overflow-hidden rounded-[32px] border border-slate-800 bg-slate-950 p-8 shadow-2xl animate-in zoom-in-95 duration-300" onClick={e => e.stopPropagation()}>
+            <div className="mb-8 flex items-start justify-between">
+              <div>
+                <p className="text-[10px] font-black uppercase tracking-[0.3em] text-indigo-500">Sugestão Gerada por IA</p>
+                <h3 className="mt-1 text-2xl font-black text-white">Reativar {modal.cliente}</h3>
+              </div>
+              <button onClick={() => setModal(null)} className="rounded-full bg-slate-900 p-2 text-slate-500 hover:text-white transition-colors">
+                <X size={20} />
+              </button>
+            </div>
+
+            <div className="rounded-2xl border border-slate-800 bg-black/50 p-6 shadow-inner">
+              <p className="text-sm font-mono leading-relaxed text-slate-300 whitespace-pre-wrap">
+                {gerarMensagem(modal.cliente, modal.veiculo, modal.tempo.meses)}
+              </p>
+            </div>
+
+            <div className="mt-6 flex items-center gap-3 rounded-2xl border border-indigo-500/20 bg-indigo-500/5 p-4 text-[10px] font-bold text-indigo-400">
+              <Info size={16} />
+              A IA gerou esta mensagem baseada no serviço de {modal.servico} realizado há {modal.tempo.texto}.
+            </div>
+
+            <div className="mt-8 flex gap-3">
+              <button onClick={() => setModal(null)} className="flex-1 py-4 bg-slate-900 hover:bg-slate-800 text-slate-400 font-black text-xs uppercase tracking-widest rounded-2xl transition-all">Cancelar</button>
+              <button onClick={() => { enviarWhatsApp(modal); setModal(null); }} className="flex-[2] py-4 bg-emerald-600 hover:bg-emerald-500 text-white font-black text-xs uppercase tracking-widest rounded-2xl transition-all shadow-lg shadow-emerald-600/20 flex items-center justify-center gap-2">
+                <Send size={16} /> Enviar WhatsApp
               </button>
             </div>
           </div>
         </div>
       )}
 
-      {/* ========== EFEITO VISUAL PILOTO AUTOMÁTICO ========== */}
+      {/* AUTO-PILOT OVERLAY ANIMATION */}
       {animando && (
-        <div className="fixed inset-0 pointer-events-none z-40">
-          <div className="absolute inset-0 bg-green-500/5 animate-pulse" />
-          <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2">
-            <div className="w-32 h-32 border-2 border-green-500/30 rounded-full animate-spin" />
-            <div className="absolute inset-0 flex items-center justify-center text-green-500 font-black text-sm">✓ Enviado!</div>
+        <div className="fixed inset-0 z-[200] flex items-center justify-center bg-indigo-600/10 backdrop-blur-md animate-in fade-in duration-500">
+          <div className="text-center space-y-6">
+            <div className="relative mx-auto h-32 w-32">
+              <div className="absolute inset-0 animate-ping rounded-full bg-indigo-500/30"></div>
+              <div className="absolute inset-0 flex items-center justify-center rounded-full bg-indigo-500 shadow-[0_0_50px_rgba(79,70,229,0.5)]">
+                <CheckCircle size={48} className="text-white" />
+              </div>
+            </div>
+            <div>
+              <p className="text-2xl font-black text-white uppercase italic tracking-tighter">Missão Cumprida!</p>
+              <p className="text-xs font-bold uppercase tracking-[0.3em] text-indigo-400 mt-2">Mensagem enviada com sucesso</p>
+            </div>
           </div>
         </div>
       )}
+    </div>
+  );
+}
+
+// SHARED COMPONENTS
+
+function MetricCard({ title, value, detail, icon, tone }) {
+  const tones = {
+    success: 'border-emerald-400/20 bg-emerald-400/10 text-emerald-300 shadow-emerald-500/10',
+    danger: 'border-rose-400/20 bg-rose-400/10 text-rose-300 shadow-rose-500/10',
+    warning: 'border-amber-400/20 bg-amber-400/10 text-amber-300 shadow-amber-500/10',
+    info: 'border-indigo-400/20 bg-indigo-400/10 text-indigo-300 shadow-indigo-500/10'
+  };
+
+  return (
+    <div className={`rounded-[28px] border bg-slate-950/80 p-6 shadow-2xl transition-all hover:scale-[1.02] ${tones[tone]}`}>
+      <div className="flex items-center justify-between mb-4">
+        <span className="text-[10px] font-black uppercase tracking-[0.2em] opacity-70">{title}</span>
+        <div className="rounded-xl border border-white/10 bg-white/5 p-2">{icon}</div>
+      </div>
+      <h3 className="text-3xl font-black tracking-tight text-white">{value}</h3>
+      <p className="mt-2 text-[10px] font-bold uppercase tracking-widest opacity-50">{detail}</p>
+    </div>
+  );
+}
+
+function FilterButton({ label, count, active, onClick, color }) {
+  const colors = {
+    indigo: 'border-indigo-500/20 text-indigo-400 hover:bg-indigo-500/10 active:bg-indigo-500 text-white',
+    rose: 'border-rose-500/20 text-rose-400 hover:bg-rose-500/10 active:bg-rose-500 text-white',
+    amber: 'border-amber-500/20 text-amber-400 hover:bg-amber-500/10 active:bg-amber-500 text-white',
+    slate: 'border-slate-800 text-slate-500 hover:bg-slate-800 active:bg-slate-700 text-white'
+  };
+
+  const activeStyles = {
+    indigo: 'bg-indigo-500 text-white border-indigo-400 shadow-lg shadow-indigo-500/30',
+    rose: 'bg-rose-500 text-white border-rose-400 shadow-lg shadow-rose-500/30',
+    amber: 'bg-amber-500 text-white border-amber-400 shadow-lg shadow-amber-500/30',
+    slate: 'bg-slate-700 text-white border-slate-600'
+  };
+
+  return (
+    <button 
+      onClick={onClick}
+      className={`flex items-center gap-2 rounded-xl border px-4 py-2 text-[10px] font-black uppercase tracking-widest transition-all ${active ? activeStyles[color] : colors[color]}`}
+    >
+      {label}
+      <span className={`rounded-full px-2 py-0.5 text-[8px] ${active ? 'bg-white/20' : 'bg-slate-900 border border-white/5'}`}>{count}</span>
+    </button>
+  );
+}
+
+function OpportunityCard({ opp, info, jaEnviada, onAction, onHistory, formatarMoeda }) {
+  const colors = {
+    rose: 'hover:border-rose-500/40 border-rose-500/10 bg-rose-500/5 shadow-rose-500/5',
+    amber: 'hover:border-amber-500/40 border-amber-500/10 bg-amber-500/5 shadow-amber-500/5',
+    slate: 'hover:border-slate-700 border-slate-800 bg-slate-900/40 shadow-slate-950'
+  };
+
+  const textColors = { rose: 'text-rose-500', amber: 'text-amber-500', slate: 'text-slate-400' };
+
+  return (
+    <div className={`group relative flex flex-col overflow-hidden rounded-[32px] border p-6 transition-all duration-300 hover:scale-[1.03] shadow-2xl ${colors[info.color]}`}>
+      <div className={`absolute top-0 right-0 h-32 w-32 bg-gradient-to-br from-${info.color}-500/10 to-transparent blur-2xl opacity-0 group-hover:opacity-100 transition-opacity`} />
+      
+      <div className="relative space-y-6">
+        <div className="flex items-start justify-between">
+          <div className="flex items-center gap-3">
+            <div className={`flex h-12 w-12 items-center justify-center rounded-2xl border border-white/5 bg-slate-950 text-xl`}>{info.icon}</div>
+            <div>
+              <h4 className="text-sm font-black text-white">{opp.cliente}</h4>
+              <p className="text-[10px] font-bold uppercase tracking-widest text-slate-500">{opp.placa}</p>
+            </div>
+          </div>
+          <div className={`rounded-full border border-white/5 bg-black/40 px-3 py-1 text-[8px] font-black uppercase tracking-[0.2em] ${textColors[info.color]}`}>
+            {info.label}
+          </div>
+        </div>
+
+        <div className="space-y-2">
+          <div className="flex items-center gap-2 text-slate-400">
+            <Car size={14} className="opacity-50" />
+            <span className="text-xs font-bold truncate">{opp.veiculo}</span>
+          </div>
+          <div className="flex items-center gap-2 text-slate-400">
+            <Wrench size={14} className="opacity-50" />
+            <span className="text-[10px] font-black uppercase tracking-widest truncate">{opp.servico}</span>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-2 gap-3">
+          <div className="rounded-2xl border border-white/5 bg-black/40 p-3">
+            <p className="text-[8px] font-black uppercase tracking-widest text-slate-600 mb-1">Ausência</p>
+            <p className={`text-sm font-black ${textColors[info.color]}`}>{opp.tempo.texto}</p>
+          </div>
+          <div className="rounded-2xl border border-white/5 bg-black/40 p-3">
+            <p className="text-[8px] font-black uppercase tracking-widest text-slate-600 mb-1">Último Ticket</p>
+            <p className="text-sm font-black text-white">{formatarMoeda(opp.valor)}</p>
+          </div>
+        </div>
+
+        <div className="flex gap-2">
+          <button onClick={onHistory} className="flex-1 flex items-center justify-center gap-2 rounded-xl border border-slate-800 bg-slate-900 py-3 text-[10px] font-black uppercase tracking-widest text-slate-400 hover:bg-slate-800 hover:text-white transition-all">
+            <History size={14} /> Histórico
+          </button>
+          <button onClick={onAction} className={`flex-1 flex items-center justify-center gap-2 rounded-xl py-3 text-[10px] font-black uppercase tracking-widest text-white transition-all shadow-lg ${jaEnviada ? 'bg-slate-700' : 'bg-indigo-600 hover:bg-indigo-500 shadow-indigo-500/20'}`}>
+            <MessageSquare size={14} /> {jaEnviada ? 'Editar' : 'Mensagem IA'}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function HistoryRow({ label, value, icon, color }) {
+  const colors = {
+    indigo: 'text-indigo-400 bg-indigo-500/10 border-indigo-500/20',
+    emerald: 'text-emerald-400 bg-emerald-500/10 border-emerald-500/20',
+    amber: 'text-amber-400 bg-amber-500/10 border-amber-500/20',
+    rose: 'text-rose-400 bg-rose-500/10 border-rose-500/20',
+    slate: 'text-slate-400 bg-slate-500/10 border-slate-500/20'
+  };
+
+  return (
+    <div className={`flex items-center justify-between rounded-2xl border p-4 ${colors[color]}`}>
+      <div className="flex items-center gap-3">
+        {icon}
+        <span className="text-[10px] font-black uppercase tracking-widest opacity-80">{label}</span>
+      </div>
+      <span className="text-xs font-black uppercase tracking-tighter text-white">{value}</span>
     </div>
   );
 }

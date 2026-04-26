@@ -1,11 +1,31 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { collection, getDocs, addDoc, deleteDoc, doc } from 'firebase/firestore';
+import { 
+  Store, 
+  Sparkles, 
+  Plus, 
+  Save, 
+  X, 
+  Phone, 
+  MapPin, 
+  Tag, 
+  User, 
+  MessageSquare, 
+  Trash2, 
+  Users, 
+  Map, 
+  Award,
+  ChevronDown,
+  ChevronUp,
+  Search
+} from 'lucide-react';
 
 export default function Fornecedores({ oficinaId, db }) {
     const [fornecedores, setFornecedores] = useState([]);
     const [carregando, setCarregando] = useState(false);
     const [mostrarForm, setMostrarForm] = useState(false);
     const [salvando, setSalvando] = useState(false);
+    const [busca, setBusca] = useState('');
     const [form, setForm] = useState({
         nome: '',
         telefone: '',
@@ -63,126 +83,332 @@ export default function Fornecedores({ oficinaId, db }) {
         }
     };
 
-    const baseInputStyle = {
-        width: '100%',
-        padding: '12px',
-        background: '#0a0a0a',
-        border: '1px solid #333',
-        color: 'white',
-        borderRadius: '8px',
-        marginBottom: '10px'
-    };
+    const fornecedoresFiltrados = useMemo(() => {
+        return fornecedores.filter(f => 
+            f.nome.toLowerCase().includes(busca.toLowerCase()) ||
+            (f.especialidade || '').toLowerCase().includes(busca.toLowerCase()) ||
+            (f.contato || '').toLowerCase().includes(busca.toLowerCase())
+        );
+    }, [fornecedores, busca]);
+
+    const totalFornecedores = fornecedores.length;
+    const comZap = fornecedores.filter(f => f.telefone).length;
+    const cidadesCount = new Set(fornecedores.map(f => f.cidade).filter(Boolean)).size;
 
     return (
-        <div>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
-                <h2 style={{ color: '#f97316', margin: 0 }}>🛒 Fornecedores e Autopeças</h2>
-                <button 
-                    onClick={() => setMostrarForm(!mostrarForm)} 
-                    style={{ padding: '10px 16px', background: '#f97316', color: 'black', border: 'none', borderRadius: '8px', fontWeight: 'bold', cursor: 'pointer' }}
-                >
-                    {mostrarForm ? '✕ CANCELAR' : '➕ NOVO FORNECEDOR'}
-                </button>
-            </div>
-
-            {mostrarForm && (
-                <div style={{ background: '#111', padding: '20px', borderRadius: '12px', border: '1px solid #f9731644', marginBottom: '24px' }}>
-                    <h3 style={{ color: '#f97316', marginTop: 0 }}>Cadastrar Fornecedor</h3>
-                    
-                    <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
-                        <div style={{ flex: 2, minWidth: '200px' }}>
-                            <label style={{ color: '#888', fontSize: '11px', display: 'block', marginBottom: '4px' }}>NOME DA LOJA / DESMANCHE *</label>
-                            <input value={form.nome} onChange={e => setForm({...form, nome: e.target.value})} style={baseInputStyle} placeholder="Ex: MercadoCar, Autopeças do Zé..." />
+        <div className="mx-auto max-w-7xl space-y-8 px-4 pb-24 pt-4 text-slate-100 md:px-8 font-sans">
+            
+            {/* HERO SECTION */}
+            <section className="overflow-hidden rounded-[28px] border border-orange-500/20 bg-[radial-gradient(circle_at_top_left,_rgba(249,115,22,0.15),_transparent_32%),radial-gradient(circle_at_bottom_right,_rgba(249,115,22,0.1),_transparent_28%),linear-gradient(135deg,_rgba(15,23,42,0.98),_rgba(3,7,18,0.96))] p-6 shadow-[0_30px_120px_-40px_rgba(249,115,22,0.35)]">
+                <div className="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
+                    <div className="max-w-2xl">
+                        <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-orange-500/20 bg-orange-500/10 px-3 py-1 text-xs font-semibold uppercase tracking-[0.3em] text-orange-300">
+                            <Sparkles size={14} />
+                            Gestão de Parcerias & Autopeças
                         </div>
-                        <div style={{ flex: 1, minWidth: '150px' }}>
-                            <label style={{ color: '#888', fontSize: '11px', display: 'block', marginBottom: '4px' }}>TELEFONE / WHATSAPP</label>
-                            <input value={form.telefone} onChange={e => setForm({...form, telefone: e.target.value})} style={baseInputStyle} placeholder="(11) 99999-9999" />
+                        <h1 className="text-3xl font-black tracking-tight text-white md:text-5xl">
+                            Conecte sua oficina aos melhores parceiros.
+                        </h1>
+                        <p className="mt-3 max-w-xl text-sm leading-6 text-slate-300 md:text-base">
+                            Organize sua rede de fornecedores, autopeças e desmanches para garantir agilidade na compra de peças.
+                        </p>
+                    </div>
+
+                    <div className="grid min-w-[280px] gap-3 sm:grid-cols-2">
+                        <QuickHighlight
+                            label="Rede Ativa"
+                            value={totalFornecedores}
+                            tone="info"
+                            helper="Parceiros registrados"
+                        />
+                        <QuickHighlight
+                            label="Abrangência"
+                            value={cidadesCount}
+                            tone="success"
+                            helper="Cidades atendidas"
+                        />
+                    </div>
+                </div>
+            </section>
+
+            {/* METRIC CARDS GRID */}
+            <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+                <MetricCard 
+                    title="Fornecedores" 
+                    value={totalFornecedores} 
+                    detail="Total de parceiros na rede" 
+                    icon={<Store size={20} />} 
+                    tone="info" 
+                />
+                <MetricCard 
+                    title="Contatos Zap" 
+                    value={comZap} 
+                    detail="Fornecedores com WhatsApp" 
+                    icon={<MessageSquare size={20} />} 
+                    tone="success" 
+                />
+                <MetricCard 
+                    title="Cidades" 
+                    value={cidadesCount} 
+                    detail="Diferentes locais de origem" 
+                    icon={<MapPin size={20} />} 
+                    tone="warning" 
+                />
+                <MetricCard 
+                    title="Qualificação" 
+                    value="Verificada" 
+                    detail="Rede de confiança ativa" 
+                    icon={<Award size={20} />} 
+                    tone="info" 
+                />
+            </section>
+
+            <div className="grid gap-8 lg:grid-cols-[1fr_400px]">
+                
+                {/* SUPPLIER LIST AREA */}
+                <div className="space-y-6">
+                    <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between px-2">
+                        <h3 className="text-xl font-black text-white flex items-center gap-2">
+                            <Users size={20} className="text-orange-500" />
+                            Sua Rede de Contatos
+                        </h3>
+                        <div className="relative w-full max-w-xs">
+                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" size={16} />
+                            <input 
+                                type="text" 
+                                value={busca} 
+                                onChange={e => setBusca(e.target.value)} 
+                                placeholder="Buscar loja ou especialidade..." 
+                                className="w-full rounded-xl border border-slate-800 bg-slate-900/50 py-2 pl-10 pr-4 text-xs text-white outline-none focus:border-orange-500/50"
+                            />
                         </div>
                     </div>
 
-                    <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
-                        <div style={{ flex: 1, minWidth: '150px' }}>
-                            <label style={{ color: '#888', fontSize: '11px', display: 'block', marginBottom: '4px' }}>CIDADE/BAIRRO</label>
-                            <input value={form.cidade} onChange={e => setForm({...form, cidade: e.target.value})} style={baseInputStyle} placeholder="Ex: São Paulo / Tatuapé" />
+                    {carregando ? (
+                        <div className="flex flex-col items-center justify-center py-20 gap-4">
+                            <div className="w-10 h-10 border-4 border-orange-500 border-t-transparent rounded-full animate-spin"></div>
+                            <p className="text-slate-500 font-bold uppercase tracking-widest text-xs">Carregando rede...</p>
                         </div>
-                        <div style={{ flex: 1, minWidth: '150px' }}>
-                            <label style={{ color: '#888', fontSize: '11px', display: 'block', marginBottom: '4px' }}>CONTATO (Vendedor)</label>
-                            <input value={form.contato} onChange={e => setForm({...form, contato: e.target.value})} style={baseInputStyle} placeholder="Ex: Roberto" />
+                    ) : fornecedoresFiltrados.length === 0 ? (
+                        <div className="flex flex-col items-center justify-center py-24 border-2 border-dashed border-slate-800 rounded-[32px] bg-slate-900/20 text-slate-500 text-center px-6">
+                            <Store size={48} className="mb-4 opacity-20" />
+                            <h4 className="text-lg font-bold text-slate-400">Nenhum fornecedor cadastrado.</h4>
+                            <p className="text-sm mt-2 max-w-xs">Adicione autopeças e lojas parceiras para facilitar sua rotina de orçamentos.</p>
                         </div>
-                    </div>
-
-                    <label style={{ color: '#888', fontSize: '11px', display: 'block', marginBottom: '4px' }}>ESPECIALIDADE</label>
-                    <input value={form.especialidade} onChange={e => setForm({...form, especialidade: e.target.value})} style={baseInputStyle} placeholder="Ex: Peças para suspensão, motor, importados..." />
-
-                    <label style={{ color: '#888', fontSize: '11px', display: 'block', marginBottom: '4px' }}>OBSERVAÇÕES (Opcional)</label>
-                    <textarea value={form.obs} onChange={e => setForm({...form, obs: e.target.value})} style={{ ...baseInputStyle, resize: 'vertical' }} rows={2} placeholder="Desconto de 10% para oficina, entrega rápida..." />
-
-                    <button 
-                        onClick={handleSalvar} 
-                        disabled={salvando}
-                        style={{ width: '100%', padding: '14px', background: salvando ? '#555' : '#f97316', color: salvando ? '#ccc' : 'black', border: 'none', borderRadius: '8px', fontWeight: '900', cursor: 'pointer', marginTop: '10px' }}
-                    >
-                        {salvando ? '⏳ SALVANDO...' : '💾 SALVAR FORNECEDOR'}
-                    </button>
-                </div>
-            )}
-
-            {carregando ? (
-                <div style={{ padding: '40px', textAlign: 'center', color: '#888' }}>Carregando fornecedores...</div>
-            ) : fornecedores.length === 0 ? (
-                <div style={{ background: '#111', padding: '40px', borderRadius: '12px', border: '1px solid #333', textAlign: 'center' }}>
-                    <h3 style={{ color: '#aaa', margin: '0 0 10px' }}>Nenhum fornecedor cadastrado</h3>
-                    <p style={{ color: '#666', margin: 0, fontSize: '14px' }}>Adicione as lojas de autopeças onde você costuma comprar peças.</p>
-                </div>
-            ) : (
-                <div style={{ overflowX: 'auto' }}>
-                    <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '14px' }}>
-                        <thead>
-                            <tr style={{ borderBottom: '1px solid #333', color: '#888', textAlign: 'left' }}>
-                                <th style={{ padding: '12px 8px', fontWeight: 'bold' }}>Fornecedor</th>
-                                <th style={{ padding: '12px 8px', fontWeight: 'bold' }}>Contato / Fone</th>
-                                <th style={{ padding: '12px 8px', fontWeight: 'bold' }}>Local</th>
-                                <th style={{ padding: '12px 8px', fontWeight: 'bold' }}>Especialidade</th>
-                                <th style={{ padding: '12px 8px', textAlign: 'right', fontWeight: 'bold' }}>Ações</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {fornecedores.map(f => (
-                                <tr key={f.id} style={{ borderBottom: '1px solid #222', color: 'white' }}>
-                                    <td style={{ padding: '14px 8px' }}>
-                                        <strong style={{ color: '#f97316', display: 'block' }}>{f.nome}</strong>
-                                        {f.obs && <span style={{ fontSize: '11px', color: '#666' }}>{f.obs}</span>}
-                                    </td>
-                                    <td style={{ padding: '14px 8px', color: '#ccc' }}>
-                                        {f.contato && <span style={{ display: 'block', fontSize: '12px' }}>Vendedor: {f.contato}</span>}
-                                        {f.telefone || '-'}
-                                    </td>
-                                    <td style={{ padding: '14px 8px', color: '#aaa' }}>{f.cidade || '-'}</td>
-                                    <td style={{ padding: '14px 8px', color: '#aaa' }}>{f.especialidade || '-'}</td>
-                                    <td style={{ padding: '14px 8px', textAlign: 'right' }}>
-                                        {f.telefone && (
-                                            <a 
-                                                href={`https://wa.me/55${f.telefone.replace(/\D/g, '')}`} 
-                                                target="_blank" 
-                                                rel="noreferrer"
-                                                style={{ display: 'inline-block', padding: '6px 10px', background: '#25D366', color: 'black', borderRadius: '4px', textDecoration: 'none', fontWeight: 'bold', fontSize: '11px', marginRight: '6px' }}
-                                            >
-                                                Ver no WhatsApp
-                                            </a>
-                                        )}
+                    ) : (
+                        <div className="grid gap-4 sm:grid-cols-2">
+                            {fornecedoresFiltrados.map(f => (
+                                <div key={f.id} className="group relative overflow-hidden rounded-[24px] border border-slate-800 bg-slate-950/80 p-5 transition-all hover:border-orange-500/30 hover:bg-slate-900 shadow-xl shadow-slate-950/40 animate-in zoom-in-95 duration-200">
+                                    <div className="flex items-start justify-between mb-4">
+                                        <div className="space-y-1">
+                                            <h4 className="text-lg font-black text-white group-hover:text-orange-400 transition-colors uppercase tracking-tight">
+                                                {f.nome}
+                                            </h4>
+                                            {f.especialidade && (
+                                                <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[9px] font-black uppercase tracking-wider border border-orange-500/20 bg-orange-500/5 text-orange-300">
+                                                    <Tag size={10} />
+                                                    {f.especialidade}
+                                                </span>
+                                            )}
+                                        </div>
                                         <button 
-                                            onClick={() => handleExcluir(f.id)}
-                                            style={{ padding: '6px 8px', background: 'transparent', color: '#ef4444', border: '1px solid #444', borderRadius: '4px', cursor: 'pointer', fontSize: '12px' }}
+                                            onClick={() => handleExcluir(f.id)} 
+                                            className="w-8 h-8 rounded-full flex items-center justify-center text-slate-600 hover:text-rose-500 hover:bg-rose-500/10 transition-all opacity-0 group-hover:opacity-100"
                                         >
-                                            Deletar
+                                            <Trash2 size={14} />
                                         </button>
-                                    </td>
-                                </tr>
+                                    </div>
+
+                                    <div className="space-y-3 mb-5">
+                                        {f.contato && (
+                                            <div className="flex items-center gap-2 text-xs font-bold text-slate-400">
+                                                <User size={14} className="text-orange-500/60" />
+                                                <span className="text-slate-300">{f.contato}</span>
+                                                <span className="text-slate-600 font-medium">(Vendedor)</span>
+                                            </div>
+                                        )}
+                                        {f.cidade && (
+                                            <div className="flex items-center gap-2 text-xs font-bold text-slate-400">
+                                                <MapPin size={14} className="text-orange-500/60" />
+                                                <span>{f.cidade}</span>
+                                            </div>
+                                        )}
+                                        {f.obs && (
+                                            <div className="p-3 rounded-xl bg-slate-900/50 border border-slate-800/50 text-[11px] leading-relaxed text-slate-500 italic">
+                                                {f.obs}
+                                            </div>
+                                        )}
+                                    </div>
+
+                                    {f.telefone && (
+                                        <a 
+                                            href={`https://wa.me/55${f.telefone.replace(/\D/g, '')}`} 
+                                            target="_blank" 
+                                            rel="noreferrer"
+                                            className="flex items-center justify-center gap-2 w-full py-3 rounded-xl bg-emerald-500 font-black text-[11px] uppercase tracking-widest text-slate-950 hover:bg-emerald-400 transition-all shadow-lg shadow-emerald-500/10 active:scale-95"
+                                        >
+                                            <MessageSquare size={14} /> Falar no WhatsApp
+                                        </a>
+                                    )}
+                                </div>
                             ))}
-                        </tbody>
-                    </table>
+                        </div>
+                    )}
                 </div>
-            )}
+
+                {/* ADD SUPPLIER FORM AREA */}
+                <div className="lg:sticky lg:top-8 self-start">
+                    <div className="rounded-[32px] border border-orange-500/20 bg-slate-950/80 p-8 shadow-2xl backdrop-blur-xl">
+                        <div className="mb-8 flex items-center justify-between">
+                            <div className="flex items-center gap-3">
+                                <div className="w-12 h-12 bg-orange-500/10 rounded-2xl flex items-center justify-center text-orange-500 border border-orange-500/20">
+                                    <Plus size={24} />
+                                </div>
+                                <div>
+                                    <h2 className="text-2xl font-black text-white leading-none">Novo Parceiro</h2>
+                                    <p className="text-slate-500 text-sm mt-1">Cadastrar fornecedor</p>
+                                </div>
+                            </div>
+                            <button 
+                                onClick={() => setMostrarForm(!mostrarForm)}
+                                className="w-10 h-10 rounded-xl bg-slate-800/50 flex items-center justify-center text-slate-400 hover:text-white transition-colors border border-slate-800"
+                            >
+                                {mostrarForm ? <ChevronUp size={20} /> : <ChevronDown size={20} />}
+                            </button>
+                        </div>
+
+                        <div className={`space-y-6 transition-all duration-300 ${mostrarForm ? 'opacity-100' : 'opacity-0 h-0 overflow-hidden invisible'}`}>
+                            <Field 
+                                label="Nome da Loja *" 
+                                value={form.nome} 
+                                onChange={v => setForm({...form, nome: v})} 
+                                placeholder="Ex: Autopeças Imperial..." 
+                                icon={<Store size={16} />}
+                            />
+
+                            <div className="grid gap-4 sm:grid-cols-2">
+                                <Field 
+                                    label="WhatsApp" 
+                                    value={form.telefone} 
+                                    onChange={v => setForm({...form, telefone: v})} 
+                                    placeholder="(11) 99999-9999" 
+                                    icon={<Phone size={16} />}
+                                />
+                                <Field 
+                                    label="Contato" 
+                                    value={form.contato} 
+                                    onChange={v => setForm({...form, contato: v})} 
+                                    placeholder="Nome do Vendedor" 
+                                    icon={<User size={16} />}
+                                />
+                            </div>
+
+                            <div className="grid gap-4 sm:grid-cols-2">
+                                <Field 
+                                    label="Especialidade" 
+                                    value={form.especialidade} 
+                                    onChange={v => setForm({...form, especialidade: v})} 
+                                    placeholder="Ex: Suspensão" 
+                                    icon={<Tag size={16} />}
+                                />
+                                <Field 
+                                    label="Localização" 
+                                    value={form.cidade} 
+                                    onChange={v => setForm({...form, cidade: v})} 
+                                    placeholder="Cidade / Bairro" 
+                                    icon={<MapPin size={16} />}
+                                />
+                            </div>
+
+                            <div className="space-y-2">
+                                <span className="block text-[10px] font-black uppercase tracking-[0.2em] text-slate-500 flex items-center gap-2">
+                                    <Tag size={14} /> Observações
+                                </span>
+                                <textarea
+                                    value={form.obs}
+                                    onChange={e => setForm({...form, obs: e.target.value})}
+                                    rows={3} 
+                                    className="w-full rounded-2xl border border-slate-800 bg-slate-900/50 px-4 py-3 text-xs text-white outline-none focus:border-orange-500/60 resize-none transition-all placeholder:text-slate-700" 
+                                    placeholder="Detalhes sobre entregas, descontos..."
+                                />
+                            </div>
+
+                            <button 
+                                onClick={handleSalvar} 
+                                disabled={salvando}
+                                className="w-full rounded-2xl bg-orange-500 py-5 font-black text-sm uppercase tracking-widest text-slate-950 hover:bg-orange-400 shadow-lg shadow-orange-500/20 active:scale-[0.98] transition-all flex items-center justify-center gap-2 mt-4"
+                            >
+                                {salvando ? '⏳ PROCESSANDO...' : <><Save size={20} /> Salvar Fornecedor</>}
+                            </button>
+                        </div>
+                        
+                        {!mostrarForm && (
+                            <div className="text-center py-4">
+                                <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-600">
+                                    Formulário Oculto
+                                </p>
+                            </div>
+                        )}
+                    </div>
+                </div>
+            </div>
         </div>
     );
+}
+
+// SHARED COMPONENTS
+
+function MetricCard({ title, value, detail, icon, tone }) {
+  const tones = {
+    info: 'border-cyan-400/20 bg-cyan-400/10 text-cyan-200',
+    success: 'border-emerald-400/20 bg-emerald-400/10 text-emerald-200',
+    danger: 'border-rose-400/20 bg-rose-400/10 text-rose-200',
+    warning: 'border-orange-400/20 bg-orange-400/10 text-orange-100'
+  };
+
+  return (
+    <div className="rounded-[24px] border border-slate-800 bg-slate-950/90 p-5 shadow-2xl shadow-slate-950/30">
+      <div className="flex items-start justify-between gap-4">
+        <div>
+          <p className="text-xs font-bold uppercase tracking-[0.22em] text-slate-500">{title}</p>
+          <h3 className="mt-3 text-2xl font-black text-white">{value}</h3>
+          <p className="mt-2 text-sm text-slate-400">{detail}</p>
+        </div>
+        <div className={`rounded-2xl border p-3 ${tones[tone]}`}>{icon}</div>
+      </div>
+    </div>
+  );
+}
+
+function QuickHighlight({ label, value, helper, tone }) {
+  const tones = {
+    danger: 'border-rose-400/20 bg-rose-400/10 text-rose-100',
+    success: 'border-emerald-400/20 bg-emerald-400/10 text-emerald-100',
+    info: 'border-orange-400/20 bg-orange-400/10 text-orange-100'
+  };
+
+  return (
+    <div className={`rounded-2xl border p-4 backdrop-blur ${tones[tone]}`}>
+      <p className="text-xs uppercase tracking-[0.24em] opacity-80">{label}</p>
+      <p className="mt-2 text-2xl font-black">{value}</p>
+      <p className="mt-1 text-sm opacity-80">{helper}</p>
+    </div>
+  );
+}
+
+function Field({ label, value, onChange, placeholder, type = 'text', icon }) {
+  return (
+    <label className="block space-y-2">
+      <span className="block text-[10px] font-black uppercase tracking-[0.2em] text-slate-500 flex items-center gap-2">
+        {icon}{label}
+      </span>
+      <input
+        type={type}
+        value={value}
+        placeholder={placeholder}
+        onChange={event => onChange(event.target.value)}
+        className="w-full rounded-2xl border border-slate-800 bg-slate-900/50 px-4 py-3 text-xs text-white outline-none transition focus:border-orange-500/60 placeholder:text-slate-700"
+      />
+    </label>
+  );
 }

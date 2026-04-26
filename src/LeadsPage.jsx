@@ -5,12 +5,34 @@ import { db } from './lib/firebase';
 import { collection, addDoc, getDocs, query, orderBy, deleteDoc, doc, updateDoc } from 'firebase/firestore';
 import { useGemini } from './hooks/useGemini';
 import { useOficina } from './components/OficinaContext';
+import { 
+  Users, 
+  Sparkles, 
+  Zap, 
+  Search, 
+  Plus, 
+  Trash2, 
+  MessageSquare, 
+  MoreHorizontal, 
+  Camera, 
+  FileText, 
+  CheckCircle2, 
+  Clock, 
+  PieChart, 
+  ArrowRight,
+  UserPlus,
+  Phone,
+  Car,
+  AlertCircle,
+  Wand2,
+  X
+} from 'lucide-react';
 
 const COLUNAS = [
-  { id: 'novo', titulo: 'NOVO', cor: '#3b82f6', icone: '🕹️' },
-  { id: 'orcamento', titulo: 'ORÇAMENTO', cor: '#eab308', icone: '💰' },
-  { id: 'agendado', titulo: 'AGENDADO', cor: '#a855f7', icone: '📅' },
-  { id: 'feito', titulo: 'FEITO', cor: '#22c55e', icone: '✅' }
+  { id: 'novo', titulo: 'NOVO', color: 'text-blue-400', bg: 'bg-blue-400/10', border: 'border-blue-400/20', icon: <Zap size={14} /> },
+  { id: 'orcamento', titulo: 'ORÇAMENTO', color: 'text-amber-400', bg: 'bg-amber-400/10', border: 'border-amber-400/20', icon: <Clock size={14} /> },
+  { id: 'agendado', titulo: 'AGENDADO', color: 'text-purple-400', bg: 'bg-purple-400/10', border: 'border-purple-400/20', icon: <Clock size={14} /> },
+  { id: 'feito', titulo: 'FEITO', color: 'text-emerald-400', bg: 'bg-emerald-400/10', border: 'border-emerald-400/20', icon: <CheckCircle2 size={14} /> }
 ];
 
 export default function LeadsPage() {
@@ -165,130 +187,322 @@ export default function LeadsPage() {
     return mapa;
   }, [leadsFiltrados]);
 
+  const totalLeads = leads.length;
+  const leadsHoje = leads.filter(l => {
+    const data = l.data_registro?.toDate ? l.data_registro.toDate() : new Date(l.data_registro);
+    return data.toDateString() === new Date().toDateString();
+  }).length;
+  const concluidos = leads.filter(l => l.status === 'feito').length;
+  const taxaConversao = totalLeads > 0 ? ((concluidos / totalLeads) * 100).toFixed(1) : 0;
+
   return (
-    <div style={{ color: 'white' }}>
-      <h2 style={{ color: '#FF0033', marginBottom: '20px' }}>🎯 Funil de Vendas (Leads)</h2>
+    <div className="mx-auto max-w-7xl space-y-8 px-4 pb-24 pt-4 text-slate-100 md:px-8 font-sans">
+      
+      {/* HERO SECTION */}
+      <section className="overflow-hidden rounded-[28px] border border-violet-500/20 bg-[radial-gradient(circle_at_top_left,_rgba(139,92,246,0.18),_transparent_32%),radial-gradient(circle_at_bottom_right,_rgba(139,92,246,0.1),_transparent_28%),linear-gradient(135deg,_rgba(15,23,42,0.98),_rgba(3,7,18,0.96))] p-6 shadow-[0_30px_120px_-40px_rgba(139,92,246,0.35)]">
+        <div className="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
+          <div className="max-w-2xl">
+            <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-violet-500/20 bg-violet-500/10 px-3 py-1 text-xs font-semibold uppercase tracking-[0.3em] text-violet-300">
+              <Sparkles size={14} />
+              CRM & Funil de Vendas Inteligente
+            </div>
+            <h1 className="text-3xl font-black tracking-tight text-white md:text-5xl">
+              Transforme leads em clientes fiéis.
+            </h1>
+            <p className="mt-3 max-w-xl text-sm leading-6 text-slate-300 md:text-base">
+              Acompanhe cada etapa do atendimento, desde o primeiro contato até a entrega final, com inteligência artificial.
+            </p>
+          </div>
 
-      {/* BLOCO IA - IMPORTAÇÃO DE LISTAS */}
-      <div style={{ background: '#111', padding: '20px', borderRadius: '10px', marginBottom: '20px', border: '1px solid #3b82f6' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '10px' }}>
-          <span style={{ fontSize: '24px' }}>🤖</span>
-          <h3 style={{ color: '#3b82f6', margin: 0, fontSize: '16px' }}>Importação de Leads e Lista de Clientes (IA)</h3>
-        </div>
-        <p style={{ color: '#888', fontSize: '13px', marginBottom: '15px', lineHeight: '1.5' }}>
-          <strong>Como usar:</strong> Copie os dados das suas planilhas de Excel (.xls), arquivos de texto (.doc), ou mensagens longas do WhatsApp e cole aqui. Você também pode clicar no botão da câmera para tirar foto de uma lista de clientes impressa ou de cartões de visita. A Inteligência Artificial vai ler e cadastrar tudo automaticamente no seu funil.
-        </p>
-        
-        <div style={{ display: 'flex', gap: '10px', flexDirection: 'column' }}>
-          <textarea
-            value={textoIA}
-            onChange={e => setTextoIA(e.target.value)}
-            placeholder="Cole aqui os contatos copiados da sua planilha ou do WhatsApp..."
-            style={{ width: '100%', padding: '15px', background: '#0a0a0a', color: 'white', border: '1px solid #333', borderRadius: '5px' }}
-            rows={3}
-          />
-
-          <div style={{ display: 'flex', gap: '10px', alignItems: 'stretch' }}>
-            <label style={{ flex: 1, padding: '15px', background: '#222', color: '#00E676', border: '1px dashed #00E676', textAlign: 'center', cursor: 'pointer', borderRadius: '5px', fontWeight: 'bold', fontSize: '13px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
-              <span>📸</span> FOTOGRAFAR LISTA IMPRESSA / CARTÃO
-              <input type="file" accept="image/*" capture="environment" onChange={handleCapturarFoto} style={{ display: 'none' }} />
-            </label>
-
-            {fotoLead && (
-              <div style={{ position: 'relative', width: '100px', border: '1px solid #3b82f6', borderRadius: '5px', overflow: 'hidden' }}>
-                <img src={fotoLead} alt="Upload" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                <button onClick={() => setFotoLead(null)} style={{ position: 'absolute', top: 2, right: 2, background: 'red', color: 'white', border: 'none', borderRadius: '50%', width: '20px', height: '20px', cursor: 'pointer', fontSize: '10px' }}>✕</button>
-              </div>
-            )}
+          <div className="grid min-w-[280px] gap-3 sm:grid-cols-2">
+            <QuickHighlight
+              label="Leads Hoje"
+              value={leadsHoje}
+              tone="info"
+              helper="Novos contatos"
+            />
+            <QuickHighlight
+              label="Conversão"
+              value={`${taxaConversao}%`}
+              tone="success"
+              helper="Taxa de sucesso"
+            />
           </div>
         </div>
+      </section>
 
-        <button 
-          onClick={extrairLeadsIA} 
-          disabled={processandoIA} 
-          style={{ marginTop: '15px', width: '100%', padding: '15px', background: processandoIA ? '#222' : '#3b82f6', color: 'white', fontWeight: 'bold', border: 'none', borderRadius: '5px', cursor: 'pointer' }}
-        >
-          {processandoIA ? '⏳ EXTRAINDO CLIENTES DA LISTA...' : '✨ IMPORTAR CONTATOS AUTOMATICAMENTE'}
-        </button>
+      {/* AI INTEGRATION MESSAGE */}
+      <div className="rounded-2xl border border-violet-500/10 bg-violet-500/5 p-4 flex items-start gap-4">
+        <div className="w-10 h-10 rounded-xl bg-violet-500/20 flex items-center justify-center text-violet-400 shrink-0 border border-violet-500/20">
+          <Zap size={20} />
+        </div>
+        <div className="space-y-1">
+          <h4 className="text-sm font-black text-violet-200">Integração Total com Assistentes IA</h4>
+          <p className="text-xs leading-relaxed text-violet-300/80">
+            Toda a interação realizada através dos assistentes de IA (botões flutuantes como Copiloto e Secretária) é automaticamente capturada e organizada aqui no seu Funil, garantindo que você nunca perca uma oportunidade de negócio.
+          </p>
+        </div>
       </div>
 
-      {/* BLOCO MANUAL - ADICIONAR CLIENTE */}
-      <div style={{ background: '#111', padding: '20px', borderRadius: '10px', border: '1px solid #333', marginBottom: '20px' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '5px' }}>
-          <span style={{ fontSize: '20px' }}>✍️</span>
-          <h3 style={{ color: '#FF0033', margin: 0, fontSize: '16px' }}>Adicionar Novo Cliente Manualmente</h3>
-        </div>
-        <p style={{ color: '#888', fontSize: '12px', marginBottom: '15px' }}>Use este formulário para registrar um cliente que chegou à oficina ou ligou.</p>
-        
-        <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap', marginBottom: '15px' }}>
-          <input type="text" value={nome} onChange={e => setNome(e.target.value)} placeholder="Nome do Cliente" style={{ flex: 1, minWidth: '150px', padding: '12px', background: '#0a0a0a', border: '1px solid #333', color: 'white', borderRadius: '5px' }} />
-          <input type="text" value={telefone} onChange={e => setTelefone(e.target.value)} placeholder="WhatsApp (DDD + Num)" style={{ flex: 1, minWidth: '150px', padding: '12px', background: '#0a0a0a', border: '1px solid #333', color: 'white', borderRadius: '5px' }} />
-          <input type="text" value={veiculo} onChange={e => setVeiculo(e.target.value)} placeholder="Veículo (Ex: Gol 2018)" style={{ flex: 1, minWidth: '150px', padding: '12px', background: '#0a0a0a', border: '1px solid #333', color: 'white', borderRadius: '5px' }} />
-          <input type="text" value={problema} onChange={e => setProblema(e.target.value)} placeholder="Problema / Serviço..." style={{ flex: 2, minWidth: '200px', padding: '12px', background: '#0a0a0a', border: '1px solid #333', color: 'white', borderRadius: '5px' }} />
-        </div>
-        <button onClick={adicionarLeadManual} style={{ padding: '12px 25px', background: '#FF0033', color: 'white', fontWeight: 'bold', border: 'none', borderRadius: '5px', cursor: 'pointer' }}>➕ CADASTRAR NO KANBAN</button>
-      </div>
-
-      {/* BUSCA */}
-      <div style={{ marginBottom: '20px' }}>
-        <input 
-          type="text" 
-          value={busca} 
-          onChange={e => setBusca(e.target.value)} 
-          placeholder="🔍 Localizar leads por nome ou veículo..." 
-          style={{ width: '100%', padding: '15px', background: '#111', border: '1px solid #3b82f6', color: 'white', borderRadius: '8px' }}
+      {/* METRIC CARDS GRID */}
+      <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+        <MetricCard 
+          title="Total de Leads" 
+          value={totalLeads} 
+          detail="Oportunidades em aberto" 
+          icon={<Users size={20} />} 
+          tone="info" 
         />
-      </div>
+        <MetricCard 
+          title="Agendamentos" 
+          value={leads.filter(l => l.status === 'agendado').length} 
+          detail="Clientes com data marcada" 
+          icon={<Clock size={20} />} 
+          tone="warning" 
+        />
+        <MetricCard 
+          title="Conversões" 
+          value={concluidos} 
+          detail="Atendimentos finalizados" 
+          icon={<CheckCircle2 size={20} />} 
+          tone="success" 
+        />
+        <MetricCard 
+          title="Taxa de Sucesso" 
+          value={`${taxaConversao}%`} 
+          detail="Performance do funil" 
+          icon={<PieChart size={20} />} 
+          tone="info" 
+        />
+      </section>
 
-      {/* KANBAN BOARD */}
-      <div style={{ display: 'flex', gap: '15px', overflowX: 'auto', paddingBottom: '15px' }} className="scrollbar-hide">
-        {COLUNAS.map(coluna => (
-          <div key={coluna.id} style={{ minWidth: '280px', flex: 1, background: '#111', borderRadius: '10px', padding: '15px', borderTop: `4px solid ${coluna.cor}` }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '15px' }}>
-              <h3 style={{ margin: 0, fontSize: '14px', color: coluna.cor }}>{coluna.icone} {coluna.titulo}</h3>
-              <span style={{ background: '#222', color: '#888', padding: '2px 8px', borderRadius: '12px', fontSize: '11px', fontWeight: 'bold' }}>
-                {leadsPorStatus[coluna.id]?.length || 0}
-              </span>
-            </div>
-
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-              {leadsPorStatus[coluna.id]?.length === 0 && (
-                <div style={{ textAlign: 'center', color: '#444', fontSize: '12px', padding: '20px 0' }}>Nenhum lead aqui.</div>
-              )}
-              
-              {leadsPorStatus[coluna.id]?.map(lead => (
-                <div key={lead.id} style={{ background: '#1a1a1a', borderRadius: '8px', padding: '15px', border: '1px solid #333', position: 'relative' }}>
-                  <button onClick={() => deletarLead(lead.id)} style={{ position: 'absolute', top: '10px', right: '10px', background: 'transparent', color: '#FF0033', border: 'none', cursor: 'pointer', fontSize: '12px' }}>✕</button>
-                  
-                  <strong style={{ display: 'block', fontSize: '14px', marginBottom: '5px' }}>👤 {lead.nome}</strong>
-                  {lead.telefone && (
-                    <button onClick={() => abrirWhatsApp(lead.telefone)} style={{ background: 'transparent', border: 'none', color: '#00E676', cursor: 'pointer', padding: 0, fontSize: '12px', marginBottom: '5px', display: 'flex', alignItems: 'center', gap: '5px' }}>
-                      📱 {lead.telefone}
-                    </button>
-                  )}
-                  {lead.veiculo && <p style={{ margin: '0 0 5px 0', color: '#ccc', fontSize: '12px' }}>🚗 {lead.veiculo}</p>}
-                  
-                  <div style={{ background: '#0a0a0a', padding: '8px', borderRadius: '5px', color: '#aaa', fontSize: '11px', marginTop: '10px', minHeight: '40px' }}>
-                    {lead.problema}
-                  </div>
-
-                  {/* SELECT PARA MOVER O CARD */}
-                  <select 
-                    value={lead.status}
-                    onChange={(e) => mudarStatus(lead.id, e.target.value)}
-                    style={{ width: '100%', marginTop: '10px', padding: '8px', background: '#222', color: 'white', border: '1px solid #444', borderRadius: '5px', fontSize: '11px', cursor: 'pointer' }}
-                  >
-                    {COLUNAS.map(c => (
-                      <option key={c.id} value={c.id}>Mover para: {c.titulo}</option>
-                    ))}
-                  </select>
-                </div>
-              ))}
+      <div className="grid gap-8 xl:grid-cols-[1fr_380px]">
+        
+        {/* KANBAN BOARD */}
+        <div className="space-y-6 overflow-hidden">
+          <div className="flex items-center justify-between px-2">
+            <h3 className="text-xl font-black text-white">Quadro de Vendas</h3>
+            <div className="relative w-full max-w-xs">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" size={16} />
+              <input 
+                type="text" 
+                value={busca} 
+                onChange={e => setBusca(e.target.value)} 
+                placeholder="Localizar lead..." 
+                className="w-full rounded-xl border border-slate-800 bg-slate-900/50 py-2 pl-10 pr-4 text-xs text-white outline-none focus:border-violet-500/50"
+              />
             </div>
           </div>
-        ))}
-      </div>
 
+          <div className="flex gap-4 overflow-x-auto pb-6 scrollbar-hide">
+            {COLUNAS.map(coluna => (
+              <div key={coluna.id} className="min-w-[280px] flex-1 flex flex-col gap-4">
+                <div className={`flex items-center justify-between p-3 rounded-2xl border ${coluna.border} ${coluna.bg}`}>
+                  <div className={`flex items-center gap-2 text-[10px] font-black tracking-widest ${coluna.color}`}>
+                    {coluna.icon}
+                    {coluna.titulo}
+                  </div>
+                  <span className="bg-slate-800 text-slate-400 text-[10px] font-bold px-2 py-0.5 rounded-full">
+                    {leadsPorStatus[coluna.id]?.length || 0}
+                  </span>
+                </div>
+
+                <div className="flex flex-col gap-3 min-h-[400px]">
+                  {leadsPorStatus[coluna.id]?.map(lead => (
+                    <div key={lead.id} className="group relative overflow-hidden rounded-[20px] border border-slate-800 bg-slate-950/80 p-4 transition-all hover:border-violet-500/30 hover:bg-slate-900 shadow-lg shadow-slate-950/30 animate-in zoom-in-95 duration-200">
+                      <button 
+                        onClick={() => deletarLead(lead.id)} 
+                        className="absolute top-3 right-3 text-slate-600 hover:text-rose-500 opacity-0 group-hover:opacity-100 transition-all"
+                      >
+                        <Trash2 size={14} />
+                      </button>
+                      
+                      <div className="space-y-3">
+                        <div>
+                          <strong className="block text-sm font-black text-white">{lead.nome}</strong>
+                          {lead.veiculo && (
+                            <p className="mt-1 flex items-center gap-1.5 text-[11px] text-slate-400 font-bold uppercase tracking-wider">
+                              <Car size={12} className="text-violet-500" />
+                              {lead.veiculo}
+                            </p>
+                          )}
+                        </div>
+
+                        {lead.telefone && (
+                          <button 
+                            onClick={() => abrirWhatsApp(lead.telefone)} 
+                            className="flex items-center gap-1.5 text-xs font-black text-emerald-400 hover:text-emerald-300 transition-colors"
+                          >
+                            <MessageSquare size={14} />
+                            {lead.telefone}
+                          </button>
+                        )}
+                        
+                        <div className="rounded-xl border border-slate-800/50 bg-slate-900/50 p-3 text-[11px] leading-relaxed text-slate-400 italic">
+                          {lead.problema || "Sem detalhes"}
+                        </div>
+
+                        <select 
+                          value={lead.status}
+                          onChange={(e) => mudarStatus(lead.id, e.target.value)}
+                          className="w-full rounded-xl border border-slate-800 bg-slate-900 px-3 py-2 text-[10px] font-black text-slate-400 outline-none appearance-none cursor-pointer hover:border-slate-600 transition-colors"
+                        >
+                          {COLUNAS.map(c => (
+                            <option key={c.id} value={c.id}>MOVER PARA: {c.titulo}</option>
+                          ))}
+                        </select>
+                      </div>
+                    </div>
+                  ))}
+                  {leadsPorStatus[coluna.id]?.length === 0 && (
+                    <div className="flex-1 flex flex-col items-center justify-center border-2 border-dashed border-slate-800/30 rounded-2xl text-[10px] font-black uppercase tracking-widest text-slate-700 py-10">
+                      Vazio
+                    </div>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* SIDEBAR TOOLS */}
+        <div className="space-y-6">
+          {/* IA IMPORT TOOL */}
+          <div className="rounded-[32px] border border-violet-500/20 bg-slate-950/80 p-6 shadow-2xl backdrop-blur-xl">
+            <div className="mb-4 flex items-center gap-3">
+              <div className="w-10 h-10 bg-violet-500/10 rounded-2xl flex items-center justify-center text-violet-400 border border-violet-500/20">
+                <Wand2 size={20} />
+              </div>
+              <div>
+                <h3 className="text-sm font-black text-white uppercase tracking-wider">Importação IA</h3>
+                <p className="text-[10px] text-slate-500">Cole listas ou tire fotos</p>
+              </div>
+            </div>
+
+            <div className="space-y-4">
+              <textarea
+                value={textoIA}
+                onChange={e => setTextoIA(e.target.value)}
+                placeholder="Cole contatos do WhatsApp ou Planilhas..."
+                className="w-full rounded-2xl border border-slate-800 bg-slate-900/50 px-4 py-3 text-xs text-white outline-none focus:border-violet-500/60 resize-none transition-all placeholder:text-slate-700"
+                rows={4}
+              />
+
+              <div className="flex gap-2">
+                <label className="flex-1 inline-flex items-center justify-center gap-2 rounded-xl border-2 border-dashed border-slate-800 bg-slate-900/50 p-3 text-[10px] font-black text-slate-500 hover:border-violet-500/40 hover:text-violet-400 cursor-pointer transition-all">
+                  <Camera size={14} />
+                  FOTOGRAFAR LISTA
+                  <input type="file" accept="image/*" capture="environment" onChange={handleCapturarFoto} className="hidden" />
+                </label>
+
+                {fotoLead && (
+                  <div className="relative w-14 h-14 rounded-xl border border-violet-500/40 overflow-hidden shrink-0 group">
+                    <img src={fotoLead} alt="Upload" className="w-full h-full object-cover" />
+                    <button 
+                      onClick={() => setFotoLead(null)} 
+                      className="absolute inset-0 bg-rose-500/80 flex items-center justify-center text-white opacity-0 group-hover:opacity-100 transition-opacity"
+                    >
+                      <X size={14} />
+                    </button>
+                  </div>
+                )}
+              </div>
+
+              <button 
+                onClick={extrairLeadsIA} 
+                disabled={processandoIA} 
+                className="w-full rounded-2xl bg-violet-500 py-4 font-black text-xs uppercase tracking-widest text-white hover:bg-violet-400 shadow-lg shadow-violet-500/20 active:scale-[0.98] transition-all disabled:opacity-50 flex items-center justify-center gap-2"
+              >
+                {processandoIA ? '⏳ EXTRAINDO...' : <><Zap size={16} /> Importar com IA</>}
+              </button>
+            </div>
+          </div>
+
+          {/* MANUAL ENTRY TOOL */}
+          <div className="rounded-[32px] border border-slate-800 bg-slate-950/80 p-6 shadow-2xl backdrop-blur-xl">
+            <div className="mb-6 flex items-center gap-3">
+              <div className="w-10 h-10 bg-slate-800/50 rounded-2xl flex items-center justify-center text-slate-400 border border-slate-800">
+                <UserPlus size={20} />
+              </div>
+              <div>
+                <h3 className="text-sm font-black text-white uppercase tracking-wider">Novo Lead</h3>
+                <p className="text-[10px] text-slate-500">Registro manual rápido</p>
+              </div>
+            </div>
+
+            <div className="space-y-4">
+              <Field label="Nome" value={nome} onChange={setNome} placeholder="Nome do Cliente" icon={<Users size={14} />} />
+              <Field label="WhatsApp" value={telefone} onChange={setTelefone} placeholder="11 99999-9999" icon={<Phone size={14} />} />
+              <Field label="Veículo" value={veiculo} onChange={setVeiculo} placeholder="Modelo / Ano" icon={<Car size={14} />} />
+              <Field label="Problema" value={problema} onChange={setProblema} placeholder="Motivo do contato" icon={<AlertCircle size={14} />} />
+              
+              <button 
+                onClick={adicionarLeadManual} 
+                className="w-full rounded-2xl border border-slate-800 bg-slate-900 py-4 font-black text-xs uppercase tracking-widest text-slate-400 hover:border-slate-600 hover:text-white transition-all active:scale-[0.98]"
+              >
+                Cadastrar no Kanban
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
+  );
+}
+
+// SHARED COMPONENTS
+
+function MetricCard({ title, value, detail, icon, tone }) {
+  const tones = {
+    info: 'border-cyan-400/20 bg-cyan-400/10 text-cyan-200',
+    success: 'border-emerald-400/20 bg-emerald-400/10 text-emerald-200',
+    danger: 'border-rose-400/20 bg-rose-400/10 text-rose-200',
+    warning: 'border-amber-300/20 bg-amber-300/10 text-amber-100'
+  };
+
+  return (
+    <div className="rounded-[24px] border border-slate-800 bg-slate-950/90 p-5 shadow-2xl shadow-slate-950/30">
+      <div className="flex items-start justify-between gap-4">
+        <div>
+          <p className="text-xs font-bold uppercase tracking-[0.22em] text-slate-500">{title}</p>
+          <h3 className="mt-3 text-2xl font-black text-white">{value}</h3>
+          <p className="mt-2 text-sm text-slate-400">{detail}</p>
+        </div>
+        <div className={`rounded-2xl border p-3 ${tones[tone]}`}>{icon}</div>
+      </div>
+    </div>
+  );
+}
+
+function QuickHighlight({ label, value, helper, tone }) {
+  const tones = {
+    danger: 'border-rose-400/20 bg-rose-400/10 text-rose-100',
+    success: 'border-emerald-400/20 bg-emerald-400/10 text-emerald-100',
+    info: 'border-violet-400/20 bg-violet-400/10 text-violet-100'
+  };
+
+  return (
+    <div className={`rounded-2xl border p-4 backdrop-blur ${tones[tone]}`}>
+      <p className="text-xs uppercase tracking-[0.24em] opacity-80">{label}</p>
+      <p className="mt-2 text-2xl font-black">{value}</p>
+      <p className="mt-1 text-sm opacity-80">{helper}</p>
+    </div>
+  );
+}
+
+function Field({ label, value, onChange, placeholder, type = 'text', icon }) {
+  return (
+    <label className="block space-y-2">
+      <span className="block text-[10px] font-black uppercase tracking-[0.2em] text-slate-500 flex items-center gap-2">
+        {icon}{label}
+      </span>
+      <input
+        type={type}
+        value={value}
+        placeholder={placeholder}
+        onChange={event => onChange(event.target.value)}
+        className="w-full rounded-2xl border border-slate-800 bg-slate-900/50 px-4 py-3 text-xs text-white outline-none transition focus:border-violet-500/60 placeholder:text-slate-700"
+      />
+    </label>
   );
 }
