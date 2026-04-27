@@ -83,7 +83,7 @@ const AJUDA_ITENS = [
   { aba: 'eletrica', icon: '⚡', titulo: 'Elétrica & Baterias', conteudo: ['Diagnóstico de alternador, motor de partida e iluminação.', 'Teste de carga de bateria e scanner eletrônico.', 'Lançamento de componentes elétricos e chicotes.'] },
   { aba: 'pneus', icon: '🛞', titulo: 'Pneus & Borracharia', conteudo: ['Controle de DOT, marca e medida dos pneus.', 'Serviços de vulcanização, rodízio e montagem.', 'Venda de pneus novos com integração ao estoque.'] },
   { aba: 'copiloto', icon: '🤖', titulo: 'Copiloto IA Técnico', conteudo: ['Tire dúvidas técnicas sobre torque, sensores e esquemas.', 'Analise códigos de falha (DTC) e receba dicas de reparo.', 'Treinado especificamente para a frota brasileira.'] },
-  { aba: 'secretaria', icon: '📞', titulo: 'Secretária & Orçamentos (IA)', conteudo: ['Gera textos persuasivos para enviar no WhatsApp.', 'Resume diagnósticos técnicos para o cliente entender.', 'Aumenta a conversão de orçamentos parados.'] },
+  { aba: 'secretaria', icon: '👩‍💼', titulo: 'Secretária & Orçamentos (IA)', conteudo: ['Gera textos persuasivos para enviar no WhatsApp.', 'Resume diagnósticos técnicos para o cliente entender.', 'Aumenta a conversão de orçamentos parados.'] },
   { aba: 'financeiro', icon: '💰', titulo: 'Gestão Financeira & Caixa', conteudo: ['Controle de Entradas (Caixa) e Saídas (Despesas).', 'Relatórios de lucro líquido e fluxo de caixa mensal.', 'Lançamentos automáticos ao finalizar uma O.S. paga.'] },
   { aba: 'estoque', icon: '📦', titulo: 'Controle de Peças & Produtos', conteudo: ['Entrada de notas e controle de saldo mínimo.', 'Custo médio e valor total em estoque.', 'Venda de balcão direta ou integrada à O.S.'] },
   { aba: 'clientes', icon: '🎯', titulo: 'Clientes & Leads (CRM)', conteudo: ['Base de dados centralizada de clientes e veículos.', 'Histórico completo de passagens na oficina.', 'Gestão de novos leads que entram via WhatsApp ou site.'] },
@@ -92,8 +92,6 @@ const AJUDA_ITENS = [
   { aba: 'precificacao', icon: '💰', titulo: 'PRECIFICAÇÃO - Sua Calculadora de Lucro Real', conteudo: ['👉 Pare de pagar para trabalhar! Use esta aba para saber exatamente quanto cobrar.', '🏦 PAINEL ESQUERDO: Configure seus custos fixos mensais (Aluguel, Luz, Folha) e suas horas úteis.', '✅ O sistema calcula automaticamente o valor da sua HORA TÉCNICA.', '📈 CALCULADORA À DIREITA: Digite o custo da peça, o tempo do serviço e os impostos.', '📊 RAIO-X DO DINHEIRO: Veja visualmente para onde vai cada centavo e garanta seu LUCRO LÍQUIDO.', '📲 AÇÃO RÁPIDA: Gere o valor e envie o orçamento profissional direto no WhatsApp do cliente com 1 clique.', '💡 Dica: Salve seus custos fixos uma vez e o sistema lembrará deles para todos os próximos orçamentos.'] },
   { aba: 'config', icon: '⚙️', titulo: 'Configurações do Sistema', conteudo: ['Personalize nome, logo e endereço da sua oficina.', 'Cadastre chaves PIX para links de pagamento.', 'Ajuste horários e preferências globais.'] }
 ];
-
-const isTrial = true;
 
 const { MAIN, GREEN, MASTER } = COLORS;
 const APP_BASE_URL = 'https://oficina.expresstech.com.br';
@@ -119,7 +117,6 @@ const MAPA_MODULOS_SERVICOS = {
 };
 
 export default function Admin() {
-  // Usando AuthContext - remove estados duplicados
   const {
     logado,
     carregandoAuth,
@@ -139,6 +136,8 @@ export default function Admin() {
     modulosOperacionais,
     dataFimTrial,
     mostrarOnboarding,
+    trialExpirou, // Certifique-se que o AuthContext proveja este estado
+    setTrialExpirou,
     setDadosOficina,
     setBloqueado,
     setModulosOperacionais,
@@ -146,7 +145,6 @@ export default function Admin() {
     setMostrarOnboarding,
   } = useAuth();
 
-  // Estado global para dados da OS (centraliza placa, cliente, veiculo, oficinaId)
   const [dadosOSGlobal, setDadosOSGlobal] = useState({
     placa: '',
     cliente: '',
@@ -158,7 +156,6 @@ export default function Admin() {
     senha_web: ''
   });
 
-  // Simplificação: usa currentUserId do contexto
   useEffect(() => {
     if (currentUserId) {
       localStorage.setItem('oficinaId', currentUserId);
@@ -169,7 +166,6 @@ export default function Admin() {
   const [abaAtiva, setAbaAtiva] = useState('dashboard');
   const [showMLModal, setShowMLModal] = useState(false);
 
-  // Escuta eventos dos botões flutuantes
   useEffect(() => {
     const handleAbrirML = () => setShowMLModal(true);
     const handleMudarAba = (e) => {
@@ -188,8 +184,6 @@ export default function Admin() {
 
   const [tema, setTema] = useState('escuro');
   const toggleTema = () => setTema(prev => prev === 'escuro' ? 'claro' : 'escuro');
-
-  // Estado para Modo Foco (limpa menus quando abre OS/Serviço)
   const [modoFoco, setModoFoco] = useState(false);
 
   const entrarModoFoco = () => {
@@ -238,10 +232,7 @@ export default function Admin() {
   const [leadCampoOuvindo, setLeadCampoOuvindo] = useState(null);
   const [toastModuloBloqueado, setToastModuloBloqueado] = useState(null);
 
-  // ✅ REMOVIDOS: trialExpirou, currentUserId - já vêm do useAuth()
-
   const trialExpiraouRef = useRef(false);
-
   const [modalUpgradeAba, setModalUpgradeAba] = useState(null);
 
   const modulosUsuario = useMemo(() => {
@@ -264,7 +255,6 @@ export default function Admin() {
     );
   }, [modulosUsuario]);
 
-  // --- TRAVA DE EXPIRAÇÃO DO TRIAL ---
   useEffect(() => {
     if (!logado || !currentUserId || !dataFimTrial) return;
     if (trialExpiraouRef.current) return;
@@ -273,14 +263,13 @@ export default function Admin() {
     if (fim >= new Date()) return;
 
     trialExpiraouRef.current = true;
-    // ✅ Usando setTrialExpirou local ainda (será movido para OfficeContext depois)
     setTrialExpirou(true);
 
     updateDoc(doc(db, 'usuarios', currentUserId), {
       modulosPermitidos: null,
       dataFimTrial: null,
     }, { merge: true }).catch(err => console.error('Erro ao expirar trial:', err));
-  }, [dataFimTrial, logado, currentUserId]);
+  }, [dataFimTrial, logado, currentUserId, setTrialExpirou]);
 
   const isLicencaAtiva = useMemo(() => {
     if (!dataFimTrial) return true;
@@ -477,9 +466,6 @@ export default function Admin() {
     logado,
   });
 
-  // ✅ REMOVIDO: useAuthListener call - agora tudo é gerenciado pelo AuthContext
-
-  // --- MAESTRO: edição de O.S. — renderiza apenas o editor correspondente ---
   if (osEmEdicao) {
     return (
       <TelaMaestro
@@ -507,18 +493,26 @@ export default function Admin() {
   }
 
   const moduloLiberado = (idAba) => {
-    if (isTrial) return true;
+    // Validação de Trial via data
+    const hoje = new Date();
+    const fimTrial = dataFimTrial instanceof Date ? dataFimTrial : new Date(dataFimTrial);
+    if (dataFimTrial && fimTrial > hoje) return true;
+
     const ehMaster = dadosOficina?.papel === 'master' || dadosOficina?.plano === 'master';
     if (ehMaster) return true;
     if (dadosOficina?.modulosPermitidos === 'ALL') return true;
-    const abasVitais = ['dashboard', 'mecanica', 'clientes', 'ajuda', 'meuplano', 'config'];
+
+    const abasVitais = ['dashboard', 'os', 'mecanica', 'clientes', 'ajuda', 'meuplano', 'config'];
     if (abasVitais.includes(idAba)) return true;
-    if ((dadosOficina?.modulosOperacionais || []).includes(idAba)) return true;
-    return false;
+
+    return (dadosOficina?.modulosOperacionais || []).includes(idAba);
   };
 
   const lidarModuloBloqueado = (aba) => {
-    if (isTrial) return;
+    const hoje = new Date();
+    const fimTrial = dataFimTrial instanceof Date ? dataFimTrial : new Date(dataFimTrial);
+    if (dataFimTrial && fimTrial > hoje) return;
+
     if (dadosOficina?.plano === 'master' || dadosOficina?.plano === 'prime') return;
     setModalUpgradeAba(aba);
   };
@@ -591,8 +585,6 @@ export default function Admin() {
     master: '👑 MASTER', meuplano: '💰 MEU PLANO',
   };
 
-  // --- TELAS DE ESTADO ESPECIAL ---
-
   if (carregandoAuth) {
     return (
       <div style={{ minHeight: '100vh', background: 'black', color: MAIN, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '18px', fontWeight: 'bold' }}>
@@ -633,9 +625,7 @@ export default function Admin() {
 
   return (
     <div style={{ minHeight: '100vh', background: t.bg, color: t.texto, paddingBottom: '100px', transition: 'background 0.3s' }}>
-
       <Header t={t} papelLogado={papelLogado} MASTER={MASTER} MAIN={MAIN} toggleTema={toggleTema} fazerLogout={fazerLogout} oficinaId={oficinaId} />
-
       <NovaOSBar t={t} MAIN={MAIN} abaAtiva={abaAtiva} setAbaAtiva={setAbaAtiva} listaCarros={listaCarros} busca={busca} setBusca={setBusca} normalizarPlaca={normalizarPlaca} />
 
       {modoFoco && (
@@ -749,7 +739,7 @@ export default function Admin() {
         setSubAbaEletrica={setSubAbaEletrica}
         tema={tema}
         toggleTema={toggleTema}
-        isTrial={isTrial}
+        isTrial={dataFimTrial && (new Date(dataFimTrial) > new Date())}
         modulosOperacionais={modulosOperacionais}
         irParaNovaOS={irParaNovaOS}
         verificarLicenca={verificarLicenca}
