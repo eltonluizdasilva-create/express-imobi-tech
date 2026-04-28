@@ -10,6 +10,7 @@ export default function ModuloBloqueado({
   MAIN,
   planosSistema,
   LABELS_ABAS_MODAL,
+  papelLogado,
 }) {
   return (
     <>
@@ -37,50 +38,68 @@ export default function ModuloBloqueado({
           background: 'rgba(0,0,0,0.85)', backdropFilter: 'blur(8px)',
           display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px'
         }}>
-          <div style={{
-            background: '#111', border: `1px solid ${MAIN}`, borderRadius: '24px',
-            padding: '40px', maxWidth: '420px', width: '100%', textAlign: 'center',
-            boxShadow: `0 0 60px ${MAIN}33`
-          }}>
-            <div style={{
-              width: '64px', height: '64px', borderRadius: '50%', margin: '0 auto 20px',
-              background: `${MAIN}22`, display: 'flex', alignItems: 'center', justifyContent: 'center'
-            }}>
-              <Lock size={28} color={MAIN} />
+          {papelLogado === 'funcionario' ? (
+            <div className="flex flex-col items-center justify-center p-10 text-center bg-[#1a1a1a] rounded-xl border border-gray-800 max-w-md w-full shadow-2xl">
+              <svg className="w-16 h-16 text-gray-600 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path>
+              </svg>
+              <h2 className="text-2xl font-bold text-white mb-2">Acesso Restrito</h2>
+              <p className="text-gray-400 mb-8">
+                O módulo <strong className="text-white">{LABELS_ABAS_MODAL[modalUpgradeAba] || modalUpgradeAba}</strong> é de uso exclusivo da administração da oficina.
+              </p>
+              <button 
+                onClick={() => setModalUpgradeAba(null)} 
+                className="w-full py-3 bg-gray-800 text-white rounded-xl hover:bg-gray-700 transition-colors font-bold tracking-wide uppercase text-sm"
+              >
+                Voltar
+              </button>
             </div>
-            <h2 style={{ color: MAIN, fontSize: '22px', fontWeight: '900', marginBottom: '10px', textTransform: 'uppercase' }}>
-              Upgrade Necessário
-            </h2>
-            <p style={{ color: '#888', fontSize: '13px', lineHeight: '1.7', marginBottom: '8px' }}>
-              O módulo <strong style={{ color: 'white' }}>{LABELS_ABAS_MODAL[modalUpgradeAba] || modalUpgradeAba}</strong> não está incluso no seu plano atual.
-            </p>
-            <p style={{ color: '#555', fontSize: '11px', marginBottom: '28px' }}>
-              Faça um upgrade para desbloquear todos os módulos e funcionalidades.
-            </p>
-            <a
-              href={`https://wa.me/${planosSistema?.whatsapp || '5534991439845'}?text=${encodeURIComponent(`Olá! Gostaria de desbloquear o módulo ${LABELS_ABAS_MODAL[modalUpgradeAba] || modalUpgradeAba}. Qual plano preciso?`)}`}
-              target="_blank"
-              rel="noreferrer"
-              style={{
-                display: 'block', width: '100%', padding: '16px', borderRadius: '12px',
-                background: MAIN, color: 'white', fontWeight: '900', fontSize: '13px',
-                textAlign: 'center', textDecoration: 'none', textTransform: 'uppercase',
-                boxShadow: `0 8px 30px ${MAIN}44`, marginBottom: '10px'
-              }}
-            >
-              💬 Falar com Suporte
-            </a>
-            <button
-              onClick={() => { setModalUpgradeAba(null); setAbaAtiva('meuplano'); }}
-              style={{
-                width: '100%', padding: '14px', background: 'transparent',
-                color: '#888', border: '1px solid #333', borderRadius: '12px',
-                fontWeight: 'bold', fontSize: '12px', cursor: 'pointer', textTransform: 'uppercase'
-              }}
-            >
-              Ver Planos
-            </button>
-          </div>
+          ) : (
+            <div style={{
+              background: '#111', border: `1px solid ${MAIN}`, borderRadius: '24px',
+              padding: '40px', maxWidth: '420px', width: '100%', textAlign: 'center',
+              boxShadow: `0 0 60px ${MAIN}33`
+            }}>
+              <div style={{
+                width: '64px', height: '64px', borderRadius: '50%', margin: '0 auto 20px',
+                background: `${MAIN}22`, display: 'flex', alignItems: 'center', justifyContent: 'center'
+              }}>
+                <Lock size={28} color={MAIN} />
+              </div>
+              <h2 style={{ color: MAIN, fontSize: '22px', fontWeight: '900', marginBottom: '10px', textTransform: 'uppercase' }}>
+                Upgrade Necessário
+              </h2>
+              <p style={{ color: '#888', fontSize: '13px', lineHeight: '1.7', marginBottom: '8px' }}>
+                O módulo <strong style={{ color: 'white' }}>{LABELS_ABAS_MODAL[modalUpgradeAba] || modalUpgradeAba}</strong> não está incluso no seu plano atual.
+              </p>
+              <p style={{ color: '#555', fontSize: '11px', marginBottom: '28px' }}>
+                Faça um upgrade para desbloquear todos os módulos e funcionalidades.
+              </p>
+              <a
+                href={`https://wa.me/${planosSistema?.whatsapp || '5534991439845'}?text=${encodeURIComponent(`Olá! Gostaria de desbloquear o módulo ${LABELS_ABAS_MODAL[modalUpgradeAba] || modalUpgradeAba}. Qual plano preciso?`)}`}
+                target="_blank"
+                rel="noreferrer"
+                style={{
+                  display: 'block', width: '100%', padding: '16px', borderRadius: '12px',
+                  background: MAIN, color: 'white', fontWeight: '900', fontSize: '13px',
+                  textAlign: 'center', textDecoration: 'none', textTransform: 'uppercase',
+                  boxShadow: `0 8px 30px ${MAIN}44`, marginBottom: '10px'
+                }}
+              >
+                💬 Falar com Suporte
+              </a>
+              <button
+                onClick={() => { setModalUpgradeAba(null); setAbaAtiva('meuplano'); }}
+                style={{
+                  width: '100%', padding: '14px', background: 'transparent',
+                  color: '#888', border: '1px solid #333', borderRadius: '12px',
+                  fontWeight: 'bold', fontSize: '12px', cursor: 'pointer', textTransform: 'uppercase'
+                }}
+              >
+                Ver Planos
+              </button>
+            </div>
+          )}
         </div>
       )}
     </>

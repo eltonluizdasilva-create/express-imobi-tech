@@ -635,19 +635,13 @@ export default function Admin() {
   };
 
   const lidarModuloBloqueado = (idAba) => {
-    // Funcionários não devem ver o modal de "Upgrade de Plano", pois não pagam
-    if (papelLogado === 'funcionario') {
-      setToastModuloBloqueado({ tipo: 'bloqueado', aba: idAba });
-      return; 
-    }
-
     // Se estiver no período de trial com licença ativa, não bloqueia nada
     if (isTrial && isLicencaAtiva) return;
 
     // Se for uma aba de acesso livre, não bloqueia
     if (['dashboard', 'config', 'ajuda', 'meuplano'].includes(idAba)) return;
 
-    // Caso contrário, mostra o modal de upgrade para o Dono
+    // Caso contrário, mostra o modal (o componente ModuloBloqueado decidirá qual versão mostrar)
     setModalUpgradeAba(idAba);
     setToastModuloBloqueado({ tipo: 'bloqueado', aba: idAba });
   };
@@ -872,6 +866,7 @@ export default function Admin() {
         MAIN={MAIN}
         planosSistema={planosSistema}
         LABELS_ABAS_MODAL={LABELS_ABAS_MODAL}
+        papelLogado={papelLogado}
       />
 
       <ModaisExtras
@@ -946,7 +941,8 @@ export default function Admin() {
         setAbaAtiva={setAbaAtiva}
       />
 
-      {dadosOficina?.papel !== 'master' && (
+      {/* O React SÓ vai desenhar o Tour na tela se o papel do usuário logado for estritamente 'dono' */}
+      {papelLogado === 'dono' && (
         <OnboardingTour
           setAbaAtiva={setAbaAtiva}
           setMostrarOnboarding={setMostrarOnboarding}
