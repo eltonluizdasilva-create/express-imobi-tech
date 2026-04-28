@@ -543,7 +543,7 @@ export default function MasterPanel({ setPlanosGlobais }) {
                     <button
                       onClick={() => toggleStatusOficina(oficina)}
                       style={{
-                        padding: '8px 15px', borderRadius: '6px', border: 'none', fontWeight: 'bold', cursor: 'pointer',
+                        padding: '8px 15px', borderRadius: '6px', fontWeight: 'bold', cursor: 'pointer',
                         background: oficina.ativo ? '#ff313122' : '#00E67622',
                         color: oficina.ativo ? '#ff3131' : '#00E676',
                         border: `1px solid ${oficina.ativo ? '#ff3131' : '#00E676'}`

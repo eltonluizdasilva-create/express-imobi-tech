@@ -3,7 +3,6 @@ import React from 'react';
 
 export default function ModaisExtras({
   QuickActions,
-  ModalOnboarding,
   oficinaId,
   GREEN,
   modalTarefaAberto,
@@ -108,18 +107,6 @@ export default function ModaisExtras({
         tema={tema}
       />
 
-      {mostrarOnboarding && (
-        <ModalOnboarding
-          planoLimite={planosSistema?.planos?.essencial?.slots || 5}
-          setAbaAtiva={setAbaAtiva}
-          onComplete={(modulos) => {
-            setModulosOperacionais(modulos);
-            setMostrarOnboarding(false);
-          }}
-          // ✅ CORREÇÃO: Passando o onClose para garantir que o modal saiba como se destruir ao clicar no X
-          onClose={() => setMostrarOnboarding(false)}
-        />
-      )}
     </>
   );
 }

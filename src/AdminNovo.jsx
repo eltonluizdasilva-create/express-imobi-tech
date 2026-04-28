@@ -45,7 +45,6 @@ import Fornecedores from './components/Fornecedores';
 import Ajuda from './components/admin/Ajuda.jsx';
 import MasterPanel from './components/MasterPanel';
 import QuickActions from './components/QuickActions';
-import ModalOnboarding from './components/ModalOnboarding';
 import EletricaModulo from './Eletrica';
 import ArCondicionado from './ArCondicionado';
 import Escapamento from './Escapamento';
@@ -370,7 +369,7 @@ export default function Admin() {
   const isLicencaAtiva = useMemo(() => {
     // Se for master, está sempre ativo
     if (dadosOficina?.papel === 'master' || dadosOficina?.plano === 'master') return true;
-    
+
     // Se não tiver data de fim de trial e for trial/gratuito, então expirou (ou nem começou)
     if (!dataFimTrial) {
       return dadosOficina?.plano !== 'GRATUITO' && dadosOficina?.plano !== 'trial' && !!dadosOficina?.plano;
@@ -454,7 +453,7 @@ export default function Admin() {
     });
     return () => unsubscribe();
   }, [oficinaId, logado]);
-    
+
   useEffect(() => {
     carregarPlanos();
   }, [carregarPlanos]);
@@ -601,7 +600,7 @@ export default function Admin() {
   const moduloLiberado = (idAba) => {
     const aba = idAba?.toLowerCase();
     const isLocalhost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
-    
+
     // 1. Se for Master, acesso total vitalício
     if (dadosOficina?.papel === 'master' || dadosOficina?.plano === 'master' || papelLogado === 'master') return true;
 
@@ -615,7 +614,7 @@ export default function Admin() {
     // Um funcionário NÃO PODE acessar todos os módulos premium da oficina indiscriminadamente.
     // Ele SÓ tem acesso se a sua permissão INDIVIDUAL estiver habilitada para esta aba.
     if (papelLogado === 'funcionario') {
-       return permissoesLogado?.[aba] === true;
+      return permissoesLogado?.[aba] === true;
     }
 
     // 5. Daqui para baixo é apenas para DONOS da Oficina
@@ -649,7 +648,7 @@ export default function Admin() {
   const abrirRecuperacaoFinanceira = () => {
     // Fonte de dados principal (sincronizada com Firebase)
     const fonteDeDados = listaCarros || [];
-    
+
     // Filtra apenas O.S. que estão pendentes (verificando múltiplos campos possíveis) e com valor maior que zero
     const devedores = fonteDeDados.filter(os => {
       const statusValue = (os.statusPagamento || os.status || os.situacao || '').toString().trim().toUpperCase();
@@ -850,7 +849,7 @@ export default function Admin() {
         extrasAlinhamento={extrasAlinhamento} setExtrasAlinhamento={setExtrasAlinhamento}
         estadoPneus={estadoPneus} setEstadoPneus={setEstadoPneus}
         subAbaEletrica={subAbaEletrica} setSubAbaEletrica={setSubAbaEletrica}
-        tema={tema} toggleTema={toggleTema}
+        toggleTema={toggleTema}
         modulosOperacionais={modulosOperacionais}
         irParaNovaOS={irParaNovaOS}
         verificarLicenca={verificarLicenca}
@@ -873,7 +872,6 @@ export default function Admin() {
         t={t}
         tema={tema}
         QuickActions={QuickActions}
-        ModalOnboarding={ModalOnboarding}
         oficinaId={oficinaId}
         GREEN={GREEN}
         modalTarefaAberto={modalTarefaAberto} setModalTarefaAberto={setModalTarefaAberto}
@@ -933,9 +931,9 @@ export default function Admin() {
         </div>
       )}
 
-      <FloatingButtons 
+      <FloatingButtons
         t={t}
-        abaAtiva={abaAtiva} 
+        abaAtiva={abaAtiva}
         moduloLiberado={moduloLiberado}
         lidarModuloBloqueado={lidarModuloBloqueado}
         setAbaAtiva={setAbaAtiva}
@@ -946,13 +944,12 @@ export default function Admin() {
         <OnboardingTour
           setAbaAtiva={setAbaAtiva}
           setMostrarOnboarding={setMostrarOnboarding}
-          modalBemVindoAberto={mostrarOnboarding}
         />
       )}
       {modalRecuperacaoAberto && (
         <div style={{ position: 'fixed', inset: 0, zIndex: 99999, background: 'rgba(0,0,0,0.85)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px', backdropFilter: 'blur(8px)' }}>
           <div style={{ background: '#0f172a', border: `2px solid ${MAIN}`, borderRadius: '20px', width: '100%', maxWidth: '500px', maxHeight: '80vh', overflow: 'hidden', display: 'flex', flexDirection: 'column', boxShadow: `0 0 50px ${MAIN}44` }}>
-            
+
             {/* Cabeçalho */}
             <div style={{ padding: '20px', borderBottom: '1px solid #1e293b', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <h3 style={{ color: 'white', margin: 0, fontWeight: '900', textTransform: 'uppercase', letterSpacing: '-0.5px' }}>💰 Recuperação de Orçamentos</h3>
@@ -972,7 +969,7 @@ export default function Admin() {
                       <p style={{ color: 'white', fontWeight: 'bold', margin: '0 0 4px 0' }}>{os.nomeCliente || 'Cliente s/ nome'}</p>
                       <p style={{ color: MAIN, fontSize: '12px', fontWeight: '900', margin: 0 }}>{os.placa} • R$ {Number(os.total).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</p>
                     </div>
-                    <button 
+                    <button
                       onClick={() => enviarWhatsApp(os, 'orcamento')}
                       style={{ background: '#22c55e', color: 'white', border: 'none', padding: '10px 16px', borderRadius: '10px', cursor: 'pointer', fontWeight: 'bold', fontSize: '12px', transition: 'all 0.2s shadow-lg' }}
                     >
