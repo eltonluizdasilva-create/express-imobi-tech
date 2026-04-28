@@ -768,6 +768,7 @@ export default function Admin() {
       <Header
         t={t} papelLogado={papelLogado} MASTER={MASTER} MAIN={MAIN}
         toggleTema={toggleTema} fazerLogout={fazerLogout} oficinaId={oficinaId}
+        dataFimTrial={dataFimTrial} isTrial={isTrial}
       />
 
       <NovaOSBar

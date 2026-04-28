@@ -3,34 +3,21 @@ import React, { useState, useEffect } from 'react';
 import { doc, getDoc } from 'firebase/firestore';
 import { db } from '../../lib/firebase';
 
-export default function Header({ t, papelLogado, MASTER, MAIN, toggleTema, fazerLogout, oficinaId }) {
-  const [dadosLicenca, setDadosLicenca] = useState({ diasRestantes: null, tipoPlano: null });
+export default function Header({ t, papelLogado, MASTER, MAIN, toggleTema, fazerLogout, oficinaId, dataFimTrial, isTrial }) {
+  const [diasRestantes, setDiasRestantes] = useState(null);
 
   useEffect(() => {
-    const buscarDataVencimento = async () => {
-      if (!oficinaId) return;
-      try {
-        const snap = await getDoc(doc(db, 'usuarios', oficinaId));
-        if (snap.exists()) {
-          const data = snap.data();
-          let diasRestantes = null;
-          if (data.dataFimTrial) {
-            const fim = data.dataFimTrial.toDate ? data.dataFimTrial.toDate() : new Date(data.dataFimTrial);
-            const diff = fim - new Date();
-            diasRestantes = Math.ceil(diff / (1000 * 60 * 60 * 24));
-          }
-          setDadosLicenca({ diasRestantes, tipoPlano: data.tipoPlano || 'trial' });
-        }
-      } catch (err) {
-        console.error('Erro ao buscar vencimento:', err);
-      }
-    };
-    buscarDataVencimento();
-  }, [oficinaId]);
+    if (!dataFimTrial) {
+      setDiasRestantes(null);
+      return;
+    }
+    const fim = dataFimTrial.toDate ? dataFimTrial.toDate() : new Date(dataFimTrial);
+    const diff = fim - new Date();
+    const dias = Math.ceil(diff / (1000 * 60 * 60 * 24));
+    setDiasRestantes(dias);
+  }, [dataFimTrial]);
 
-  const { diasRestantes, tipoPlano } = dadosLicenca;
   const dias = diasRestantes;
-  const isTrial = tipoPlano === 'trial' || !tipoPlano;
   const isUrgente = dias !== null && dias <= 3 && dias > 0;
   const isExpirado = dias !== null && dias <= 0;
   const isAtivo = !isTrial && !isExpirado;

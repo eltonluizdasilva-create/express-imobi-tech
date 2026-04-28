@@ -67,7 +67,17 @@ export function AuthProvider({ children }) {
           if (userOficinaId) {
             const oficinaSnap = await getDoc(doc(db, 'oficinas', userOficinaId));
             if (oficinaSnap.exists()) {
-              setDadosOficina({ ...oficinaSnap.data(), id: userOficinaId });
+              const ofiData = oficinaSnap.data();
+              setDadosOficina({ ...ofiData, id: userOficinaId });
+              
+              // Sincroniza a data de fim do trial no estado global
+              if (ofiData.trialFim) {
+                setDataFimTrial(ofiData.trialFim);
+              } else if (ofiData.dataFimTrial) {
+                setDataFimTrial(ofiData.dataFimTrial);
+              } else {
+                setDataFimTrial(null);
+              }
             } else {
               // 🚀 BLINDAGEM 1: Se a oficina do cara foi apagada do banco, salva o sistema do loop!
               setDadosOficina({
