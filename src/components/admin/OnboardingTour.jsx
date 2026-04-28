@@ -6,59 +6,26 @@ const TOUR_Z_INDEX = 10000000;
 
 // Lista completa atualizada com todas as abas do novo ecossistema
 const PASSOS_TOUR = [
-
   {
     titulo: '🚀 1. O Portal do Cliente: Seu Diferencial!',
-    texto: 'O fim das ligações chatas e clientes toda hora na sua porta! Envie fotos, status e orçamentos direto para o celular do cliente. Ele acompanha tudo online e você valoriza sua mão de obra.',
+    texto: 'O fim das ligações chatas! Envie fotos e orçamentos direto para o celular do cliente. Ele acompanha tudo online e você valoriza sua mão de obra.',
   },
   {
     titulo: '📅 2. Retorno: O Dinheiro que Volta',
-    texto: 'Chega de oficina vazia! Nossa IA monitora revisões, trocas de óleo, baterias e muito mais, avisando quando é hora de trazer o cliente de volta. Agenda cheia de forma automática.',
+    texto: 'Nossa IA monitora revisões e avisa quando é hora de trazer o cliente de volta. Agenda cheia de forma automática.',
   },
   {
-    titulo: '📝 3. Checklist Digital: Sua Proteção',
-    texto: 'Evite prejuízos e reclamações. Registre fotos e o estado do veículo na entrada. É a prova real que profissionaliza o recebimento e protege seu bolso contra problemas que já estavam lá.',
+    titulo: '💼 3. Gestão Profissional (Assinantes)',
+    texto: 'Ao assinar um plano, você libera o controle total de Clientes, Financeiro e Estoque. Tudo o que sua oficina precisa para sair do amadorismo e lucrar mais.',
   },
   {
-    titulo: '🔑 4. Portal do Cliente Exclusivo',
-    texto: 'Seu cliente recebe uma senha para acompanhar o status, fotos e laudos em tempo real. Menos cobrança no seu ouvido e muito mais autoridade para sua marca.',
+    titulo: '🤖 4. Inteligência Artificial',
+    texto: 'Copiloto, Assistente Fiscal e muito mais. Use o poder da IA para diagnosticar defeitos e gerenciar burocracias em segundos.',
   },
   {
-    titulo: '📈 5. Termômetro de Lucro',
-    texto: 'Pare de trabalhar de graça! Saiba exatamente qual serviço te dá lucro real e qual está apenas ocupando espaço no elevador. Tome decisões baseadas em números e não em achismo.',
-  },
-  {
-    titulo: '📦 6. Estoque: Onde está seu Dinheiro?',
-    texto: 'Peça parada é prejuízo. Saiba exatamente o que você tem, evite compras em duplicidade e garanta que nenhuma peça saia da oficina sem ser cobrada na O.S.',
-  },
-  {
-    titulo: '✅ 7. Aprovação em 1 Clique (WhatsApp)',
-    texto: 'Agilidade é lucro. O cliente recebe o orçamento pelo WhatsApp e aprova com um toque. O carro não fica parado e o pátio gira muito mais rápido.',
-  },
-  {
-    titulo: '⛓️ 8. Peças Pendentes: Fim do Gargalo',
-    texto: 'Monitore o que trava sua produtividade. Saiba quais carros estão parados esperando peças e cobre seus fornecedores com dados reais. Elimine o tempo ocioso.',
-  },
-  {
-    titulo: '🎯 9. Tudo à Mão: Atalhos Inteligentes',
-    texto: 'Nossos botões flutuantes conectam tarefas, financeiro e clientes. Tudo fácil de acessar! Tire dúvidas ou faça compras sem sair da tela onde você está trabalhando.',
-  },
-  {
-    titulo: '🎁 10. Liberdade: Comece Totalmente Grátis',
-    texto: 'Teste o Premium por 15 dias. Depois, você decide: faça o upgrade ou continue usando nossas diversas ferramentas gratuitas para sempre. Você tem o controle do seu crescimento.',
-  },
-  {
-    titulo: '🧠 Passo 1: O Cérebro (Ajustes) ⚙️',
-    texto: 'Hora de dar vida ao sistema! Cadastre sua logo, chave PIX e dados. Isso ativa seus recibos profissionais e o Portal do Cliente. É aqui que sua oficina vira elite.',
-  },
-  {
-    titulo: '🚗 Passo 2: O Coração (Ordem de Serviço)',
-    texto: 'Tudo começa aqui. Abra O.S. completas com fotos e peças. Gerencie sua equipe e mantenha o cliente informado em tempo real com transparência total.',
-  },
-  {
-    titulo: '❓ Passo 3: Dúvidas e Suporte ⚡',
-    texto: 'Nunca fique travado! Use a aba Ajuda para tutoriais e conte com os botões flutuantes para navegar rápido. Estamos aqui para fazer sua oficina decolar!',
-  },
+    titulo: '💳 5. Planos e Slots',
+    texto: 'Escolha quantas abas operacionais sua oficina precisa. Você paga apenas pelo que usa e tem todas as ferramentas de gestão inclusas nos planos pagos.',
+  }
 ];
 
 function TourModal({ aberto, passoAtual, totalPassos, passo, onAnterior, onProximo, onFechar }) {

@@ -19,6 +19,33 @@ const PortalCliente = lazy(() => import('./PortalCliente'));
 const StatusOS = lazy(() => import('./StatusOS'));
 
 // ============================================================
+// ERROR BOUNDARY
+// Previne que o app quebre completamente se a internet cair
+// durante um lazy load (Failed to fetch dynamically imported module)
+// ============================================================
+class ErrorBoundary extends React.Component {
+  constructor(props) {
+    super(props);
+    this.state = { hasError: false };
+  }
+  static getDerivedStateFromError(error) {
+    return { hasError: true };
+  }
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div className="h-screen w-full bg-black flex flex-col items-center justify-center text-white p-4 text-center">
+          <h1 className="text-2xl font-bold text-red-500 mb-2">Erro de Conexão</h1>
+          <p className="text-gray-400 mb-6 max-w-md">Ocorreu uma instabilidade na sua rede no momento de carregar os componentes desta tela.</p>
+          <button onClick={() => window.location.reload()} className="px-6 py-3 bg-red-600 font-bold rounded-xl hover:bg-red-500 transition-colors">Recarregar Página</button>
+        </div>
+      );
+    }
+    return this.props.children;
+  }
+}
+
+// ============================================================
 // COMPONENTE DE CARREGAMENTO (FALLBACK)
 // Exibido enquanto os módulos dinâmicos são baixados
 // ============================================================
@@ -127,9 +154,11 @@ export default function App() {
     <Router>
       <AuthProvider>
         <OficinaProvider>
-          <Suspense fallback={<TelaCarregamento />}>
-            <AppRoutes />
-          </Suspense>
+          <ErrorBoundary>
+            <Suspense fallback={<TelaCarregamento />}>
+              <AppRoutes />
+            </Suspense>
+          </ErrorBoundary>
         </OficinaProvider>
       </AuthProvider>
     </Router>

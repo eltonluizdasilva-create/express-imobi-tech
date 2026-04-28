@@ -11,10 +11,10 @@ export default function Servicos() {
 
   return (
     <div className="min-h-screen bg-[#050505] text-white font-sans selection:bg-blue-500 selection:text-white">
-      
+
       {/* NAVEGAÇÃO */}
       <nav className="flex justify-between items-center px-8 py-6 max-w-7xl mx-auto">
-        <div 
+        <div
           onClick={() => navigate('/')}
           className="flex items-center gap-2 cursor-pointer hover:opacity-80 transition-opacity"
         >
@@ -25,16 +25,16 @@ export default function Servicos() {
             EXPRESS <span className="text-blue-500">AI</span>
           </span>
         </div>
-        
+
         {/* MENU CENTRAL ATUALIZADO COM "SOBRE NÓS" */}
         <div className="hidden md:flex gap-8 text-sm font-semibold text-gray-400">
           <button onClick={() => navigate('/')} className="hover:text-blue-400 transition-colors cursor-pointer">Início</button>
-          <button onClick={() => window.scrollTo(0,0)} className="text-blue-400 cursor-default">Serviços</button>
+          <button onClick={() => window.scrollTo(0, 0)} className="text-blue-400 cursor-default">Serviços</button>
           <button onClick={() => navigate('/sobre')} className="hover:text-blue-400 transition-colors cursor-pointer">Sobre Nós</button>
         </div>
 
         <div className="flex gap-4">
-          <button 
+          <button
             onClick={() => window.open('https://wa.me/5534991439845?text=Olá, quero agendar uma consultoria com a Express AI', '_blank')}
             className="px-5 py-2 text-sm font-bold bg-white text-black rounded-full hover:bg-gray-200 transition-all shadow-[0_0_20px_rgba(255,255,255,0.2)]"
           >
@@ -57,7 +57,7 @@ export default function Servicos() {
       {/* LISTA DETALHADA DE SERVIÇOS */}
       <section className="py-12 px-4 max-w-5xl mx-auto">
         <div className="flex flex-col gap-12">
-          
+
           {/* Serviço 1: Automação e IA */}
           <div className="bg-[#111] border border-[#222] p-8 md:p-12 rounded-2xl flex flex-col md:flex-row gap-8 items-center hover:border-blue-500/50 transition-colors">
             <div className="md:w-1/3 flex justify-center">
@@ -68,7 +68,7 @@ export default function Servicos() {
             <div className="md:w-2/3">
               <h2 className="text-2xl font-bold mb-4 text-white">Consultoria em Inteligência Artificial e Automação</h2>
               <p className="text-gray-400 leading-relaxed mb-6">
-                Implementamos robôs de atendimento, automação de processos internos e criamos fluxos que funcionam 24 horas por dia. O seu negócio não pode depender apenas do esforço humano para crescer. Desenvolvemos sistemas sob medida (como o Oficina IA) para o seu setor.
+                Implementamos robôs de atendimento, automação de processos internos e criamos fluxos que funcionam 24 horas por dia. O seu negócio não pode depender apenas do esforço humano para crescer. Desenvolvemos sistemas sob medida (como o Express Auto Tech) para o seu setor.
               </p>
               <ul className="text-sm font-semibold text-blue-400 space-y-2">
                 <li>✓ Atendimento Automático de Leads</li>
@@ -144,7 +144,7 @@ export default function Servicos() {
       {/* CTA FINAL */}
       <section className="py-20 px-4 text-center mt-12">
         <h2 className="text-3xl font-black mb-6">Pronto para dar o próximo passo?</h2>
-        <button 
+        <button
           onClick={() => window.open('https://wa.me/5534991439845?text=Olá, tenho interesse nos serviços da Express AI', '_blank')}
           className="px-10 py-4 bg-white text-black font-extrabold rounded-full hover:bg-gray-200 transition-all shadow-[0_0_30px_rgba(255,255,255,0.2)]"
         >

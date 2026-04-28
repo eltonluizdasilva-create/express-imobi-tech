@@ -1,9 +1,9 @@
-﻿/* eslint-disable react/prop-types */
+/* eslint-disable react/prop-types */
 import React, { useState, useEffect } from 'react';
 import { db } from '../lib/firebase';
 import { doc, updateDoc } from 'firebase/firestore';
 import { sincronizarRetornosAutomaticos } from '../lib/retornos';
-import { Mic, Palette, Save, X, CheckCircle, AlertTriangle, ArrowRight, Info } from 'lucide-react';
+import { Mic, Palette, Save, X, CheckCircle, AlertTriangle, ArrowRight, Paintbrush, Hammer, Activity, Shield, Zap, Camera, Trash2 } from 'lucide-react';
 
 const STYLES = {
   accent: 'text-red-500',
@@ -35,51 +35,85 @@ const StatusSelector = ({ label, value, onChange }) => (
   </div>
 );
 
+const ServiceToggle = ({ icon: Icon, title, subtitle, active, onClick }) => (
+  <button 
+    onClick={onClick}
+    className={`p-4 rounded-2xl border transition-all flex items-center gap-4 text-left ${active ? 'bg-amber-600/20 border-amber-500' : 'bg-zinc-900/50 border-zinc-800 hover:border-zinc-700'}`}
+  >
+    <div className={`p-3 rounded-xl ${active ? 'bg-amber-500 text-black' : 'bg-zinc-800 text-zinc-400'}`}>
+      <Icon size={20} />
+    </div>
+    <div>
+      <div className={`font-black uppercase text-xs ${active ? 'text-amber-500' : 'text-zinc-300'}`}>{title}</div>
+      <div className="text-[10px] text-zinc-500">{subtitle}</div>
+    </div>
+  </button>
+);
+
 export default function FunilariaModulo({
-  oficinaId, osParaEditar, onCancelar, onSalvo, setAbaAtiva, irParaNovaOS
+  oficinaId, osParaEditar, onCancelar, onSalvo, irParaNovaOS, t, tema
 }) {
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
-  const [showAlert, setShowAlert] = useState(false);
+  const [showBlocker, setShowBlocker] = useState(false);
 
   const [pecas, setPecas] = useState('0');
   const [maoDeObra, setMaoDeObra] = useState('0');
-  const [obsFunilaria, setObsFunilaria] = useState('');
-  const [checklist, setChecklist] = useState({
-    // Funilaria
-    amassados: 'OK', oxidacao: 'OK', pintura: 'OK', repintura: 'OK',
-    // Acabamento
-    vidros: 'OK', retrovisores: 'OK', parachoques: 'OK', borrachas: 'OK',
-    // Interior
-    bancos: 'OK', painel: 'OK', tapetes: 'OK'
+  const [obsGerais, setObsGerais] = useState('');
+  const [isListening, setIsListening] = useState(false);
+  const [fotos, setFotos] = useState([]);
+  const [servicos, setServicos] = useState({
+    funilariaLeve: false, funilariaPesada: false, pinturaPeca: false,
+    pinturaGeral: false, micropintura: false, martelinhoOuro: false
   });
 
   useEffect(() => {
     if (osParaEditar) {
       setPecas(osParaEditar.valorPecas?.toString().replace('.', ',') || '0');
       setMaoDeObra(osParaEditar.valorMaoObra?.toString().replace('.', ',') || '0');
-      setObsFunilaria(osParaEditar.observacaoFunilaria || '');
-      if (osParaEditar.checklistFunilaria) setChecklist(osParaEditar.checklistFunilaria);
+      setObsGerais(osParaEditar.observacaoFunilaria || '');
+      if (osParaEditar.servicos) setServicos(osParaEditar.servicos);
+      setFotos(osParaEditar.fotosFunilaria || []);
     }
   }, [osParaEditar]);
 
-  const handleSalvarTentativa = async () => {
-    if (!osParaEditar) {
-      setShowAlert(true);
-      return;
+  const toggleServico = (key) => setServicos(prev => ({ ...prev, [key]: !prev[key] }));
+  
+  const toggleMic = () => {
+    const Recognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!Recognition) return alert("Microfone não suportado.");
+    const rec = new Recognition();
+    rec.lang = 'pt-BR';
+    if (isListening) { rec.stop(); setIsListening(false); }
+    else {
+      setIsListening(true); rec.start();
+      rec.onresult = (e) => setObsGerais(prev => prev + " " + e.results[0][0].transcript);
+      rec.onend = () => setIsListening(false);
     }
+  };
 
+  const handleUploadFoto = (e) => {
+    const files = Array.from(e.target.files);
+    setFotos(prev => [...prev, ...files.map(f => URL.createObjectURL(f))].slice(0, 10));
+  };
+
+  const handleSalvarTentativa = async () => {
+    if (!osParaEditar) { setShowBlocker(true); return; }
     setLoading(true);
     try {
       const vPecas = parseFloat(pecas.replace(',', '.')) || 0;
       const vMao = parseFloat(maoDeObra.replace(',', '.')) || 0;
+      const vTotal = vPecas + vMao;
+      
       const dadosFunilaria = {
         tipoServico: 'funilaria',
         valorPecas: vPecas,
         valorMaoObra: vMao,
-        total: vPecas + vMao,
-        observacaoFunilaria: obsFunilaria,
-        checklistFunilaria: checklist,
+        total: vTotal,
+        total_modulo: vTotal,
+        observacaoFunilaria: obsGerais,
+        servicos,
+        fotosFunilaria: fotos,
         data_atualizacao: new Date().toISOString()
       };
       await updateDoc(doc(db, 'oficinas', oficinaId, 'os', osParaEditar.id), dadosFunilaria);
@@ -91,129 +125,104 @@ export default function FunilariaModulo({
   };
 
   return (
-    <div className="bg-black min-h-screen text-zinc-100 p-4 md:p-8 pb-32 relative">
+    <div className={`${t?.bg || 'bg-black'} min-h-screen ${t?.text || 'text-zinc-100'} p-4 md:p-8 pb-40 relative transition-all duration-300`}>
 
-      {/* MODAL DE INSTRUÇÃO */}
-      {showAlert && (
-        <div className="fixed inset-0 bg-black/90 backdrop-blur-md z-[100] flex items-center justify-center p-4">
-          <div className="bg-zinc-900 border border-zinc-800 p-8 rounded-[2rem] max-w-sm text-center shadow-2xl">
-            <div className="bg-red-600 p-4 rounded-full w-16 h-16 flex items-center justify-center mx-auto mb-6 shadow-lg shadow-red-600/20">
-              <Info size={32} className="text-white" />
-            </div>
-            <h2 className="text-2xl font-black text-white mb-2 uppercase italic">Atenção!</h2>
-            <div className="text-zinc-400 text-sm mb-8 space-y-4 text-left">
-              <p>Para salvar este laudo técnico, siga os passos:</p>
-              <div className="flex gap-3 items-center bg-zinc-800 p-3 rounded-xl border border-zinc-700">
-                <span className="bg-red-600 text-white w-6 h-6 rounded-full flex items-center justify-center font-bold text-xs">1</span>
-                <span>Crie a O.S. na aba <strong>Triagem</strong></span>
-              </div>
-              <div className="flex gap-3 items-center bg-zinc-800 p-3 rounded-xl border border-zinc-700">
-                <span className="bg-red-600 text-white w-6 h-6 rounded-full flex items-center justify-center font-bold text-xs">2</span>
-                <span>Clique em <strong>Editar O.S.</strong> e volte aqui</span>
-              </div>
-            </div>
-            <div className="flex flex-col gap-3">
-              <button
-                onClick={() => {
-                  if (irParaNovaOS) irParaNovaOS();
-                  else if (setAbaAtiva) setAbaAtiva('os');
-                  setShowAlert(false);
-                }}
-                className="w-full py-4 bg-red-600 hover:bg-red-700 text-white font-bold rounded-2xl flex items-center justify-center gap-2 uppercase"
-              >
-                INICIAR O.S. AGORA <ArrowRight size={18} />
-              </button>
-              <button onClick={() => setShowAlert(false)} className="py-2 text-zinc-500 text-xs hover:text-zinc-300">
-                Vou criar a O.S. depois
-              </button>
-            </div>
+      {showBlocker && (
+        <div className={`fixed inset-0 ${tema === 'light' ? 'bg-white/95' : 'bg-black/95'} backdrop-blur-xl z-[200] flex items-center justify-center p-6 text-center`}>
+          <div className={`${t?.card || 'bg-zinc-900'} border ${t?.border || 'border-zinc-800'} p-10 rounded-[3rem] max-w-sm shadow-2xl`}>
+            <AlertTriangle size={60} className="text-amber-400 mx-auto mb-6" />
+            <h2 className={`text-2xl font-black ${t?.text || 'text-white'} mb-4 uppercase italic tracking-tighter`}>O.S. Requerida</h2>
+            <p className={`${t?.textMuted || 'text-zinc-400'} text-sm mb-10 leading-relaxed font-medium`}>
+              O serviço de Funilaria e Pintura precisa de uma O.S.<br />
+              <span className={`${t?.text || 'text-white'} font-bold underline`}>1. Inicie a O.S. (Triagem)</span><br />
+              <span className={`${t?.text || 'text-white'} font-bold underline`}>2. Clique em Editar para voltar</span>
+            </p>
+            <button onClick={() => { if (irParaNovaOS) irParaNovaOS(); setShowBlocker(false); }} className="w-full py-5 bg-amber-500 hover:bg-amber-600 text-black font-black rounded-2xl flex items-center justify-center gap-2 shadow-xl shadow-amber-500/20 transition-all">
+              INICIAR O.S. AGORA <ArrowRight size={20} />
+            </button>
           </div>
         </div>
       )}
 
-      <div className="max-w-4xl mx-auto">
-        {/* Header Profissional */}
-        <div className="mb-10 flex justify-between items-center border-b border-zinc-800 pb-6">
-          <div className="flex items-center gap-5">
-            <div className="p-4 bg-red-600 rounded-2xl">
-              <Palette className="text-white" size={32} />
+      <div className="max-w-5xl mx-auto">
+        <div className={`flex justify-between items-center mb-12 border-b ${t?.border || 'border-zinc-800'} pb-8`}>
+          <div className="flex items-center gap-6">
+            <div className="p-5 bg-amber-600 rounded-[1.5rem] shadow-xl shadow-amber-600/30">
+              <Paintbrush className="text-white" size={36} />
             </div>
             <div>
-              <h1 className="text-3xl font-black text-white uppercase tracking-tighter">Laudo de Funilaria</h1>
-              <p className="text-zinc-500 text-sm">Inspeção detalhada de chaparia e acabamento</p>
+              <h1 className={`text-4xl font-black ${t?.text || 'text-white'} uppercase italic tracking-tighter`}>Funilaria & Pintura</h1>
+              <p className="text-amber-500 font-bold text-xs tracking-[0.3em] uppercase">Restauração e Acabamento Automotivo</p>
             </div>
           </div>
-          <button onClick={onCancelar} className="p-3 bg-zinc-900 rounded-xl border border-zinc-800 hover:bg-zinc-800"><X size={24} /></button>
+          <button onClick={onCancelar} className={`p-3 ${t?.card || 'bg-zinc-900'} rounded-2xl border ${t?.border || 'border-zinc-800'} hover:opacity-80 transition-all`}><X size={28} /></button>
         </div>
 
-        {/* 1. Diagnóstico Funilaria */}
-        <div className={STYLES.card}>
-          <h2 className="text-red-600 font-black flex items-center gap-2 mb-6 uppercase tracking-widest text-[10px] border-l-2 border-red-600 pl-3">🛠️ Funilaria & Pintura</h2>
-          <div className="bg-zinc-900/60 rounded-2xl border border-zinc-800 overflow-hidden mb-6">
-            <StatusSelector label="Amassados / Cortes / Lanternagem" value={checklist.amassados} onChange={v => setChecklist({ ...checklist, amassados: v })} />
-            <StatusSelector label="Oxidação / Ferrugem / Corrosão" value={checklist.oxidacao} onChange={v => setChecklist({ ...checklist, oxidacao: v })} />
-            <StatusSelector label="Estado da Pintura (Queimada/Fosca)" value={checklist.pintura} onChange={v => setChecklist({ ...checklist, pintura: v })} />
-            <StatusSelector label="Área de Repintura / Massa / Bolhas" value={checklist.repintura} onChange={v => setChecklist({ ...checklist, repintura: v })} />
-          </div>
-          <textarea value={obsFunilaria} onChange={e => setObsFunilaria(e.target.value)} placeholder="Detalhes técnicos da funilaria..." className={STYLES.input + " min-h-[100px]"} />
-        </div>
-
-        {/* 2. Acabamento (Restaurado) */}
-        <div className={STYLES.card}>
-          <h2 className="text-red-600 font-black flex items-center gap-2 mb-6 uppercase tracking-widest text-[10px] border-l-2 border-red-600 pl-3">💎 Vidros & Acabamento</h2>
-          <div className="bg-zinc-900/60 rounded-2xl border border-zinc-800 overflow-hidden">
-            <StatusSelector label="Para-brisa / Vidros Laterais / Vigia" value={checklist.vidros} onChange={v => setChecklist({ ...checklist, vidros: v })} />
-            <StatusSelector label="Retrovisores (Lentes e Carcaças)" value={checklist.retrovisores} onChange={v => setChecklist({ ...checklist, retrovisores: v })} />
-            <StatusSelector label="Para-choques / Grades / Spoilers" value={checklist.parachoques} onChange={v => setChecklist({ ...checklist, parachoques: v })} />
-            <StatusSelector label="Borrachas de Vedação / Canaletas" value={checklist.borrachas} onChange={v => setChecklist({ ...checklist, borrachas: v })} />
+        <div className={`${t?.card || 'bg-zinc-900/40'} border ${t?.border || 'border-zinc-800'} rounded-[2.5rem] p-6 md:p-8 mb-8 shadow-xl`}>
+          <h2 className="text-amber-500 font-black mb-6 uppercase text-xs tracking-widest border-l-4 border-amber-500 pl-4">✓ Serviços Realizados</h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <ServiceToggle icon={Hammer} title="Funilaria Leve" subtitle="Pequenos amassados" active={servicos.funilariaLeve} onClick={() => toggleServico('funilariaLeve')} />
+            <ServiceToggle icon={Activity} title="Funilaria Pesada" subtitle="Alinhamento de chassi" active={servicos.funilariaPesada} onClick={() => toggleServico('funilariaPesada')} />
+            <ServiceToggle icon={Palette} title="Pintura por Peça" subtitle="Pintura localizada" active={servicos.pinturaPeca} onClick={() => toggleServico('pinturaPeca')} />
+            <ServiceToggle icon={Paintbrush} title="Pintura Geral" subtitle="Renovação completa" active={servicos.pinturaGeral} onClick={() => toggleServico('pinturaGeral')} />
+            <ServiceToggle icon={Shield} title="Micropintura" subtitle="Correção de lascados" active={servicos.micropintura} onClick={() => toggleServico('micropintura')} />
+            <ServiceToggle icon={Zap} title="Martelinho de Ouro" subtitle="Remoção de mossas" active={servicos.martelinhoOuro} onClick={() => toggleServico('martelinhoOuro')} />
           </div>
         </div>
 
-        {/* 3. Interior (Restaurado) */}
-        <div className={STYLES.card}>
-          <h2 className="text-red-600 font-black flex items-center gap-2 mb-6 uppercase tracking-widest text-[10px] border-l-2 border-red-600 pl-3">💺 Interior</h2>
-          <div className="bg-zinc-900/60 rounded-2xl border border-zinc-800 overflow-hidden">
-            <StatusSelector label="Bancos / Estofamento / Couro" value={checklist.bancos} onChange={v => setChecklist({ ...checklist, bancos: v })} />
-            <StatusSelector label="Painel / Tabelier / Airbags" value={checklist.painel} onChange={v => setChecklist({ ...checklist, painel: v })} />
-            <StatusSelector label="Tapetes / Forros de Porta / Teto" value={checklist.tapetes} onChange={v => setChecklist({ ...checklist, tapetes: v })} />
-          </div>
-        </div>
-
-        {/* Orçamento */}
-        <div className={STYLES.card}>
-          <h2 className="text-red-600 font-black flex items-center gap-2 mb-6 uppercase tracking-widest text-[10px] border-l-2 border-red-600 pl-3">💰 Orçamento</h2>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 items-end">
+        <div className={`${t?.card || 'bg-zinc-900/40'} border ${t?.border || 'border-zinc-800'} rounded-[2.5rem] p-6 md:p-8 mb-8 shadow-xl`}>
+          <h2 className="text-amber-500 font-black mb-6 uppercase text-xs tracking-widest flex items-center gap-2">💰 Orçamento</h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
             <div>
-              <label className="text-[10px] text-zinc-500 block mb-3 font-bold uppercase">Peças (R$)</label>
-              <input value={pecas} onChange={e => setPecas(e.target.value)} className="w-full p-4 bg-zinc-900 border border-zinc-800 rounded-xl outline-none text-center font-mono text-xl text-white" />
+              <label className={`text-[10px] ${t?.textMuted || 'text-zinc-500'} block mb-2 font-bold uppercase tracking-widest px-2`}>Peças / Tintas (R$)</label>
+              <input value={pecas} onChange={e => setPecas(e.target.value)} className={`bg-zinc-950 border ${t?.border || 'border-zinc-800'} focus:border-amber-500 ${t?.text || 'text-zinc-100'} p-4 rounded-xl outline-none w-full transition-all text-center text-xl`} />
             </div>
             <div>
-              <label className="text-[10px] text-zinc-500 block mb-3 font-bold uppercase">Mão de Obra (R$)</label>
-              <input value={maoDeObra} onChange={e => setMaoDeObra(e.target.value)} className="w-full p-4 bg-zinc-900 border border-zinc-800 rounded-xl outline-none text-center font-mono text-xl text-white" />
+              <label className={`text-[10px] ${t?.textMuted || 'text-zinc-500'} block mb-2 font-bold uppercase tracking-widest px-2`}>Mão de Obra (R$)</label>
+              <input value={maoDeObra} onChange={e => setMaoDeObra(e.target.value)} className={`bg-zinc-950 border ${t?.border || 'border-zinc-800'} focus:border-amber-500 ${t?.text || 'text-zinc-100'} p-4 rounded-xl outline-none w-full transition-all text-center text-xl`} />
             </div>
-            <div className="bg-green-950/20 border border-green-500/30 p-5 rounded-2xl flex flex-col items-center">
-              <span className="text-[10px] text-green-500 font-bold mb-2 uppercase">Total Funilaria</span>
-              <span className="text-3xl font-black text-green-500">R$ {(parseFloat(pecas.replace(',', '.')) + parseFloat(maoDeObra.replace(',', '.')) || 0).toFixed(2)}</span>
-            </div>
+          </div>
+          <div className="bg-amber-950/20 border border-amber-500/30 p-8 rounded-[1.5rem] flex flex-col items-center shadow-lg">
+            <span className="text-5xl font-black text-amber-400">R$ {(parseFloat(pecas.replace(',', '.')) + parseFloat(maoDeObra.replace(',', '.')) || 0).toFixed(2)}</span>
           </div>
         </div>
 
-        {/* BOTÃO DE AÇÃO */}
-        <button
-          onClick={handleSalvarTentativa}
-          className={osParaEditar ? STYLES.buttonRed + " w-full" : STYLES.buttonGray + " w-full"}
-        >
-          {loading ? 'Sincronizando...' : (
-            osParaEditar
-              ? <><Save size={28} /> ATUALIZAR DADOS NA O.S.</>
-              : <><AlertTriangle size={24} /> 1. CRIE A O.S. -{">"} 2. CLIQUE EM EDITAR</>
-          )}
+        <div className={`${t?.card || 'bg-zinc-900/40'} border ${t?.border || 'border-zinc-800'} rounded-[2.5rem] p-6 md:p-8 mb-8 shadow-xl`}>
+          <div className="relative">
+            <label className={`text-[10px] ${t?.textMuted || 'text-zinc-500'} font-black uppercase mb-4 flex items-center gap-2 ml-2`}>
+              <Mic size={14} className="text-amber-400" /> Observações de Reparo
+            </label>
+            <textarea value={obsGerais} onChange={e => setObsGerais(e.target.value)} placeholder="Descreva os detalhes técnicos do reparo..." className={`bg-zinc-950 border ${t?.border || 'border-zinc-800'} focus:border-amber-500 ${t?.text || 'text-zinc-100'} p-4 rounded-xl outline-none w-full transition-all min-h-[140px] pr-16`} />
+            <button onClick={toggleMic} className={`absolute right-5 bottom-5 p-4 rounded-full transition-all shadow-lg active:scale-90 ${isListening ? 'bg-red-600 animate-pulse' : 'bg-zinc-800 hover:bg-amber-500 text-white'}`}><Mic size={24} /></button>
+          </div>
+        </div>
+
+        <div className={`${t?.card || 'bg-zinc-900/40'} border ${t?.border || 'border-zinc-800'} rounded-[2.5rem] p-6 md:p-8 mb-8 shadow-xl`}>
+          <h2 className={`text-zinc-500 font-black mb-6 uppercase text-xs tracking-widest flex items-center gap-2`}><Camera size={16} /> Fotos ({fotos.length}/10)</h2>
+          <div className="flex gap-4 overflow-x-auto pb-4 scrollbar-hide">
+            {fotos.map((f, i) => (
+              <div key={i} className="relative min-w-[200px] h-[140px] rounded-[1.5rem] overflow-hidden border border-zinc-700 shadow-xl group">
+                <img src={f} className="w-full h-full object-cover" />
+                <button onClick={() => setFotos(fotos.filter((_, idx) => idx !== i))} className="absolute top-2 right-2 bg-red-600 p-2 rounded-full"><Trash2 size={14} /></button>
+              </div>
+            ))}
+            {fotos.length < 10 && (
+              <label className={`min-w-[200px] h-[140px] rounded-[1.5rem] border-2 border-dashed ${t?.border || 'border-zinc-800'} flex flex-col items-center justify-center cursor-pointer hover:border-amber-500 bg-amber-900/10 transition-all`}>
+                <Camera size={32} className="text-amber-500" />
+                <input type="file" multiple accept="image/*" onChange={handleUploadFoto} className="hidden" />
+              </label>
+            )}
+          </div>
+        </div>
+
+        <button onClick={handleSalvarTentativa} disabled={loading} className="w-full py-6 bg-amber-500 hover:bg-amber-400 text-black font-black text-2xl uppercase italic rounded-2xl shadow-xl transition-all">
+          {loading ? 'Salvando...' : <><Paintbrush size={28} /> ATUALIZAR O.S. FUNILARIA</>}
         </button>
       </div>
 
       {success && (
-        <div className="fixed bottom-10 left-1/2 -translate-x-1/2 bg-green-600 px-10 py-5 rounded-full shadow-2xl animate-bounce flex items-center gap-3 z-[110] font-black uppercase">
-          <CheckCircle size={24} /> O.S. ATUALIZADA!
+        <div className="fixed bottom-12 left-1/2 -translate-x-1/2 bg-green-600 px-12 py-6 rounded-full shadow-2xl animate-bounce flex items-center gap-4 z-[210] font-black uppercase text-xl text-white">
+          <CheckCircle size={32} /> Funilaria Atualizada!
         </div>
       )}
     </div>

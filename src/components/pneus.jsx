@@ -1,4 +1,4 @@
-﻿/* eslint-disable react/prop-types */
+/* eslint-disable react/prop-types */
 import React, { useState, useEffect } from "react";
 import { db } from "../lib/firebase";
 import { doc, updateDoc } from "firebase/firestore";
@@ -27,7 +27,7 @@ const ToggleButton = ({ label, active, onClick }) => (
   </button>
 );
 
-export default function PneusModulo({ oficinaId, osParaEditar, onCancelar, onSalvo, irParaNovaOS }) {
+export default function PneusModulo({ oficinaId, osParaEditar, onCancelar, onSalvo, irParaNovaOS, t, tema }) {
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
   const [showBlocker, setShowBlocker] = useState(false);
@@ -132,6 +132,7 @@ export default function PneusModulo({ oficinaId, osParaEditar, onCancelar, onSal
         fotosPneus: fotos,
         observacaoPneus: obsGerais,
         totalPneus: calcularTotal(),
+        total: calcularTotal(),
         data_atualizacao: new Date().toISOString()
       };
       await updateDoc(doc(db, 'oficinas', oficinaId, 'os', osParaEditar.id), dadosPneus);
@@ -144,18 +145,18 @@ export default function PneusModulo({ oficinaId, osParaEditar, onCancelar, onSal
   };
 
   return (
-    <div className="bg-black min-h-screen text-zinc-100 p-4 md:p-8 pb-40 relative">
+    <div className={`${t?.bg || 'bg-black'} min-h-screen ${t?.text || 'text-zinc-100'} p-4 md:p-8 pb-40 relative transition-all duration-300`}>
 
       {/* 🛑 MODAL DE BLOQUEIO */}
       {showBlocker && (
-        <div className="fixed inset-0 bg-black/95 backdrop-blur-xl z-[200] flex items-center justify-center p-6 text-center">
-          <div className="bg-zinc-900 border border-zinc-800 p-10 rounded-[3rem] max-w-sm shadow-2xl">
+        <div className={`fixed inset-0 ${tema === 'light' ? 'bg-white/95' : 'bg-black/95'} backdrop-blur-xl z-[200] flex items-center justify-center p-6 text-center`}>
+          <div className={`${t?.card || 'bg-zinc-900'} border ${t?.border || 'border-zinc-800'} p-10 rounded-[3rem] max-w-sm shadow-2xl`}>
             <AlertTriangle size={60} className="text-violet-500 mx-auto mb-6" />
-            <h2 className="text-2xl font-black text-white mb-4 uppercase italic tracking-tighter">O.S. Requerida</h2>
-            <p className="text-zinc-400 text-sm mb-10 leading-relaxed font-medium">
+            <h2 className={`text-2xl font-black ${t?.text || 'text-white'} mb-4 uppercase italic tracking-tighter`}>O.S. Requerida</h2>
+            <p className={`${t?.textMuted || 'text-zinc-400'} text-sm mb-10 leading-relaxed font-medium`}>
               A venda ou serviço de pneus precisa de uma O.S.<br />
-              <span className="text-white font-bold underline">1. Inicie a O.S. (Triagem)</span><br />
-              <span className="text-white font-bold underline">2. Clique em Editar para voltar</span>
+              <span className={`${t?.text || 'text-white'} font-bold underline`}>1. Inicie a O.S. (Triagem)</span><br />
+              <span className={`${t?.text || 'text-white'} font-bold underline`}>2. Clique em Editar para voltar</span>
             </p>
             <button onClick={() => { irParaNovaOS(); setShowBlocker(false); }} className="w-full py-5 bg-violet-600 hover:bg-violet-700 text-white font-black rounded-2xl flex items-center justify-center gap-2 shadow-xl shadow-violet-600/20 transition-all">
               INICIAR O.S. AGORA <ArrowRight size={20} />

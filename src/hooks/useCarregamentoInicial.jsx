@@ -32,8 +32,13 @@ export default function useCarregamentoInicial(oficinaId, setters) {
   }, [oficinaId, logado, setConfig]);
 
   const carregarPlanos = useCallback(async () => {
-    // Implement ou mock
-  }, []);
+    try {
+      const s = await getDoc(doc(db, 'oficinas', 'MASTER', 'configuracoes', 'planos'));
+      if (s.exists()) setPlanosSistema(s.data());
+    } catch (e) {
+      console.error("Erro carregarPlanos:", e);
+    }
+  }, [setPlanosSistema]);
 
   return { carregarOS, carregarFinanceiro, carregarEstoque, carregarConfig, carregarPlanos };
 }

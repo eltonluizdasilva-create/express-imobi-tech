@@ -30,8 +30,8 @@ export default function Login() {
         const celularLimpo = dados.telefone
           ? String(dados.telefone).replace(/\D/g, '')
           : dados.celular
-          ? String(dados.celular).replace(/\D/g, '')
-          : '';
+            ? String(dados.celular).replace(/\D/g, '')
+            : '';
         const ultimos4 = celularLimpo.slice(-4);
 
         if (ultimos4 === senha) {
@@ -69,7 +69,7 @@ export default function Login() {
 
   const handleCompartilharLaudo = (os) => {
     const texto =
-      `*Laudo de Manutenção Digital - OFICINA IA*\n\n` +
+      `*Laudo de Manutenção Digital - Express Auto Tech*\n\n` +
       `🚗 *Veículo:* ${os.modelo || 'Não informado'}\n` +
       `🔡 *Placa:* ${os.placa}\n` +
       (os.data ? `📅 *Data:* ${os.data}\n` : '') +
@@ -78,7 +78,7 @@ export default function Login() {
         ? `⚙️ *Observações/Peças:*\n${os.detalhesPecas || os.pecasDescricao}\n\n`
         : '') +
       `💰 *Total:* R$ ${!isNaN(Number(os.total)) ? Number(os.total).toFixed(2).replace('.', ',') : '0,00'}\n\n` +
-      `✅ _Manutenção registrada e garantida por OFICINA IA._`;
+      `✅ _Manutenção registrada e garantida por Express Auto Tech._`;
 
     const urlMensagem = encodeURIComponent(texto);
     window.open(`https://wa.me/?text=${urlMensagem}`, '_blank');
@@ -257,7 +257,7 @@ export default function Login() {
   // ==========================================
   return (
     <div className="flex flex-col items-center justify-start min-h-screen bg-[#050505] text-white font-sans relative pb-24">
-      
+
       {/* CABEÇALHO */}
       <header className="w-full p-4 flex justify-between items-center bg-[#050505]">
         <div className="flex items-center gap-3">
@@ -337,41 +337,41 @@ export default function Login() {
 
         {/* 🟢 SEÇÃO DE VANTAGENS E INSTALAÇÃO 🟢 */}
         <div className="w-full mt-8 space-y-4">
-          
+
           {/* Card Vantagens */}
           <div className="bg-[#0a0a0a] border border-neutral-800 rounded-2xl p-5">
             <h3 className="text-white font-bold text-[13px] tracking-widest uppercase mb-3 flex items-center gap-2">
               <span className="text-red-500 text-lg">✨</span> Por que usar o portal?
             </h3>
-            
+
             <p className="text-gray-500 text-[11px] mb-4 italic border-b border-neutral-800 pb-3 leading-relaxed">
               "Criado por quem vive o dia a dia de oficina e sabe o quanto é importante ter segurança e total transparência com o seu veículo."
             </p>
 
             <ul className="text-gray-300 text-[11px] space-y-4 leading-relaxed">
               <li className="flex items-start gap-2">
-                <span className="text-green-500 mt-0.5">✅</span> 
+                <span className="text-green-500 mt-0.5">✅</span>
                 <div>
                   <strong className="text-white">Acesso VIP pelo WhatsApp:</strong>
                   <p className="mt-0.5 text-gray-400">Sem cadastros demorados! O mecânico gera o seu laudo e envia o link direto no seu WhatsApp. A sua senha é sempre os 4 últimos dígitos do seu celular.</p>
                 </div>
               </li>
               <li className="flex items-start gap-2">
-                <span className="text-green-500 mt-0.5">✅</span> 
+                <span className="text-green-500 mt-0.5">✅</span>
                 <div>
                   <strong className="text-white">Segunda Opinião Facilitada:</strong>
                   <p className="mt-0.5 text-gray-400">Recebeu o laudo? Compartilhe o link pelo WhatsApp com aquele amigo que entende mais de mecânica para ele avaliar junto com você.</p>
                 </div>
               </li>
               <li className="flex items-start gap-2">
-                <span className="text-green-500 mt-0.5">✅</span> 
+                <span className="text-green-500 mt-0.5">✅</span>
                 <div>
                   <strong className="text-white">Valoriza seu Carro na Revenda:</strong>
                   <p className="mt-0.5 text-gray-400">Vai trocar de carro? Mostre este histórico ao futuro comprador. Um carro com manutenções provadas vale muito mais.</p>
                 </div>
               </li>
               <li className="flex items-start gap-2">
-                <span className="text-green-500 mt-0.5">✅</span> 
+                <span className="text-green-500 mt-0.5">✅</span>
                 <div>
                   <strong className="text-white">Garantia à Prova de Perdas:</strong>
                   <p className="mt-0.5 text-gray-400">Diga adeus aos papéis no porta-luvas. O serviço executado e as fotos das peças trocadas ficam na palma da sua mão.</p>
@@ -386,7 +386,7 @@ export default function Login() {
               <span className="text-blue-400 text-lg">📲</span> Instale nosso App
             </h3>
             <p className="text-gray-500 text-[10px] mb-4">Acesse direto da tela do seu celular, sem precisar baixar na loja e sem ocupar memória!</p>
-            
+
             <div className="text-[11px] text-gray-400 space-y-3 bg-black p-3 rounded-xl border border-neutral-800">
               <div>
                 <strong className="text-white flex items-center gap-1 mb-1"><span className="text-green-500">🤖</span> Android (Chrome):</strong>

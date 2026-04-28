@@ -2,30 +2,31 @@
 import React, { useState, useEffect } from 'react';
 import { db } from './lib/firebase';
 import { collection, getDocs, query, orderBy } from 'firebase/firestore';
-import { 
-  MessageCircle, 
-  Sparkles, 
-  X, 
-  Send, 
-  Clock, 
-  Car, 
-  User, 
-  Wrench, 
-  Zap, 
-  TrendingUp, 
-  AlertCircle, 
-  CheckCircle, 
-  Target, 
-  Radio, 
-  Rocket, 
-  Brain, 
-  ArrowUpRight, 
-  ShieldCheck, 
-  Cpu, 
-  Gauge, 
-  Filter, 
-  History, 
-  MessageSquare
+import {
+  MessageCircle,
+  Sparkles,
+  X,
+  Send,
+  Clock,
+  Car,
+  User,
+  Wrench,
+  Zap,
+  TrendingUp,
+  AlertCircle,
+  CheckCircle,
+  Target,
+  Radio,
+  Rocket,
+  Brain,
+  ArrowUpRight,
+  ShieldCheck,
+  Cpu,
+  Gauge,
+  Filter,
+  History,
+  MessageSquare,
+  Info
 } from 'lucide-react';
 
 const SERVICOS_BASE = [
@@ -95,7 +96,7 @@ export default function AbaEstrategia({ oficinaId }) {
   const [loading, setLoading] = useState(true);
   const [modal, setModal] = useState(null);
   const [modalHistorico, setModalHistorico] = useState(null);
-  const [filtro, setFiltro] = useState('todos'); 
+  const [filtro, setFiltro] = useState('todos');
   const [enviadas, setEnviadas] = useState([]);
   const [pilotoAutomatico, setPilotoAutomatico] = useState(false);
   const [animando, setAnimando] = useState(false);
@@ -186,7 +187,7 @@ export default function AbaEstrategia({ oficinaId }) {
 
   return (
     <div className="mx-auto max-w-7xl space-y-8 px-4 pb-24 pt-4 text-slate-100 md:px-8 font-sans">
-      
+
       {/* HERO SECTION */}
       <section className="overflow-hidden rounded-[28px] border border-indigo-500/20 bg-[radial-gradient(circle_at_top_left,_rgba(79,70,229,0.15),_transparent_32%),radial-gradient(circle_at_bottom_right,_rgba(79,70,229,0.1),_transparent_28%),linear-gradient(135deg,_rgba(15,23,42,0.98),_rgba(3,7,18,0.96))] p-6 shadow-[0_30px_120px_-40px_rgba(79,70,229,0.35)]">
         <div className="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
@@ -206,11 +207,10 @@ export default function AbaEstrategia({ oficinaId }) {
           <div className="flex items-center gap-4">
             <button
               onClick={() => setPilotoAutomatico(!pilotoAutomatico)}
-              className={`group relative flex items-center gap-3 overflow-hidden rounded-2xl border px-6 py-3 transition-all duration-300 ${
-                pilotoAutomatico 
-                  ? 'border-emerald-500/30 bg-emerald-500/10 text-emerald-400 shadow-[0_0_20px_rgba(16,185,129,0.2)]' 
+              className={`group relative flex items-center gap-3 overflow-hidden rounded-2xl border px-6 py-3 transition-all duration-300 ${pilotoAutomatico
+                  ? 'border-emerald-500/30 bg-emerald-500/10 text-emerald-400 shadow-[0_0_20px_rgba(16,185,129,0.2)]'
                   : 'border-slate-800 bg-slate-900/50 text-slate-400'
-              }`}
+                }`}
             >
               <div className={`absolute inset-0 bg-emerald-500/5 transition-opacity ${pilotoAutomatico ? 'opacity-100' : 'opacity-0'}`} />
               <Radio size={18} className={pilotoAutomatico ? 'animate-pulse' : ''} />
@@ -259,7 +259,7 @@ export default function AbaEstrategia({ oficinaId }) {
             <div className="space-y-2">
               <h3 className="text-2xl font-black text-white md:text-3xl">Seu Cérebro de Retenção está sendo treinado...</h3>
               <p className="mx-auto max-w-2xl text-sm leading-relaxed text-slate-400">
-                O Oficina IA analisa automaticamente o histórico dos seus clientes para prever quem precisa voltar. 
+                O Express Auto Tech analisa automaticamente o histórico dos seus clientes para prever quem precisa voltar.
                 Quando houver dados suficientes de Ordens de Serviço finalizadas, as oportunidades aparecerão aqui.
               </p>
             </div>
@@ -272,10 +272,10 @@ export default function AbaEstrategia({ oficinaId }) {
       ) : (
         <section className="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
           {oportunidadesFiltradas.map((opp) => (
-            <OpportunityCard 
-              key={opp.id} 
-              opp={opp} 
-              info={getStatusInfo(opp.meses)} 
+            <OpportunityCard
+              key={opp.id}
+              opp={opp}
+              info={getStatusInfo(opp.meses)}
               jaEnviada={enviadas.includes(opp.id)}
               onAction={() => setModal(opp)}
               onHistory={() => setModalHistorico(opp)}
@@ -407,7 +407,7 @@ function FilterButton({ label, count, active, onClick, color }) {
   };
 
   return (
-    <button 
+    <button
       onClick={onClick}
       className={`flex items-center gap-2 rounded-xl border px-4 py-2 text-[10px] font-black uppercase tracking-widest transition-all ${active ? activeStyles[color] : colors[color]}`}
     >
@@ -429,7 +429,7 @@ function OpportunityCard({ opp, info, jaEnviada, onAction, onHistory, formatarMo
   return (
     <div className={`group relative flex flex-col overflow-hidden rounded-[32px] border p-6 transition-all duration-300 hover:scale-[1.03] shadow-2xl ${colors[info.color]}`}>
       <div className={`absolute top-0 right-0 h-32 w-32 bg-gradient-to-br from-${info.color}-500/10 to-transparent blur-2xl opacity-0 group-hover:opacity-100 transition-opacity`} />
-      
+
       <div className="relative space-y-6">
         <div className="flex items-start justify-between">
           <div className="flex items-center gap-3">

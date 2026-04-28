@@ -20,7 +20,7 @@ export default defineConfig({
         globPatterns: ['**/*.{js,css,html,ico,png,svg}']
       },
       manifest: {
-        name: 'Oficina IA Express',
+        name: 'Express Auto Tech Express',
         short_name: 'OficinaIA',
         description: 'Gerador de Checklist Automotivo com IA',
         theme_color: '#1a1a1a',

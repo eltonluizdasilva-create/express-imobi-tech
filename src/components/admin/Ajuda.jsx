@@ -153,7 +153,7 @@ export default function BibliotecaTreinamento() {
             <Play size={32} color="black" fill="black" />
           </div>
           <div style={{ flex: 1 }}>
-            <h1 style={{ margin: 0, fontSize: '24px', fontWeight: '900' }}>DOMINANDO O OFICINA IA</h1>
+            <h1 style={{ margin: 0, fontSize: '24px', fontWeight: '900' }}>DOMINANDO O Express Auto Tech</h1>
             <p style={{ margin: '5px 0 0', color: '#888', fontSize: '14px' }}>
               Acesse vídeos e tutoriais para dominar cada funcionalidade
             </p>

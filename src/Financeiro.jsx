@@ -3,18 +3,18 @@ import { db } from './lib/firebase';
 import { collection, addDoc, deleteDoc, doc, getDocs, query, orderBy, onSnapshot } from 'firebase/firestore';
 import { useOficina } from "./components/OficinaContext";
 import { BarChart, Bar, XAxis, Tooltip, ResponsiveContainer, Cell, YAxis, CartesianGrid } from 'recharts';
-import { 
-  Landmark, 
-  TrendingUp, 
-  TrendingDown, 
-  Wallet, 
-  Plus, 
-  Minus, 
-  Calendar, 
-  Send, 
-  Trash2, 
-  DollarSign, 
-  ArrowUpRight, 
+import {
+  Landmark,
+  TrendingUp,
+  TrendingDown,
+  Wallet,
+  Plus,
+  Minus,
+  Calendar,
+  Send,
+  Trash2,
+  DollarSign,
+  ArrowUpRight,
   ArrowDownLeft,
   Sparkles,
   Save,
@@ -43,7 +43,7 @@ export default function Financeiro({ oficinaId: oficinaIdProp, onSalvo }) {
     setCarregando(true);
 
     const q = query(
-      collection(db, "oficinas", oficinaId, "financeiro"), 
+      collection(db, "oficinas", oficinaId, "financeiro"),
       orderBy("data", "desc")
     );
 
@@ -165,13 +165,13 @@ export default function Financeiro({ oficinaId: oficinaIdProp, onSalvo }) {
   };
 
   const enviarRelatorioWhatsApp = () => {
-    const mensagem = `📊 *RESUMO DO CAIXA - OFICINA*\n\n📅 Hoje: R$ ${totalHoje.toFixed(2).replace('.', ',')}\n🗓️ Mês Atual: R$ ${totalMes.toFixed(2).replace('.', ',')}\n\n_Gerado automaticamente pelo Oficina IA_`;
+    const mensagem = `📊 *RESUMO DO CAIXA - OFICINA*\n\n📅 Hoje: R$ ${totalHoje.toFixed(2).replace('.', ',')}\n🗓️ Mês Atual: R$ ${totalMes.toFixed(2).replace('.', ',')}\n\n_Gerado automaticamente pelo Express Auto Tech_`;
     window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(mensagem)}`, '_blank');
   };
 
   return (
     <div className="mx-auto max-w-7xl space-y-8 px-4 pb-24 pt-4 text-slate-100 md:px-8 font-sans">
-      
+
       {/* HERO SECTION */}
       <section className="overflow-hidden rounded-[28px] border border-emerald-400/20 bg-[radial-gradient(circle_at_top_left,_rgba(16,185,129,0.15),_transparent_32%),radial-gradient(circle_at_bottom_right,_rgba(59,130,246,0.15),_transparent_28%),linear-gradient(135deg,_rgba(15,23,42,0.98),_rgba(3,7,18,0.96))] p-6 shadow-[0_30px_120px_-40px_rgba(16,185,129,0.35)]">
         <div className="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
@@ -207,33 +207,33 @@ export default function Financeiro({ oficinaId: oficinaIdProp, onSalvo }) {
 
       {/* METRIC CARDS GRID */}
       <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-        <MetricCard 
-          title="Entradas (Mês)" 
-          value={formatCurrency(totalEntradasMes)} 
-          detail="Total bruto recebido" 
-          icon={<TrendingUp size={20} />} 
-          tone="success" 
+        <MetricCard
+          title="Entradas (Mês)"
+          value={formatCurrency(totalEntradasMes)}
+          detail="Total bruto recebido"
+          icon={<TrendingUp size={20} />}
+          tone="success"
         />
-        <MetricCard 
-          title="Saídas (Mês)" 
-          value={formatCurrency(totalSaidasMes)} 
-          detail="Despesas e custos" 
-          icon={<TrendingDown size={20} />} 
-          tone="danger" 
+        <MetricCard
+          title="Saídas (Mês)"
+          value={formatCurrency(totalSaidasMes)}
+          detail="Despesas e custos"
+          icon={<TrendingDown size={20} />}
+          tone="danger"
         />
-        <MetricCard 
-          title="Saldo Atual" 
-          value={formatCurrency(totalMes)} 
-          detail="Lucro líquido acumulado" 
-          icon={<Wallet size={20} />} 
-          tone="info" 
+        <MetricCard
+          title="Saldo Atual"
+          value={formatCurrency(totalMes)}
+          detail="Lucro líquido acumulado"
+          icon={<Wallet size={20} />}
+          tone="info"
         />
-        <MetricCard 
-          title="Previsão Próximos 7d" 
-          value={formatCurrency(totalHoje * 7)} 
-          detail="Estimativa baseada em hoje" 
-          icon={<ArrowUpRight size={20} />} 
-          tone="warning" 
+        <MetricCard
+          title="Previsão Próximos 7d"
+          value={formatCurrency(totalHoje * 7)}
+          detail="Estimativa baseada em hoje"
+          icon={<ArrowUpRight size={20} />}
+          tone="warning"
         />
       </section>
 
@@ -250,51 +250,51 @@ export default function Financeiro({ oficinaId: oficinaIdProp, onSalvo }) {
               Atualizado agora
             </span>
           </div>
-          
+
           <div className="h-64 w-full">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={dadosGrafico} margin={{ top: 10, right: 0, left: 0, bottom: 0 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" vertical={false} />
-                <XAxis 
-                  dataKey="diaTexto" 
-                  stroke="#64748b" 
-                  fontSize={12} 
-                  tickLine={false} 
+                <XAxis
+                  dataKey="diaTexto"
+                  stroke="#64748b"
+                  fontSize={12}
+                  tickLine={false}
                   axisLine={false}
                   dy={10}
                 />
                 <YAxis hide />
                 <Tooltip
                   cursor={{ fill: '#1e293b', opacity: 0.4 }}
-                  contentStyle={{ 
-                    backgroundColor: '#0f172a', 
-                    border: '1px solid #334155', 
-                    borderRadius: '16px', 
+                  contentStyle={{
+                    backgroundColor: '#0f172a',
+                    border: '1px solid #334155',
+                    borderRadius: '16px',
                     fontSize: '12px',
                     boxShadow: '0 10px 25px -5px rgba(0,0,0,0.4)'
                   }}
                   itemStyle={{ fontWeight: 'bold' }}
                 />
-                <Bar 
-                  dataKey="Entradas" 
-                  fill="url(#colorEntrada)" 
-                  radius={[6, 6, 0, 0]} 
+                <Bar
+                  dataKey="Entradas"
+                  fill="url(#colorEntrada)"
+                  radius={[6, 6, 0, 0]}
                   barSize={20}
                 />
-                <Bar 
-                  dataKey="Saídas" 
-                  fill="url(#colorSaida)" 
-                  radius={[6, 6, 0, 0]} 
+                <Bar
+                  dataKey="Saídas"
+                  fill="url(#colorSaida)"
+                  radius={[6, 6, 0, 0]}
                   barSize={20}
                 />
                 <defs>
                   <linearGradient id="colorEntrada" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stopColor="#10b981" stopOpacity={0.8}/>
-                    <stop offset="100%" stopColor="#10b981" stopOpacity={0.2}/>
+                    <stop offset="0%" stopColor="#10b981" stopOpacity={0.8} />
+                    <stop offset="100%" stopColor="#10b981" stopOpacity={0.2} />
                   </linearGradient>
                   <linearGradient id="colorSaida" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stopColor="#f43f5e" stopOpacity={0.8}/>
-                    <stop offset="100%" stopColor="#f43f5e" stopOpacity={0.2}/>
+                    <stop offset="0%" stopColor="#f43f5e" stopOpacity={0.8} />
+                    <stop offset="100%" stopColor="#f43f5e" stopOpacity={0.2} />
                   </linearGradient>
                 </defs>
               </BarChart>
@@ -308,7 +308,7 @@ export default function Financeiro({ oficinaId: oficinaIdProp, onSalvo }) {
             <p className="text-xs font-bold uppercase tracking-[0.25em] text-cyan-300">Novo Lançamento</p>
             <h2 className="mt-1 text-xl font-bold text-white">Registrar movimentação</h2>
           </div>
-          
+
           <form onSubmit={handleAdicionar} className="space-y-4">
             {/* Toggle Entrada/Saída */}
             <div className="flex w-full bg-slate-900/50 border border-slate-800 rounded-2xl p-1 gap-1">
@@ -373,8 +373,8 @@ export default function Financeiro({ oficinaId: oficinaIdProp, onSalvo }) {
             <h2 className="text-xl font-bold text-white">Histórico Recente</h2>
             <p className="text-sm text-slate-400">Últimas movimentações do seu caixa</p>
           </div>
-          
-          <button 
+
+          <button
             onClick={enviarRelatorioWhatsApp}
             className="inline-flex items-center gap-2 rounded-xl border border-emerald-400/20 bg-emerald-400/10 px-4 py-2 text-sm font-semibold text-emerald-200 transition hover:bg-emerald-400/15"
           >

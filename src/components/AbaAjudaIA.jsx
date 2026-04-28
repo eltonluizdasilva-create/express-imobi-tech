@@ -27,7 +27,7 @@ import {
  * - abaAtiva: qual aba do sistema está ativa (para contexto)
  */
 
-export default function AbaAjudaIA({ onBack, isFloating, abaAtiva = 'visao_geral' }) {
+export default function AbaAjudaIA({ onBack, isFloating, abaAtiva = 'visao_geral', t, tema }) {
     const {
         chat,
         mensagem,
@@ -84,20 +84,20 @@ export default function AbaAjudaIA({ onBack, isFloating, abaAtiva = 'visao_geral
     };
 
     return (
-        <div className="w-full h-full flex flex-col bg-gradient-to-b from-black via-[#0a0a0a] to-black overflow-hidden">
+        <div className={`w-full h-full flex flex-col ${t?.bg || 'bg-black'} overflow-hidden transition-all duration-300`}>
             {/* ─────────────────────────────────────────────────────────
           CABEÇALHO
           ───────────────────────────────────────────────────────── */}
-            <div className="bg-black/70 backdrop-blur-lg border-b border-neutral-900/50 px-4 py-4 flex items-center justify-between">
+            <div className={`${t?.card || 'bg-black/70'} backdrop-blur-lg border-b ${t?.border || 'border-neutral-900/50'} px-4 py-4 flex items-center justify-between`}>
                 <div className="flex items-center gap-3">
                     <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-red-600 to-red-900 flex items-center justify-center animate-pulse">
                         <Sparkles size={20} className="text-white" />
                     </div>
                     <div>
-                        <h2 className="text-sm font-black uppercase tracking-tight text-white">
+                        <h2 className={`text-sm font-black uppercase tracking-tight ${t?.text || 'text-white'}`}>
                             Especialista <span className="text-red-500">IA</span>
                         </h2>
-                        <p className="text-[10px] text-neutral-400 font-medium">
+                        <p className={`text-[10px] ${t?.textMuted || 'text-neutral-400'} font-medium`}>
                             Express Auto Tech
                         </p>
                     </div>
@@ -105,7 +105,7 @@ export default function AbaAjudaIA({ onBack, isFloating, abaAtiva = 'visao_geral
 
                 <button
                     onClick={onBack}
-                    className="p-2 hover:bg-neutral-900 rounded-lg transition-all duration-200 text-neutral-400 hover:text-white"
+                    className={`p-2 hover:${t?.bgCard || 'bg-neutral-900'} rounded-lg transition-all duration-200 ${t?.textMuted || 'text-neutral-400'} hover:${t?.text || 'text-white'}`}
                     title="Voltar"
                 >
                     <X size={18} />
@@ -129,8 +129,8 @@ export default function AbaAjudaIA({ onBack, isFloating, abaAtiva = 'visao_geral
                         {/* Bolha da mensagem */}
                         <div
                             className={`max-w-[85%] px-4 py-3 rounded-2xl text-sm leading-relaxed transition-all duration-200 ${msg.role === 'user'
-                                ? 'bg-red-600/20 border border-red-600/40 text-white shadow-lg shadow-red-600/10'
-                                : 'bg-neutral-900/80 border border-neutral-800/50 text-neutral-100 shadow-lg shadow-black/20'
+                                ? 'bg-red-600/20 border border-red-600/40 ' + (tema === 'light' ? 'text-zinc-900' : 'text-white') + ' shadow-lg shadow-red-600/10'
+                                : (t?.card || 'bg-neutral-900/80') + ' border ' + (t?.border || 'border-neutral-800/50') + ' ' + (t?.text || 'text-neutral-100') + ' shadow-lg shadow-black/20'
                                 }`}
                         >
                             {/* Badge de role */}
@@ -179,17 +179,17 @@ export default function AbaAjudaIA({ onBack, isFloating, abaAtiva = 'visao_geral
             {/* ─────────────────────────────────────────────────────────
           INPUT DE MENSAGEM
           ───────────────────────────────────────────────────────── */}
-            <div className="bg-black/70 backdrop-blur-lg border-t border-neutral-900/50 p-4 space-y-3">
+            <div className={`${t?.card || 'bg-black/70'} backdrop-blur-lg border-t ${t?.border || 'border-neutral-900/50'} p-4 space-y-3`}>
                 {/* Input Box */}
                 <div className="relative">
-                    <div className="flex gap-2 items-end bg-neutral-900/60 border border-neutral-800 rounded-2xl px-3 py-2 transition-all duration-200 hover:border-neutral-700 focus-within:border-red-600/50 focus-within:shadow-lg focus-within:shadow-red-600/10">
+                    <div className={`flex gap-2 items-end ${t?.bg || 'bg-neutral-900/60'} border ${t?.border || 'border-neutral-800'} rounded-2xl px-3 py-2 transition-all duration-200 hover:border-neutral-700 focus-within:border-red-600/50 focus-within:shadow-lg focus-within:shadow-red-600/10`}>
                         {/* Botão de voz */}
                         <button
                             onClick={handleVoz}
                             disabled={loading}
                             className={`p-2 rounded-full transition-all duration-200 flex-shrink-0 ${ouvindo
                                 ? 'bg-red-600 text-white shadow-lg shadow-red-600/50'
-                                : 'bg-neutral-800 text-neutral-400 hover:text-white hover:bg-neutral-700'
+                                : (t?.bgCard || 'bg-neutral-800') + ' ' + (t?.textMuted || 'text-neutral-400') + ' hover:' + (t?.text || 'text-white') + ' hover:bg-neutral-700'
                                 } disabled:opacity-50`}
                             title={ouvindo ? 'Parar gravação' : 'Iniciar gravação de voz'}
                         >
@@ -206,7 +206,7 @@ export default function AbaAjudaIA({ onBack, isFloating, abaAtiva = 'visao_geral
                             onChange={(e) => setMensagem(e.target.value)}
                             onKeyPress={handleKeyPress}
                             placeholder="O que você quer saber para lucrar mais?"
-                            className="flex-1 bg-transparent text-white text-sm outline-none resize-none max-h-24 py-1"
+                            className={`flex-1 bg-transparent ${t?.text || 'text-white'} text-sm outline-none resize-none max-h-24 py-1`}
                             rows="1"
                             disabled={loading}
                             style={{

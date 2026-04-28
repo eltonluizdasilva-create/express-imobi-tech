@@ -122,7 +122,7 @@ export default function AtendimentoRapido() {
   };
 
   const enviarWhatsApp = async (a) => {
-    const msg = `Olá ${a.nome}! 👋\nSou da Oficina IA.\nServiço: ${a.servico}\nVeículo: ${a.veiculo}\n${a.descricao ? `📋 ${a.descricao}\n` : ''}Quando pode trazer? 🚗🔧`;
+    const msg = `Olá ${a.nome}! 👋\nSou da Express Auto Tech.\nServiço: ${a.servico}\nVeículo: ${a.veiculo}\n${a.descricao ? `📋 ${a.descricao}\n` : ''}Quando pode trazer? 🚗🔧`;
     try {
       // 🔐 ATUALIZANDO DENTRO DO COFRE DA OFICINA
       await updateDoc(doc(db, "oficinas", oficinaId, "leads", a.id), { whatsappEnviado: true });

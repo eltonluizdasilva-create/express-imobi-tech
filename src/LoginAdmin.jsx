@@ -4,7 +4,7 @@ import { db, auth } from './lib/firebase'; // 🔥 Importante: Garanta que o 'db
 
 // Importações necessárias para a trava de segurança
 import { signInWithEmailAndPassword, GoogleAuthProvider, signInWithPopup, signOut } from 'firebase/auth';
-import { collectionGroup, collection, query, where, getDocs } from 'firebase/firestore';
+import { collectionGroup, collection, query, where, getDocs, doc, setDoc, getDoc, serverTimestamp } from 'firebase/firestore';
 
 export default function LoginAdmin() {
   const [email, setEmail] = useState('');
@@ -74,9 +74,34 @@ export default function LoginAdmin() {
     const provider = new GoogleAuthProvider();
     try {
       const result = await signInWithPopup(auth, provider);
+      const user = result.user;
+
+      // Verifica se é a primeira vez do usuário (se o documento não existe)
+      const userRef = doc(db, "usuarios", user.uid);
+      const userSnap = await getDoc(userRef);
+
+      if (!userSnap.exists()) {
+        // Cria o documento com as permissões liberadas
+        await setDoc(userRef, {
+          nome: user.displayName || "Usuário",
+          email: user.email,
+          papel: 'dono', 
+          oficinaId: user.uid,
+          
+          // --- AQUI ESTÁ A CORREÇÃO DO PROBLEMA ---
+          plano: 'premium',       // Libera o plano
+          modulos: {
+            administrador_ia: true // Libera a IA
+          },
+          // --------------------------------------
+          
+          dataCriacao: serverTimestamp()
+        });
+        console.log("Perfil de admin criado com permissões!");
+      }
 
       // Mesma trava de segurança para o Google
-      const autorizado = await verificarAutorizacao(result.user.email);
+      const autorizado = await verificarAutorizacao(user.email);
 
       if (!autorizado) {
         await signOut(auth);
@@ -93,7 +118,7 @@ export default function LoginAdmin() {
 
   return (
     <div className="min-h-screen bg-[#050505] flex flex-col items-center justify-center p-4">
-      <div className="w-full max-w-sm bg-[#0a0a0a] border border-red-900/50 p-8 rounded-2xl shadow-[0_0_30px_rgba(220,38,38,0.1)] mb-6">
+      <div className="w-full max-w-sm bg-[#0a0a0a] border border-red-900/50 p-8 rounded-2xl shadow-[0_0_30px_rgba(220,38,38,0.1)] mb-6 mt-6">
 
         {/* CABEÇALHO */}
         <div className="text-center mb-8">

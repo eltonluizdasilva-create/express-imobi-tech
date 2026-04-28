@@ -17,7 +17,7 @@ const AbaMarketing = () => {
 
   const contratarServico = (nome) => {
     const seuZap = "5534999999999"; // COLOQUE SEU ZAP AQUI
-    const msg = encodeURIComponent(`Olá Elton! Vi no sistema Oficina IA e tenho interesse no serviço: ${nome}. Como começamos?`);
+    const msg = encodeURIComponent(`Olá Elton! Vi no sistema Express Auto Tech e tenho interesse no serviço: ${nome}. Como começamos?`);
     window.open(`https://wa.me/${seuZap}?text=${msg}`, '_blank');
   };
 

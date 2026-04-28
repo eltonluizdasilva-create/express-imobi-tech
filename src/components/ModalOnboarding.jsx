@@ -8,7 +8,7 @@ const PASSOS_TOUR = [
   // --- CONFIGURAÇÃO INICIAL ---
   {
     titulo: '1. O Cérebro (Ajustes) ⚙️',
-    texto: `Aqui fica o centro de comando da Oficina IA. Configure a Identidade da sua IA e os links vitais; estes dados alimentam a inteligência que enviará informações precisas e profissionais aos seus clientes.`,
+    texto: `Aqui fica o centro de comando da Express Auto Tech. Configure a Identidade da sua IA e os links vitais; estes dados alimentam a inteligência que enviará informações precisas e profissionais aos seus clientes.`,
   },
   {
     titulo: '2. O Coração (Nova O.S.) 🚗',
@@ -58,7 +58,7 @@ O diferencial? O botão EDITAR permite atualizar a O.S. a cada nova etapa, mante
   },
   {
     titulo: '12. Financeiro 💰',
-    texto: `Controle de receitas e despesas. Utilize os BOTOES FLUTUANTES para lançamentos rápidos e gestão ágil do fluxo de caixa.`,
+    texto: `Controle de receitas e despesas. Utilize os BOTOES FLUTUANTES para Finanças e gestão ágil do fluxo de caixa.`,
   },
   {
     titulo: '13. Clientes 👥',

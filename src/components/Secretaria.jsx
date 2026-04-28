@@ -13,7 +13,7 @@ const STYLES = {
     input: 'bg-zinc-950 border border-zinc-800 focus:border-pink-500 text-zinc-100 p-4 rounded-xl outline-none w-full transition-all font-mono text-sm shadow-inner'
 };
 
-export default function Secretaria({ oficinaId }) {
+export default function Secretaria({ oficinaId, abrirRecuperacaoFinanceira }) {
     // Estados do Polidor
     const [promptTexto, setPromptTexto] = useState("");
     const [mensagemGerada, setMensagemGerada] = useState("");
@@ -143,11 +143,19 @@ export default function Secretaria({ oficinaId }) {
     };
 
     const cobrarInadimplentes = () => {
-        alert(`💰 Iniciando processo de recuperação de R$ ${alertasContabeis.valorPendente.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}...\n\n(Aba de cobrança em desenvolvimento)`);
+        if (abrirRecuperacaoFinanceira) {
+            abrirRecuperacaoFinanceira();
+        } else {
+            alert(`💰 Iniciando processo de recuperação de R$ ${alertasContabeis.valorPendente.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}...\n\n(Aba de cobrança em desenvolvimento)`);
+        }
     };
 
     const recontatarOrcamentos = () => {
-        alert(`📞 Acionando Secretária Digital para recuperar R$ ${alertasSecretaria.valorPerdido.toLocaleString('pt-BR', { minimumFractionDigits: 2 })} em orçamentos não aprovados...`);
+        if (abrirRecuperacaoFinanceira) {
+            abrirRecuperacaoFinanceira();
+        } else {
+            alert(`📞 Acionando Secretária Digital para recuperar R$ ${alertasSecretaria.valorPerdido.toLocaleString('pt-BR', { minimumFractionDigits: 2 })} em orçamentos não aprovados...`);
+        }
     };
 
     return (

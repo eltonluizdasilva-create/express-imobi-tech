@@ -68,6 +68,7 @@ export default function GerenciadorDeModulos(props) {
         modulosOperacionais,
         irParaNovaOS,
         verificarLicenca,
+        t = { bg: '#000' },
     } = props;
 
     // ── Props comuns repassadas a todos os módulos de serviço ─────────────────
@@ -83,6 +84,8 @@ export default function GerenciadorDeModulos(props) {
         abrirWhatsApp,
         formatarMoeda,
         normalizarPlaca,
+        t,
+        tema,
     };
 
     // ── Props do módulo de O.S. (triagem) — bloco ÚNICO e completo ────────────
@@ -139,7 +142,7 @@ export default function GerenciadorDeModulos(props) {
 
     // ── Renderização Dinâmica ────────────────────────────────────────────────
     return (
-        <main className="flex-1 overflow-y-auto bg-black p-4 relative">
+        <main className="flex-1 overflow-y-auto p-4 relative" style={{ background: t.bg, transition: 'background 0.3s' }}>
             {(() => {
                 // Renderiza a aba ativa. A lógica de redirecionamento agora fica no AdminNovo.jsx.
                 const moduloParaRenderizar = abaAtiva;

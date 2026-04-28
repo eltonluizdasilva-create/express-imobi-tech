@@ -10,7 +10,6 @@ const COLORS_CAT = {
 };
 
 const BASE_STYLE = {
-  background: '#0a0a0a',
   borderRadius: '12px',
   padding: '0 14px',
   height: '32px',
@@ -33,7 +32,7 @@ export default function MenuNavegacao({ t, MAIN, MASTER, papelLogado, abaAtiva, 
   const isGratuito = dadosOficina?.plano === 'GRATUITO' || dadosOficina?.plano === 'gratis';
   
   // Módulos que ficam desbloqueados no plano GRATUITO
-  const MODULOS_GRATUITOS = ['dashboard', 'clientes', 'os', 'oleo', 'alinhamento', 'ajuda', 'meuplano', 'config'];
+  const MODULOS_GRATUITOS = ['dashboard', 'oleo', 'alinhamento', 'ajuda', 'meuplano', 'config'];
 
   const makeButton = (aba, category) => {
     const corCat = COLORS_CAT[category];
@@ -78,9 +77,9 @@ export default function MenuNavegacao({ t, MAIN, MASTER, papelLogado, abaAtiva, 
         style={{
           ...BASE_STYLE,
           border: `2px solid ${corCat}`,
-          color: !liberado ? '#999' : (isActive ? corCat : '#bbb'),
-          background: isActive ? `${corCat}22` : 'transparent',
-          boxShadow: isActive ? `0 0 20px ${corCat}, inset 0 0 10px ${corCat}44` : `0 0 8px ${corCat}66`,
+          color: !liberado ? t.textoTer : (isActive ? corCat : t.textoSec),
+          background: isActive ? `${corCat}22` : t.bgCard,
+          boxShadow: isActive ? `0 0 20px ${corCat}, inset 0 0 10px ${corCat}44` : `0 0 8px ${corCat}33`,
           opacity: isActive ? 1 : 0.8,
           textShadow: isActive ? `0 0 10px ${corCat}` : 'none',
         }}

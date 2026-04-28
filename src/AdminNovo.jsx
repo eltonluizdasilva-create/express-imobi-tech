@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { db } from "./lib/firebase";
-import { collection, addDoc, updateDoc, doc, deleteDoc } from 'firebase/firestore';
+import { collection, addDoc, updateDoc, doc, deleteDoc, onSnapshot, query, orderBy } from 'firebase/firestore';
 
 // Componentes de Interface e Admin
 import { COLORS, normalizarPlaca, formatarMoeda } from './components/admin/constants';
@@ -61,7 +61,7 @@ import LeadsPage from './LeadsPage';
 import Historico from './Historico';
 import Equipe from './Equipe';
 import ConfiguracoesPage from './Configuracoes';
-import ModuloMeuPlano from './ModuloMeuPlano';
+import ModuloMeuPlano from './components/Meuplano';
 import MercadoLivre from './Mercadolivre';
 import TarefaTab from './Tarefas';
 import NotaFiscal from './NotaFiscal';
@@ -77,12 +77,9 @@ import GerenciadorDeModulos from './components/admin/GerenciadorDeModulos';
 // ─── Constantes ────────────────────────────────────────────────────────────────
 
 const { MAIN, GREEN, MASTER } = COLORS;
-const isTrial = true;
 const APP_BASE_URL = 'https://oficina.expresstech.com.br';
 const MODULOS_GRATIS_VITALICIOS = [
-  'meuplano', 'config', 'equipe', 'marketing', 'ajuda',
-  'patrimonio', 'fornecedores', 'historico', 'tarefa',
-  'clientes', 'dashboard', 'financeiro', 'os'
+  'meuplano', 'config', 'equipe', 'marketing', 'ajuda', 'dashboard', 'os', 'lista'
 ];
 
 const SERVICOS_ESTETICA_ABAS = [
@@ -277,6 +274,7 @@ export default function Admin() {
   // ── Modais e bloqueios ────────────────────────────────────────────────────
   const [toastModuloBloqueado, setToastModuloBloqueado] = useState(null);
   const [modalUpgradeAba, setModalUpgradeAba] = useState(null);
+  const [modalRecuperacaoAberto, setModalRecuperacaoAberto] = useState(false);
 
   // ── Trial ─────────────────────────────────────────────────────────────────
   const [trialExpirou, setTrialExpirou] = useState(false);
@@ -365,11 +363,22 @@ export default function Admin() {
     }, { merge: true }).catch(err => console.error('Erro ao expirar trial:', err));
   }, [dataFimTrial, logado, currentUserId]);
 
+  const isTrial = useMemo(() => {
+    return dadosOficina?.plano === 'trial' || !dadosOficina?.plano || dadosOficina?.plano === 'GRATUITO';
+  }, [dadosOficina?.plano]);
+
   const isLicencaAtiva = useMemo(() => {
-    if (!dataFimTrial) return true;
+    // Se for master, está sempre ativo
+    if (dadosOficina?.papel === 'master' || dadosOficina?.plano === 'master') return true;
+    
+    // Se não tiver data de fim de trial e for trial/gratuito, então expirou (ou nem começou)
+    if (!dataFimTrial) {
+      return dadosOficina?.plano !== 'GRATUITO' && dadosOficina?.plano !== 'trial' && !!dadosOficina?.plano;
+    }
+
     const fim = dataFimTrial instanceof Date ? dataFimTrial : new Date(dataFimTrial);
     return fim >= new Date();
-  }, [dataFimTrial]);
+  }, [dataFimTrial, dadosOficina?.plano, dadosOficina?.papel]);
 
   const verificarLicenca = (acao = 'esta ação') => {
     if (trialExpirou) {
@@ -402,6 +411,53 @@ export default function Admin() {
       setListaCarros, setListaFinanceiro, setListaEstoque,
       setConfig, setPlanosSistema, logado,
     });
+
+  // ── Sincronização em Tempo Real (O.S.) ────────────────────────────────────
+  useEffect(() => {
+    if (!oficinaId || !logado) return;
+
+    const q = query(
+      collection(db, 'oficinas', oficinaId, 'os'),
+      orderBy('data_registro', 'desc')
+    );
+
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      const novaLista = snapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data()
+      }));
+      setListaCarros(novaLista);
+      console.log("🛠️ O.S. Sincronizadas:", novaLista.length);
+    }, (error) => {
+      console.error("Erro na sincronização de O.S.:", error);
+    });
+
+    return () => unsubscribe();
+  }, [oficinaId, logado]);
+
+  // ── Sincronização em Tempo Real (Financeiro) ──────────────────────────────
+  useEffect(() => {
+    if (!oficinaId || !logado) return;
+    const q = query(collection(db, 'oficinas', oficinaId, 'financeiro'), orderBy('data', 'desc'));
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      setListaFinanceiro(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+    });
+    return () => unsubscribe();
+  }, [oficinaId, logado]);
+
+  // ── Sincronização em Tempo Real (Estoque) ─────────────────────────────────
+  useEffect(() => {
+    if (!oficinaId || !logado) return;
+    const q = query(collection(db, 'oficinas', oficinaId, 'estoque'));
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      setListaEstoque(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+    });
+    return () => unsubscribe();
+  }, [oficinaId, logado]);
+    
+  useEffect(() => {
+    carregarPlanos();
+  }, [carregarPlanos]);
 
   // ── Quick Actions ─────────────────────────────────────────────────────────
   const {
@@ -497,11 +553,11 @@ export default function Admin() {
     setDadosOSGlobal({
       placa: novaOS.placa || '',
       veiculo: novaOS.modelo || novaOS.veiculo || '',
-      modelo: novaOS.modelo || novaOS.veiculo || '',
       cliente: novaOS.nomeCliente || novaOS.cliente || '',
       telefone: novaOS.telefone || novaOS.whatsapp || '',
-      km: novaOS.km?.toString() || novaOS.kmAtual?.toString() || '',
-      senha_web: novaOS.senha_web || novaOS.senhaConsulta || '',
+      km: novaOS.km?.toString() || '',
+      senha_web: novaOS.senha_web || novaOS.senha || '', // Garante compatibilidade
+      data: novaOS.data || new Date().toISOString(), // Resolve o Invalid Date
       oficinaId: oficinaId || ''
     });
   };
@@ -543,17 +599,29 @@ export default function Admin() {
   };
 
   const moduloLiberado = (idAba) => {
+    const aba = idAba?.toLowerCase();
+    
     // 1. Se for Master, acesso total vitalício
     if (dadosOficina?.papel === 'master' || dadosOficina?.plano === 'master') return true;
 
-    // 2. Se estiver no Trial (15 dias) e a data for válida, LIBERADO
-    // Isso faz o selo "9 DIAS GRÁTIS" reaparecer no Header
+    // 2. Abas básicas que nunca devem ser bloqueadas
+    if (MODULOS_GRATIS_VITALICIOS.includes(aba)) return true;
+    if (aba === 'leads' || aba === 'clientes') {
+       // Se o usuário quer que clientes seja como notafiscal e estoque, não pode estar no grátis vitalício
+       // mas deve estar liberado durante o trial ativo.
+    }
+
+    // 3. Se estiver no Trial (15 dias) e a data for válida, LIBERADO
     if (isTrial && isLicencaAtiva) return true;
 
-    // 3. Abas básicas que nunca devem ser bloqueadas
-    if (['dashboard', 'config', 'ajuda', 'meuplano'].includes(idAba)) return true;
+    // 4. Se for assinante de um plano pago (não trial e não gratuito), verifica se possui o módulo
+    const isAssinante = dadosOficina?.plano && dadosOficina?.plano !== 'GRATUITO' && dadosOficina?.plano !== 'trial' && dadosOficina?.plano !== 'gratis';
+    if (isAssinante) {
+      const meusModulos = dadosOficina?.modulosOperacionais || [];
+      if (meusModulos.includes(aba)) return true;
+    }
 
-    // 4. Se o tempo de teste acabou: BLOQUEIA (Mostra Upgrade Necessário)
+    // 5. Se o tempo de teste acabou e não é assinante: BLOQUEIA
     return false;
   };
 
@@ -567,6 +635,30 @@ export default function Admin() {
     // Caso contrário, mostra o modal de upgrade
     setModalUpgradeAba(idAba);
     setToastModuloBloqueado({ tipo: 'bloqueado', aba: idAba });
+  };
+
+  const abrirRecuperacaoFinanceira = () => {
+    // Fonte de dados principal (sincronizada com Firebase)
+    const fonteDeDados = listaCarros || [];
+    
+    // Filtra apenas O.S. que estão pendentes (verificando múltiplos campos possíveis) e com valor maior que zero
+    const devedores = fonteDeDados.filter(os => {
+      const statusValue = (os.statusPagamento || os.status || os.situacao || '').toString().trim().toUpperCase();
+      return statusValue === 'PENDENTE' && Number(os.total) > 0;
+    });
+
+    console.log("DEBUG RECUPERAÇÃO:", {
+      totalOS: fonteDeDados.length,
+      devedoresEncontrados: devedores.length,
+      listaCompleta: fonteDeDados
+    });
+
+    if (devedores.length === 0) {
+      alert("🎉 Ótima notícia! Não existem orçamentos pendentes com valor para recuperar no momento.");
+      return;
+    }
+
+    setModalRecuperacaoAberto(true);
   };
 
   // ── Resumo da O.S. em edição (Maestro) ───────────────────────────────────
@@ -671,7 +763,7 @@ export default function Admin() {
       />
 
       <NovaOSBar
-        t={t} MAIN={MAIN} abaAtiva={abaAtiva} setAbaAtiva={setAbaAtiva}
+        t={t} tema={tema} MAIN={MAIN} abaAtiva={abaAtiva} setAbaAtiva={setAbaAtiva}
         listaCarros={listaCarros} busca={busca} setBusca={setBusca}
         normalizarPlaca={normalizarPlaca}
         irParaNovaOS={irParaNovaOS}
@@ -699,6 +791,8 @@ export default function Admin() {
 
       {/* Gerenciador de Módulos — renderiza o conteúdo da aba ativa */}
       <GerenciadorDeModulos
+        t={t}
+        tema={tema}
         abaAtiva={abaAtiva}
         setAbaAtiva={setAbaAtiva}
         setupConcluido={setupConcluido}
@@ -751,6 +845,7 @@ export default function Admin() {
         modulosOperacionais={modulosOperacionais}
         irParaNovaOS={irParaNovaOS}
         verificarLicenca={verificarLicenca}
+        abrirRecuperacaoFinanceira={abrirRecuperacaoFinanceira}
       />
 
       <ModuloBloqueado
@@ -765,6 +860,8 @@ export default function Admin() {
       />
 
       <ModaisExtras
+        t={t}
+        tema={tema}
         QuickActions={QuickActions}
         ModalOnboarding={ModalOnboarding}
         oficinaId={oficinaId}
@@ -790,6 +887,8 @@ export default function Admin() {
         ouvirCampoLead={ouvirCampoLead} leadCampoOuvindo={leadCampoOuvindo}
         carregarFinanceiro={carregarFinanceiro}
         setAbaAtiva={setAbaAtiva}
+        moduloLiberado={moduloLiberado}
+        lidarModuloBloqueado={lidarModuloBloqueado}
         mostrarOnboarding={mostrarOnboarding}
         setMostrarOnboarding={setMostrarOnboarding}
         setModulosOperacionais={setModulosOperacionais}
@@ -817,14 +916,20 @@ export default function Admin() {
             <div className="flex-1 overflow-y-auto">
               <MercadoLivre />
             </div>
-            <div className="bg-zinc-900 p-3 text-center">
-              <p className="text-[10px] text-zinc-500 font-bold uppercase tracking-widest">Tecnologia Express Auto Tech &copy; 2026</p>
+            <div className={`bg-zinc-900 p-3 text-center ${tema === 'claro' ? 'text-zinc-900' : 'text-zinc-500'}`}>
+              <p className="text-[10px] font-bold uppercase tracking-widest">Tecnologia Express Auto Tech &copy; 2026</p>
             </div>
           </div>
         </div>
       )}
 
-      <FloatingButtons abaAtiva={abaAtiva} />
+      <FloatingButtons 
+        t={t}
+        abaAtiva={abaAtiva} 
+        moduloLiberado={moduloLiberado}
+        lidarModuloBloqueado={lidarModuloBloqueado}
+        setAbaAtiva={setAbaAtiva}
+      />
 
       {dadosOficina?.papel !== 'master' && (
         <OnboardingTour
@@ -832,6 +937,41 @@ export default function Admin() {
           setMostrarOnboarding={setMostrarOnboarding}
           modalBemVindoAberto={mostrarOnboarding}
         />
+      )}
+      {modalRecuperacaoAberto && (
+        <div style={{ position: 'fixed', inset: 0, zIndex: 99999, background: 'rgba(0,0,0,0.85)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px', backdropFilter: 'blur(8px)' }}>
+          <div style={{ background: '#0f172a', border: `2px solid ${MAIN}`, borderRadius: '20px', width: '100%', maxWidth: '500px', maxHeight: '80vh', overflow: 'hidden', display: 'flex', flexDirection: 'column', boxShadow: `0 0 50px ${MAIN}44` }}>
+            
+            {/* Cabeçalho */}
+            <div style={{ padding: '20px', borderBottom: '1px solid #1e293b', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <h3 style={{ color: 'white', margin: 0, fontWeight: '900', textTransform: 'uppercase', letterSpacing: '-0.5px' }}>💰 Recuperação de Orçamentos</h3>
+              <button onClick={() => setModalRecuperacaoAberto(false)} style={{ background: 'transparent', border: 'none', color: '#64748b', cursor: 'pointer', fontSize: '20px' }}>✕</button>
+            </div>
+
+            {/* Lista de Devedores */}
+            <div style={{ flex: 1, overflowY: 'auto', padding: '15px' }}>
+              {listaCarros
+                .filter(os => {
+                  const s = (os.statusPagamento || os.status || os.situacao || '').toString().trim().toUpperCase();
+                  return s === 'PENDENTE' && Number(os.total) > 0;
+                })
+                .map(os => (
+                  <div key={os.id} style={{ background: '#1e293b', padding: '15px', borderRadius: '12px', marginBottom: '10px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', border: '1px solid #334155' }}>
+                    <div>
+                      <p style={{ color: 'white', fontWeight: 'bold', margin: '0 0 4px 0' }}>{os.nomeCliente || 'Cliente s/ nome'}</p>
+                      <p style={{ color: MAIN, fontSize: '12px', fontWeight: '900', margin: 0 }}>{os.placa} • R$ {Number(os.total).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</p>
+                    </div>
+                    <button 
+                      onClick={() => enviarWhatsApp(os, 'orcamento')}
+                      style={{ background: '#22c55e', color: 'white', border: 'none', padding: '10px 16px', borderRadius: '10px', cursor: 'pointer', fontWeight: 'bold', fontSize: '12px', transition: 'all 0.2s shadow-lg' }}
+                    >
+                      Recontatar
+                    </button>
+                  </div>
+                ))}
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );

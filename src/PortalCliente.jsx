@@ -630,7 +630,7 @@ export default function PortalCliente() {
         <div className="flex flex-col min-h-screen bg-[#050505] text-white font-sans overflow-x-hidden">
             {/* HEADER */}
             <header className="w-full px-8 py-5 flex justify-between items-center border-b border-neutral-900 sticky top-0 bg-[#050505] z-50 font-black">
-                <h1 className="text-xl font-black text-red-600 tracking-[0.3em] uppercase cursor-pointer" onClick={() => window.location.reload()}>🔧 OFICINA IA</h1>
+                <h1 className="text-xl font-black text-red-600 tracking-[0.3em] uppercase cursor-pointer" onClick={() => window.location.reload()}>🔧 Express Auto Tech</h1>
                 <button onClick={() => navigate('/login-admin')} className="bg-[#eab308] text-black px-6 py-2 rounded-lg text-[10px] uppercase shadow-lg shadow-yellow-600/20 hover:scale-105 transition-all">🏢 EMPRESAS</button>
             </header>
 

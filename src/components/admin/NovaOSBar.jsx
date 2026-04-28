@@ -1,50 +1,78 @@
 /* eslint-disable react/prop-types */
 
-export default function NovaOSBar({ t, MAIN, abaAtiva, setAbaAtiva, listaCarros, busca, setBusca, normalizarPlaca, irParaNovaOS }) {
+export default function NovaOSBar({ t, tema, MAIN, abaAtiva, setAbaAtiva, listaCarros, busca, setBusca, normalizarPlaca, irParaNovaOS }) {
   // Filtra as ordens que estão pendentes no banco de dados
   const pendentes = listaCarros.filter(o => o.statusPagamento === 'pendente').length;
 
   return (
-    <div id="nova-os-bar" style={{ padding: '12px 20px', background: t.bgCardAlt, borderBottom: `1px solid ${t.border}` }}>
-      <button
+    <div 
+      id="nova-os-bar" 
+      style={{ 
+        padding: '15px 20px', 
+        background: 'transparent',
+        display: 'flex',
+        justifyContent: 'center',
+        alignItems: 'center'
+      }}
+    >
+      <div
         id="tour-botao-nova-os"
         onClick={() => {
-          // Agora o botão apenas obedece: limpa tudo, entra no Modo Foco e abre a Recepção!
           if (irParaNovaOS) {
             irParaNovaOS();
           } else {
-            // Fallback caso a função demore a carregar
             window.dispatchEvent(new CustomEvent('ativarModoFoco'));
             setAbaAtiva('os');
           }
         }}
         style={{
-          width: '100%', padding: '16px 24px',
-          // O botão fica destacado se estiver na aba de O.S. ou na Listagem
-          background: (abaAtiva === 'os' || abaAtiva === 'lista') ? MAIN : 'transparent',
-          color: (abaAtiva === 'os' || abaAtiva === 'lista') ? 'white' : MAIN,
-          border: `2px solid ${MAIN}`,
-          borderRadius: '12px', fontWeight: '900', fontSize: '16px', cursor: 'pointer',
-          display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px',
-          letterSpacing: '1px', transition: 'all 0.2s',
-          boxShadow: (abaAtiva === 'os' || abaAtiva === 'lista') ? `0 0 20px ${MAIN}66` : `0 0 15px ${MAIN}33`,
+          background: (abaAtiva === 'os' || abaAtiva === 'lista') 
+            ? `${MAIN}22` 
+            : (tema === 'escuro' ? 'rgba(255, 255, 255, 0.03)' : 'rgba(0, 0, 0, 0.03)'),
+          backdropFilter: 'blur(12px)',
+          border: (abaAtiva === 'os' || abaAtiva === 'lista') 
+            ? `1.5px solid ${MAIN}` 
+            : `1px solid ${tema === 'escuro' ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)'}`,
+          borderRadius: '20px',
+          padding: '14px 30px',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          gap: '15px',
+          cursor: 'pointer',
+          transition: 'all 0.4s cubic-bezier(0.4, 0, 0.2, 1)',
+          boxShadow: (abaAtiva === 'os' || abaAtiva === 'lista') 
+            ? `0 10px 40px ${MAIN}33` 
+            : (tema === 'escuro' ? '0 10px 30px rgba(0,0,0,0.2)' : '0 10px 30px rgba(0,0,0,0.05)'),
+          width: 'fit-content',
+          minWidth: '280px'
+        }}
+      >
+        <span style={{ fontSize: '22px', filter: (abaAtiva === 'os' || abaAtiva === 'lista') ? `drop-shadow(0 0 8px ${MAIN})` : 'none' }}>📝</span>
+        <span style={{ 
+          color: t.text, 
+          fontWeight: '900', 
+          letterSpacing: '1.5px', 
+          fontSize: '13px',
+          textTransform: 'uppercase'
         }}>
-        📋 NOVA ORDEM DE SERVIÇO
-
+          ABRIR NOVA ORDEM DE SERVIÇO
+        </span>
+        
         {pendentes > 0 && (
-          <span style={{
-            background: abaAtiva === 'lista' ? 'white' : MAIN,
-            color: abaAtiva === 'lista' ? MAIN : 'white',
-            borderRadius: '12px',
-            padding: '2px 10px',
-            fontSize: '12px',
-            fontWeight: 'bold',
-            border: abaAtiva === 'lista' ? `1px solid ${MAIN}` : 'none'
+          <div style={{
+            background: MAIN,
+            color: 'white',
+            padding: '4px 12px',
+            borderRadius: '20px',
+            fontSize: '11px',
+            fontWeight: '900',
+            boxShadow: `0 0 15px ${MAIN}88`
           }}>
-            {pendentes} pendentes
-          </span>
+            {pendentes} {pendentes === 1 ? 'PENDENTE' : 'PENDENTES'}
+          </div>
         )}
-      </button>
+      </div>
     </div>
   );
 }

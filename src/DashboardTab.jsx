@@ -242,7 +242,7 @@ function ReminderCard({ title, subtitle, meta, onClick, t }) {
 
 function ChartCard({ dados, t }) {
     if (!dados || dados.length === 0) return null;
-    
+
     return (
         <div style={{
             background: t.card,
@@ -506,7 +506,7 @@ export default function DashboardTab({
                     <div style={{ maxWidth: '760px', flex: '2 1 320px' }}>
                         <div style={{ display: 'inline-flex', alignItems: 'center', gap: '10px', padding: '8px 14px', borderRadius: '999px', background: t.chip, border: `1px solid ${t.stroke}` }}>
                             <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: t.positive, boxShadow: `0 0 18px ${t.positive}`, flexShrink: 0 }} />
-                            <span style={{ color: t.textSoft, fontSize: '12px', fontWeight: 700 }}>Dashboard Preditivo · Oficina IA</span>
+                            <span style={{ color: t.textSoft, fontSize: '12px', fontWeight: 700 }}>Dashboard Preditivo · Express Auto Tech</span>
                         </div>
                         <h1 style={{ margin: '18px 0 10px', fontSize: 'clamp(1.6rem, 4vw, 3rem)', lineHeight: 1.05 }}>
                             Gestão remota com leitura de receita, pátio e conversão.

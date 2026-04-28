@@ -1,5 +1,5 @@
 /**
- * CHECKLIST PARA O CODEX ANALISAR (ESTRUTURA SAAS OFICINA IA)
+ * CHECKLIST PARA O CODEX ANALISAR (ESTRUTURA SAAS Express Auto Tech)
  * * 1. TRANCA.JSX: Verifica e-mail MASTER?
  * 2. DASHBOARD: Bloqueia IA no Trial?
  * 3. FIREBASE: Checa data de expiração (trialFim)?
@@ -20,9 +20,9 @@ const AnaliseSistema = () => {
   return (
     <div className="p-10 bg-black text-white">
       <h1>Relatório de Configuração SaaS</h1>
-      <p>O Codex deve verificar se o arquivo <strong>Tranca.jsx</strong> está protegendo a rota master 
-         e se o <strong>DashboardOficina.jsx</strong> está renderizando os cadeados 🔒 corretamente.</p>
-      
+      <p>O Codex deve verificar se o arquivo <strong>Tranca.jsx</strong> está protegendo a rota master
+        e se o <strong>DashboardOficina.jsx</strong> está renderizando os cadeados 🔒 corretamente.</p>
+
       <div className="grid gap-4 mt-6">
         <div className="border p-4 border-zinc-800">
           <h3 className="text-red-500 font-bold">ESTADO ATUAL:</h3>

@@ -11,10 +11,10 @@ export default function Sobre() {
 
   return (
     <div className="min-h-screen bg-[#050505] text-white font-sans selection:bg-blue-500 selection:text-white">
-      
+
       {/* NAVEGAÇÃO */}
       <nav className="flex justify-between items-center px-8 py-6 max-w-7xl mx-auto">
-        <div 
+        <div
           onClick={() => navigate('/')}
           className="flex items-center gap-2 cursor-pointer hover:opacity-80 transition-opacity"
         >
@@ -25,7 +25,7 @@ export default function Sobre() {
             EXPRESS <span className="text-blue-500">AI</span>
           </span>
         </div>
-        
+
         {/* MENU CENTRAL */}
         <div className="hidden md:flex gap-8 text-sm font-semibold text-gray-400">
           <button onClick={() => navigate('/')} className="hover:text-blue-400 transition-colors cursor-pointer">Início</button>
@@ -34,7 +34,7 @@ export default function Sobre() {
         </div>
 
         <div className="flex gap-4">
-          <button 
+          <button
             onClick={() => window.open('https://wa.me/5534991439845?text=Olá, quero agendar uma consultoria com a Express AI', '_blank')}
             className="px-5 py-2 text-sm font-bold bg-white text-black rounded-full hover:bg-gray-200 transition-all shadow-[0_0_20px_rgba(255,255,255,0.2)]"
           >
@@ -57,7 +57,7 @@ export default function Sobre() {
       {/* SECÇÃO DO FUNDADOR (COM A FOTO PROFISSIONAL) */}
       <section className="py-16 px-4">
         <div className="max-w-5xl mx-auto bg-[#111] border border-[#222] rounded-3xl p-8 md:p-12 flex flex-col md:flex-row gap-12 items-center relative overflow-hidden">
-          
+
           {/* Efeito de fundo */}
           <div className="absolute top-0 right-0 w-full h-full bg-gradient-to-bl from-blue-900/10 to-transparent pointer-events-none"></div>
 
@@ -65,15 +65,15 @@ export default function Sobre() {
           <div className="md:w-2/5 relative z-10">
             {/* Círculo decorativo atrás da foto */}
             <div className="absolute inset-0 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full blur-2xl opacity-20 transform scale-110"></div>
-            
+
             {/* A FOTO PROFISSIONAL AQUI */}
             <div className="relative rounded-2xl overflow-hidden border-2 border-[#333] shadow-2xl shadow-blue-500/20 aspect-[4/5]">
-              <img 
-                src="/foto-perfil.jpg" 
-                alt="Foto do Fundador da Express AI" 
+              <img
+                src="/foto-perfil.jpg"
+                alt="Foto do Fundador da Express AI"
                 className="w-full h-full object-cover hover:scale-105 transition-transform duration-500"
                 onError={(e) => {
-                  e.target.onerror = null; 
+                  e.target.onerror = null;
                   e.target.parentNode.innerHTML = '<div class="flex items-center justify-center h-full bg-[#0a0a0a] text-gray-500 font-bold p-4 text-center">Coloque sua foto em /public/foto-perfil.jpg</div>';
                 }}
               />
@@ -89,7 +89,7 @@ export default function Sobre() {
                 Engenheiro de Controle e Automação & Especialista em IA
               </p>
             </div>
-            
+
             <div className="space-y-4 text-gray-400 leading-relaxed">
               <p>
                 "Durante anos na engenharia, aprendi que a eficiência não é um acidente; ela é projetada. Eu via empresas físicas lutarem com processos manuais, papelada e marketing ineficiente, enquanto a tecnologia avançava a passos largos."
@@ -98,12 +98,12 @@ export default function Sobre() {
                 "Fundei a <strong>Express AI</strong> com uma missão clara: pegar a precisão da automação industrial e a potência da Inteligência Artificial e trazê-las para o mundo dos negócios locais."
               </p>
               <p>
-                "Não somos apenas uma agência de marketing. Somos engenheiros de crescimento. Criamos sistemas (como o Oficina IA) e estratégias de tráfego que funcionam com a previsibilidade de uma máquina bem lubrificada."
+                "Não somos apenas uma agência de marketing. Somos engenheiros de crescimento. Criamos sistemas (como o Express Auto Tech) e estratégias de tráfego que funcionam com a previsibilidade de uma máquina bem lubrificada."
               </p>
             </div>
-            
+
             <div className="pt-4">
-              <button 
+              <button
                 onClick={() => window.open('https://wa.me/5534991439845?text=Olá, Elton. Li sua história no site e gostaria de conversar.', '_blank')}
                 className="px-8 py-3 border border-white/20 text-white font-bold rounded-full hover:bg-white hover:text-black transition-all"
               >

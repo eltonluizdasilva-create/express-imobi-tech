@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
-import { ShoppingCart, Bot, CheckSquare, Wallet, UserPlus, X } from 'lucide-react';
+import { ShoppingCart, Bot, CheckSquare, Wallet, UserPlus, X, Lock } from 'lucide-react';
 import AbaAjudaIA from './AbaAjudaIA';
 
-export default function FloatingButtons({ abaAtiva }) {
+export default function FloatingButtons({ t, abaAtiva, moduloLiberado, lidarModuloBloqueado, setAbaAtiva }) {
     const [chatAberto, setChatAberto] = useState(false);
 
     const abrirML = () => {
@@ -38,29 +38,68 @@ export default function FloatingButtons({ abaAtiva }) {
             <div className="fixed bottom-6 right-6 z-[50] flex flex-col gap-3">
                 {/* Botão 1: Tarefas */}
                 <button
-                    onClick={() => window.dispatchEvent(new CustomEvent('mudarAba', { detail: 'tarefas' }))}
-                    className="w-10 h-10 bg-neutral-900 border border-neutral-700 rounded-full flex items-center justify-center shadow-md hover:scale-110 active:scale-95 transition-all"
+                    onClick={() => {
+                        if (moduloLiberado && !moduloLiberado('tarefa')) {
+                            lidarModuloBloqueado('tarefa');
+                        } else {
+                            if (setAbaAtiva) setAbaAtiva('tarefa');
+                            else window.dispatchEvent(new CustomEvent('mudarAba', { detail: 'tarefa' }));
+                        }
+                    }}
+                    className="w-10 h-10 rounded-full flex items-center justify-center shadow-md hover:scale-110 active:scale-95 transition-all relative"
+                    style={{ background: t.bgCardAlt, border: `1px solid ${t.border}` }}
                     title="Tarefas"
                 >
                     <CheckSquare size={18} color="#f472b6" />
+                    {moduloLiberado && !moduloLiberado('tarefa') && (
+                        <div className="absolute -top-1 -right-1 bg-red-600 rounded-full p-0.5 border border-black">
+                            <Lock size={8} color="white" />
+                        </div>
+                    )}
                 </button>
 
                 {/* Botão 2: Financeiro */}
                 <button
-                    onClick={() => window.dispatchEvent(new CustomEvent('mudarAba', { detail: 'financeiro' }))}
-                    className="w-10 h-10 bg-neutral-900 border border-neutral-700 rounded-full flex items-center justify-center shadow-md hover:scale-110 active:scale-95 transition-all"
+                    onClick={() => {
+                        if (moduloLiberado && !moduloLiberado('financeiro')) {
+                            lidarModuloBloqueado('financeiro');
+                        } else {
+                            if (setAbaAtiva) setAbaAtiva('financeiro');
+                            else window.dispatchEvent(new CustomEvent('mudarAba', { detail: 'financeiro' }));
+                        }
+                    }}
+                    className="w-10 h-10 rounded-full flex items-center justify-center shadow-md hover:scale-110 active:scale-95 transition-all relative"
+                    style={{ background: t.bgCardAlt, border: `1px solid ${t.border}` }}
                     title="Financeiro"
                 >
                     <Wallet size={18} color="#3b82f6" />
+                    {moduloLiberado && !moduloLiberado('financeiro') && (
+                        <div className="absolute -top-1 -right-1 bg-red-600 rounded-full p-0.5 border border-black">
+                            <Lock size={8} color="white" />
+                        </div>
+                    )}
                 </button>
 
                 {/* Botão 3: Clientes */}
                 <button
-                    onClick={() => window.dispatchEvent(new CustomEvent('mudarAba', { detail: 'clientes' }))}
-                    className="w-10 h-10 bg-neutral-900 border border-neutral-700 rounded-full flex items-center justify-center shadow-md hover:scale-110 active:scale-95 transition-all"
+                    onClick={() => {
+                        if (moduloLiberado && !moduloLiberado('clientes')) {
+                            lidarModuloBloqueado('clientes');
+                        } else {
+                            if (setAbaAtiva) setAbaAtiva('clientes');
+                            else window.dispatchEvent(new CustomEvent('mudarAba', { detail: 'clientes' }));
+                        }
+                    }}
+                    className="w-10 h-10 rounded-full flex items-center justify-center shadow-md hover:scale-110 active:scale-95 transition-all relative"
+                    style={{ background: t.bgCardAlt, border: `1px solid ${t.border}` }}
                     title="Clientes"
                 >
                     <UserPlus size={18} color="#22c55e" />
+                    {moduloLiberado && !moduloLiberado('clientes') && (
+                        <div className="absolute -top-1 -right-1 bg-red-600 rounded-full p-0.5 border border-black">
+                            <Lock size={8} color="white" />
+                        </div>
+                    )}
                 </button>
             </div>
 

@@ -8,6 +8,8 @@ export default function ListaOS({
   deletarOS,
   enviarWhatsApp,
   abrirMercado,
+  t = { text: '#fff', textSoft: '#888', stroke: '#333', card: '#111', bg: '#000' },
+  tema = 'escuro',
 }) {
   const listaCarros = listaCarrosProp || [];
   const [busca, setBusca] = useState('');
@@ -81,7 +83,7 @@ export default function ListaOS({
 
       doc.setFont('helvetica', 'normal');
       doc.setFontSize(12);
-      doc.text('Oficina IA - Sistema de Gestao', 105, 28, { align: 'center' });
+      doc.text('Express Auto Tech - Sistema de Gestao', 105, 28, { align: 'center' });
 
       doc.setLineWidth(0.5);
       doc.line(20, 35, 190, 35);
@@ -171,30 +173,31 @@ export default function ListaOS({
   return (
     <div className="w-full flex flex-col gap-6 animate-fadeIn pb-24">
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <div className="bg-zinc-900 border-2 border-zinc-800 rounded-xl p-4 flex flex-col items-center justify-center">
+        <div className="rounded-xl p-4 flex flex-col items-center justify-center border-2" style={{ background: t.card, borderColor: t.stroke }}>
           <span className="text-zinc-500 text-xs font-black uppercase tracking-widest mb-1">Total</span>
-          <span className="text-white text-3xl font-black">{listaCarros.length}</span>
+          <span className="text-3xl font-black" style={{ color: t.text }}>{listaCarros.length}</span>
         </div>
 
-        <div className="bg-zinc-900 border-2 border-red-900/30 rounded-xl p-4 flex flex-col items-center justify-center">
+        <div className="rounded-xl p-4 flex flex-col items-center justify-center border-2" style={{ background: t.card, borderColor: 'rgba(239, 68, 68, 0.2)' }}>
           <span className="text-red-500/70 text-xs font-black uppercase tracking-widest mb-1">Pendentes</span>
           <span className="text-red-500 text-3xl font-black">{totalPendentes}</span>
         </div>
 
-        <div className="bg-zinc-900 border-2 border-emerald-900/30 rounded-xl p-4 flex flex-col items-center justify-center">
+        <div className="rounded-xl p-4 flex flex-col items-center justify-center border-2" style={{ background: t.card, borderColor: 'rgba(16, 185, 129, 0.2)' }}>
           <span className="text-emerald-500/70 text-xs font-black uppercase tracking-widest mb-1">Pagas</span>
           <span className="text-emerald-500 text-3xl font-black">{totalPagas}</span>
         </div>
       </div>
 
-      <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-2 flex items-center gap-2">
+      <div className="rounded-xl p-2 flex items-center gap-2 border" style={{ background: t.card, borderColor: t.stroke }}>
         <Search className="text-zinc-500 ml-2" size={20} />
         <input
           type="text"
           placeholder="Procurar por Placa, Modelo ou Cliente..."
           value={busca}
           onChange={(e) => setBusca(e.target.value)}
-          className="bg-transparent border-none text-white outline-none flex-1 p-2 placeholder:text-zinc-600"
+          className="bg-transparent border-none outline-none flex-1 p-2"
+          style={{ color: t.text }}
         />
       </div>
 
@@ -236,8 +239,9 @@ export default function ListaOS({
                   ? 'bg-amber-950/10 border-amber-500/40 hover:border-amber-400/60'
                   : pago
                     ? 'bg-emerald-950/20 border-emerald-900/30'
-                    : 'bg-[#0f0f0f] border-zinc-800 hover:border-zinc-700'
+                    : 'border-2'
                   }`}
+                style={{ background: pago ? 'rgba(16, 185, 129, 0.1)' : t.card, borderColor: t.stroke }}
               >
                 {isDemo && (
                   <div className="w-full mb-4 flex items-center gap-2 bg-amber-500/10 border border-amber-500/30 rounded-xl px-4 py-2.5 -mt-1">
@@ -250,7 +254,7 @@ export default function ListaOS({
 
                 <div className="flex flex-col gap-3 flex-1">
                   <div className="flex items-center gap-3 flex-wrap">
-                    <h3 className="text-white font-black text-xl md:text-2xl uppercase tracking-tight">{os.placa}</h3>
+                    <h3 className="font-black text-xl md:text-2xl uppercase tracking-tight" style={{ color: t.text }}>{os.placa}</h3>
 
                     {isDemo && (
                       <span className="bg-amber-500/20 text-amber-400 px-2 py-1 rounded text-[10px] font-black tracking-widest border border-amber-500/30">
@@ -276,7 +280,15 @@ export default function ListaOS({
                   </div>
 
                   <div className="text-zinc-500 text-xs">
-                    Data: {os.data ? new Date(os.data).toLocaleDateString('pt-BR') : 'N/I'}
+                    Data: {(() => {
+                      if (!os.data) return 'N/I';
+                      try {
+                        const d = os.data.toDate ? os.data.toDate() : new Date(os.data);
+                        return isNaN(d.getTime()) ? 'N/I' : d.toLocaleDateString('pt-BR');
+                      } catch (e) {
+                        return 'N/I';
+                      }
+                    })()}
                   </div>
 
                   <div className="mt-2 inline-flex items-center gap-2 bg-emerald-900/30 text-emerald-500 px-3 py-1 rounded-lg w-fit border border-emerald-900/50">
@@ -334,8 +346,9 @@ export default function ListaOS({
                       disabled={pago}
                       title={pago ? 'O.S. paga e encerrada. Edicao bloqueada.' : `Editar ${os.tipoServico || 'Mecanica'}`}
                       className={pago
-                        ? 'bg-zinc-900 border-2 border-zinc-700 text-zinc-500 py-2 rounded-lg font-bold text-[10px] uppercase tracking-widest transition-all flex items-center justify-center gap-1 cursor-not-allowed opacity-90'
+                        ? 'border-2 py-2 rounded-lg font-bold text-[10px] uppercase tracking-widest transition-all flex items-center justify-center gap-1 cursor-not-allowed opacity-90'
                         : 'bg-transparent border-2 border-[#7D3C98] text-[#7D3C98] hover:bg-[#7D3C98] hover:text-white py-2 rounded-lg font-bold text-[10px] uppercase tracking-widest transition-all flex items-center justify-center gap-1'}
+                      style={pago ? { background: t.card, borderColor: t.stroke, color: t.textMute } : {}}
                     >
                       {pago ? <Lock size={14} /> : null}
                       {pago ? 'Edicao bloqueada' : `Editar ${os.tipoServico || 'Mecanica'}`}
@@ -343,7 +356,8 @@ export default function ListaOS({
 
                     <button
                       onClick={() => handleBaixarPdf(os)}
-                      className="bg-zinc-800 hover:bg-zinc-700 text-white py-2 rounded-lg font-bold text-[10px] uppercase tracking-widest transition-colors flex items-center justify-center gap-1"
+                      className="hover:bg-zinc-700 text-white py-2 rounded-lg font-bold text-[10px] uppercase tracking-widest transition-colors flex items-center justify-center gap-1"
+                      style={{ background: t.chipStrong }}
                     >
                       <FileDown size={14} /> Recibo PDF
                     </button>

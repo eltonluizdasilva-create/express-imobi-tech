@@ -50,6 +50,10 @@ export default function ModaisExtras({
   setMostrarOnboarding,
   setModulosOperacionais,
   planosSistema,
+  moduloLiberado,
+  lidarModuloBloqueado,
+  t,
+  tema,
 }) {
   return (
     <>
@@ -98,6 +102,10 @@ export default function ModaisExtras({
         leadCampoOuvindo={leadCampoOuvindo}
         carregarFinanceiro={carregarFinanceiro}
         setAbaAtiva={setAbaAtiva}
+        moduloLiberado={moduloLiberado}
+        lidarModuloBloqueado={lidarModuloBloqueado}
+        t={t}
+        tema={tema}
       />
 
       {mostrarOnboarding && (

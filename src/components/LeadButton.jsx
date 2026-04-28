@@ -99,7 +99,7 @@ export default function LeadButton() {
             <button onClick={() => setAberto(false)} style={{ position: 'absolute', top: '15px', right: '15px', background: 'transparent', border: 'none', color: '#888', fontSize: '20px', cursor: 'pointer' }}>✖</button>
 
             <h3 style={{ margin: '0 0 20px 0', color: '#00E676', textAlign: 'center', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px' }}>
-              ⚡ Novo Lead Rápido
+              ⚡ CLIENTES
             </h3>
 
             {/* CAMPO NOME */}

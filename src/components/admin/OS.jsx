@@ -68,6 +68,8 @@ export default function OSModulo({
   isTrial = false,
   listaCarros = [],
   setAbaAtiva = null,
+  t = { text: '#fff', textSoft: '#888', stroke: '#333', card: '#111', bg: '#000' },
+  tema = 'escuro',
 }) {
   const [dados, setDados] = useState({
     nomeCliente: nomeCliente || '',
@@ -263,7 +265,7 @@ export default function OSModulo({
         cliente: dados.nomeCliente,
         oficinaId,
         data_registro: new Date().toISOString(),
-        data: new Date(),
+        data: new Date().toISOString(),
         statusPagamento: 'pendente',
         tipo: setorValido,
         tipoServico: setorValido,
@@ -318,8 +320,8 @@ export default function OSModulo({
   };
 
   return (
-    <div id="tela-recepcao" className="bg-black text-white p-4 max-w-3xl mx-auto">
-      <h2 className="text-xl font-bold text-red-500 mb-6 border-b border-red-900/30 pb-4">📋 Recepção de Veículo</h2>
+    <div id="tela-recepcao" className="p-4 max-w-3xl mx-auto" style={{ color: t.text }}>
+      <h2 className="text-xl font-bold text-red-500 mb-6 border-b pb-4" style={{ borderColor: t.stroke }}>📋 Recepção de Veículo</h2>
 
       <form onSubmit={handleGerarOS} className="space-y-6">
         {/* Seção: Dados do Cliente */}
@@ -331,7 +333,8 @@ export default function OSModulo({
               name="nomeCliente"
               value={dados.nomeCliente}
               onChange={handleChange}
-              className="w-full bg-[#111] border border-[#333] p-3 rounded-lg text-white focus:border-red-500 outline-none"
+              className="w-full border p-3 rounded-lg outline-none"
+              style={{ background: t.card, borderColor: t.stroke, color: t.text }}
               required
             />
           </div>
@@ -344,7 +347,8 @@ export default function OSModulo({
                 name="placa"
                 value={dados.placa}
                 onChange={handleChange}
-                className="w-full bg-black border border-red-900 p-3 rounded-lg text-white font-bold text-center tracking-widest text-lg"
+                className="w-full border p-3 rounded-lg font-bold text-center tracking-widest text-lg"
+                style={{ background: t.card, borderColor: t.stroke, color: t.text }}
                 required
               />
             </div>
@@ -355,7 +359,8 @@ export default function OSModulo({
                 name="telefone"
                 value={dados.telefone}
                 onChange={handleChange}
-                className="w-full bg-[#111] border border-[#333] p-3 rounded-lg text-white"
+                className="w-full border p-3 rounded-lg"
+                style={{ background: t.card, borderColor: t.stroke, color: t.text }}
                 required
               />
             </div>
@@ -370,7 +375,8 @@ export default function OSModulo({
                 value={dados.veiculo}
                 onChange={handleChange}
                 placeholder="Ex: Gol"
-                className="w-full bg-[#111] border border-[#333] p-3 rounded-lg text-white text-xs"
+                className="w-full border p-3 rounded-lg text-xs"
+                style={{ background: t.card, borderColor: t.stroke, color: t.text }}
                 required
               />
             </div>
@@ -382,7 +388,8 @@ export default function OSModulo({
                 value={dados.ano}
                 onChange={handleChange}
                 placeholder="2020"
-                className="w-full bg-[#111] border border-[#333] p-3 rounded-lg text-white text-xs"
+                className="w-full border p-3 rounded-lg text-xs"
+                style={{ background: t.card, borderColor: t.stroke, color: t.text }}
               />
             </div>
             <div>
@@ -393,7 +400,8 @@ export default function OSModulo({
                 value={dados.motor}
                 onChange={handleChange}
                 placeholder="1.6"
-                className="w-full bg-[#111] border border-[#333] p-3 rounded-lg text-white text-xs"
+                className="w-full border p-3 rounded-lg text-xs"
+                style={{ background: t.card, borderColor: t.stroke, color: t.text }}
               />
             </div>
           </div>
@@ -415,10 +423,10 @@ export default function OSModulo({
                   style={{
                     padding: '8px 4px',
                     borderRadius: '10px',
-                    background: ativo ? `${cor}33` : '#0a0a0a',
-                    border: `1px solid ${ativo ? cor : '#444'}`,
+                    background: ativo ? `${cor}33` : t.card,
+                    border: `1px solid ${ativo ? cor : t.stroke}`,
                     boxShadow: ativo ? `0 0 15px ${cor}44` : '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
-                    color: ativo ? 'white' : '#999',
+                    color: ativo ? t.text : t.textSoft,
                     display: 'flex',
                     flexDirection: 'column',
                     alignItems: 'center',
@@ -458,7 +466,7 @@ export default function OSModulo({
       </form>
 
       {/* Seção: Busca Rápida por Placa */}
-      <div className="mt-12 bg-[#0a0a0a] border border-[#1a1a1a] p-5 rounded-2xl shadow-inner">
+      <div className="mt-12 p-5 rounded-2xl shadow-inner" style={{ background: t.cardSoft, border: `1px solid ${t.stroke}` }}>
         <div className="flex items-center gap-3 mb-4">
           <span className="text-xl">🔍</span>
           <h3 className="text-sm font-bold text-gray-400 m-0 tracking-widest uppercase">Busca Rápida (Placa)</h3>
@@ -468,7 +476,8 @@ export default function OSModulo({
           placeholder="Digite a placa para preencher automaticamente..."
           value={buscaPlaca}
           onChange={(e) => setBuscaPlaca(e.target.value)}
-          className="w-full bg-black border border-[#222] p-4 rounded-xl text-white uppercase outline-none focus:border-red-500 text-2xl font-black tracking-[0.2em] transition-all mb-4"
+          className="w-full border p-4 rounded-xl uppercase outline-none focus:border-red-500 text-2xl font-black tracking-[0.2em] transition-all mb-4"
+          style={{ background: t.card, borderColor: t.stroke, color: t.text }}
         />
         <div style={{ background: '#1a0505', padding: '12px', borderRadius: '10px', border: '1px solid #ff003322' }}>
           <p className="text-[11px] text-gray-400 m-0 leading-relaxed">

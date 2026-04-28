@@ -38,7 +38,7 @@ export default function SuporteAdminIA() {
         ).join('\n');
 
         // PROMPT MESTRE: TREINADO PARA O DONO DA OFICINA
-        const promptMestre = `Você é o Suporte Técnico Sênior do software 'Express Auto Tech' (também chamado de Oficina IA).
+        const promptMestre = `Você é o Suporte Técnico Sênior do software 'Express Auto Tech' (também chamado de Express Auto Tech).
 Você está falando com o DONO DA OFICINA (Administrador do sistema).
 Seu objetivo é ensinar a usar o software de forma clara, profissional e encorajadora.
 

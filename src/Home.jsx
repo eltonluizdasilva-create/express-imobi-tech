@@ -78,7 +78,7 @@ export default function Home() {
         </div>
       </header>
 
-      {/* PRODUTO ESTRELA: OFICINA IA */}
+      {/* PRODUTO ESTRELA: Express Auto Tech */}
       <section id="solucoes" className="py-24 px-4 bg-gradient-to-b from-[#050505] to-[#0a0a0a] border-t border-[#111]">
         <div className="max-w-6xl mx-auto">
           <div className="flex items-center gap-2 mb-4">
@@ -197,7 +197,7 @@ export default function Home() {
         <div className="relative z-10 max-w-3xl mx-auto">
           <h2 className="text-4xl md:text-5xl font-black mb-6">Pronto para digitalizar a sua empresa?</h2>
           <p className="text-gray-300 text-lg mb-10">
-            Seja para adotar o Oficina IA ou para escalar as suas vendas com as nossas estratégias de tráfego, a Express AI é a sua parceira tecnológica.
+            Seja para adotar o Express Auto Tech ou para escalar as suas vendas com as nossas estratégias de tráfego, a Express AI é a sua parceira tecnológica.
           </p>
           <button
             onClick={() => window.open('https://wa.me/5534991439845?text=Olá,%20quero%20agendar%20uma%20consultoria%20com%20a%20Express%20AI', '_blank')}
@@ -225,7 +225,7 @@ export default function Home() {
           <div>
             <h4 className="font-bold mb-4 text-white">Soluções</h4>
             <ul className="space-y-2 text-sm text-gray-500">
-              <li><button onClick={() => document.getElementById('solucoes').scrollIntoView({ behavior: 'smooth' })} className="hover:text-blue-400">Oficina IA (SaaS)</button></li>
+              <li><button onClick={() => document.getElementById('solucoes').scrollIntoView({ behavior: 'smooth' })} className="hover:text-blue-400">Express Auto Tech (SaaS)</button></li>
               <li><button onClick={() => navigate('/servicos')} className="hover:text-blue-400">Gestão de Tráfego</button></li>
               <li><button onClick={() => navigate('/servicos')} className="hover:text-blue-400">Google Meu Negócio</button></li>
             </ul>

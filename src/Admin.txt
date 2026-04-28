@@ -685,7 +685,7 @@ function MasterPanel({ setPlanosGlobais }) {
             value={videosAjuda['instrucao_geral'] || ''}
             onChange={e => setVideosAjuda(prev => ({ ...prev, instrucao_geral: e.target.value }))}
             rows={4}
-            placeholder="Bem-vindo ao Oficina IA!&#10;1. Configure sua oficina na aba CONFIG&#10;2. Abra a primeira O.S.&#10;Suporte: (XX) XXXXX-XXXX"
+            placeholder="Bem-vindo ao Express Auto Tech!&#10;1. Configure sua oficina na aba CONFIG&#10;2. Abra a primeira O.S.&#10;Suporte: (XX) XXXXX-XXXX"
             style={{ width: '100%', padding: '14px', background: '#0a0a0a', border: `2px solid ${MASTER_COLOR}44`, color: 'white', borderRadius: '10px', fontSize: '13px', resize: 'vertical', boxSizing: 'border-box' }}
           />
         </div>
@@ -1651,7 +1651,7 @@ const ModuloMeuPlano = ({ dadosOficina, planosSistema }) => {
   return (
     <div style={{ background: '#0a0a0a', padding: '20px', borderRadius: '15px', border: `1px solid ${GREEN_MONEY}` }}>
       <div style={{ textAlign: 'center', marginBottom: '30px' }}>
-        <h2 style={{ color: GREEN_MONEY, margin: '0 0 10px 0' }}>💎 Monte a sua Oficina IA</h2>
+        <h2 style={{ color: GREEN_MONEY, margin: '0 0 10px 0' }}>💎 Monte a sua Express Auto Tech</h2>
         <p style={{ color: '#888', fontSize: '14px' }}>Escolha os módulos premium que você precisa e veja o plano se ajustar automaticamente!</p>
       </div>
 
@@ -1741,7 +1741,7 @@ export default function Admin() {
   const [permissoesLogado, setPermissoesLogado] = useState(null);
   const [papelLogado, setPapelLogado] = useState(null);
   const [dadosOficina, setDadosOficina] = useState(null);
-  const [config, setConfig] = useState({ nome: "OFICINA IA", cnpj: "", endereco: "", telefone: "", pixKey: "", garantia: "Garantia de 90 dias.", logoUrl: "" });
+  const [config, setConfig] = useState({ nome: "Express Auto Tech", cnpj: "", endereco: "", telefone: "", pixKey: "", garantia: "Garantia de 90 dias.", logoUrl: "" });
   const [subindoLogo, setSubindoLogo] = useState(false);
   const [videosAjudaAdmin, setVideosAjudaAdmin] = useState({});
   const [servicosMarketingAdmin, setServicosMarketingAdmin] = useState([]);
@@ -1797,7 +1797,7 @@ export default function Admin() {
       setAbaAtiva(abaDesejada);
     } else {
       const n = (planosSistema?.whatsapp || '5534999999999').replace(/\D/g, '');
-      const m = encodeURIComponent(`Olá! Quero assinar o Oficina IA.\nOficina: *${dadosOficina?.nomeOficina || ''}*`);
+      const m = encodeURIComponent(`Olá! Quero assinar o Express Auto Tech.\nOficina: *${dadosOficina?.nomeOficina || ''}*`);
       const w = window.open(`https://wa.me/${n}?text=${m}`, '_blank');
       if (!w) window.location.href = `https://wa.me/${n}?text=${m}`;
     }
@@ -2554,8 +2554,8 @@ export default function Admin() {
     const diasAteVencer = Math.ceil((new Date(os.dataVencimentoBateria) - new Date()) / (1000 * 60 * 60 * 24));
     const veiculo = `${os.modelo || 'veículo'} (Placa: ${os.placa}) — Bateria ${os.marcaBateria || ''} ${os.amperagemBateria ? os.amperagemBateria + 'Ah' : ''}`;
     const msg = diasAteVencer < 0
-      ? `Olá${os.nomeCliente ? ' *' + os.nomeCliente + '*' : ''}! ⚠️ A garantia da bateria do seu *${veiculo}* venceu. Passe na oficina para verificarmos! — ${config.nome || 'Oficina IA'}`
-      : `Olá${os.nomeCliente ? ' *' + os.nomeCliente + '*' : ''}! ⏰ A garantia da bateria do seu *${veiculo}* vence em *${diasAteVencer} dias*. Qualquer problema, pode trazer sem custo! — ${config.nome || 'Oficina IA'}`;
+      ? `Olá${os.nomeCliente ? ' *' + os.nomeCliente + '*' : ''}! ⚠️ A garantia da bateria do seu *${veiculo}* venceu. Passe na oficina para verificarmos! — ${config.nome || 'Express Auto Tech'}`
+      : `Olá${os.nomeCliente ? ' *' + os.nomeCliente + '*' : ''}! ⏰ A garantia da bateria do seu *${veiculo}* vence em *${diasAteVencer} dias*. Qualquer problema, pode trazer sem custo! — ${config.nome || 'Express Auto Tech'}`;
     abrirWhatsApp(`https://wa.me/55${os.telefone?.replace(/\D/g, '')}?text=${encodeURIComponent(msg)}`);
   };
   const dispararLembreteOleo = (os) => {
@@ -2837,7 +2837,7 @@ export default function Admin() {
       // ===== DISPARA WHATSAPP SE TIVER SENHA E TELEFONE =====
       if (senhaPortal.length === 4 && telefone) {
         const telLimpo = String(telefone).replace(/\D/g, '');
-        const nomeOficina = config.nome || 'Oficina IA';
+        const nomeOficina = config.nome || 'Express Auto Tech';
         const placaFinal = normalizarPlaca(placa);
         const msg =
           `Olá${nomeCliente ? ' *' + nomeCliente + '*' : ''}! 👋\n\n` +
@@ -3049,7 +3049,7 @@ export default function Admin() {
     // Link direto para a OS no portal do cliente
     const linkPortal = `https://oficina.expresstech.com.br/clientes`;
     const linkOS = `https://oficina.expresstech.com.br/status/${oficinaId}/${os.id}`;
-    const nomeOf = config.nome || dadosOficina?.nomeOficina || 'Oficina IA';
+    const nomeOf = config.nome || dadosOficina?.nomeOficina || 'Express Auto Tech';
     const nomeCliente = os.nomeCliente ? ` *${os.nomeCliente}*` : '';
     const veiculo = `${os.modelo || 'seu veículo'} (Placa: *${os.placa || '-'}*)`;
     const servicos = (os.checklist || 'Revisão Geral').slice(0, 200);
@@ -3074,7 +3074,7 @@ Acesse seu portal exclusivo agora:
 🔐 *Login:* Placa *${os.placa || ''}* + senha *${senha}*
 _(últimos 4 dígitos do seu WhatsApp)_
 
-_${nomeOf} — Sistema Oficina IA_ 🤖`;
+_${nomeOf} — Sistema Express Auto Tech_ 🤖`;
     } else if (tipo === 'orcamento') {
       msg =
         `💰 *Orçamento — ${nomeOf}*
@@ -3100,7 +3100,7 @@ Olá${nomeCliente}! O serviço no seu ${veiculo} está *finalizado*!
 🔗 ${linkOS}
 
 Obrigado pela confiança! 🙏
-_${nomeOf} — Sistema Oficina IA_ 🤖`;
+_${nomeOf} — Sistema Express Auto Tech_ 🤖`;
     }
     if (tipo === 'pagamento') {
       const confirmar = window.confirm(`💰 O cliente fez o pagamento de ${formatarMoeda(os.total)}?\nDeseja dar baixa na O.S. e lançar este valor automaticamente no Caixa (Financeiro)?`);
@@ -3197,7 +3197,7 @@ _${nomeOf} — Sistema Oficina IA_ 🤖`;
           </h2>
           <p style={{ color: '#888', marginBottom: '28px', fontSize: '13px', lineHeight: '1.7' }}>
             {bloqueado === 'trial'
-              ? 'Seus dados estão salvos e seguros! Assine um plano para continuar usando o Oficina IA.'
+              ? 'Seus dados estão salvos e seguros! Assine um plano para continuar usando o Express Auto Tech.'
               : 'Conta temporariamente suspensa. Entre em contato com o suporte.'}
           </p>
 
@@ -3227,7 +3227,7 @@ _${nomeOf} — Sistema Oficina IA_ 🤖`;
           {/* BOTÃO PRINCIPAL - WhatsApp suporte */}
           <button
             onClick={() => {
-              const msg = `Olá! Quero assinar o Oficina IA.\nOficina: ${dadosOficina?.nomeOficina || ''}\nE-mail: ${dadosOficina?.email || emailInput}`;
+              const msg = `Olá! Quero assinar o Express Auto Tech.\nOficina: ${dadosOficina?.nomeOficina || ''}\nE-mail: ${dadosOficina?.email || emailInput}`;
               abrirWhatsApp(`https://wa.me/${numSuport}?text=${encodeURIComponent(msg)}`);
             }}
             style={{ width: '100%', padding: '18px', background: '#25D366', color: 'black', border: 'none', borderRadius: '12px', fontWeight: '900', fontSize: '16px', cursor: 'pointer', marginBottom: '10px', boxShadow: '0 4px 20px #25D36644' }}
@@ -3237,7 +3237,7 @@ _${nomeOf} — Sistema Oficina IA_ 🤖`;
 
           <button
             onClick={() => {
-              const msg = `Olá, Suporte! Realizei o pagamento do Oficina IA.\nOficina: ${dadosOficina?.nomeOficina || ''}\nE-mail: ${dadosOficina?.email || emailInput}\nSegue o comprovante.`;
+              const msg = `Olá, Suporte! Realizei o pagamento do Express Auto Tech.\nOficina: ${dadosOficina?.nomeOficina || ''}\nE-mail: ${dadosOficina?.email || emailInput}\nSegue o comprovante.`;
               abrirWhatsApp(`https://wa.me/${numSuport}?text=${encodeURIComponent(msg)}`);
             }}
             style={{ width: '100%', padding: '15px', background: '#1a1a1a', color: '#ccc', border: '1px solid #444', borderRadius: '12px', fontWeight: 'bold', fontSize: '14px', cursor: 'pointer', marginBottom: '20px' }}
@@ -4544,7 +4544,7 @@ _${nomeOf} — Sistema Oficina IA_ 🤖`;
           <GestaoRetorno
             listaCarros={listaCarros}
             setListaCarros={setListaCarros}
-            nomeOficina={config.nome || 'Oficina IA'}
+            nomeOficina={config.nome || 'Express Auto Tech'}
             oficinaId={oficinaId}
             abrirWhatsAppFn={abrirWhatsApp}
           />
@@ -5215,7 +5215,7 @@ _${nomeOf} — Sistema Oficina IA_ 🤖`;
           const msgWhatsApp = (os, dias) => {
             const nome = os.nomeCliente ? ` *${os.nomeCliente}*` : '';
             return encodeURIComponent(
-              `Olá${nome}! 👋 Aqui é da *${config.nome || 'Oficina IA'}*.\n` +
+              `Olá${nome}! 👋 Aqui é da *${config.nome || 'Express Auto Tech'}*.\n` +
               `Faz um tempinho que não vemos seu *${os.modelo || 'veículo'}* (Placa: ${os.placa}) por aqui. 🚗\n\n` +
               `Manutenção em dia evita dores de cabeça! Que tal agendarmos uma revisão rápida?\n\n` +
               `Qualquer dúvida, é só chamar! 😊`
@@ -5389,7 +5389,7 @@ _${nomeOf} — Sistema Oficina IA_ 🤖`;
             <div style={{ background: 'linear-gradient(145deg, #111, #1a1a1a)', padding: '25px', borderRadius: '10px', border: `1px solid ${TAB_COLORS.ajuda}`, marginBottom: '30px', boxShadow: `0px 10px 20px ${TAB_COLORS.ajuda}22` }}>
               <h2 style={{ color: 'white', margin: '0 0 10px 0', fontSize: '22px' }}>O Futuro da sua Oficina chegou! 🚀</h2>
               <p style={{ color: '#aaa', fontSize: '14px', lineHeight: '1.6', margin: 0 }}>
-                O <strong>Oficina IA</strong> é o seu gestor inteligente. Cada aba tem uma cor - clique abaixo para entender o que cada uma faz.
+                O <strong>Express Auto Tech</strong> é o seu gestor inteligente. Cada aba tem uma cor - clique abaixo para entender o que cada uma faz.
               </p>
             </div>
             <h2 style={{ color: TAB_COLORS.ajuda, marginBottom: '20px', borderBottom: '1px solid #333', paddingBottom: '10px' }}>📚 Manual Completo - Clique para expandir</h2>
@@ -5551,7 +5551,7 @@ _${nomeOf} — Sistema Oficina IA_ 🤖`;
                 },
                 {
                   aba: 'nota_fiscal', icon: '🧾', titulo: 'NOTA FISCAL - Central de Emissão Fiscal', conteudo: [
-                    '👉 O Oficina IA organiza todos os dados da O.S. e gera o texto pronto para você colar no portal do governo em 30 segundos.',
+                    '👉 O Express Auto Tech organiza todos os dados da O.S. e gera o texto pronto para você colar no portal do governo em 30 segundos.',
                     '🔧 NFS-e (Mão de Obra): nota vai para a Prefeitura da sua cidade. MEI usa o Portal Nacional nfse.gov.br ou o app NFS-e Mobile.',
                     '🔩 NF-e (Peças): nota vai para a SEFAZ do seu Estado. MEI usa a Nota Fiscal Avulsa. ME/Simples precisa de Certificado Digital.',
                     '⭐ REGRA DE OURO DO MEI: você NÃO é obrigado a emitir nota para pessoa física (CPF) — só para empresa (CNPJ) ou se o cliente pessoa física pedir.',
@@ -5632,7 +5632,7 @@ _${nomeOf} — Sistema Oficina IA_ 🤖`;
                 },
                 {
                   aba: 'assinatura', icon: '💎', titulo: 'MEU PLANO - Assinatura', conteudo: [
-                    '👉 Escolha como usar o Oficina IA.',
+                    '👉 Escolha como usar o Express Auto Tech.',
                     '🆓 Trial: primeiros dias com acesso livre a tudo.',
                     '☑️ Marque os módulos que quer manter (ex: Pneus, IA, Revisão).',
                     '💲 Valor calculado automaticamente conforme módulos selecionados.',
@@ -5672,7 +5672,7 @@ _${nomeOf} — Sistema Oficina IA_ 🤖`;
                     '📢 Feed de Chegadas: veja os carros publicados com fotos em carrossel, modelo, pátio, data de chegada e peças disponíveis.',
                     '🔩 Catálogo de Peças: aba com todas as peças disponíveis de todos os desmanches parceiros. Busque por nome, carro ou código.',
                     '📲 Tenho Interesse / Quero essa: clique e o WhatsApp abre com mensagem formatada direto para o desmanche.',
-                    '💡 Como aparecer aqui: entre em contato com um desmanche que usa o Oficina IA e peça para te cadastrar como oficina parceira.',
+                    '💡 Como aparecer aqui: entre em contato com um desmanche que usa o Express Auto Tech e peça para te cadastrar como oficina parceira.',
                   ]
                 },
               ].map(({ aba, icon, titulo, conteudo }) => (
@@ -5711,7 +5711,7 @@ _${nomeOf} — Sistema Oficina IA_ 🤖`;
           <div style={{ background: 'white', color: 'black', width: '100%', maxWidth: '380px', padding: '30px', fontFamily: 'monospace', boxShadow: '0px 10px 30px rgba(0,0,0,0.5)' }}>
             <div style={{ textAlign: 'center', borderBottom: '2px dashed #000', paddingBottom: '15px', marginBottom: '15px' }}>
               {config.logoUrl && <img src={config.logoUrl} style={{ maxWidth: '140px', maxHeight: '70px', marginBottom: '10px', filter: 'grayscale(1)' }} />}
-              <h2 style={{ fontSize: '22px', fontWeight: '900', margin: '0 0 5px 0', textTransform: 'uppercase', letterSpacing: '2px' }}>{config.nome || 'OFICINA IA'}</h2>
+              <h2 style={{ fontSize: '22px', fontWeight: '900', margin: '0 0 5px 0', textTransform: 'uppercase', letterSpacing: '2px' }}>{config.nome || 'Express Auto Tech'}</h2>
               {config.cnpj && <p style={{ margin: '2px 0', fontSize: '11px' }}>CNPJ/NIF: {config.cnpj}</p>}
               <p style={{ margin: '2px 0', fontSize: '11px' }}>{config.endereco || ''}</p>
               <p style={{ margin: '2px 0', fontSize: '11px' }}>TEL: {config.telefone || ''}</p>
@@ -5949,7 +5949,7 @@ _${nomeOf} — Sistema Oficina IA_ 🤖`;
         <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.88)', zIndex: 9999999, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px' }}>
           <div style={{ background: '#111', width: '100%', maxWidth: '420px', borderRadius: '16px', padding: '25px', border: `2px solid ${GREEN_MONEY}`, position: 'relative' }}>
             <button onClick={() => setModalClienteAberto(false)} style={{ position: 'absolute', top: '15px', right: '15px', background: 'transparent', border: 'none', color: '#888', fontSize: '20px', cursor: 'pointer' }}>✖</button>
-            <h3 style={{ margin: '0 0 20px 0', color: GREEN_MONEY, textAlign: 'center' }}>⚡ Novo Lead Rápido</h3>
+            <h3 style={{ margin: '0 0 20px 0', color: GREEN_MONEY, textAlign: 'center' }}>⚡ CLIENTES</h3>
 
             {[
               { label: 'Nome do Cliente *', val: leadNome, set: setLeadNome, campo: 'nome', type: 'text' },

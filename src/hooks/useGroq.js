@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { doc, getDoc, setDoc } from 'firebase/firestore';
 import { db } from '../lib/firebase';
 
-const SYSTEM_PROMPT = `Você é o 'Copiloto Oficina IA', um especialista sênior em mecânica automotiva, elétrica e gestão de oficinas.
+const SYSTEM_PROMPT = `Você é o 'Copiloto Express Auto Tech', um especialista sênior em mecânica automotiva, elétrica e gestão de oficinas.
 
 IDENTIDADE: Você é um consultor técnico profissional para mecânicos e donos de oficina.
 
@@ -141,7 +141,7 @@ export function useGroq(oficinaId) {
           "Authorization": `Bearer ${apiKey}`,
           "Content-Type": "application/json",
           "HTTP-Referer": "https://oficina.expresstech.com.br",
-          "X-Title": "Oficina IA"
+          "X-Title": "Express Auto Tech"
         },
         body: JSON.stringify({
           model: config.model,

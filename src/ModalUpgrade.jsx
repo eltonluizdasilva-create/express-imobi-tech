@@ -108,7 +108,7 @@ export default function ModalUpgrade({ aberto, onFechar, planoAtual = 'essencial
                 <div style={{ textAlign: 'center', marginBottom: '40px' }}>
                     <div style={{ fontSize: '45px', marginBottom: '10px' }}>🚀</div>
                     <h2 style={{ color: 'white', margin: '0 0 8px 0', fontSize: '28px', fontWeight: '900', letterSpacing: '1px' }}>
-                        EXPANDA SUA <span style={{ color: MAIN_COLOR }}>OFICINA IA</span>
+                        EXPANDA SUA <span style={{ color: MAIN_COLOR }}>Express Auto Tech</span>
                     </h2>
                     <p style={{ color: '#666', fontSize: '15px', margin: 0 }}>Selecione o plano ideal para a escala atual da sua empresa.</p>
                 </div>

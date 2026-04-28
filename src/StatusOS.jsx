@@ -136,7 +136,7 @@ export default function StatusOS() {
     const total = os?.total ? Number(os.total).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }) : 'R$ 0,00';
     const servico = os?.checklist || os?.diagnostico || 'Serviço realizado';
     const msg =
-`🔧 *${nomeOficina}*
+      `🔧 *${nomeOficina}*
 ━━━━━━━━━━━━━━━━━━━━━━━━
 
 📋 *Laudo O.S. #${os?.id?.slice(-5).toUpperCase()}*
@@ -177,7 +177,7 @@ ${SITE_LINK}`;
       .toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 
     const msg =
-`🔧 *${nomeOficina}*
+      `🔧 *${nomeOficina}*
 ━━━━━━━━━━━━━━━━━━━━━━━━
 
 📂 *Histórico Completo*
@@ -270,7 +270,7 @@ ${SITE_LINK}`;
       {/* HEADER */}
       <div style={{ background: `linear-gradient(135deg, ${MAIN_COLOR} 0%, #99001f 100%)`, padding: '30px 20px', textAlign: 'center', borderBottomLeftRadius: '30px', borderBottomRightRadius: '30px', boxShadow: `0 5px 20px ${MAIN_COLOR}44` }}>
         <h1 style={{ margin: '0 0 10px 0', fontSize: '24px', fontWeight: '900', textTransform: 'uppercase' }}>
-          {config?.nome || 'OFICINA IA'}
+          {config?.nome || 'Express Auto Tech'}
         </h1>
         <p style={{ margin: 0, fontSize: '12px', opacity: 0.9 }}>{config?.endereco || 'Endereço não configurado'}</p>
         <p style={{ margin: '5px 0 0 0', fontSize: '12px', opacity: 0.9 }}>📞 {config?.telefone || 'Telefone não configurado'}</p>
@@ -402,9 +402,9 @@ ${SITE_LINK}`;
           </div>
         )}
 
-{/* RODAPÉ */}
+        {/* RODAPÉ */}
         <div style={{ textAlign: 'center', marginTop: '30px' }}>
-          <p style={{ fontSize: '11px', color: '#444', margin: '0 0 6px 0' }}>Tecnologia gerada por <strong>Oficina IA</strong></p>
+          <p style={{ fontSize: '11px', color: '#444', margin: '0 0 6px 0' }}>Tecnologia gerada por <strong>Express Auto Tech</strong></p>
           <a href={SITE_LINK} target="_blank" rel="noopener noreferrer" style={{ fontSize: '11px', color: '#555', textDecoration: 'none' }}>
             🏢 {SITE_LINK}
           </a>

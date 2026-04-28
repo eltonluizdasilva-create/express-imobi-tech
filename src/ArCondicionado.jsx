@@ -1,4 +1,4 @@
-﻿/* eslint-disable react/prop-types */
+/* eslint-disable react/prop-types */
 import React, { useState, useEffect } from "react";
 import { db } from "./lib/firebase";
 import { doc, updateDoc } from "firebase/firestore";
@@ -46,71 +46,65 @@ const ServiceToggle = ({ icon: Icon, title, subtitle, active, onClick }) => (
   </button>
 );
 
-export default function ArCondicionadoModulo({ oficinaId, osParaEditar, onCancelar, onSalvo, irParaNovaOS }) {
+const StatusSelector = ({ label, value, onChange }) => (
+  <div className="flex items-center justify-between p-4 border-b border-zinc-800/50 last:border-0">
+    <span className="text-xs font-bold text-zinc-400 uppercase tracking-widest">{label}</span>
+    <div className="flex gap-2">
+      {['OK', 'Pendente', 'Ruim'].map((status) => (
+        <button
+          key={status}
+          onClick={() => onChange(status)}
+          className={`px-3 py-1 rounded-lg text-[9px] font-black uppercase tracking-widest transition-all ${value === status ? 'bg-cyan-500 text-black' : 'bg-zinc-800 text-zinc-500 hover:bg-zinc-700'}`}
+        >
+          {status}
+        </button>
+      ))}
+    </div>
+  </div>
+);
+
+export default function ArCondicionado({
+  oficinaId, osParaEditar, onCancelar, onSalvo, irParaNovaOS, t, tema
+}) {
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
   const [showBlocker, setShowBlocker] = useState(false);
   const [fotos, setFotos] = useState([]);
-
-  // Estados do Ar-Condicionado
-  const [tipoGas, setTipoGas] = useState('R134a');
   const [obsGerais, setObsGerais] = useState('');
+  const [isListening, setIsListening] = useState(false);
   const [pecas, setPecas] = useState('0');
   const [maoDeObra, setMaoDeObra] = useState('0');
-
-  const [servicos, setServicos] = useState({
-    manutencaoGeral: false,
-    higienizacao: false,
-    recargaGas: false,
-    trocaFiltro: false,
-    trocaCorreia: false,
-    trocaCompressor: false,
-    trocaCondensador: false,
-    testeVazamento: false
+  const [checklist, setChecklist] = useState({
+    compressor: 'OK', cargaGas: 'OK', filtroCabine: 'OK',
+    ventoinha: 'OK', vazamentos: 'OK', higienizacao: 'OK'
   });
-
-  const toggleServico = (key) => setServicos(prev => ({ ...prev, [key]: !prev[key] }));
 
   useEffect(() => {
     if (osParaEditar) {
-      setTipoGas(osParaEditar.tipoGasAr || 'R134a');
       setObsGerais(osParaEditar.observacaoAr || '');
       setFotos(osParaEditar.fotosAr || []);
       setPecas(osParaEditar.valorPecas || '0');
       setMaoDeObra(osParaEditar.valorMaoObra || '0');
-      if (osParaEditar.servicosAr) setServicos(osParaEditar.servicosAr);
+      if (osParaEditar.checklistAr) setChecklist(osParaEditar.checklistAr);
     }
   }, [osParaEditar]);
 
   const handleUploadFoto = async (e) => {
     const files = Array.from(e.target.files);
-    if (fotos.length + files.length > 10) return alert("Máximo de 10 fotos para Ar-Condicionado!");
-
+    if (fotos.length + files.length > 5) return alert("Máximo de 5 fotos!");
     const novasFotos = await Promise.all(files.map(file => {
       return new Promise((resolve) => {
         const reader = new FileReader();
         reader.readAsDataURL(file);
-        reader.onload = (ev) => {
-          const img = new Image();
-          img.src = ev.target.result;
-          img.onload = () => {
-            const canvas = document.createElement('canvas');
-            canvas.width = 800;
-            canvas.height = img.height * (800 / img.width);
-            const ctx = canvas.getContext('2d');
-            ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-            resolve(canvas.toDataURL('image/jpeg', 0.6));
-          };
-        };
+        reader.onload = (ev) => resolve(ev.target.result);
       });
     }));
     setFotos(prev => [...prev, ...novasFotos]);
   };
 
-  const [isListening, setIsListening] = useState(false);
   const toggleMic = () => {
     const Recognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-    if (!Recognition) return alert("Microfone não suportado no navegador atual.");
+    if (!Recognition) return alert("Microfone não suportado.");
     const rec = new Recognition();
     rec.lang = 'pt-BR';
     if (isListening) { rec.stop(); setIsListening(false); }
@@ -127,14 +121,14 @@ export default function ArCondicionadoModulo({ oficinaId, osParaEditar, onCancel
     try {
       const vTotal = (parseFloat(pecas.replace(',', '.')) || 0) + (parseFloat(maoDeObra.replace(',', '.')) || 0);
       const dadosAr = {
-        tipoServico: 'ar-condicionado',
-        tipoGasAr: tipoGas,
-        servicosAr: servicos,
+        tipoServico: 'ar',
+        checklistAr: checklist,
         observacaoAr: obsGerais,
         fotosAr: fotos,
         valorPecas: pecas,
         valorMaoObra: maoDeObra,
         totalAr: vTotal,
+        total: vTotal,
         data_atualizacao: new Date().toISOString()
       };
       await updateDoc(doc(db, 'oficinas', oficinaId, 'os', osParaEditar.id), dadosAr);
@@ -144,20 +138,19 @@ export default function ArCondicionadoModulo({ oficinaId, osParaEditar, onCancel
   };
 
   return (
-    <div className="bg-black min-h-screen text-zinc-100 p-4 md:p-8 pb-40 relative">
+    <div className={`${t?.bg || 'bg-black'} min-h-screen ${t?.text || 'text-zinc-100'} p-4 md:p-8 pb-40 relative`}>
 
-      {/* 🛑 MODAL DE BLOQUEIO (VAI DIRETO PARA O.S.) */}
       {showBlocker && (
-        <div className="fixed inset-0 bg-black/95 backdrop-blur-xl z-[200] flex items-center justify-center p-6 text-center">
-          <div className="bg-zinc-900 border border-zinc-800 p-10 rounded-[3rem] max-w-sm shadow-2xl">
+        <div className={`fixed inset-0 ${tema === 'dark' ? 'bg-black/95' : 'bg-white/95'} backdrop-blur-xl z-[200] flex items-center justify-center p-6 text-center`}>
+          <div className={`${t?.card || 'bg-zinc-900'} border ${t?.border || 'border-zinc-800'} p-10 rounded-[3rem] max-w-sm shadow-2xl`}>
             <AlertTriangle size={60} className="text-cyan-400 mx-auto mb-6" />
-            <h2 className="text-2xl font-black text-white mb-4 uppercase italic tracking-tighter">O.S. Requerida</h2>
-            <p className="text-zinc-400 text-sm mb-10 leading-relaxed font-medium">
-              O serviço de Ar-Condicionado precisa de uma O.S.<br />
-              <span className="text-white font-bold underline">1. Inicie a O.S. (Triagem)</span><br />
-              <span className="text-white font-bold underline">2. Clique em Editar para voltar</span>
+            <h2 className={`text-2xl font-black ${t?.text || 'text-white'} mb-4 uppercase italic tracking-tighter`}>O.S. Requerida</h2>
+            <p className={`${t?.textMuted || 'text-zinc-400'} text-sm mb-10 leading-relaxed font-medium`}>
+              O serviço de Ar Condicionado precisa de uma O.S.<br />
+              <span className={`${t?.text || 'text-white'} font-bold underline`}>1. Inicie a O.S. (Triagem)</span><br />
+              <span className={`${t?.text || 'text-white'} font-bold underline`}>2. Clique em Editar para voltar</span>
             </p>
-            <button onClick={() => { if (irParaNovaOS) irParaNovaOS(); setShowBlocker(false); }} className="w-full py-5 bg-cyan-500 hover:bg-cyan-600 text-white font-black rounded-2xl flex items-center justify-center gap-2 shadow-xl shadow-cyan-500/20 transition-all">
+            <button onClick={() => { if (irParaNovaOS) irParaNovaOS(); setShowBlocker(false); }} className="w-full py-5 bg-cyan-500 hover:bg-cyan-600 text-black font-black rounded-2xl flex items-center justify-center gap-2 shadow-xl shadow-cyan-500/20 transition-all">
               INICIAR O.S. AGORA <ArrowRight size={20} />
             </button>
           </div>
@@ -165,125 +158,79 @@ export default function ArCondicionadoModulo({ oficinaId, osParaEditar, onCancel
       )}
 
       <div className="max-w-5xl mx-auto">
-
-        {/* Header Ice Blue */}
-        <div className="flex justify-between items-center mb-12 border-b border-zinc-800 pb-8">
+        <div className={`flex justify-between items-center mb-12 border-b ${t?.border || 'border-zinc-800'} pb-8`}>
           <div className="flex items-center gap-6">
             <div className="p-5 bg-cyan-600 rounded-[1.5rem] shadow-xl shadow-cyan-600/30">
               <Snowflake className="text-white" size={36} />
             </div>
             <div>
-              <h1 className="text-4xl font-black text-white uppercase italic tracking-tighter">Ar-Condicionado</h1>
-              <p className="text-cyan-500 font-bold text-xs tracking-[0.3em] uppercase">Manutenção, higienização e recarga de gás</p>
+              <h1 className={`text-4xl font-black ${t?.text || 'text-white'} uppercase italic tracking-tighter`}>Climatização Automotiva</h1>
+              <p className="text-cyan-500 font-bold text-xs tracking-[0.3em] uppercase">Ar Condicionado e Higienização</p>
             </div>
           </div>
-          <button onClick={onCancelar} className="p-3 bg-zinc-900 rounded-2xl border border-zinc-800 hover:bg-zinc-800"><X size={28} /></button>
+          <button onClick={onCancelar} className={`p-3 ${t?.card || 'bg-zinc-900'} rounded-2xl border ${t?.border || 'border-zinc-800'} hover:opacity-80`}><X size={28} /></button>
         </div>
 
-        {/* ❄️ TIPO DE GÁS */}
-        <div className={STYLES.card}>
-          <h2 className="text-cyan-500 font-black mb-6 uppercase text-xs tracking-widest flex items-center gap-2">
-            <Wind size={16} /> Tipo de Gás
-          </h2>
-          <div className="flex flex-wrap gap-4">
-            <GasButton label="R134a" active={tipoGas === 'R134a'} onClick={() => setTipoGas('R134a')} />
-            <GasButton label="R1234yf" active={tipoGas === 'R1234yf'} onClick={() => setTipoGas('R1234yf')} />
-            <GasButton label="R12 (antigo)" active={tipoGas === 'R12'} onClick={() => setTipoGas('R12')} />
+        <div className={`${t?.card || 'bg-zinc-900/40'} border ${t?.border || 'border-zinc-800'} rounded-[2.5rem] p-8 mb-8 shadow-xl`}>
+          <h2 className="text-cyan-500 font-black mb-6 uppercase text-xs tracking-widest border-l-4 border-cyan-500 pl-4">✓ Diagnóstico do Sistema</h2>
+          <div className={`bg-zinc-950/40 rounded-[2rem] border ${t?.border || 'border-zinc-800/50'} overflow-hidden shadow-inner`}>
+            <StatusSelector label="Compressor (Ruído/Acoplamento)" value={checklist.compressor} onChange={v => setChecklist({ ...checklist, compressor: v })} />
+            <StatusSelector label="Carga de Gás (Pressão R134a)" value={checklist.cargaGas} onChange={v => setChecklist({ ...checklist, cargaGas: v })} />
+            <StatusSelector label="Filtro de Cabine (Estado)" value={checklist.filtroCabine} onChange={v => setChecklist({ ...checklist, filtroCabine: v })} />
+            <StatusSelector label="Eletroventilador / Ventoinha" value={checklist.ventoinha} onChange={v => setChecklist({ ...checklist, ventoinha: v })} />
+            <StatusSelector label="Vazamentos (Contraste/Detector)" value={checklist.vazamentos} onChange={v => setChecklist({ ...checklist, vazamentos: v })} />
+            <StatusSelector label="Higienização (Odor/Fungos)" value={checklist.higienizacao} onChange={v => setChecklist({ ...checklist, higienizacao: v })} />
           </div>
         </div>
 
-        {/* ⚙️ SERVIÇOS TIPO GRID (Fiel à Imagem 428608) */}
-        <div className={STYLES.card}>
-          <h2 className="text-cyan-500 font-black mb-6 uppercase text-xs tracking-widest border-l-4 border-cyan-500 pl-4">
-            ✓ Serviços Realizados
-          </h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <ServiceToggle
-              icon={Wrench} title="Manutenção Geral" subtitle="Verificação completa do sistema"
-              active={servicos.manutencaoGeral} onClick={() => toggleServico('manutencaoGeral')}
-            />
-            <ServiceToggle
-              icon={Sparkles} title="Higienização" subtitle="Limpeza interna do sistema"
-              active={servicos.higienizacao} onClick={() => toggleServico('higienizacao')}
-            />
-            <ServiceToggle
-              icon={Snowflake} title="Recarga de Gás" subtitle="Recarga com gás R134a ou R1234yf"
-              active={servicos.recargaGas} onClick={() => toggleServico('recargaGas')}
-            />
-            <ServiceToggle
-              icon={Disc} title="Troca de Filtro" subtitle="Cabine e de ar do compressor"
-              active={servicos.trocaFiltro} onClick={() => toggleServico('trocaFiltro')}
-            />
-            <ServiceToggle
-              icon={Settings} title="Troca de Correia" subtitle="Correia do compressor"
-              active={servicos.trocaCorreia} onClick={() => toggleServico('trocaCorreia')}
-            />
-            <ServiceToggle
-              icon={Box} title="Troca de Compressor" subtitle="Compressor danificado"
-              active={servicos.trocaCompressor} onClick={() => toggleServico('trocaCompressor')}
-            />
-            <ServiceToggle
-              icon={ArrowRight} title="Troca de Condensador" subtitle="Condensador com vazamento"
-              active={servicos.trocaCondensador} onClick={() => toggleServico('trocaCondensador')}
-            />
-            <ServiceToggle
-              icon={Search} title="Teste de Vazamento" subtitle="Localizar vazamentos no sistema"
-              active={servicos.testeVazamento} onClick={() => toggleServico('testeVazamento')}
-            />
-          </div>
-        </div>
-
-        {/* 💰 VALORES DO SERVIÇO */}
-        <div className={STYLES.card}>
-          <h2 className="text-yellow-500 font-black mb-6 uppercase text-xs tracking-widest flex items-center gap-2">💰 Valor Total (R$)</h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+        <div className={`${t?.card || 'bg-zinc-900/40'} border ${t?.border || 'border-zinc-800'} rounded-[2.5rem] p-8 mb-8 shadow-xl`}>
+          <h2 className="text-cyan-500 font-black mb-8 uppercase text-xs tracking-widest border-l-4 border-cyan-500 pl-4">💰 Valores do Serviço</h2>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 items-end font-mono">
             <div>
-              <label className="text-[10px] text-zinc-500 block mb-2 font-bold uppercase tracking-widest px-2">Peças / Gás (R$)</label>
-              <input value={pecas} onChange={e => setPecas(e.target.value)} className={STYLES.input + " text-center text-xl"} />
+              <label className={`text-[10px] ${t?.textMuted || 'text-zinc-500'} block mb-3 font-bold uppercase tracking-widest px-2`}>Peças / Gás (R$)</label>
+              <input value={pecas} onChange={e => setPecas(e.target.value)} className={`bg-zinc-950 border ${t?.border || 'border-zinc-800'} focus:border-cyan-500 ${t?.text || 'text-zinc-100'} p-4 rounded-xl outline-none w-full transition-all text-center text-xl`} />
             </div>
             <div>
-              <label className="text-[10px] text-zinc-500 block mb-2 font-bold uppercase tracking-widest px-2">Mão de Obra (R$)</label>
-              <input value={maoDeObra} onChange={e => setMaoDeObra(e.target.value)} className={STYLES.input + " text-center text-xl"} />
+              <label className={`text-[10px] ${t?.textMuted || 'text-zinc-500'} block mb-3 font-bold uppercase tracking-widest px-2`}>Mão de Obra (R$)</label>
+              <input value={maoDeObra} onChange={e => setMaoDeObra(e.target.value)} className={`bg-zinc-950 border ${t?.border || 'border-zinc-800'} focus:border-cyan-500 ${t?.text || 'text-zinc-100'} p-4 rounded-xl outline-none w-full transition-all text-center text-xl`} />
             </div>
-          </div>
-          <div className="bg-cyan-950/20 border border-cyan-500/30 p-8 rounded-[1.5rem] flex flex-col items-center justify-center shadow-lg">
-            <span className="text-4xl font-black text-cyan-400 shadow-cyan-500/50 text-shadow-lg">R$ {(parseFloat(pecas.replace(',', '.')) + parseFloat(maoDeObra.replace(',', '.')) || 0).toFixed(2)}</span>
+            <div className="bg-cyan-900/10 border border-cyan-500/30 p-6 rounded-[1.5rem] flex flex-col items-center shadow-lg">
+              <span className="text-[10px] text-cyan-400 font-black mb-1 uppercase tracking-widest">Total Ar</span>
+              <span className="text-3xl font-black text-cyan-400 shadow-cyan-500/50">R$ {(parseFloat(pecas.replace(',', '.')) + parseFloat(maoDeObra.replace(',', '.')) || 0).toFixed(2)}</span>
+            </div>
           </div>
         </div>
 
-        {/* 📝 OBSERVAÇÕES E MICROFONE */}
-        <div className={STYLES.card}>
+        <div className={`${t?.card || 'bg-zinc-900/40'} border ${t?.border || 'border-zinc-800'} rounded-[2.5rem] p-8 mb-8 shadow-xl`}>
           <div className="relative">
-            <label className="text-[10px] text-zinc-500 font-black uppercase mb-4 flex items-center gap-2 ml-2">
-              <Mic size={14} className="text-cyan-400" /> Observações Gerais
+            <label className={`text-[10px] ${t?.textMuted || 'text-zinc-500'} font-black uppercase mb-4 flex items-center gap-2 ml-2`}>
+              <Mic size={14} className="text-cyan-400" /> Observações Gerais (Microfone)
             </label>
             <textarea
               value={obsGerais} onChange={e => setObsGerais(e.target.value)}
-              placeholder="Ex: compressor com barulho, filtro entupido, gás com vazamento..."
-              className={STYLES.input + " min-h-[140px] leading-relaxed pr-16 resize-none"}
+              placeholder="Ex: dreno obstruído, substituição de válvulas de serviço, carga de 450g de gás R134a..."
+              className={`bg-zinc-950 border ${t?.border || 'border-zinc-800'} focus:border-cyan-500 ${t?.text || 'text-zinc-100'} p-4 rounded-xl outline-none w-full transition-all font-mono text-sm min-h-[140px] leading-relaxed pr-16`}
             />
-            <button onClick={toggleMic} className={`absolute right-5 bottom-5 p-4 rounded-full transition-all shadow-lg active:scale-90 ${isListening ? 'bg-red-600 animate-pulse' : 'bg-zinc-800 hover:bg-cyan-500 hover:text-black text-white'}`}>
+            <button onClick={toggleMic} className={`absolute right-5 bottom-5 p-4 rounded-full transition-all shadow-lg active:scale-90 ${isListening ? 'bg-red-600 animate-pulse' : 'bg-zinc-800 hover:bg-cyan-500 text-white hover:text-black'}`}>
               <Mic size={24} />
             </button>
           </div>
         </div>
 
-        {/* 📸 CARROSSEL DE FOTOS (MÁX 10) - Igual a imagem 428628 */}
-        <div className={STYLES.card}>
-          <h2 className="text-zinc-500 font-black mb-6 uppercase text-xs tracking-widest flex items-center gap-2">
-            <Camera size={16} /> Fotos ({fotos.length}/10)
+        <div className={`${t?.card || 'bg-zinc-900/40'} border ${t?.border || 'border-zinc-800'} rounded-[2.5rem] p-8 mb-8 shadow-xl`}>
+          <h2 className={`text-zinc-500 font-black mb-6 uppercase text-xs tracking-widest flex items-center gap-3`}>
+            <Camera size={18} /> Evidências do Serviço ({fotos.length}/5)
           </h2>
-          <div className="flex gap-4 overflow-x-auto pb-4 scrollbar-hide">
+          <div className="flex gap-6 overflow-x-auto pb-4 scrollbar-hide">
             {fotos.map((f, i) => (
-              <div key={i} className="relative min-w-[200px] h-[140px] rounded-[1.5rem] overflow-hidden border border-zinc-700 shadow-xl group">
+              <div key={i} className="relative min-w-[240px] h-[160px] rounded-[2rem] overflow-hidden border border-zinc-700 shadow-2xl group">
                 <img src={f} className="w-full h-full object-cover transition-transform group-hover:scale-110" />
-                <button onClick={() => setFotos(fotos.filter((_, idx) => idx !== i))} className="absolute top-2 right-2 bg-red-600 p-2 rounded-full"><Trash2 size={14} /></button>
+                <button onClick={() => setFotos(fotos.filter((_, idx) => idx !== i))} className="absolute top-3 right-3 bg-red-600 p-2 rounded-full"><Trash2 size={16} /></button>
               </div>
             ))}
-            {fotos.length < 10 && (
-              <label className="min-w-[200px] h-[140px] rounded-[1.5rem] border-2 border-dashed border-cyan-500/50 flex flex-col items-center justify-center cursor-pointer hover:border-cyan-400 bg-cyan-900/10 transition-all text-cyan-500">
-                <Camera size={32} className="mb-2" />
-                <span className="font-black text-xs uppercase tracking-widest">Tirar Foto</span>
+            {fotos.length < 5 && (
+              <label className={`min-w-[240px] h-[160px] rounded-[2rem] border-2 border-dashed ${t?.border || 'border-zinc-800'} flex flex-col items-center justify-center cursor-pointer hover:border-cyan-500 bg-zinc-900/50 transition-all hover:bg-zinc-800`}>
+                <Plus size={40} className="text-zinc-700" />
                 <input type="file" multiple accept="image/*" onChange={handleUploadFoto} className="hidden" />
               </label>
             )}
@@ -291,13 +238,13 @@ export default function ArCondicionadoModulo({ oficinaId, osParaEditar, onCancel
         </div>
 
         <button onClick={handleSalvarTentativa} disabled={loading} className="w-full py-6 bg-cyan-500 hover:bg-cyan-400 text-black font-black text-2xl uppercase italic rounded-2xl shadow-[0_0_25px_rgba(6,182,212,0.4)] transition-all flex items-center justify-center gap-3">
-          {loading ? 'Processando Serviço...' : <><Snowflake size={28} /> SALVAR SERVIÇO NA O.S.</>}
+          {loading ? 'Processando Serviço...' : <><Snowflake size={28} /> ATUALIZAR O.S. CLIMATIZAÇÃO</>}
         </button>
       </div>
 
       {success && (
-        <div className="fixed bottom-12 left-1/2 -translate-x-1/2 bg-green-600 px-12 py-6 rounded-full shadow-2xl animate-bounce flex items-center gap-4 z-[210] font-black uppercase text-xl text-white">
-          <CheckCircle size={32} /> Serviço de Ar Salvo!
+        <div className="fixed bottom-12 left-1/2 -translate-x-1/2 bg-green-600 px-12 py-6 rounded-full shadow-2xl animate-bounce flex items-center gap-4 z-[210] font-black uppercase text-xl">
+          <CheckCircle size={32} /> Laudo Técnico Salvo!
         </div>
       )}
     </div>
