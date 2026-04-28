@@ -282,8 +282,8 @@ export default function Admin() {
 
   // 🚀 GATILHO AUTOMÁTICO DO TOUR (Abre de primeira!)
   useEffect(() => {
-    // Se o cliente estiver logado, o perfil estiver carregado e ele NÃO for master
-    if (logado && dadosOficina && dadosOficina.papel !== 'master') {
+    // Se o cliente estiver logado, o perfil estiver carregado e ele NÃO for master nem funcionário
+    if (logado && dadosOficina && papelLogado !== 'master' && papelLogado !== 'funcionario') {
       // Verifica na memória se ele já terminou o tour antes
       const tourFeito = localStorage.getItem('driver_tour_finished');
 
@@ -292,7 +292,7 @@ export default function Admin() {
         setMostrarOnboarding(true);
       }
     }
-  }, [logado, dadosOficina, setMostrarOnboarding]);
+  }, [logado, dadosOficina, papelLogado, setMostrarOnboarding]);
 
   useEffect(() => {
     if (currentUserId && dadosOSGlobal.oficinaId !== currentUserId) {
