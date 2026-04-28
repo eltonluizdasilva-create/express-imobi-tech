@@ -554,14 +554,16 @@ export default function MasterPanel({ setPlanosGlobais }) {
                   </div>
                 </div>
               ))}
+
             </div>
           </div>
         </div>
       )}
 
+      {/* A tag style precisa ficar DENTRO da sua div principal, antes de fechar o return */}
       <style>{`
         .fade-in { animation: fadeIn 0.3s ease-in-out; }
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
       `}</style>
     </div>
   );

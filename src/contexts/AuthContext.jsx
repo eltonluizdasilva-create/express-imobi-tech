@@ -61,6 +61,7 @@ export function AuthProvider({ children }) {
           } else {
             setPapelLogado(dados.papel || 'dono');
             setMostrarOnboarding(dados.onboardingFeito === false);
+            setPermissoesLogado(dados.permissoes || {});
           }
 
           if (userOficinaId) {

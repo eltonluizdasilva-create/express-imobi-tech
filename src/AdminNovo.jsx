@@ -603,7 +603,7 @@ export default function Admin() {
     const isLocalhost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
     
     // 1. Se for Master, acesso total vitalício
-    if (dadosOficina?.papel === 'master' || dadosOficina?.plano === 'master') return true;
+    if (dadosOficina?.papel === 'master' || dadosOficina?.plano === 'master' || papelLogado === 'master') return true;
 
     // 2. Se estiver desenvolvendo (localhost), libera TUDO para teste
     if (isLocalhost) return true;
@@ -611,31 +611,43 @@ export default function Admin() {
     // 3. Abas básicas que nunca devem ser bloqueadas
     if (MODULOS_GRATIS_VITALICIOS.includes(aba)) return true;
 
-    // 4. Se estiver no Trial (15 dias) e a licença for válida, LIBERADO
+    // 4. VERIFICAÇÃO ESTRITA PARA FUNCIONÁRIOS
+    // Um funcionário NÃO PODE acessar todos os módulos premium da oficina indiscriminadamente.
+    // Ele SÓ tem acesso se a sua permissão INDIVIDUAL estiver habilitada para esta aba.
+    if (papelLogado === 'funcionario') {
+       return permissoesLogado?.[aba] === true;
+    }
+
+    // 5. Daqui para baixo é apenas para DONOS da Oficina
     if (isTrial && isLicencaAtiva) return true;
 
-    // 5. Verifica se é plano Premium
+    // 6. Verifica se é plano Premium
     if (dadosOficina?.plano === 'premium') return true;
 
-    // 6. Verifica permissões específicas do usuário
-    // O sistema pode salvar módulos de duas formas (Array antigo ou Objeto novo)
+    // 7. Verifica permissões específicas da Oficina
     const permissaoObjeto = dadosOficina?.modulos?.[aba] === true || dadosOficina?.permissoes?.[aba] === true;
     const permissaoArray = (dadosOficina?.modulosOperacionais || []).includes(aba);
 
     if (permissaoObjeto || permissaoArray) return true;
 
-    // 7. Se o tempo de teste acabou e não tem permissão: BLOQUEIA
+    // 8. Se não se encaixar em nada, bloqueia
     return false;
   };
 
   const lidarModuloBloqueado = (idAba) => {
+    // Funcionários não devem ver o modal de "Upgrade de Plano", pois não pagam
+    if (papelLogado === 'funcionario') {
+      setToastModuloBloqueado({ tipo: 'bloqueado', aba: idAba });
+      return; 
+    }
+
     // Se estiver no período de trial com licença ativa, não bloqueia nada
     if (isTrial && isLicencaAtiva) return;
 
     // Se for uma aba de acesso livre, não bloqueia
     if (['dashboard', 'config', 'ajuda', 'meuplano'].includes(idAba)) return;
 
-    // Caso contrário, mostra o modal de upgrade
+    // Caso contrário, mostra o modal de upgrade para o Dono
     setModalUpgradeAba(idAba);
     setToastModuloBloqueado({ tipo: 'bloqueado', aba: idAba });
   };
