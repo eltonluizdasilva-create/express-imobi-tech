@@ -600,28 +600,31 @@ export default function Admin() {
 
   const moduloLiberado = (idAba) => {
     const aba = idAba?.toLowerCase();
+    const isLocalhost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
     
     // 1. Se for Master, acesso total vitalício
     if (dadosOficina?.papel === 'master' || dadosOficina?.plano === 'master') return true;
 
-    // 2. Abas básicas que nunca devem ser bloqueadas
-    if (MODULOS_GRATIS_VITALICIOS.includes(aba)) return true;
-    if (aba === 'leads' || aba === 'clientes') {
-       // Se o usuário quer que clientes seja como notafiscal e estoque, não pode estar no grátis vitalício
-       // mas deve estar liberado durante o trial ativo.
-    }
+    // 2. Se estiver desenvolvendo (localhost), libera TUDO para teste
+    if (isLocalhost) return true;
 
-    // 3. Se estiver no Trial (15 dias) e a data for válida, LIBERADO
+    // 3. Abas básicas que nunca devem ser bloqueadas
+    if (MODULOS_GRATIS_VITALICIOS.includes(aba)) return true;
+
+    // 4. Se estiver no Trial (15 dias) e a licença for válida, LIBERADO
     if (isTrial && isLicencaAtiva) return true;
 
-    // 4. Se for assinante de um plano pago (não trial e não gratuito), verifica se possui o módulo
-    const isAssinante = dadosOficina?.plano && dadosOficina?.plano !== 'GRATUITO' && dadosOficina?.plano !== 'trial' && dadosOficina?.plano !== 'gratis';
-    if (isAssinante) {
-      const meusModulos = dadosOficina?.modulosOperacionais || [];
-      if (meusModulos.includes(aba)) return true;
-    }
+    // 5. Verifica se é plano Premium
+    if (dadosOficina?.plano === 'premium') return true;
 
-    // 5. Se o tempo de teste acabou e não é assinante: BLOQUEIA
+    // 6. Verifica permissões específicas do usuário
+    // O sistema pode salvar módulos de duas formas (Array antigo ou Objeto novo)
+    const permissaoObjeto = dadosOficina?.modulos?.[aba] === true || dadosOficina?.permissoes?.[aba] === true;
+    const permissaoArray = (dadosOficina?.modulosOperacionais || []).includes(aba);
+
+    if (permissaoObjeto || permissaoArray) return true;
+
+    // 7. Se o tempo de teste acabou e não tem permissão: BLOQUEIA
     return false;
   };
 
