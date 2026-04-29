@@ -15,14 +15,14 @@ import {
   TrendingUp
 } from 'lucide-react';
 import { useAuth } from './contexts/AuthContext';
-import { useGemini } from './hooks/useGemini';
+import { useGroq } from './hooks/useGroq';
 
 const LOW_STOCK_LIMIT = 3;
 const MEDIUM_STOCK_LIMIT = 7;
 
 export default function Estoque() {
   const { currentUserId } = useAuth();
-  const { analyzeImage } = useGemini();
+  const { analyzeText } = useGroq(currentUserId);
   const [itens, setItens] = useState([]);
   const [busca, setBusca] = useState('');
   const [categoriaFiltro, setCategoriaFiltro] = useState('Todas');
@@ -215,14 +215,21 @@ export default function Estoque() {
 
     setLoadingIA(true);
     try {
-      const prompt = `Como gestor de estoque, analise estes itens: ${itens
-        .map(item => `${item.nome}(${item.qtd})`)
-        .join(', ')}. Liste prioridades de compra, risco de ruptura e estimativa de investimento.`;
-      const res = await analyzeImage(prompt);
+      // MUDANÇA AQUI: Passando os dados reais e travando o comportamento da IA
+      const dadosEstoque = itens.map(item => `- ${item.nome} | Qtd: ${item.qtd} | Valor: R$${item.valor}`).join('\n');
+
+      const prompt = `Aja estritamente como um auditor de estoque frio e direto. Analise esta lista:\n${dadosEstoque}\n
+            REGRAS OBRIGATÓRIAS:
+            1. NÃO explique para que serve a peça. Vá direto ao ponto.
+            2. NÃO use formatação (não use asteriscos **).
+            3. Informe apenas: O que tem ruptura (menos de 3 unidades) e o custo EXATO para repor 5 unidades de cada item crítico, usando apenas o 'Valor' fornecido na lista.
+            4. Responda em no máximo 3 linhas. Seja telegráfico.`;
+
+      const res = await analyzeText(prompt);
       setAnaliseIA(res);
     } catch (error) {
       console.error('Erro na conexao com a inteligencia:', error);
-      setAnaliseIA('Erro na conexao com a inteligencia.');
+      setAnaliseIA('Erro na conexao com a inteligencia. Verifique o console.');
     } finally {
       setLoadingIA(false);
     }

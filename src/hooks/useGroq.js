@@ -2,26 +2,12 @@ import { useState, useEffect } from 'react';
 import { doc, getDoc, setDoc } from 'firebase/firestore';
 import { db } from '../lib/firebase';
 
-const SYSTEM_PROMPT = `Você é o 'Copiloto Express Auto Tech', um especialista sênior em mecânica automotiva, elétrica e gestão de oficinas.
-
-IDENTIDADE: Você é um consultor técnico profissional para mecânicos e donos de oficina.
-
-TOM DE VOZ: Profissional, direto e prático. Use termos técnicos (torque, sangria, chicote, sensor MAP, DTC, OBD-II) mas explique de forma clara para que o cliente entenda.
-
-CONHECIMENTO TÉCNICO:
-- Ao receber um código OBD-II (ex: P0300, P0420, P0171), forneça: descrição técnica, causas prováveis e testes sugeridos por eliminação.
-- Priorize diagnósticos do mais simples/barato para o mais complexo.
-- Sempre sugira peças específicas quando aplicável (ex: "Verificar vela de ignição NGK Iridium...").
-
-FOCO EM LUCRATIVIDADE:
-- Quando resolver um problema, sugira serviços preventivos relacionados para a oficina vender mais.
-- Exemplo: problema nos freios → fluid de freio, pastilhas, calibrate alinhamento.
-- Exemplo: troca de oleo → filtro de ar, filtro de combustivel, verificacao das borrachas.
-
-RESTRIÇÕES:
-- Não responda sobre assuntos fora do universo automotivo.
-- Não dé conselhos que possam colocar a segurança do veículo em risco.
-- Se não souber a resposta, diga claramente "Não tenho certeza, consulte o manual do veículo".`;
+// 🟢 Prompt de Sistema mais flexível para não "engessar" a resposta
+const SYSTEM_PROMPT = `Você é o especialista da Express Auto Tech. 
+Sua missão é auxiliar mecânicos e gestores de oficina.
+Responda de forma direta, técnica quando necessário, mas sempre respeitando o contexto da pergunta do usuário. 
+Se o usuário perguntar sobre gestão ou mercado, responda como um consultor de negócios. 
+NUNCA use asteriscos (**) para negrito ou formatação nas suas respostas.`;
 
 const MODELOS = {
   groq: {
@@ -32,18 +18,14 @@ const MODELOS = {
   },
   gemini: {
     nome: 'Google Gemini',
-    api: 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent',
+    // 🟢 Atualizado para a versão Flash Lite 2.0
+    api: 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-lite:generateContent',
     keyEnv: 'VITE_GEMINI_API_KEY'
-  },
-  deepseek: {
-    nome: 'DeepSeek (Qwen)',
-    api: 'https://openrouter.ai/api/v1/chat/completions',
-    model: 'deepseek/deepseek-chat',
-    keyEnv: 'VITE_DEEPSEEK_API_KEY'
   }
 };
 
-const MODELO_PADRAO = 'groq';
+// 🟢 Trocamos o padrão para Gemini
+const MODELO_PADRAO = 'gemini';
 
 export function useGroq(oficinaId) {
   const [loading, setLoading] = useState(false);
@@ -58,11 +40,10 @@ export function useGroq(oficinaId) {
           const pref = snap.data().preferencia_modelo;
           if (MODELOS[pref]) {
             setModeloAtual(pref);
-            console.log('[IA] Modelo definido para:', MODELOS[pref].nome);
           }
         }
       } catch (err) {
-        console.log('[IA] Usando modelo padrão (trial)');
+        console.log('[IA] Usando modelo padrão');
       }
     };
     carregarPreferencia();
@@ -74,8 +55,8 @@ export function useGroq(oficinaId) {
       const config = MODELOS[modeloAtual];
       const apiKey = import.meta.env[config.keyEnv];
 
+      // Se não tiver a chave do Gemini, ele tenta o Groq como reserva
       if (!apiKey) {
-        console.warn(`[IA] API Key não encontrada para ${config.nome}, usando Groq padrão`);
         const fallback = MODELOS.groq;
         const fallbackKey = import.meta.env[fallback.keyEnv];
         return await chamarAPI(fallback, fallbackKey, prompt);
@@ -83,7 +64,6 @@ export function useGroq(oficinaId) {
 
       return await chamarAPI(config, apiKey, prompt);
     } catch (err) {
-      console.error("Erro na IA:", err);
       throw err;
     } finally {
       setLoading(false);
@@ -91,34 +71,7 @@ export function useGroq(oficinaId) {
   };
 
   const chamarAPI = async (config, apiKey, prompt) => {
-    const messages = [
-      { role: 'system', content: SYSTEM_PROMPT },
-      { role: 'user', content: prompt }
-    ];
-
-    if (config.nome.includes('Groq')) {
-      const response = await fetch(config.api, {
-        method: "POST",
-        headers: {
-          "Authorization": `Bearer ${apiKey}`,
-          "Content-Type": "application/json"
-        },
-        body: JSON.stringify({
-          model: config.model,
-          messages: messages,
-          temperature: 0.7
-        })
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error?.message || "Erro na Groq");
-      }
-
-      const data = await response.json();
-      return data.choices[0].message.content;
-    }
-
+    // 🟢 Configuração para o Google Gemini 2.0
     if (config.nome.includes('Gemini')) {
       const response = await fetch(`${config.api}?key=${apiKey}`, {
         method: "POST",
@@ -129,27 +82,30 @@ export function useGroq(oficinaId) {
         })
       });
 
-      if (!response.ok) throw new Error("Erro no Gemini");
+      if (!response.ok) throw new Error("Erro no Gemini. Verifique sua VITE_GEMINI_API_KEY.");
       const data = await response.json();
       return data.candidates[0].content.parts[0].text;
     }
 
-    if (config.nome.includes('DeepSeek')) {
+    // Configuração para o Groq (Llama)
+    if (config.nome.includes('Groq')) {
       const response = await fetch(config.api, {
         method: "POST",
         headers: {
           "Authorization": `Bearer ${apiKey}`,
-          "Content-Type": "application/json",
-          "HTTP-Referer": "https://oficina.expresstech.com.br",
-          "X-Title": "Express Auto Tech"
+          "Content-Type": "application/json"
         },
         body: JSON.stringify({
           model: config.model,
-          messages: messages
+          messages: [
+            { role: 'system', content: SYSTEM_PROMPT },
+            { role: 'user', content: prompt }
+          ],
+          temperature: 0.7
         })
       });
 
-      if (!response.ok) throw new Error("Erro no DeepSeek");
+      if (!response.ok) throw new Error("Erro na Groq");
       const data = await response.json();
       return data.choices[0].message.content;
     }
@@ -157,18 +113,5 @@ export function useGroq(oficinaId) {
     throw new Error("Modelo não suportado");
   };
 
-  const salvarPreferencia = async (novoModelo) => {
-    if (!oficinaId || !MODELOS[novoModelo]) return;
-    try {
-      await setDoc(doc(db, 'usuarios', oficinaId), {
-        preferencia_modelo: novoModelo
-      }, { merge: true });
-      setModeloAtual(novoModelo);
-      console.log('[IA] Preferência salva:', MODELOS[novoModelo].nome);
-    } catch (err) {
-      console.error('[IA] Erro ao salvar preferência:', err);
-    }
-  };
-
-  return { analyzeText, loading, modeloAtual, salvarPreferencia, MODELOS };
+  return { analyzeText, loading, modeloAtual, MODELOS };
 }

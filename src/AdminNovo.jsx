@@ -5,6 +5,7 @@ import { collection, addDoc, updateDoc, doc, deleteDoc, onSnapshot, query, order
 // Componentes de Interface e Admin
 import { COLORS, normalizarPlaca, formatarMoeda } from './components/admin/constants';
 import Dashboard, { TEMAS } from './DashboardTab';
+import TorreDeControle360 from './components/TorreDeControle360';
 import { TelaTrialExpirou, TelaBloqueado, TelaLogin } from './components/admin/TelasDeAcesso';
 import TelaEdicaoOS from './components/admin/TelaEdicaoOS';
 import Header from './components/admin/Header';
@@ -153,7 +154,7 @@ const TriagemWrapper = (props) => (
 );
 
 const MODULOS_MAP = {
-  dashboard: Dashboard,
+  dashboard: TorreDeControle360,
   os: TriagemWrapper,
   lista: ListaOS,
   mecanica: Mecanica,
