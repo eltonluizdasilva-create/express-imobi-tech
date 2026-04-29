@@ -350,7 +350,7 @@ export default function Admin() {
   useEffect(() => {
     if (!logado || !currentUserId || !dataFimTrial) return;
     if (trialExpiraouRef.current) return;
-    const fim = dataFimTrial instanceof Date ? dataFimTrial : new Date(dataFimTrial);
+    const fim = dataFimTrial?.toDate ? dataFimTrial.toDate() : new Date(dataFimTrial);
     if (fim >= new Date()) return;
     trialExpiraouRef.current = true;
     setTrialExpirou(true);
@@ -375,7 +375,7 @@ export default function Admin() {
       return dadosOficina?.plano !== 'GRATUITO' && dadosOficina?.plano !== 'trial' && !!dadosOficina?.plano;
     }
 
-    const fim = dataFimTrial instanceof Date ? dataFimTrial : new Date(dataFimTrial);
+    const fim = dataFimTrial?.toDate ? dataFimTrial.toDate() : new Date(dataFimTrial);
     return fim >= new Date();
   }, [dataFimTrial, dadosOficina?.plano, dadosOficina?.papel]);
 
