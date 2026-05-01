@@ -36,6 +36,7 @@ import OleoModulo from './components/Oleo';
 import InjecaoModulo from './components/Injecao';
 import AlinhamentoModulo from './components/Alinhamento';
 import RevisaoModulo from './components/ModuloRevisao';
+import RevisaoPremium from './pages/admin/RevisaoPremium';
 import CopilotoModulo from './components/copiloto';
 import Secretaria from './components/Secretaria';
 import Administrador from './components/Administrador';
@@ -84,9 +85,10 @@ const MODULOS_GRATIS_VITALICIOS = [
 
 const SERVICOS_ESTETICA_ABAS = [
   'mecanica', 'hibrido', 'eletrico', 'moto', 'funilaria', 'amortecedor',
-  'injecao', 'eletrica', 'alinhamento', 'oleo', 'revisao', 'ar_condicionado',
+  'injecao', 'eletrica', 'alinhamento', 'oleo', 'ar_condicionado',
   'pneus', 'escapamento', 'lavajato', 'estetica'
   // 'desmanche' movido para Gestão
+  // 'revisao' removido - agora é página independente /admin/revisao-premium
 ];
 
 const MAPA_MODULOS_SERVICOS = {
@@ -100,8 +102,8 @@ const MAPA_MODULOS_SERVICOS = {
   eletrica: ['eletrica', 'ELÉTRICA'],
   alinhamento: ['alinhamento', 'ALINHAMENTO'],
   oleo: ['oleo', 'ÓLEO', 'OLEO'],
-  revisao: ['revisao', 'REVISÃO', 'REVISAO'],
-  ar_condicionado: ['ar_condicionado', 'AR-CONDICIONADO'],
+   // revisao removido - agora é revisão premium independente
+   ar_condicionado: ['ar_condicionado', 'AR-CONDICIONADO'],
   pneus: ['pneus', 'PNEUS'],
   // desmanche removido daqui — agora é aba de Gestão
   escapamento: ['escapamento', 'ESCAPAMENTO'],
@@ -114,8 +116,9 @@ const LABELS_ABAS = {
   mecanica: '🔧 MECÂNICA', clientes: '👥 CLIENTES', hibrido: '🔋 HÍBRIDOS',
   moto: '🏍️ MOTOS', eletrico: '🔌 100% ELÉTRICOS', funilaria: '🚗 FUNILARIA',
   amortecedor: '🧰 AMORTECEDOR', injecao: '🛠️ INJEÇÃO',
-  oleo: '🛢️ ÓLEO', alinhamento: '⚙️ ALINHAMENTO', revisao: '🛡️ REVISÃO',
+  oleo: '🛢️ ÓLEO', alinhamento: '⚙️ ALINHAMENTO',
   eletrica: '⚡ ELÉTRICA', ar_condicionado: '❄️ AR-COND.', pneus: '🛞 PNEUS',
+  revisaopremium: '📋 REVISÃO', // NOVO: Revisão Premium
   escapamento: '🪛 ESCAPAMENTO', estetica: '✨ ESTÉTICA',
   lavajato: '🚿 LAVA JATO',
   copiloto: '👨‍🔧 COPILOTO', secretaria: '👩‍💼 SECRETÁRIA',
@@ -136,7 +139,7 @@ const LABELS_ABAS_MODAL = {
   mecanica: 'Mecânica', clientes: 'Clientes', hibrido: 'Híbridos/Elétricos',
   moto: 'Motos', funilaria: 'Funilaria', amortecedor: 'Amortecedor',
   injecao: 'Injeção', eletrica: 'Elétrica', alinhamento: 'Alinhamento',
-  oleo: 'Óleo', revisao: 'Revisão', ar_condicionado: 'Ar-Condicionado',
+  oleo: 'Óleo', ar_condicionado: 'Ar-Condicionado',
   pneus: 'Pneus', desmanche: 'Desmanche', escapamento: 'Escapamento',
   lavajato: 'Lava Jato', estetica: 'Estética',
   copiloto: 'Copiloto IA', secretaria: 'Secretária IA',
@@ -166,9 +169,9 @@ const MODULOS_MAP = {
   injecao: InjecaoModulo,
   eletrica: EletricaModulo,
   oleo: OleoModulo,
-  alinhamento: AlinhamentoModulo,
-  revisao: RevisaoModulo,
-  ar_condicionado: ArCondicionado,
+   alinhamento: AlinhamentoModulo,
+   revisaopremium: RevisaoPremium, // Nova página /admin/revisao-premium
+   ar_condicionado: ArCondicionado,
   pneus: PneusModulo,
   escapamento: Escapamento,
   estetica: Estetica,
@@ -795,6 +798,7 @@ export default function Admin() {
         lidarModuloBloqueado={lidarModuloBloqueado}
         LABELS_ABAS={LABELS_ABAS}
         dadosOficina={dadosOficina}
+        osEmEdicao={osEmEdicao}
       />
 
       <AvisoIA abaAtiva={abaAtiva} />

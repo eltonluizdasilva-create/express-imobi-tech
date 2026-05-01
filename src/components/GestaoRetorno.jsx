@@ -432,13 +432,47 @@ function GestaoRetorno({ nomeOficina, oficinaId, abrirWhatsAppFn }) {
 
                         <div className="space-y-6">
                             <div>
-                                <label className="block text-[10px] font-black text-neutral-500 uppercase tracking-widest mb-2 ml-1">Data e Horário</label>
-                                <input 
-                                    type="datetime-local" 
-                                    className="w-full bg-black border border-neutral-800 focus:border-blue-500/50 rounded-2xl p-4 text-white outline-none transition-all"
-                                    id="data-agendamento-input"
-                                />
+                                <style>{`
+                                    input[type="datetime-local"]::-webkit-calendar-picker-indicator {
+                                        filter: invert(1);
+                                        cursor: pointer;
+                                        opacity: 0.8;
+                                    }
+                                    input[type="datetime-local"]::-webkit-calendar-picker-indicator:hover {
+                                        opacity: 1;
+                                    }
+                                `}</style>
+                                <div className="relative">
+                                    <input 
+                                        id="data-agendamento-input"
+                                        type="datetime-local" 
+                                        className="w-full bg-black border border-neutral-800 focus:border-blue-500/50 rounded-2xl p-4 pr-16 text-white outline-none transition-all cursor-pointer"
+                                        onClick={(e) => {
+                                            try { e.target.showPicker(); } catch (err) {}
+                                        }}
+                                    />
+                                    <button
+                                        type="button"
+                                        onClick={() => {
+                                            try { document.getElementById('data-agendamento-input').showPicker(); } catch (err) {}
+                                        }}
+                                        className="absolute right-4 top-1/2 -translate-y-1/2 text-xl bg-blue-600/20 hover:bg-blue-600/40 border border-blue-500/30 p-2.5 rounded-xl text-blue-400 hover:text-blue-300 transition-all pointer-events-auto flex items-center justify-center animate-pulse"
+                                    >
+                                        📅
+                                    </button>
+                                </div>
                             </div>
+
+                            <button 
+                                onClick={() => {
+                                    const phone = retornoSelecionado.telefone || '';
+                                    const msg = encodeURIComponent(`Olá ${retornoSelecionado.nomeCliente}, tudo bem? Gostaríamos de agendar o retorno para a revisão do seu veículo placa ${retornoSelecionado.placa}.`);
+                                    window.open(`https://wa.me/55${phone.replace(/\D/g, '')}?text=${msg}`, '_blank');
+                                }}
+                                className="w-full py-4 bg-green-600 hover:bg-green-500 text-white font-black text-xs uppercase tracking-[0.2em] rounded-2xl transition-all shadow-xl shadow-green-600/20 flex items-center justify-center gap-2"
+                            >
+                                💬 Falar com Cliente
+                            </button>
 
                             <button 
                                 onClick={() => {

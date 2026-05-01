@@ -14,6 +14,9 @@ import {
 } from 'recharts';
 import { useNavigate } from 'react-router-dom';
 import { getAuth } from 'firebase/auth';
+import { Lock } from 'lucide-react';
+import { db } from './lib/firebase';
+import { collection, getDocs } from 'firebase/firestore';
 
 // ─── EXPORT mantido: AdminNovo.jsx importa { TEMAS } deste arquivo ────────────
 export const TEMAS = {
@@ -348,6 +351,8 @@ export default function DashboardTab({
     listaEstoque = [],
     listaFinanceiro = [],
     temPermissao = () => true,
+    dadosOficina = {},
+    setAbaAtiva = () => {},
     dispararLembreteOleo = () => { },
     dispararLembreteBateria = () => { },
     lembretesDeOleo = [],
@@ -481,6 +486,143 @@ export default function DashboardTab({
         ? `Você já confirmou ${fmtMoeda(financeiro.faturamentoMes)} e tem potencial para chegar a ${fmtMoeda(metricas.previstoMes)} neste mês.`
         : 'Libere o Financeiro para acompanhar faturamento real, previsão e risco de fechamento em tempo real.';
 
+    const isLocalhost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+    const hasModule = (idAba) => {
+        if (isLocalhost) return true;
+        const aba = idAba?.toLowerCase();
+        if (dadosOficina?.papel === 'master' || dadosOficina?.plano === 'master') return true;
+        if (dadosOficina?.plano === 'premium') return true;
+        if (dadosOficina?.modulos?.[aba] === true || dadosOficina?.permissoes?.[aba] === true) return true;
+        if ((dadosOficina?.modulosOperacionais || []).includes(aba)) return true;
+        return false;
+    };
+
+    const revisoesMes = useMemo(() => {
+        const hoje = startOfToday();
+        return listaCarros.filter(os => {
+            const data = os.data_registro?.toDate ? os.data_registro.toDate() : new Date(os.data_registro || os.data);
+            const isThisMonth = data.getMonth() === hoje.getMonth() && data.getFullYear() === hoje.getFullYear();
+            const isRevisao = os.tipoServico === 'revisao' || os.tipo === 'revisao' || os.tipoServico === 'revisaopremium' || os.tipo === 'revisaopremium';
+            return isThisMonth && isRevisao;
+        }).length;
+    }, [listaCarros]);
+
+    const itensTroca = useMemo(() => {
+        let count = 0;
+        listaCarros.forEach(os => {
+            if (os.checklist) {
+                if (typeof os.checklist === 'string' && os.checklist.toLowerCase().includes('trocar')) {
+                    count++;
+                } else if (Array.isArray(os.checklist)) {
+                    os.checklist.forEach(item => {
+                        if (item.status === 'trocar' || item.status === 'TROCAR') count++;
+                    });
+                }
+            }
+        });
+        return count;
+    }, [listaCarros]);
+
+    const retornosProximos = useMemo(() => {
+        const hoje = startOfToday();
+        const limite = new Date(hoje);
+        limite.setDate(hoje.getDate() + 7);
+
+        return listaCarros.filter(os => {
+            if (!os.dataRetorno) return false;
+            const d = os.dataRetorno.toDate ? os.dataRetorno.toDate() : new Date(os.dataRetorno);
+            return d >= hoje && d <= limite;
+        }).length;
+    }, [listaCarros]);
+
+    const possuiModuloRevisao = hasModule('revisaopremium') || hasModule('revisao');
+    const possuiModuloRetorno = hasModule('retorno');
+    const checklistsMes = revisoesMes;
+    const retornosPendentes = retornosProximos;
+
+    const [revisoesComProblemas, setRevisoesComProblemas] = useState([]);
+    useEffect(() => {
+        if (!oficinaId) return;
+        const carregarRevisoes = async () => {
+            try {
+                const snap = await getDocs(collection(db, 'oficinas', oficinaId, 'revisoes_premium'));
+                if (!snap.empty) {
+                    const l = [];
+                    snap.forEach(d => {
+                        const r = d.data();
+                        const check = r.checklistRevisao || {};
+                        const hasProblem = Object.values(check).some(v => v === 'ATENÇÃO' || v === 'TROCAR');
+                        if (hasProblem && r.statusRetorno !== 'concluido') {
+                            const hasTrocar = Object.values(check).some(v => v === 'TROCAR');
+                            if (hasTrocar || r.statusRetorno === 'agendado') {
+                                l.push({ id: d.id, ...r });
+                            } else {
+                                if (r.dataRetorno) {
+                                    const dRetorno = new Date(r.dataRetorno);
+                                    const diffMs = dRetorno.getTime() - Date.now();
+                                    const diffDays = diffMs / (1000 * 60 * 60 * 24);
+                                    if (diffDays >= 0 && diffDays <= 15) {
+                                        l.push({ id: d.id, ...r });
+                                    }
+                                } else {
+                                    l.push({ id: d.id, ...r });
+                                }
+                            }
+                        }
+                    });
+                    setRevisoesComProblemas(l);
+                }
+            } catch (err) {
+                console.error(err);
+            }
+        };
+        carregarRevisoes();
+    }, [oficinaId]);
+
+    const [retornoSelecionado, setRetornoSelecionado] = useState(null);
+    const [dataAgendamentoModal, setDataAgendamentoModal] = useState('');
+
+    const isExampleMode = useMemo(() => {
+        return !revisoesComProblemas || revisoesComProblemas.length === 0;
+    }, [revisoesComProblemas]);
+
+    const listaExibicao = useMemo(() => {
+        if (revisoesComProblemas && revisoesComProblemas.length > 0) {
+            return revisoesComProblemas;
+        }
+        return [
+            {
+                id: 'mock1',
+                nomeCliente: 'João da Silva',
+                placa: 'ABC-1234',
+                modelo: 'Toyota Corolla',
+                checklistRevisao: { correias: 'BOM', pastilhas: 'TROCAR', discos: 'ATENÇÃO' },
+                relatoRevisao: 'Desgaste acentuado nas pastilhas dianteiras.'
+            },
+            {
+                id: 'mock2',
+                nomeCliente: 'Maria Souza',
+                placa: 'XYZ-9876',
+                modelo: 'Honda Civic',
+                checklistRevisao: { correias: 'ATENÇÃO', pastilhas: 'BOM' },
+                relatoRevisao: 'Correia de acessórios apresentando pequenas fissuras.'
+            }
+        ];
+    }, [revisoesComProblemas]);
+
+    const totalPotentialMapped = useMemo(() => {
+        let sum = 0;
+        listaExibicao.forEach(r => {
+            if (r.totalRevisao) {
+                sum += Number(r.totalRevisao) || 0;
+            } else if (r.checklistRevisao) {
+                const problems = Object.values(r.checklistRevisao).filter(v => v === 'ATENÇÃO' || v === 'TROCAR').length;
+                sum += problems * 350;
+            }
+        });
+        return sum;
+    }, [listaExibicao]);
+
     // ─────────────────────────────────────────────────────────────────────────
     return (
         <div style={{
@@ -583,6 +725,376 @@ export default function DashboardTab({
                     t={t}
                 />
             </section>
+
+            {/* ── LISTA DE CLIENTES QUE PRECISAM DE RETORNO (Amostra Grátis) ────────────────── */}
+            <div className="bg-zinc-950/60 border border-zinc-800/80 rounded-[2rem] p-6 mb-8 w-full mt-6 backdrop-blur-md">
+                <div className="flex justify-between items-center mb-6">
+                    <div>
+                        <h2 className="text-lg font-black text-white flex items-center gap-2 tracking-tight">
+                            🎯 CLIENTES DA ABA REVISÃO PARA CHAMAR NO WHATSAPP
+                        </h2>
+                        <p className="text-zinc-500 text-xs">Clientes com itens necessitando de atenção identificados nas revisões.</p>
+                    </div>
+                    <div className="flex flex-wrap gap-2 items-center">
+                        {isExampleMode && (
+                            <span className="bg-blue-500/10 border border-blue-500/20 text-blue-400 px-3 py-1.5 rounded-xl font-black text-[10px] uppercase tracking-wider animate-pulse">
+                                💡 Visualização de Exemplo: Comece a usar o módulo de Revisão para ver seus clientes aqui
+                            </span>
+                        )}
+                        {!possuiModuloRetorno && (
+                            <span className="bg-amber-500/10 border border-amber-500/20 text-amber-400 px-3 py-1.5 rounded-xl font-black text-[10px] uppercase tracking-wider">
+                                🔓 AMOSTRA GRÁTIS ATIVA
+                            </span>
+                        )}
+                    </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    {listaExibicao.map(cliente => {
+                        const itensProblema = Object.entries(cliente.checklistRevisao || {})
+                            .filter(([_, status]) => status === 'ATENÇÃO' || status === 'TROCAR')
+                            .map(([key]) => key.toUpperCase());
+
+                        const handleAcao = () => {
+                            if (!possuiModuloRetorno) {
+                                alert('Ação Bloqueada. Ative o módulo Máquina de Retorno para entrar em contato com este cliente agora.');
+                            } else {
+                                alert(`Iniciando contato com ${cliente.nomeCliente}...`);
+                            }
+                        };
+
+                        const handleAgendar = () => {
+                            if (!possuiModuloRetorno) {
+                                alert('Ação Bloqueada. Ative o módulo Máquina de Retorno para entrar em contato com este cliente agora.');
+                            } else {
+                                setRetornoSelecionado(cliente);
+                            }
+                        };
+
+                        return (
+                            <div key={cliente.id} className="bg-zinc-900/40 border border-zinc-800 p-5 rounded-[1.5rem] flex flex-col justify-between min-h-[190px] hover:border-zinc-700/60 transition-all group relative overflow-hidden">
+                                <div className="flex justify-between items-start mb-3">
+                                    <div>
+                                        <p className="text-sm font-black text-white group-hover:text-emerald-400 transition-all leading-tight">{cliente.nomeCliente}</p>
+                                        <p className="text-[10px] text-zinc-500 mt-0.5 uppercase font-mono font-bold tracking-wider">
+                                            {cliente.placa} • {cliente.modelo}
+                                        </p>
+                                        <span className="inline-block mt-2 text-[8px] font-black bg-red-500/15 border border-red-500/25 text-red-400 px-2 py-0.5 rounded-full tracking-wider uppercase">
+                                            RETORNO REVISÃO
+                                        </span>
+                                        {cliente.statusRetorno === 'agendado' && cliente.dataAgendamento && (
+                                            <div className="mt-2 flex items-center gap-1 text-blue-400 font-black text-[10px] uppercase tracking-widest">
+                                                📅 AGENDADO: {cliente.dataAgendamento}
+                                            </div>
+                                        )}
+                                    </div>
+                                    <span className="text-[9px] bg-amber-500/10 border border-amber-500/20 text-amber-400 px-2 py-1 rounded-full font-bold uppercase tracking-wider">
+                                        {itensProblema.length} {itensProblema.length === 1 ? 'ITEM' : 'ITENS'}
+                                    </span>
+                                </div>
+
+                                <div className="mb-4">
+                                    <p className="text-[10px] text-zinc-400 font-bold mb-1 uppercase tracking-wider">Itens com Problema:</p>
+                                    <div className="flex flex-wrap gap-1">
+                                        {itensProblema.map(item => (
+                                            <span key={item} className="text-[8px] bg-zinc-950 border border-zinc-800 text-zinc-300 px-2 py-0.5 rounded font-mono font-bold">
+                                                ⚠️ {item}
+                                            </span>
+                                        ))}
+                                    </div>
+                                </div>
+
+                                <div className="flex gap-2">
+                                    {cliente.statusRetorno === 'agendado' ? (
+                                        <>
+                                            <button 
+                                                onClick={async () => {
+                                                    if (!window.confirm(`Confirmar que ${cliente.nomeCliente || 'o cliente'} compareceu para a manutenção?`)) return;
+                                                    try {
+                                                        const { doc, updateDoc } = await import('firebase/firestore');
+                                                        if (cliente.id && !cliente.id.startsWith('mock')) {
+                                                            await updateDoc(doc(db, 'oficinas', oficinaId, 'revisoes_premium', cliente.id), {
+                                                                statusRetorno: 'concluido',
+                                                                dataConclusao: new Date().toISOString(),
+                                                            });
+                                                        }
+                                                        setRevisoesComProblemas(prev => prev.filter(item => item.id !== cliente.id));
+                                                    } catch (e) {
+                                                        alert('Erro ao concluir: ' + e.message);
+                                                    }
+                                                }} 
+                                                className="flex-1 bg-green-600 hover:bg-green-500 text-white font-black text-[10px] h-9 rounded-xl flex items-center justify-center gap-1 transition-all shadow-lg shadow-green-600/20"
+                                            >
+                                                ✓ Concluir
+                                            </button>
+                                            <button 
+                                                onClick={async () => {
+                                                    if (!window.confirm('Remover o agendamento deste cliente?')) return;
+                                                    try {
+                                                        const { doc, updateDoc } = await import('firebase/firestore');
+                                                        if (cliente.id && !cliente.id.startsWith('mock')) {
+                                                            await updateDoc(doc(db, 'oficinas', oficinaId, 'revisoes_premium', cliente.id), {
+                                                                statusRetorno: 'pendente',
+                                                                dataAgendamento: null,
+                                                            });
+                                                        }
+                                                        setRevisoesComProblemas(prev => prev.map(item => item.id === cliente.id ? { ...item, statusRetorno: 'pendente', dataAgendamento: null } : item));
+                                                    } catch (e) {
+                                                        alert('Erro ao desfazer: ' + e.message);
+                                                    }
+                                                }} 
+                                                className="flex-1 bg-zinc-800 hover:bg-zinc-700 text-zinc-400 font-black text-[10px] h-9 rounded-xl flex items-center justify-center gap-1 transition-all border border-zinc-700"
+                                            >
+                                                Desfazer
+                                            </button>
+                                        </>
+                                    ) : (
+                                        <>
+                                            <button 
+                                                onClick={handleAcao} 
+                                                className="flex-1 bg-[#25D366] hover:bg-[#20ba59] text-black font-black text-[10px] h-9 rounded-xl flex items-center justify-center gap-1.5 transition-all shadow-lg shadow-[#25D366]/10"
+                                            >
+                                                💬 WhatsApp
+                                            </button>
+                                            <button 
+                                                onClick={handleAgendar} 
+                                                className="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-black text-[10px] h-9 rounded-xl flex items-center justify-center gap-1.5 transition-all shadow-lg shadow-blue-600/10"
+                                            >
+                                                📅 Agendar
+                                            </button>
+                                        </>
+                                    )}
+                                </div>
+                            </div>
+                        );
+                    })}
+                </div>
+            </div>
+
+            {retornoSelecionado && (
+                <div className="fixed inset-0 z-[250] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fade-in">
+                    <div className="w-full max-w-md bg-[#0a0a0a] border border-zinc-800 rounded-[2.5rem] p-8 shadow-2xl relative overflow-hidden">
+                        <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-blue-600 to-transparent"></div>
+                        <div className="flex justify-between items-start mb-6">
+                            <div>
+                                <h3 className="text-2xl font-black text-white uppercase italic tracking-tighter">Agendar Retorno</h3>
+                                <p className="text-zinc-500 text-xs font-bold uppercase tracking-widest mt-1">
+                                    {retornoSelecionado.nomeCliente} • {retornoSelecionado.placa}
+                                </p>
+                            </div>
+                            <button 
+                                onClick={() => setRetornoSelecionado(null)} 
+                                className="p-2 bg-zinc-900 rounded-full text-zinc-500 hover:text-white transition-colors"
+                            >
+                                ✕
+                            </button>
+                        </div>
+
+                        <div className="space-y-6">
+                            <div>
+                                <label className="block text-[10px] font-black text-zinc-500 uppercase tracking-widest mb-2 ml-1">Data e Horário</label>
+                                <style>{`
+                                    input[type="datetime-local"]::-webkit-calendar-picker-indicator {
+                                        filter: invert(1);
+                                        cursor: pointer;
+                                        opacity: 0.8;
+                                    }
+                                    input[type="datetime-local"]::-webkit-calendar-picker-indicator:hover {
+                                        opacity: 1;
+                                    }
+                                `}</style>
+                                <div className="relative">
+                                    <input 
+                                        id="dash-date-picker"
+                                        type="datetime-local" 
+                                        className="w-full bg-black border border-zinc-800 focus:border-blue-500/50 rounded-2xl p-4 pr-16 text-white outline-none transition-all cursor-pointer"
+                                        value={dataAgendamentoModal}
+                                        onChange={(e) => setDataAgendamentoModal(e.target.value)}
+                                        onClick={(e) => {
+                                            try { e.target.showPicker(); } catch (err) {}
+                                        }}
+                                    />
+                                    <button
+                                        type="button"
+                                        onClick={() => {
+                                            try { document.getElementById('dash-date-picker').showPicker(); } catch (err) {}
+                                        }}
+                                        className="absolute right-4 top-1/2 -translate-y-1/2 text-xl bg-blue-600/20 hover:bg-blue-600/40 border border-blue-500/30 p-2.5 rounded-xl text-blue-400 hover:text-blue-300 transition-all pointer-events-auto flex items-center justify-center animate-pulse"
+                                    >
+                                        📅
+                                    </button>
+                                </div>
+                            </div>
+
+                            <button 
+                                onClick={() => {
+                                    if (!possuiModuloRetorno) {
+                                        alert('Ação Bloqueada. Ative o módulo Máquina de Retorno para entrar em contato com este cliente agora.');
+                                    } else {
+                                        const phone = retornoSelecionado.telefone || '';
+                                        const msg = encodeURIComponent(`Olá ${retornoSelecionado.nomeCliente}, tudo bem? Gostaríamos de agendar o retorno para a revisão do seu veículo placa ${retornoSelecionado.placa}.`);
+                                        window.open(`https://wa.me/55${phone.replace(/\D/g, '')}?text=${msg}`, '_blank');
+                                    }
+                                }}
+                                className="w-full py-4 bg-green-600 hover:bg-green-500 text-white font-black text-xs uppercase tracking-[0.2em] rounded-2xl transition-all shadow-xl shadow-green-600/20 flex items-center justify-center gap-2"
+                            >
+                                💬 Falar com Cliente
+                            </button>
+
+                            <button 
+                                onClick={async () => {
+                                    const dateVal = dataAgendamentoModal;
+                                    if (!dateVal) return alert('Selecione ou digite uma data.');
+                                    const d = new Date(dateVal);
+                                    const val = d.toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+                                    try {
+                                        if (retornoSelecionado.id && !retornoSelecionado.id.startsWith('mock')) {
+                                            const { doc, updateDoc } = await import('firebase/firestore');
+                                            await updateDoc(doc(db, 'oficinas', oficinaId, 'revisoes_premium', retornoSelecionado.id), {
+                                                statusRetorno: 'agendado',
+                                                dataAgendamento: val,
+                                            });
+                                        }
+                                        alert(`Agendamento confirmado para ${retornoSelecionado.nomeCliente} em ${val}.`);
+                                        
+                                        // Abre o WhatsApp automaticamente para confirmar o agendamento
+                                        if (possuiModuloRetorno) {
+                                            const msgBase = `Olá${retornoSelecionado.nomeCliente ? ` ${retornoSelecionado.nomeCliente}` : ''}! Horário confirmado para *${val}*.\nNos vemos lá.`;
+                                            window.open(`https://wa.me/55${(retornoSelecionado.telefone || '').replace(/\D/g, '')}?text=${encodeURIComponent(msgBase)}`, '_blank');
+                                        }
+
+                                        setRetornoSelecionado(null);
+                                        setDataAgendamentoModal('');
+                                        // Refresh state locally without removing the scheduled one from display
+                                        setRevisoesComProblemas(prev => prev.map(item => item.id === retornoSelecionado.id ? { ...item, statusRetorno: 'agendado', dataAgendamento: val } : item));
+                                    } catch (e) {
+                                        alert('Erro ao agendar retorno: ' + e.message);
+                                    }
+                                }}
+                                className="w-full py-5 bg-blue-600 hover:bg-blue-500 text-white font-black text-xs uppercase tracking-[0.2em] rounded-2xl transition-all shadow-xl shadow-blue-600/20"
+                            >
+                                Confirmar Agendamento
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* ── Painel Estratégico de Crescimento ────────────────────── */}
+            <div className="bg-zinc-950/60 border border-zinc-800/80 rounded-[2rem] p-6 mb-8 w-full backdrop-blur-md">
+              {/* TOPO: Métricas de Impacto */}
+              <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 mb-6 pb-6 border-b border-zinc-800/80">
+                <div>
+                  <h2 className="text-lg font-black text-white flex items-center gap-2 tracking-tight">
+                    🚀 Painel Estratégico de Crescimento
+                  </h2>
+                  <p className="text-zinc-500 text-xs">Módulos profissionais para maximizar o ticket e faturamento da sua oficina.</p>
+                </div>
+                <div className="bg-emerald-500/10 border border-emerald-500/20 px-4 py-3 rounded-2xl flex items-center gap-3">
+                  <div className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+                  <div>
+                    <span className="text-[10px] text-zinc-400 font-bold block uppercase tracking-wider">Potencial Mapeado</span>
+                    <span className="text-emerald-400 font-black text-base tracking-tight">
+                      {totalPotentialMapped.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })} — {listaExibicao.length} oportunidades
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 w-full">
+                {/* COLUNA 1: REVISÃO */}
+                <div className="bg-zinc-900/40 border border-zinc-800 rounded-[2rem] p-6 relative overflow-hidden min-h-[220px] flex flex-col justify-between">
+                  {!possuiModuloRevisao ? (
+                    <div>
+                      {/* Header da Revisão Elite (Grátis) */}
+                      <div className="flex justify-between items-center mb-4">
+                        <div>
+                          <h3 className="text-white font-black text-xs uppercase tracking-widest mb-1 flex items-center gap-2">
+                            <span className="w-1.5 h-1.5 rounded-full bg-purple-500" /> Revisão Elite
+                          </h3>
+                          <p className="text-zinc-500 text-[10px]">Crie laudos profissionais e fotos para o seu cliente.</p>
+                        </div>
+                        <button onClick={() => setAbaAtiva('meuplano')} className="bg-purple-600 text-white text-[9px] font-black px-4 py-2 rounded-full hover:bg-purple-700 transition-all shadow-lg shadow-purple-600/20">ATIVAR AGORA</button>
+                      </div>
+
+                      {/* Exemplo de laudo desbotado */}
+                      <div className="opacity-50 bg-zinc-950/60 border border-zinc-800/80 p-4 rounded-2xl pointer-events-none select-none">
+                        <div className="flex justify-between items-center mb-2">
+                          <span className="text-xs font-bold text-zinc-300">📋 Check-up Geral #1042</span>
+                          <span className="text-[9px] bg-amber-500/10 border border-amber-500/20 text-amber-400 px-2 py-0.5 rounded-full font-bold">EM ANDAMENTO</span>
+                        </div>
+                        <div className="space-y-2">
+                          <div className="flex items-center justify-between border-b border-zinc-800/60 pb-1.5">
+                            <span className="text-xs text-zinc-400">⚠️ Freio Dianteiro</span>
+                            <span className="text-[10px] font-bold text-red-400 uppercase">Trocar Pastilha</span>
+                          </div>
+                          <div className="flex items-center justify-between border-b border-zinc-800/60 pb-1.5">
+                            <span className="text-xs text-zinc-400">⚠️ Suspensão Traseira</span>
+                            <span className="text-[10px] font-bold text-amber-400 uppercase">Observação</span>
+                          </div>
+                          <div className="flex items-center justify-between border-b border-zinc-800/60 pb-1.5">
+                            <span className="text-xs text-zinc-400">✅ Filtro de Ar</span>
+                            <span className="text-[10px] font-bold text-emerald-400 uppercase">Ok</span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  ) : (
+                    <div>
+                      <h3 className="text-purple-500 font-black text-xs uppercase tracking-widest mb-4">Revisão Elite</h3>
+                      <div className="text-3xl font-black text-white">{checklistsMes || 0}</div>
+                      <p className="text-zinc-500 text-[10px] uppercase">Checklists realizados este mês</p>
+                    </div>
+                  )}
+                </div>
+
+                {/* COLUNA 2: RETORNO */}
+                <div className="bg-zinc-900/40 border border-zinc-800 rounded-[2rem] p-6 relative overflow-hidden min-h-[220px] flex flex-col justify-between">
+                  {!possuiModuloRetorno ? (
+                    <div>
+                      {/* Header da Máquina de Retorno (Grátis) */}
+                      <div className="flex justify-between items-center mb-4">
+                        <div>
+                          <h3 className="text-white font-black text-xs uppercase tracking-widest mb-1 flex items-center gap-2">
+                            <span className="w-1.5 h-1.5 rounded-full bg-green-500" /> Máquina de Retorno
+                          </h3>
+                          <p className="text-zinc-500 text-[10px]">Ative os avisos automáticos e não perca clientes.</p>
+                        </div>
+                        <button onClick={() => setAbaAtiva('meuplano')} className="bg-green-600 text-white text-[9px] font-black px-4 py-2 rounded-full hover:bg-green-700 transition-all shadow-lg shadow-green-600/20">ATIVAR AGORA</button>
+                      </div>
+
+                      {/* Exemplo de card de cliente desbotado com alerta ao clicar */}
+                      <div className="bg-zinc-950/60 border border-zinc-800/80 p-4 rounded-2xl flex flex-col justify-between h-[132px] cursor-pointer hover:border-zinc-700/80 transition-all group"
+                        onClick={() => alert('Este é um cliente quente mapeado pela IA. Ative o módulo para falar com seus 40 clientes prontos para retorno!')}>
+                        <div className="opacity-50 select-none flex-1 flex flex-col justify-between">
+                          <div className="flex justify-between items-start mb-1">
+                            <div>
+                              <p className="text-sm font-bold text-white group-hover:text-emerald-400 transition-all">João da Silva</p>
+                              <p className="text-[10px] text-zinc-500">Corolla - ABC1234</p>
+                            </div>
+                            <span className="text-[9px] font-black bg-red-500/15 border border-red-500/25 text-red-400 px-2 py-0.5 rounded-full tracking-wider uppercase">URGENTE: TROCA DE ÓLEO</span>
+                          </div>
+                          
+                          <p className="text-[10px] text-zinc-400 mt-1">Última troca: 10.000km atrás</p>
+                        </div>
+
+                        <div className="mt-3">
+                          <button className="w-full bg-[#25D366] text-black font-black text-xs h-10 rounded-xl flex items-center justify-center gap-2 hover:bg-[#20ba59] transition-all shadow-lg shadow-[#25D366]/20">
+                            💬 AVISAR NO WHATSAPP
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  ) : (
+                    <div>
+                      <h3 className="text-green-500 font-black text-xs uppercase tracking-widest mb-4">Máquina de Retorno</h3>
+                      <div className="text-3xl font-black text-white">{retornosPendentes || 0}</div>
+                      <p className="text-zinc-500 text-[10px] uppercase">Clientes para retornar nos próximos 7 dias</p>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
 
             {/* ── Gráficos: Forecast + Pulso ───────────────────────────────── */}
             <section style={{ display: 'grid', gridTemplateColumns: 'minmax(0,1.7fr) minmax(0,1fr)', gap: '18px', marginBottom: '24px' }}>

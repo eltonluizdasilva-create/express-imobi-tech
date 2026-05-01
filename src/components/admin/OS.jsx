@@ -17,11 +17,10 @@ const SETORES = [
   { key: 'eletrica', label: 'Elétrica', icon: '⚡' },
   { key: 'alinhamento', label: 'Alinhamento', icon: '⚙️' },
   { key: 'oleo', label: 'Óleo', icon: '🛢️' },
-  { key: 'revisao', label: 'Revisão', icon: '🛡️' },
   { key: 'ar_condicionado', label: 'Ar-Cond.', icon: '❄️' },
-  { key: 'pneus', label: 'Pneus', icon: '🛞' },
+  { key: 'pneus', label: 'Pneus', icon: '⭕' },
   // desmanche removido — agora é aba de Gestão, não O.S.
-  { key: 'escapamento', label: 'Escapamento', icon: '🪛' },
+  { key: 'escapamento', label: 'Escapamento', icon: '💨' },
   { key: 'lavajato', label: 'Lava Jato', icon: '🚿' },
   { key: 'estetica', label: 'Estética', icon: '✨' },
 ];
@@ -126,7 +125,6 @@ export default function OSModulo({
       eletrica: ['eletrica', 'ELÉTRICA', 'ELÉTRICA'],
       alinhamento: ['alinhamento', 'ALINHAMENTO'],
       oleo: ['oleo', 'ÓLEO', 'OLEO'],
-      revisao: ['revisao', 'REVISÃO', 'REVISAO'],
       ar_condicionado: ['ar_condicionado', 'AR-CONDICIONADO'],
       pneus: ['pneus', 'PNEUS'],
       desmanche: ['desmanche', 'DESMANCHE'],
@@ -320,97 +318,176 @@ export default function OSModulo({
   };
 
   return (
-    <div id="tela-recepcao" className="p-4 max-w-3xl mx-auto" style={{ color: t.text }}>
-      <h2 className="text-xl font-bold text-red-500 mb-6 border-b pb-4" style={{ borderColor: t.stroke }}>📋 Recepção de Veículo</h2>
+    <div id="tela-recepcao" className="p-6 max-w-4xl mx-auto" style={{ color: t.text }}>
+      
+      {/* 🌟 Cabeçalho Moderno */}
+      <div className="flex items-center gap-4 mb-8 border-b pb-5" style={{ borderColor: 'rgba(255,255,255,0.05)' }}>
+        <div style={{
+          width: '56px', height: '56px', borderRadius: '16px', background: 'rgba(255,0,51,0.1)',
+          display: 'flex', alignItems: 'center', justifyContent: 'center', border: '1px solid rgba(255,0,51,0.2)'
+        }}>
+          <span style={{ fontSize: '26px' }}>📝</span>
+        </div>
+        <div>
+          <h2 className="text-xl font-black tracking-wider uppercase m-0" style={{ color: '#fff' }}>
+            Recepção de Veículo
+          </h2>
+          <p className="text-[12px] font-bold tracking-widest uppercase m-0" style={{ color: '#6b7280' }}>
+            Cadastre e gere uma nova ordem de serviço instantaneamente
+          </p>
+        </div>
+      </div>
 
-      <form onSubmit={handleGerarOS} className="space-y-6">
-        {/* Seção: Dados do Cliente */}
-        <div className="space-y-4">
+      <form onSubmit={handleGerarOS} className="space-y-8">
+        
+        {/* 🌟 Seção: Dados do Cliente e Veículo */}
+        <div className="p-6 rounded-2xl space-y-5" style={{ background: '#111', border: '1px solid rgba(255,255,255,0.03)', boxShadow: '0 8px 30px rgba(0,0,0,0.4)' }}>
+          <p className="text-[11px] text-red-500 font-black uppercase block tracking-wider m-0 mb-2">📌 Informações Gerais</p>
+          
           <div>
-            <label className="text-[10px] text-gray-500 font-bold uppercase block mb-1">Cliente *</label>
+            <label className="text-[10px] text-gray-400 font-black uppercase block mb-1 tracking-widest">Nome do Cliente *</label>
             <input
               type="text"
               name="nomeCliente"
               value={dados.nomeCliente}
               onChange={handleChange}
-              className="w-full border p-3 rounded-lg outline-none"
-              style={{ background: t.card, borderColor: t.stroke, color: t.text }}
+              className="w-full border p-3.5 rounded-xl outline-none transition-all"
+              style={{ background: '#181818', borderColor: 'rgba(255,255,255,0.06)', color: '#fff', fontSize: '13px' }}
+              onFocus={(e) => {
+                e.target.style.borderColor = '#ff0033';
+                e.target.style.boxShadow = '0 0 15px rgba(255,0,51,0.2)';
+              }}
+              onBlur={(e) => {
+                e.target.style.borderColor = 'rgba(255,255,255,0.06)';
+                e.target.style.boxShadow = 'none';
+              }}
               required
             />
           </div>
 
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="text-[10px] text-gray-500 font-bold uppercase block mb-1">Placa *</label>
+              <label className="text-[10px] text-gray-400 font-black uppercase block mb-1 tracking-widest">Placa *</label>
               <input
                 type="text"
                 name="placa"
                 value={dados.placa}
                 onChange={handleChange}
-                className="w-full border p-3 rounded-lg font-bold text-center tracking-widest text-lg"
-                style={{ background: t.card, borderColor: t.stroke, color: t.text }}
+                placeholder="ABC1D23"
+                className="w-full border p-3.5 rounded-xl outline-none transition-all font-bold text-center tracking-[0.2em] text-lg uppercase"
+                style={{ background: '#181818', borderColor: 'rgba(255,255,255,0.06)', color: '#ff0033' }}
+                onFocus={(e) => {
+                  e.target.style.borderColor = '#ff0033';
+                  e.target.style.boxShadow = '0 0 15px rgba(255,0,51,0.2)';
+                }}
+                onBlur={(e) => {
+                  e.target.style.borderColor = 'rgba(255,255,255,0.06)';
+                  e.target.style.boxShadow = 'none';
+                }}
                 required
               />
             </div>
             <div>
-              <label className="text-[10px] text-gray-500 font-bold uppercase block mb-1">WhatsApp *</label>
+              <label className="text-[10px] text-gray-400 font-black uppercase block mb-1 tracking-widest">WhatsApp *</label>
               <input
                 type="text"
                 name="telefone"
                 value={dados.telefone}
                 onChange={handleChange}
-                className="w-full border p-3 rounded-lg"
-                style={{ background: t.card, borderColor: t.stroke, color: t.text }}
+                placeholder="(00) 00000-0000"
+                className="w-full border p-3.5 rounded-xl outline-none transition-all"
+                style={{ background: '#181818', borderColor: 'rgba(255,255,255,0.06)', color: '#fff', fontSize: '13px' }}
+                onFocus={(e) => {
+                  e.target.style.borderColor = '#ff0033';
+                  e.target.style.boxShadow = '0 0 15px rgba(255,0,51,0.2)';
+                }}
+                onBlur={(e) => {
+                  e.target.style.borderColor = 'rgba(255,255,255,0.06)';
+                  e.target.style.boxShadow = 'none';
+                }}
                 required
               />
             </div>
           </div>
 
-          <div className="grid grid-cols-3 gap-2">
-            <div className="col-span-1">
-              <label className="text-[10px] text-gray-500 font-bold uppercase block mb-1">Veículo *</label>
+          <div className="grid grid-cols-3 gap-3">
+            <div>
+              <label className="text-[10px] text-gray-400 font-black uppercase block mb-1 tracking-widest">Veículo *</label>
               <input
                 type="text"
                 name="veiculo"
                 value={dados.veiculo}
                 onChange={handleChange}
-                placeholder="Ex: Gol"
-                className="w-full border p-3 rounded-lg text-xs"
-                style={{ background: t.card, borderColor: t.stroke, color: t.text }}
+                placeholder="Ex: Honda Civic"
+                className="w-full border p-3.5 rounded-xl outline-none transition-all font-bold"
+                style={{ background: '#181818', borderColor: 'rgba(255,255,255,0.06)', color: '#fff', fontSize: '13px' }}
+                onFocus={(e) => {
+                  e.target.style.borderColor = '#ff0033';
+                  e.target.style.boxShadow = '0 0 15px rgba(255,0,51,0.2)';
+                }}
+                onBlur={(e) => {
+                  e.target.style.borderColor = 'rgba(255,255,255,0.06)';
+                  e.target.style.boxShadow = 'none';
+                }}
                 required
               />
             </div>
             <div>
-              <label className="text-[10px] text-gray-500 font-bold uppercase block mb-1">Ano</label>
+              <label className="text-[10px] text-gray-400 font-black uppercase block mb-1 tracking-widest">Ano</label>
               <input
                 type="text"
                 name="ano"
                 value={dados.ano}
                 onChange={handleChange}
-                placeholder="2020"
-                className="w-full border p-3 rounded-lg text-xs"
-                style={{ background: t.card, borderColor: t.stroke, color: t.text }}
+                placeholder="Ex: 2022"
+                className="w-full border p-3.5 rounded-xl outline-none transition-all text-center"
+                style={{ background: '#181818', borderColor: 'rgba(255,255,255,0.06)', color: '#fff', fontSize: '13px' }}
+                onFocus={(e) => {
+                  e.target.style.borderColor = '#ff0033';
+                  e.target.style.boxShadow = '0 0 15px rgba(255,0,51,0.2)';
+                }}
+                onBlur={(e) => {
+                  e.target.style.borderColor = 'rgba(255,255,255,0.06)';
+                  e.target.style.boxShadow = 'none';
+                }}
               />
             </div>
             <div>
-              <label className="text-[10px] text-gray-500 font-bold uppercase block mb-1">Motor</label>
+              <label className="text-[10px] text-gray-400 font-black uppercase block mb-1 tracking-widest">Motor</label>
               <input
                 type="text"
                 name="motor"
                 value={dados.motor}
                 onChange={handleChange}
-                placeholder="1.6"
-                className="w-full border p-3 rounded-lg text-xs"
-                style={{ background: t.card, borderColor: t.stroke, color: t.text }}
+                placeholder="Ex: 2.0 Turbo"
+                className="w-full border p-3.5 rounded-xl outline-none transition-all text-center"
+                style={{ background: '#181818', borderColor: 'rgba(255,255,255,0.06)', color: '#fff', fontSize: '13px' }}
+                onFocus={(e) => {
+                  e.target.style.borderColor = '#ff0033';
+                  e.target.style.boxShadow = '0 0 15px rgba(255,0,51,0.2)';
+                }}
+                onBlur={(e) => {
+                  e.target.style.borderColor = 'rgba(255,255,255,0.06)';
+                  e.target.style.boxShadow = 'none';
+                }}
               />
             </div>
           </div>
         </div>
 
-        {/* Seção: Escolher Setor */}
+        {/* 🌟 Seção: Escolher Setor */}
         <div id="passo-selecionar-ramo" className="space-y-4">
-          <label className="text-[10px] text-gray-500 font-bold uppercase block">Área do Serviço *</label>
-          <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-2">
+          <style>{`
+            @keyframes activePulse {
+              0%, 100% { border-color: var(--cor-ativa); box-shadow: 0 0 15px var(--cor-sombra), inset 0 0 8px var(--cor-sombra); }
+              50% { border-color: #fff; box-shadow: 0 0 32px var(--cor-ativa), inset 0 0 15px var(--cor-sombra); }
+            }
+            .ativo-pulsante {
+              animation: activePulse 2s infinite ease-in-out !important;
+            }
+          `}</style>
+          <p className="text-[11px] text-red-500 font-black uppercase block tracking-wider m-0 mb-1">🛠️ Escolha o Setor Responsável</p>
+          <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-5 gap-3">
             {setoresVisiveis.map((setor) => {
               const cor = TAB_COLORS[setor.key] || '#ff0033';
               const ativo = setorAtivo === setor.key;
@@ -419,33 +496,58 @@ export default function OSModulo({
                   key={setor.key}
                   type="button"
                   onClick={() => setSetorAtivo(setor.key)}
-                  className="nav-button-premium"
+                  className={`nav-button-premium ${ativo ? 'ativo-pulsante' : ''}`}
                   style={{
-                    padding: '8px 4px',
-                    borderRadius: '10px',
-                    background: ativo ? `${cor}33` : t.card,
-                    border: `1px solid ${ativo ? cor : t.stroke}`,
-                    boxShadow: ativo ? `0 0 15px ${cor}44` : '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
-                    color: ativo ? t.text : t.textSoft,
+                    '--cor-ativa': cor,
+                    '--cor-sombra': `${cor}44`,
+                    padding: '16px 12px',
+                    borderRadius: '16px',
+                    background: ativo ? `${cor}15` : t.card,
+                    border: `2px solid ${ativo ? cor : 'rgba(255,255,255,0.05)'}`,
+                    color: ativo ? '#fff' : '#888',
                     display: 'flex',
                     flexDirection: 'column',
                     alignItems: 'center',
-                    gap: '2px',
+                    justifyContent: 'center',
+                    gap: '10px',
                     cursor: 'pointer',
                     transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                    backdropFilter: 'blur(8px)',
+                    transform: ativo ? 'scale(1.04)' : 'scale(1)',
+                  }}
+                  onMouseEnter={(e) => {
+                    if (!ativo) {
+                      e.currentTarget.style.background = 'rgba(255, 255, 255, 0.05)';
+                      e.currentTarget.style.color = '#fff';
+                      e.currentTarget.style.transform = 'translateY(-2px)';
+                    }
+                  }}
+                  onMouseLeave={(e) => {
+                    if (!ativo) {
+                      e.currentTarget.style.background = t.card;
+                      e.currentTarget.style.color = '#888';
+                      e.currentTarget.style.transform = 'translateY(0)';
+                    }
                   }}
                 >
-                  <span style={{ fontSize: '16px' }}>{setor.icon}</span>
+                  <span style={{ 
+                    fontSize: '32px', 
+                    filter: ativo ? `drop-shadow(0 0 10px ${cor})` : 'none',
+                    transition: 'transform 0.2s ease-in-out'
+                  }}>
+                    {setor.icon}
+                  </span>
                   <span style={{
-                    fontSize: '8px',
+                    fontSize: '11px',
                     fontWeight: '900',
                     textTransform: 'uppercase',
-                    letterSpacing: '0.5px',
+                    letterSpacing: '1px',
                     textAlign: 'center',
                     whiteSpace: 'nowrap',
                     overflow: 'hidden',
                     textOverflow: 'ellipsis',
-                    width: '100%'
+                    width: '100%',
+                    color: ativo ? '#fff' : '#6b7280'
                   }}>
                     {setor.label}
                   </span>
@@ -455,21 +557,30 @@ export default function OSModulo({
           </div>
         </div>
 
-        {/* Botão: Gerar O.S. */}
+        {/* 🌟 Botão: Gerar O.S. (Glow e Premium) */}
         <button
           type="submit"
           disabled={salvando}
-          className="w-full bg-red-600 hover:bg-red-700 disabled:bg-red-900 text-white font-bold py-4 rounded-lg mt-4 shadow-xl transition-all"
+          style={{
+            width: '100%', padding: '18px', borderRadius: '16px',
+            background: 'linear-gradient(90deg, #ff0033, #e6002d)', color: '#fff', border: 'none',
+            fontWeight: '900', fontSize: '15px', textTransform: 'uppercase', letterSpacing: '1.5px',
+            cursor: salvando ? 'not-allowed' : 'pointer', boxShadow: '0 5px 25px rgba(255,0,51,0.3)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px',
+            transition: 'all 0.3s ease'
+          }}
+          onMouseEnter={(e) => e.currentTarget.style.transform = 'translateY(-2px)'}
+          onMouseLeave={(e) => e.currentTarget.style.transform = 'translateY(0)'}
         >
-          {salvando ? '⏳ GERANDO...' : '💾 GERAR O.S.'}
+          {salvando ? '⏳ GERANDO O.S. ...' : '💾 GERAR O.S.'}
         </button>
       </form>
 
-      {/* Seção: Busca Rápida por Placa */}
-      <div className="mt-12 p-5 rounded-2xl shadow-inner" style={{ background: t.cardSoft, border: `1px solid ${t.stroke}` }}>
+      {/* 🌟 Seção: Busca Rápida por Placa */}
+      <div className="mt-12 p-6 rounded-2xl shadow-inner" style={{ background: '#111', border: '1px solid rgba(255,255,255,0.03)', boxShadow: '0 8px 30px rgba(0,0,0,0.4)' }}>
         <div className="flex items-center gap-3 mb-4">
           <span className="text-xl">🔍</span>
-          <h3 className="text-sm font-bold text-gray-400 m-0 tracking-widest uppercase">Busca Rápida (Placa)</h3>
+          <h3 className="text-sm font-black text-gray-300 m-0 tracking-widest uppercase">Consulta Rápida de Placas</h3>
         </div>
         <input
           type="text"
@@ -477,11 +588,19 @@ export default function OSModulo({
           value={buscaPlaca}
           onChange={(e) => setBuscaPlaca(e.target.value)}
           className="w-full border p-4 rounded-xl uppercase outline-none focus:border-red-500 text-2xl font-black tracking-[0.2em] transition-all mb-4"
-          style={{ background: t.card, borderColor: t.stroke, color: t.text }}
+          style={{ background: '#181818', borderColor: 'rgba(255,255,255,0.06)', color: '#ff0033' }}
+          onFocus={(e) => {
+            e.target.style.borderColor = '#ff0033';
+            e.target.style.boxShadow = '0 0 15px rgba(255,0,51,0.2)';
+          }}
+          onBlur={(e) => {
+            e.target.style.borderColor = 'rgba(255,255,255,0.06)';
+            e.target.style.boxShadow = 'none';
+          }}
         />
-        <div style={{ background: '#1a0505', padding: '12px', borderRadius: '10px', border: '1px solid #ff003322' }}>
+        <div style={{ background: '#1a0505', padding: '14px', borderRadius: '12px', border: '1px solid #ff003322' }}>
           <p className="text-[11px] text-gray-400 m-0 leading-relaxed">
-            <strong className="text-red-500">O.S. (Ordem de Serviço):</strong> É o documento que registra tudo o que será feito no veículo, as peças cobradas e garante o histórico técnico do seu cliente.
+            <strong className="text-red-500">Dica:</strong> A Ordem de Serviço (O.S.) é o documento oficial do serviço e das peças. Preencha todos os campos do cliente para manter o histórico de manutenção perfeitamente organizado.
           </p>
         </div>
       </div>

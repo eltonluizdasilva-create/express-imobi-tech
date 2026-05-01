@@ -178,14 +178,16 @@ const ObservacoesResumo = ({ observacoes }) => {
 };
 
 // --- CONFIGURAÇÃO DE TEMAS ---
+const TOOL_ICONS = { doutor: '🩺', scanner: '🔦', calibra: '🛞', oleo: '🛢️', calc: '⛽', dicas: '💡' };
+
 const abasConfig = {
-    home: { text: 'INÍCIO / LOGIN', menuStyle: 'bg-red-900/10 border-red-500/50 text-red-500 shadow-[0_0_15px_rgba(220,38,38,0.15)]', theme: { main: 'text-red-600', bg: 'bg-red-600', border: 'border-red-600', borderLight: 'border-red-900/30', bgLight: 'bg-red-900/10', textLight: 'text-red-500', shadowColor: 'rgba(220,38,38,0.44)' } },
-    doutor: { text: 'DOUTOR IA (GRÁTIS)', menuStyle: 'bg-blue-900/10 border-blue-500/50 text-blue-500 shadow-[0_0_15px_rgba(59,130,246,0.15)]', theme: { main: 'text-blue-600', bg: 'bg-blue-600', border: 'border-blue-600', borderLight: 'border-blue-900/30', bgLight: 'bg-blue-900/10', textLight: 'text-blue-500', shadowColor: 'rgba(59,130,246,0.44)' } },
-    scanner: { text: 'SCANNER DE LUZES', menuStyle: 'bg-yellow-900/10 border-yellow-500/50 text-yellow-500 shadow-[0_0_15px_rgba(234,179,8,0.15)]', theme: { main: 'text-yellow-500', bg: 'bg-yellow-500', border: 'border-yellow-500', borderLight: 'border-yellow-900/30', bgLight: 'bg-yellow-900/10', textLight: 'text-yellow-500', shadowColor: 'rgba(234,179,8,0.44)' } },
-    calibra: { text: 'CALIBRAGEM EXATA', menuStyle: 'bg-green-900/10 border-green-500/50 text-green-500 shadow-[0_0_15px_rgba(34,197,94,0.15)]', theme: { main: 'text-green-600', bg: 'bg-green-600', border: 'border-green-600', borderLight: 'border-green-900/30', bgLight: 'bg-green-900/10', textLight: 'text-green-500', shadowColor: 'rgba(34,197,94,0.44)' } },
-    oleo: { text: 'GUIA DE ÓLEO', menuStyle: 'bg-orange-900/10 border-orange-500/50 text-orange-500 shadow-[0_0_15px_rgba(249,115,22,0.15)]', theme: { main: 'text-orange-600', bg: 'bg-orange-600', border: 'border-orange-600', borderLight: 'border-orange-900/30', bgLight: 'bg-orange-900/10', textLight: 'text-orange-500', shadowColor: 'rgba(249,115,22,0.44)' } },
-    calc: { text: 'CALCULADORA FLEX', menuStyle: 'bg-purple-900/10 border-purple-500/50 text-purple-500 shadow-[0_0_15px_rgba(168,85,247,0.15)]', theme: { main: 'text-purple-600', bg: 'bg-purple-600', border: 'border-purple-600', borderLight: 'border-purple-900/30', bgLight: 'bg-purple-900/10', textLight: 'text-purple-500', shadowColor: 'rgba(168,85,247,0.44)' } },
-    dicas: { text: 'DICAS TÉCNICAS', menuStyle: 'bg-cyan-900/10 border-cyan-500/50 text-cyan-500 shadow-[0_0_15px_rgba(6,182,212,0.15)]', theme: { main: 'text-cyan-600', bg: 'bg-cyan-600', border: 'border-cyan-600', borderLight: 'border-cyan-900/30', bgLight: 'bg-cyan-900/10', textLight: 'text-cyan-500', shadowColor: 'rgba(6,182,212,0.44)' } },
+    home: { text: 'INÍCIO / LOGIN', menuStyle: '', theme: { main: 'text-red-600', bg: 'bg-red-600', border: 'border-red-600', borderLight: 'border-red-900/30', bgLight: 'bg-red-900/10', textLight: 'text-red-500', shadowColor: 'rgba(220,38,38,0.44)' } },
+    doutor: { text: 'DOUTOR IA (GRÁTIS)', icon: '🩺', color: '#3b82f6', theme: { main: 'text-blue-500', bg: 'bg-blue-600', border: 'border-blue-600', borderLight: 'border-blue-900/30', bgLight: 'bg-blue-900/10', textLight: 'text-blue-500', shadowColor: 'rgba(59,130,246,0.44)' } },
+    scanner: { text: 'SCANNER DE LUZES', icon: '🔦', color: '#eab308', theme: { main: 'text-yellow-500', bg: 'bg-yellow-500', border: 'border-yellow-500', borderLight: 'border-yellow-900/30', bgLight: 'bg-yellow-900/10', textLight: 'text-yellow-500', shadowColor: 'rgba(234,179,8,0.44)' } },
+    calibra: { text: 'CALIBRAGEM EXATA', icon: '🛞', color: '#22c55e', theme: { main: 'text-green-500', bg: 'bg-green-600', border: 'border-green-600', borderLight: 'border-green-900/30', bgLight: 'bg-green-900/10', textLight: 'text-green-500', shadowColor: 'rgba(34,197,94,0.44)' } },
+    oleo: { text: 'GUIA DE ÓLEO', icon: '🛢️', color: '#f97316', theme: { main: 'text-orange-500', bg: 'bg-orange-600', border: 'border-orange-600', borderLight: 'border-orange-900/30', bgLight: 'bg-orange-900/10', textLight: 'text-orange-500', shadowColor: 'rgba(249,115,22,0.44)' } },
+    calc: { text: 'CALCULADORA FLEX', icon: '⛽', color: '#a855f7', theme: { main: 'text-purple-500', bg: 'bg-purple-600', border: 'border-purple-600', borderLight: 'border-purple-900/30', bgLight: 'bg-purple-900/10', textLight: 'text-purple-500', shadowColor: 'rgba(168,85,247,0.44)' } },
+    dicas: { text: 'DICAS TÉCNICAS', icon: '💡', color: '#06b6d4', theme: { main: 'text-cyan-500', bg: 'bg-cyan-600', border: 'border-cyan-600', borderLight: 'border-cyan-900/30', bgLight: 'bg-cyan-900/10', textLight: 'text-cyan-500', shadowColor: 'rgba(6,182,212,0.44)' } },
     ajuda: { text: '💬 FALE COM A ESPECIALISTA', menuStyle: 'bg-red-600 border-red-500 text-white shadow-[0_0_20px_rgba(220,38,38,0.5)] hover:bg-red-500 animate-pulse', theme: { main: 'text-red-500', bg: 'bg-red-600', border: 'border-red-600', borderLight: 'border-red-900/30', bgLight: 'bg-red-900/10', textLight: 'text-red-500', shadowColor: 'rgba(220,38,38,0.44)' } }
 };
 
@@ -627,73 +629,133 @@ export default function PortalCliente() {
     };
 
     return (
-        <div className="flex flex-col min-h-screen bg-[#050505] text-white font-sans overflow-x-hidden">
+        <div className="flex flex-col min-h-screen text-white font-sans overflow-x-hidden" style={{background: 'radial-gradient(ellipse at top, #0d0000 0%, #050505 60%)'}}>
             {/* HEADER */}
-            <header className="w-full px-8 py-5 flex justify-between items-center border-b border-neutral-900 sticky top-0 bg-[#050505] z-50 font-black">
-                <h1 className="text-xl font-black text-red-600 tracking-[0.3em] uppercase cursor-pointer" onClick={() => window.location.reload()}>🔧 Express Auto Tech</h1>
-                <button onClick={() => navigate('/login-admin')} className="bg-[#eab308] text-black px-6 py-2 rounded-lg text-[10px] uppercase shadow-lg shadow-yellow-600/20 hover:scale-105 transition-all">🏢 EMPRESAS</button>
+            <header className="w-full px-6 md:px-10 py-4 flex justify-between items-center sticky top-0 z-50" style={{background: 'rgba(5,5,5,0.85)', backdropFilter: 'blur(20px)', borderBottom: '1px solid rgba(220,38,38,0.15)'}}>
+                <h1 className="text-base md:text-lg font-black text-white tracking-[0.2em] uppercase cursor-pointer flex items-center gap-2" onClick={() => window.location.reload()}>
+                    <span className="text-red-500">🔧</span> <span>Express <span className="text-red-500">Auto Tech</span></span>
+                </h1>
+                <button onClick={() => navigate('/login-admin')} className="px-5 py-2 rounded-xl text-[10px] uppercase font-black tracking-widest transition-all hover:scale-105" style={{background: 'linear-gradient(135deg, #eab308, #ca8a04)', color: '#000', boxShadow: '0 0 20px rgba(234,179,8,0.3)'}}>🏢 EMPRESAS</button>
             </header>
 
-            <main className="flex-1 p-6 md:p-12 overflow-y-auto bg-[#050505]">
+            <main className="flex-1 overflow-y-auto" style={{background: 'radial-gradient(ellipse at 50% 0%, #1a0000 0%, #050505 55%)'}}>
 
                 {/* TELA 1: LOGIN E FERRAMENTAS */}
                 {!todasAsOs && abaAtiva === 'home' && (
-                    <div className="max-w-[600px] mx-auto text-center mt-6 animate-fade-in flex flex-col items-center">
-                        <h1 className="text-4xl md:text-5xl font-black mb-4 uppercase tracking-tighter">PORTAL <span className="text-red-600 drop-shadow-[0_0_10px_rgba(220,38,38,0.5)]">CLIENTE</span></h1>
-                        <p className="text-neutral-600 text-[10px] mb-8 uppercase tracking-widest leading-relaxed">Acesse seu histórico completo de manutenção</p>
-                        <div className="bg-[#080808] border border-red-900/30 p-8 md:p-12 rounded-[3rem] space-y-6 shadow-[0_0_30px_rgba(220,38,38,0.15)] relative w-full max-w-[420px]">
-                            <div className="text-left">
-                                <label className="text-red-600 text-[9px] font-black uppercase tracking-widest mb-3 block ml-2">Placa do Carro</label>
-                                <input type="text" placeholder="ABC-1234" value={placa} onChange={e => setPlaca(e.target.value.toUpperCase())} className="w-full p-5 bg-black border border-neutral-800 rounded-2xl text-center text-xl font-black text-white outline-none focus:border-red-600 transition-all" />
-                            </div>
-                            <div className="text-left">
-                                <label className="text-red-600 text-[9px] font-black uppercase tracking-widest mb-3 block ml-2">Senha (4 últimos dígitos do WhatsApp)</label>
-                                <input type="password" placeholder="••••" value={senha} onChange={e => setSenha(e.target.value)} className="w-full p-5 bg-black border border-neutral-800 rounded-2xl text-center text-4xl font-black text-white outline-none focus:border-red-600 transition-all tracking-[0.4em]" />
-                            </div>
-                            <button onClick={handleEntrar} className="w-full bg-red-600 py-6 rounded-2xl font-black text-white uppercase text-xs shadow-[0_0_15px_rgba(220,38,38,0.3)] active:scale-95 transition-all hover:bg-red-500">
-                                {carregando ? 'ENTRANDO...' : 'ACESSAR AGORA'}
-                            </button>
-                        </div>
-                        <a href="https://youtu.be/u5ufl4IrzlA" target="_blank" rel="noopener noreferrer" className="mt-8 mb-10 flex items-center gap-2 text-red-500 font-black text-[10px] uppercase tracking-widest border border-red-600/30 px-6 py-3 rounded-full hover:bg-red-600 hover:text-white transition-all">🎬 COMO USAR O PORTAL</a>
+                    <div style={{maxWidth:'520px', margin:'0 auto', padding:'2rem 1.25rem 6rem', display:'flex', flexDirection:'column', alignItems:'center', textAlign:'center'}}>
 
-                        <div className="w-full mt-6 mb-10">
-                            <p className="text-neutral-600 text-[9px] font-black uppercase mb-4 tracking-widest text-center">📺 Dicas para valorizar seu veículo</p>
-                            <div className="flex gap-4 overflow-x-auto pb-4 px-2 scrollbar-hide">
+                        {/* Título hero */}
+                        <div className="mb-10">
+                            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full mb-6" style={{background: 'rgba(220,38,38,0.1)', border: '1px solid rgba(220,38,38,0.25)'}}>
+                                <div className="w-2 h-2 rounded-full bg-red-500 animate-pulse"></div>
+                                <span className="text-red-400 text-[10px] font-black uppercase tracking-widest">SISTEMA ATIVO</span>
+                            </div>
+                            <h1 className="text-5xl md:text-6xl font-black mb-4 uppercase tracking-tighter leading-none">
+                                PORTAL <span style={{color: '#ef4444', textShadow: '0 0 40px rgba(239,68,68,0.5)'}}>CLIENTE</span>
+                            </h1>
+                            <p className="text-zinc-500 text-xs uppercase tracking-[0.2em] font-bold">Acesse seu histórico completo de manutenção</p>
+                        </div>
+
+                        {/* Card de Login */}
+                        <div className="w-full max-w-[400px] mb-8" style={{background: 'rgba(10,10,10,0.9)', border: '1px solid rgba(220,38,38,0.2)', borderRadius: '2rem', padding: '2.5rem', boxShadow: '0 0 60px rgba(220,38,38,0.12), inset 0 1px 0 rgba(255,255,255,0.03)'}}>
+                            <div className="space-y-5">
+                                <div className="text-left">
+                                    <label className="text-red-500 text-[9px] font-black uppercase tracking-[0.2em] mb-2 block">🚗 Placa do Carro</label>
+                                    <input
+                                        type="text" placeholder="ABC-1234" value={placa}
+                                        onChange={e => setPlaca(e.target.value.toUpperCase())}
+                                        style={{width:'100%', padding:'1.1rem 1.25rem', background:'rgba(0,0,0,0.6)', border:'1px solid rgba(255,255,255,0.08)', borderRadius:'1rem', color:'#fff', fontSize:'1.25rem', fontWeight:900, textAlign:'center', outline:'none', letterSpacing:'0.1em', boxSizing:'border-box', transition:'border-color 0.2s'}}
+                                        onFocus={e => e.target.style.borderColor='rgba(220,38,38,0.6)'}
+                                        onBlur={e => e.target.style.borderColor='rgba(255,255,255,0.08)'}
+                                    />
+                                </div>
+                                <div className="text-left">
+                                    <label className="text-red-500 text-[9px] font-black uppercase tracking-[0.2em] mb-2 block">🔑 Senha (4 últimos dígitos do WhatsApp)</label>
+                                    <input
+                                        type="password" placeholder="••••" value={senha}
+                                        onChange={e => setSenha(e.target.value)}
+                                        style={{width:'100%', padding:'1.1rem 1.25rem', background:'rgba(0,0,0,0.6)', border:'1px solid rgba(255,255,255,0.08)', borderRadius:'1rem', color:'#fff', fontSize:'2rem', fontWeight:900, textAlign:'center', outline:'none', letterSpacing:'0.5em', boxSizing:'border-box', transition:'border-color 0.2s'}}
+                                        onFocus={e => e.target.style.borderColor='rgba(220,38,38,0.6)'}
+                                        onBlur={e => e.target.style.borderColor='rgba(255,255,255,0.08)'}
+                                    />
+                                </div>
+                                <button
+                                    onClick={handleEntrar}
+                                    disabled={carregando}
+                                    style={{width:'100%', padding:'1.2rem', borderRadius:'1rem', border:'none', background: carregando ? 'rgba(220,38,38,0.4)' : 'linear-gradient(135deg, #dc2626 0%, #b91c1c 100%)', color:'#fff', fontWeight:900, fontSize:'0.75rem', textTransform:'uppercase', letterSpacing:'0.15em', cursor: carregando ? 'wait' : 'pointer', transition:'all 0.2s', boxShadow:'0 0 30px rgba(220,38,38,0.3)'}}
+                                    onMouseEnter={e => { if (!carregando) e.currentTarget.style.boxShadow='0 0 50px rgba(220,38,38,0.5)'; }}
+                                    onMouseLeave={e => e.currentTarget.style.boxShadow='0 0 30px rgba(220,38,38,0.3)'}
+                                >
+                                    {carregando ? '⏳ VERIFICANDO...' : '🚀 ACESSAR AGORA'}
+                                </button>
+                            </div>
+                        </div>
+
+                        <a href="https://youtu.be/u5ufl4IrzlA" target="_blank" rel="noopener noreferrer" className="mb-12 flex items-center gap-2 font-black text-[10px] uppercase tracking-widest px-6 py-3 rounded-full transition-all" style={{color:'#ef4444', border:'1px solid rgba(220,38,38,0.25)', background:'rgba(220,38,38,0.05)'}}>
+                            🎬 COMO USAR O PORTAL
+                        </a>
+
+                        {/* Carrossel de vídeos */}
+                        <div className="w-full mb-12">
+                            <p className="text-zinc-600 text-[9px] font-black uppercase mb-5 tracking-[0.2em] text-center">📺 Dicas para valorizar seu veículo</p>
+                            <div className="flex gap-4 overflow-x-auto pb-4 scrollbar-hide">
                                 {videosDestaque.map((vid) => (
-                                    <a key={vid.id} href={vid.link} target="_blank" rel="noopener noreferrer" className="flex-shrink-0 w-40 group">
-                                        <div className="relative aspect-video rounded-2xl overflow-hidden border border-neutral-800 group-hover:border-red-600 transition-all shadow-lg bg-black">
-                                            <img src={vid.thumbnail} alt={vid.titulo} className="w-full h-full object-cover opacity-40 group-hover:opacity-100 transition-opacity" />
+                                    <a key={vid.id} href={vid.link} target="_blank" rel="noopener noreferrer" className="flex-shrink-0 w-36 group">
+                                        <div className="relative aspect-video rounded-2xl overflow-hidden bg-black" style={{border:'1px solid rgba(255,255,255,0.06)', transition:'border-color 0.2s'}} onMouseEnter={e=>e.currentTarget.style.borderColor='rgba(220,38,38,0.5)'} onMouseLeave={e=>e.currentTarget.style.borderColor='rgba(255,255,255,0.06)'}>
+                                            <img src={vid.thumbnail} alt={vid.titulo} className="w-full h-full object-cover opacity-30 group-hover:opacity-80 transition-opacity" />
                                             <div className="absolute inset-0 flex items-center justify-center">
-                                                <span className="text-2xl drop-shadow-md">▶️</span>
+                                                <div className="w-9 h-9 rounded-full flex items-center justify-center" style={{background:'rgba(220,38,38,0.8)', backdropFilter:'blur(4px)'}}>
+                                                    <span className="text-sm">▶</span>
+                                                </div>
                                             </div>
                                         </div>
-                                        <p className="text-[8px] font-black uppercase mt-3 text-neutral-500 group-hover:text-red-500 transition-colors text-center leading-tight">
-                                            {vid.titulo}
-                                        </p>
+                                        <p className="text-[8px] font-black uppercase mt-2 text-zinc-600 group-hover:text-red-500 transition-colors text-center leading-tight">{vid.titulo}</p>
                                     </a>
                                 ))}
                             </div>
                         </div>
 
-                        <div className="w-full mt-4 border-t border-neutral-900 pt-8">
-                            <p className="text-neutral-600 text-[9px] font-black uppercase mb-6 tracking-widest text-center">Ou acesse as Ferramentas de IA</p>
+                        {/* Ferramentas IA */}
+                        <div className="w-full" style={{borderTop:'1px solid rgba(255,255,255,0.05)', paddingTop:'2rem'}}>
+                            <p className="text-zinc-600 text-[9px] font-black uppercase mb-6 tracking-[0.2em] text-center">⚡ Ferramentas de IA — Gratuitas</p>
 
-                            {/* 👇 NOVO BOTÃO DA ESPECIALISTA CENTRALIZADO 👇 */}
-                            <div className="flex justify-center mb-8">
+                            <div className="flex justify-center mb-6">
                                 <button
                                     onClick={() => { setAbaAtiva('ajuda'); window.scrollTo(0, 0); }}
-                                    className="flex items-center gap-3 px-8 py-4 bg-[#1a0000] border-2 border-red-500 rounded-full text-red-500 hover:text-white font-black text-[10px] md:text-xs uppercase tracking-widest shadow-[0_0_30px_rgba(220,38,38,0.4)] hover:shadow-[0_0_50px_rgba(220,38,38,0.6)] hover:bg-red-600 transition-all hover:scale-105"
+                                    className="flex items-center gap-3 font-black text-sm uppercase tracking-widest transition-all"
+                                    style={{padding:'1rem 2rem', borderRadius:'3rem', border:'2px solid rgba(220,38,38,0.6)', background:'rgba(220,38,38,0.08)', color:'#ef4444', boxShadow:'0 0 30px rgba(220,38,38,0.2)'}}
+                                    onMouseEnter={e=>{e.currentTarget.style.background='rgba(220,38,38,0.2)'; e.currentTarget.style.boxShadow='0 0 50px rgba(220,38,38,0.4)';}}
+                                    onMouseLeave={e=>{e.currentTarget.style.background='rgba(220,38,38,0.08)'; e.currentTarget.style.boxShadow='0 0 30px rgba(220,38,38,0.2)';}}
                                 >
                                     <span className="text-2xl">👩‍🔧</span> FALE COM A ESPECIALISTA
                                 </button>
                             </div>
-                            {/* 👆 FIM DO BOTÃO DA ESPECIALISTA 👆 */}
 
-                            {/* GRADE COM O RESTO DAS FERRAMENTAS */}
-                            <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                            <div className="grid grid-cols-2 gap-3">
                                 {Object.entries(abasConfig).filter(([id]) => id !== 'home' && id !== 'ajuda').map(([id, config]) => (
-                                    <button key={id} onClick={() => { setAbaAtiva(id); window.scrollTo(0, 0); }} className={`w-full py-6 px-4 rounded-2xl font-black text-[10px] uppercase transition-all border bg-[#0a0a0a] hover:scale-[1.03] shadow-lg ${config.menuStyle}`}>
-                                        {config.text}
+                                    <button
+                                        key={id}
+                                        onClick={() => { setAbaAtiva(id); window.scrollTo(0, 0); }}
+                                        style={{
+                                            background: `linear-gradient(135deg, ${config.color}12 0%, rgba(0,0,0,0) 100%)`,
+                                            border: `1px solid ${config.color}33`,
+                                            borderRadius: '1.25rem',
+                                            padding: '1.25rem 1rem',
+                                            display: 'flex',
+                                            flexDirection: 'column',
+                                            alignItems: 'center',
+                                            gap: '0.5rem',
+                                            cursor: 'pointer',
+                                            transition: 'all 0.2s',
+                                            boxShadow: `0 0 20px ${config.color}0A`,
+                                        }}
+                                        onMouseEnter={e => { e.currentTarget.style.boxShadow = `0 0 30px ${config.color}44`; e.currentTarget.style.borderColor = `${config.color}66`; }}
+                                        onMouseLeave={e => { e.currentTarget.style.boxShadow = `0 0 20px ${config.color}0A`; e.currentTarget.style.borderColor = `${config.color}33`; }}
+                                    >
+                                        <span style={{ fontSize: '1.75rem' }}>{config.icon}</span>
+                                        <span style={{ color: config.color, fontSize: '9px', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '0.08em', lineHeight: 1.3, textAlign: 'center' }}>
+                                            {config.text}
+                                        </span>
                                     </button>
                                 ))}
                             </div>

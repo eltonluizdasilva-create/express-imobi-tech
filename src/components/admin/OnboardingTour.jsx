@@ -45,7 +45,7 @@ const PASSOS_TOUR = [
   },
   {
     titulo: '🎁 10. Liberdade: Comece Totalmente Grátis',
-    texto: 'Teste o Premium por 15 dias. Depois, você decide: faça o upgrade ou continue usando nossas diversas ferramentas gratuitas para sempre. Você tem o controle do seu crescimento.',
+    texto: 'Teste o Premium por 15 dias. Depois, você decide: faça o upgrade ou continue usando nossas diversas ferramentas gratuitas conseguindo as promoções. Você tem o controle do seu crescimento.',
   },
   {
     titulo: '🧠 Passo 1: O Cérebro (Ajustes) ⚙️',

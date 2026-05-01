@@ -35,7 +35,6 @@ import PneusModulo from './components/pneus';
 import OleoModulo from './components/Oleo';
 import InjecaoModulo from './components/Injecao';
 import AlinhamentoModulo from './components/Alinhamento';
-import RevisaoModulo from './components/ModuloRevisao';
 import CopilotoModulo from './components/copiloto';
 import Secretaria from './components/Secretaria';
 import Administrador from './components/Administrador';
@@ -46,7 +45,6 @@ import Fornecedores from './components/Fornecedores';
 import Ajuda from './components/Ajuda';
 import MasterPanel from './components/MasterPanel';
 import QuickActions from './components/QuickActions';
-import ModalOnboarding from './components/ModalOnboarding';
 
 // --- 2. MÓDULOS NA RAIZ SRC ---
 import EletricaModulo from './Eletrica';
@@ -95,7 +93,7 @@ const AJUDA_ITENS = [
 
 const { MAIN, GREEN, MASTER } = COLORS;
 const APP_BASE_URL = 'https://oficina.expresstech.com.br';
-const SERVICOS_ESTETICA_ABAS = ['mecanica', 'hibrido', 'eletrico', 'moto', 'funilaria', 'amortecedor', 'injecao', 'eletrica', 'alinhamento', 'oleo', 'revisao', 'ar_condicionado', 'pneus', 'desmanche', 'escapamento', 'lavajato', 'estetica'];
+const SERVICOS_ESTETICA_ABAS = ['mecanica', 'hibrido', 'eletrico', 'moto', 'funilaria', 'amortecedor', 'injecao', 'eletrica', 'alinhamento', 'oleo', 'ar_condicionado', 'pneus', 'desmanche', 'escapamento', 'lavajato', 'estetica'];
 const MAPA_MODULOS_SERVICOS = {
   mecanica: ['mecanica', 'MECÂNICA', 'MECANICA'],
   hibrido: ['hibrido', 'HÍBRIDOS', 'HIBRIDOS'],
@@ -107,7 +105,6 @@ const MAPA_MODULOS_SERVICOS = {
   eletrica: ['eletrica', 'ELÉTRICA', 'ELÉTRICA'],
   alinhamento: ['alinhamento', 'ALINHAMENTO'],
   oleo: ['oleo', 'ÓLEO', 'OLEO'],
-  revisao: ['revisao', 'REVISÃO', 'REVISAO'],
   ar_condicionado: ['ar_condicionado', 'AR-CONDICIONADO'],
   pneus: ['pneus', 'PNEUS'],
   desmanche: ['desmanche', 'DESMANCHE'],
@@ -329,7 +326,7 @@ export default function Admin() {
       mecanica: Mecanica, hibrido: HibridoEV, eletrico: VeiculoEletrico, moto: MotoModulo,
       funilaria: FunilariaModulo, amortecedor: AmortecedorModulo, injecao: InjecaoModulo,
       eletrica: EletricaModulo, oleo: OleoModulo, alinhamento: AlinhamentoModulo,
-      revisao: RevisaoModulo, lavajato: LavaJato, ar_condicionado: ArCondicionado,
+      lavajato: LavaJato, ar_condicionado: ArCondicionado,
       pneus: PneusModulo, escapamento: Escapamento, estetica: Estetica, desmanche: Desmanche,
     };
     return {
@@ -521,7 +518,7 @@ export default function Admin() {
     mecanica: 'Mecânica', clientes: 'Clientes', hibrido: 'Híbridos/Elétricos',
     moto: 'Motos', funilaria: 'Funilaria', amortecedor: 'Amortecedor',
     injecao: 'Injeção', eletrica: 'Elétrica', alinhamento: 'Alinhamento',
-    oleo: 'Óleo', revisao: 'Revisão', ar_condicionado: 'Ar-Condicionado',
+    oleo: 'Óleo', ar_condicionado: 'Ar-Condicionado',
     pneus: 'Pneus', desmanche: 'Desmanche', escapamento: 'Escapamento',
     lavajato: 'Lava Jato', estetica: 'Estética',
     copiloto: 'Copiloto IA', secretaria: 'Secretária IA', administrador: 'Administrador IA',
@@ -573,7 +570,7 @@ export default function Admin() {
   const LABELS_ABAS = {
     dashboard: '📊 VISÃO GERAL', os: '🔧 O.S.', mecanica: '🔧 MECÂNICA', clientes: '👥 CLIENTES', hibrido: '🔋 HÍBRIDOS',
     moto: '🏍️ MOTOS', eletrico: '🔌 100% ELÉTRICOS', funilaria: '🚗 FUNILARIA', amortecedor: '🧰 AMORTECEDOR', injecao: '🛠️ INJEÇÃO',
-    oleo: '🛢️ ÓLEO', alinhamento: '⚙️ ALINHAMENTO', revisao: '🛡️ REVISÃO', eletrica: '⚡ ELÉTRICA',
+    oleo: '🛢️ ÓLEO', alinhamento: '⚙️ ALINHAMENTO', eletrica: '⚡ ELÉTRICA',
     ar_condicionado: '❄️ AR-COND.', pneus: '🛞 PNEUS', escapamento: '🪛 ESCAPAMENTO', estetica: '✨ ESTÉTICA',
     lavajato: '🚿 LAVA JATO', desmanche: '🚗 DESMANCHE', copiloto: '👨‍🔧 COPILOTO',
     secretaria: '👩‍💼 SECRETÁRIA', administrador: '👔 ADMINISTRADOR', contador: '📋 ASSIST. FISCAL',
@@ -641,7 +638,7 @@ export default function Admin() {
       )}
 
       {!modoFoco && (
-        <MenuNavegacao t={t} servicosVisiveis={servicosVisiveis} MAIN={MAIN} MASTER={MASTER} papelLogado={papelLogado} abaAtiva={abaAtiva} setAbaAtiva={setAbaAtiva} moduloLiberado={moduloLiberado} lidarModuloBloqueado={lidarModuloBloqueado} LABELS_ABAS={LABELS_ABAS} />
+        <MenuNavegacao t={t} servicosVisiveis={servicosVisiveis} MAIN={MAIN} MASTER={MASTER} papelLogado={papelLogado} abaAtiva={abaAtiva} setAbaAtiva={setAbaAtiva} moduloLiberado={moduloLiberado} lidarModuloBloqueado={lidarModuloBloqueado} LABELS_ABAS={LABELS_ABAS} osEmEdicao={osEmEdicao} />
       )}
 
       <AvisoIA abaAtiva={abaAtiva} />
@@ -700,7 +697,7 @@ export default function Admin() {
         OleoModulo={OleoModulo}
         AlinhamentoModulo={AlinhamentoModulo}
         EletricaModulo={EletricaModulo}
-        RevisaoModulo={RevisaoModulo}
+
         ArCondicionado={ArCondicionado}
         PneusModulo={PneusModulo}
         Escapamento={Escapamento}
@@ -758,7 +755,6 @@ export default function Admin() {
 
       <ModaisExtras
         QuickActions={QuickActions}
-        ModalOnboarding={ModalOnboarding}
         oficinaId={oficinaId}
         GREEN={GREEN}
         modalTarefaAberto={modalTarefaAberto}

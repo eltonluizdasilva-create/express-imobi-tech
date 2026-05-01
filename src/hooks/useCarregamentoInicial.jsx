@@ -34,22 +34,29 @@ export default function useCarregamentoInicial(oficinaId, setters) {
   const carregarPlanos = useCallback(async () => {
     if (!logado) return;
     try {
-      // Tenta buscar no local mestre primeiro
-      const masterRef = doc(db, 'configuracoes_admin', 'master');
-      const snap = await getDoc(masterRef);
+      // Tenta buscar na coleção 'planos' que é pública
+      const planosRef = collection(db, 'planos');
+      const q = query(planosRef);
+      const s = await getDocs(q);
       
-      if (snap.exists()) {
-        const dados = snap.data();
-        setPlanosSistema(dados.planos || {});
-        console.log("💎 Planos carregados via Admin");
-      } else {
-        // Se não achar, tenta o local secundário (retrocompatibilidade)
-        const planosRef = collection(db, 'planos');
-        const q = query(planosRef);
-        const s = await getDocs(q);
+      if (!s.empty) {
         const lista = {};
         s.forEach(d => lista[d.id] = d.data());
         setPlanosSistema(lista);
+        console.log("💎 Planos carregados via planos");
+      } else {
+        // Se a coleção 'planos' estiver vazia, tenta o Admin
+        try {
+          const masterRef = doc(db, 'configuracoes_admin', 'master');
+          const snap = await getDoc(masterRef);
+          if (snap.exists()) {
+            const dados = snap.data();
+            setPlanosSistema(dados.planos || {});
+            console.log("💎 Planos carregados via Admin");
+          }
+        } catch (errMaster) {
+          // Ignorado silenciosamente
+        }
       }
     } catch (e) {
       // ESTA É A CHAVE: Se der erro de permissão, o sistema não trava mais!

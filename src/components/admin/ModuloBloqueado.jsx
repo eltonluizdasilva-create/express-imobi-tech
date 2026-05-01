@@ -1,107 +1,96 @@
-/* eslint-disable react/prop-types */
-import { Lock } from 'lucide-react';
+import React from 'react';
+import { Lock, Rocket, CheckCircle, X, ShoppingCart } from 'lucide-react';
 
-export default function ModuloBloqueado({
-  toastModuloBloqueado,
-  modalUpgradeAba,
-  setToastModuloBloqueado,
-  setModalUpgradeAba,
-  setAbaAtiva,
-  MAIN,
-  planosSistema,
-  LABELS_ABAS_MODAL,
-  papelLogado,
-}) {
-  return (
-    <>
-      {toastModuloBloqueado && !modalUpgradeAba && (
-        <div style={{
-          position: 'fixed', bottom: '30px', left: '50%', transform: 'translateX(-50%)',
-          background: '#111', border: `1px solid ${MAIN}`, borderRadius: '12px',
-          padding: '16px 24px', zIndex: 9999, display: 'flex', alignItems: 'center', gap: '12px',
-          boxShadow: `0 0 30px ${MAIN}44`, maxWidth: '400px', width: '90%'
-        }}>
-          <div style={{ width: '36px', height: '36px', background: `${MAIN}22`, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-            <Lock size={16} color={MAIN} />
-          </div>
-          <div style={{ flex: 1 }}>
-            <p style={{ color: MAIN, fontWeight: 'bold', fontSize: '13px', margin: 0 }}>Módulo Premium</p>
-            <p style={{ color: '#888', fontSize: '11px', margin: '2px 0 0 0' }}>Acesse a aba <strong style={{ color: 'white' }}>Meu Plano</strong> para liberar.</p>
-          </div>
-          <button onClick={() => setToastModuloBloqueado(null)} style={{ background: 'transparent', border: 'none', color: '#555', cursor: 'pointer', fontSize: '16px', padding: '0', flexShrink: 0 }}>✕</button>
-        </div>
-      )}
+export default function ModuloBloqueado({ isVisible, onClose, setAbaAtiva }) {
+    if (!isVisible) return null;
 
-      {modalUpgradeAba && (
+    const irParaPlanos = () => {
+        setAbaAtiva('meuplano');
+        onClose(); // Fecha o aviso depois de redirecionar
+    };
+
+    return (
         <div style={{
-          position: 'fixed', inset: 0, zIndex: 99999,
-          background: 'rgba(0,0,0,0.85)', backdropFilter: 'blur(8px)',
-          display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px'
+            position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.85)',
+            zIndex: 99999, display: 'flex', alignItems: 'center', justifyContent: 'center',
+            padding: '20px', backdropFilter: 'blur(5px)'
         }}>
-          {papelLogado === 'funcionario' ? (
-            <div className="flex flex-col items-center justify-center p-10 text-center bg-[#1a1a1a] rounded-xl border border-gray-800 max-w-md w-full shadow-2xl">
-              <svg className="w-16 h-16 text-gray-600 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path>
-              </svg>
-              <h2 className="text-2xl font-bold text-white mb-2">Acesso Restrito</h2>
-              <p className="text-gray-400 mb-8">
-                O módulo <strong className="text-white">{LABELS_ABAS_MODAL[modalUpgradeAba] || modalUpgradeAba}</strong> é de uso exclusivo da administração da oficina.
-              </p>
-              <button 
-                onClick={() => setModalUpgradeAba(null)} 
-                className="w-full py-3 bg-gray-800 text-white rounded-xl hover:bg-gray-700 transition-colors font-bold tracking-wide uppercase text-sm"
-              >
-                Voltar
-              </button>
-            </div>
-          ) : (
             <div style={{
-              background: '#111', border: `1px solid ${MAIN}`, borderRadius: '24px',
-              padding: '40px', maxWidth: '420px', width: '100%', textAlign: 'center',
-              boxShadow: `0 0 60px ${MAIN}33`
+                background: '#0a0a0a', width: '100%', maxWidth: '450px',
+                borderRadius: '16px', border: '2px solid #FF0033',
+                boxShadow: '0 0 40px rgba(255, 0, 51, 0.4)',
+                position: 'relative', overflow: 'hidden', textAlign: 'center',
+                padding: '30px 20px'
             }}>
-              <div style={{
-                width: '64px', height: '64px', borderRadius: '50%', margin: '0 auto 20px',
-                background: `${MAIN}22`, display: 'flex', alignItems: 'center', justifyContent: 'center'
-              }}>
-                <Lock size={28} color={MAIN} />
-              </div>
-              <h2 style={{ color: MAIN, fontSize: '22px', fontWeight: '900', marginBottom: '10px', textTransform: 'uppercase' }}>
-                Upgrade Necessário
-              </h2>
-              <p style={{ color: '#888', fontSize: '13px', lineHeight: '1.7', marginBottom: '8px' }}>
-                O módulo <strong style={{ color: 'white' }}>{LABELS_ABAS_MODAL[modalUpgradeAba] || modalUpgradeAba}</strong> não está incluso no seu plano atual.
-              </p>
-              <p style={{ color: '#555', fontSize: '11px', marginBottom: '28px' }}>
-                Faça um upgrade para desbloquear todos os módulos e funcionalidades.
-              </p>
-              <a
-                href={`https://wa.me/${planosSistema?.whatsapp || '5534991439845'}?text=${encodeURIComponent(`Olá! Gostaria de desbloquear o módulo ${LABELS_ABAS_MODAL[modalUpgradeAba] || modalUpgradeAba}. Qual plano preciso?`)}`}
-                target="_blank"
-                rel="noreferrer"
-                style={{
-                  display: 'block', width: '100%', padding: '16px', borderRadius: '12px',
-                  background: MAIN, color: 'white', fontWeight: '900', fontSize: '13px',
-                  textAlign: 'center', textDecoration: 'none', textTransform: 'uppercase',
-                  boxShadow: `0 8px 30px ${MAIN}44`, marginBottom: '10px'
+                {/* Botão Fechar */}
+                <button onClick={onClose} style={{
+                    position: 'absolute', top: '15px', right: '15px',
+                    background: 'transparent', border: 'none', color: '#666', cursor: 'pointer',
+                    transition: 'color 0.2s'
                 }}
-              >
-                💬 Falar com Suporte
-              </a>
-              <button
-                onClick={() => { setModalUpgradeAba(null); setAbaAtiva('meuplano'); }}
-                style={{
-                  width: '100%', padding: '14px', background: 'transparent',
-                  color: '#888', border: '1px solid #333', borderRadius: '12px',
-                  fontWeight: 'bold', fontSize: '12px', cursor: 'pointer', textTransform: 'uppercase'
-                }}
-              >
-                Ver Planos
-              </button>
+                onMouseEnter={(e) => e.currentTarget.style.color = '#fff'}
+                onMouseLeave={(e) => e.currentTarget.style.color = '#666'}>
+                    <X size={24} />
+                </button>
+
+                {/* Ícone de Cadeado Animado */}
+                <div style={{
+                    width: '70px', height: '70px', borderRadius: '50%', background: 'rgba(255,0,51,0.1)',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    margin: '0 auto 20px', border: '2px solid #FF0033'
+                }}>
+                    <Lock size={35} color="#FF0033" />
+                </div>
+
+                <h2 style={{ color: 'white', margin: '0 0 10px', fontSize: '22px', fontWeight: '900', textTransform: 'uppercase' }}>
+                    Módulo Exclusivo
+                </h2>
+
+                <p style={{ color: '#bbb', fontSize: '14px', lineHeight: '1.5', margin: '0 0 20px' }}>
+                    Esta ferramenta faz parte do nosso pacote profissional de crescimento.
+                </p>
+
+                {/* Caixa de Vantagens (A Isca) */}
+                <div style={{
+                    background: '#111', border: '1px solid #222', borderRadius: '12px',
+                    padding: '16px', textAlign: 'left', marginBottom: '25px'
+                }}>
+                    <p style={{ color: '#FF0033', fontSize: '12px', fontWeight: '900', margin: '0 0 12px', textTransform: 'uppercase', letterSpacing: '1px' }}>
+                        Vantagens do Assinante:
+                    </p>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '10px' }}>
+                        <CheckCircle size={18} color="#22c55e" />
+                        <span style={{ color: '#ddd', fontSize: '13px' }}>Leva <b>TODOS</b> os módulos grátis para sempre</span>
+                    </div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '10px' }}>
+                        <Rocket size={18} color="#a855f7" />
+                        <span style={{ color: '#ddd', fontSize: '13px' }}>Libera as ferramentas operacionais travadas</span>
+                    </div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                        <ShoppingCart size={18} color="#FF0033" />
+                        <span style={{ color: '#ddd', fontSize: '13px' }}>Você escolhe o que pagar na hora de montar o plano</span>
+                    </div>
+                </div>
+
+                {/* Botão de Ação Principal */}
+                <button onClick={irParaPlanos} style={{
+                    width: '100%', padding: '16px', borderRadius: '10px',
+                    background: '#FF0033', color: 'white', border: 'none',
+                    fontWeight: '900', fontSize: '14px', textTransform: 'uppercase',
+                    cursor: 'pointer', boxShadow: '0 5px 20px rgba(255,0,51,0.3)',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px'
+                }}>
+                    💰 QUERO LIBERAR MEU SISTEMA
+                </button>
+                
+                <button onClick={onClose} style={{
+                    marginTop: '15px', background: 'transparent', border: 'none',
+                    color: '#666', fontSize: '11px', textTransform: 'uppercase',
+                    fontWeight: 'bold', cursor: 'pointer', letterSpacing: '1px'
+                }}>
+                    Continuar no plano grátis por enquanto
+                </button>
             </div>
-          )}
         </div>
-      )}
-    </>
-  );
+    );
 }

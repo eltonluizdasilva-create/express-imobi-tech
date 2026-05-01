@@ -8,6 +8,7 @@ export default function ListaOS({
   deletarOS,
   enviarWhatsApp,
   abrirMercado,
+  papelLogado,
   t = { text: '#fff', textSoft: '#888', stroke: '#333', card: '#111', bg: '#000' },
   tema = 'escuro',
 }) {
@@ -276,7 +277,9 @@ export default function ListaOS({
                   <div className="flex items-center gap-2 text-zinc-400 font-medium text-sm md:text-base">
                     <span>{os.modelo || 'N/I'}</span>
                     <span className="text-zinc-600">•</span>
-                    <span className="text-yellow-500">{os.senha_web || os.senhaConsulta || 'S/S'}</span>
+                    <span className="text-yellow-500 font-bold">
+                      🔑 Senha Portal (4 dígitos): {os.senha_web || os.senhaConsulta || '0000'}
+                    </span>
                   </div>
 
                   <div className="text-zinc-500 text-xs">
@@ -362,12 +365,14 @@ export default function ListaOS({
                       <FileDown size={14} /> Recibo PDF
                     </button>
 
-                    <button
-                      onClick={() => deletarOS(os.id)}
-                      className="bg-red-600 hover:bg-red-700 text-white py-2 rounded-lg font-bold text-[10px] uppercase tracking-widest transition-colors flex items-center justify-center gap-1"
-                    >
-                      <Trash2 size={14} /> Apagar
-                    </button>
+                    {(papelLogado === 'dono' || papelLogado === 'master') && (
+                      <button
+                        onClick={() => deletarOS(os.id)}
+                        className="bg-red-600 hover:bg-red-700 text-white py-2 rounded-lg font-bold text-[10px] uppercase tracking-widest transition-colors flex items-center justify-center gap-1"
+                      >
+                        <Trash2 size={14} /> Apagar
+                      </button>
+                    )}
                   </div>
                 </div>
               </div>

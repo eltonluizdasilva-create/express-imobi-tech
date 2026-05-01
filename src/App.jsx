@@ -17,6 +17,7 @@ const LoginAdmin = lazy(() => import('./LoginAdmin'));
 const OSPage = lazy(() => import('./OSPage'));
 const PortalCliente = lazy(() => import('./PortalCliente'));
 const StatusOS = lazy(() => import('./StatusOS'));
+const RevisaoPremium = lazy(() => import('./pages/admin/RevisaoPremium'));
 
 // ============================================================
 // ERROR BOUNDARY
@@ -136,6 +137,15 @@ function AppRoutes() {
         />
 
         <Route path="/status/:oficinaId/:osId" element={<StatusOS />} />
+
+        <Route
+          path="/admin/revisao-premium"
+          element={(
+            <PrivateRoute>
+              <RevisaoPremium />
+            </PrivateRoute>
+          )}
+        />
 
         <Route path="*" element={<Navigate to={logado ? '/admin' : '/login-admin'} replace />} />
       </Routes>
