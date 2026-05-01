@@ -7,7 +7,7 @@ import {
   CreditCard, UserPlus, Megaphone, Rocket, HelpCircle, Wrench, Battery,
   Zap, Bike, Car, Hammer, Activity, Cpu, MoveHorizontal, Droplet,
   ShieldCheck, Snowflake, Circle, Scissors, Wind, CloudRain, Sparkles,
-  Brain, Briefcase, Shield, Calculator, ShoppingCart, Play, Info, Video
+  Brain, Briefcase, Shield, Calculator, ShoppingCart, Play, Info, Video, MessageCircle
 } from 'lucide-react';
 
 const ESTILO_BIBLIOTECA = `
@@ -533,7 +533,57 @@ export default function BibliotecaTreinamento() {
           <div className="box-resumo">Gestão de peças de reaproveitamento, rede global e WhatsApp.</div>
         </div>
 
+        {/* ==========================================
+            SEÇÃO 7: MÓDULOS PRO & ELITE
+        ========================================== */}
+        <div className="titulo-sessao"><div style={{ width: 4, height: 15, background: '#ff3131' }} /> 7. Recursos Avançados</div>
+
+        <div className="item-biblioteca">
+          <div className="icone-box"><DollarSign size={20} color="#22c55e" /></div>
+          <div className="label-nome">📊 Fechamento Diário</div>
+          {renderBotaoVideo(links.fechamento_caixa)}
+          <div className="box-resumo">Concilie saldo em Dinheiro, PIX e Cartão, registre sangrias em categorias e emita o relatório diário.</div>
+        </div>
+
+        <div className="item-biblioteca">
+          <div className="icone-box"><Users size={20} color="#D4AF37" /></div>
+          <div className="label-nome">👥 Gestão de Equipe/Pagamentos</div>
+          {renderBotaoVideo(links.pagamentos_equipe)}
+          <div className="box-resumo">Crie uma lista de funcionários, calcule automaticamente as comissões com base na mão de obra das O.S. finalizadas e registre vales.</div>
+        </div>
+
       </div>
+
+      {/* Botão Flutuante de Suporte WhatsApp */}
+      <a
+        href="https://wa.me/5534991439845?text=Olá,%20gostaria%20de%20falar%20com%20o%20Suporte/Secretária%20sobre%20aprovação%20de%20orçamentos."
+        target="_blank"
+        rel="noreferrer"
+        style={{
+          position: 'fixed',
+          bottom: '30px',
+          right: '30px',
+          background: '#25D366',
+          color: 'white',
+          borderRadius: '50px',
+          padding: '12px 24px',
+          display: 'flex',
+          alignItems: 'center',
+          gap: '10px',
+          boxShadow: '0 4px 15px rgba(37,211,102,0.4)',
+          textDecoration: 'none',
+          fontWeight: 'bold',
+          fontSize: '14px',
+          zIndex: 9999,
+          transition: 'all 0.3s ease-in-out',
+        }}
+        onMouseEnter={(e) => { e.currentTarget.style.transform = 'scale(1.05)'; }}
+        onMouseLeave={(e) => { e.currentTarget.style.transform = 'scale(1)'; }}
+      >
+        <MessageCircle size={20} />
+        <span>Falar com Secretária</span>
+      </a>
+
     </div>
   );
 }

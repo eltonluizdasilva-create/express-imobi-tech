@@ -49,7 +49,8 @@ const DEFAULT_PLANOS = {
   },
   premiumMods: [
     'clientes', 'estoque', 'retorno', 'pneus', 'copiloto',
-    'desmanche', 'hibrido_ev', 'veiculo_eletrico', 'contador'
+    'desmanche', 'hibrido_ev', 'veiculo_eletrico', 'contador',
+    'fechamento_caixa', 'pagamentos_equipe'
   ],
   whatsapp: "5534991439845",
   descricaoBase: "Abertura de O.S. Geral e Controle Financeiro."
@@ -540,6 +541,23 @@ export default function MasterPanel({ setPlanosGlobais }) {
                     </div>
                   </div>
                   <div style={{ display: 'flex', gap: '10px' }}>
+                    <a
+                      href={`https://wa.me/${oficina.telefone || ''}?text=Olá!%20Seja%20bem-vindo(a)%20à%20equipe%20da%20nossa%20oficina.%20Aqui%20está%20o%20seu%20link%20de%20acesso%20ao%20sistema:%20${window.location.origin}`}
+                      target="_blank"
+                      rel="noreferrer"
+                      style={{
+                        padding: '8px 15px', borderRadius: '6px', fontWeight: 'bold', cursor: 'pointer',
+                        background: '#25D36622',
+                        color: '#25D366',
+                        border: '1px solid #25D366',
+                        textDecoration: 'none',
+                        fontSize: '13px',
+                        display: 'flex',
+                        alignItems: 'center'
+                      }}
+                    >
+                      WHATSAPP
+                    </a>
                     <button
                       onClick={() => toggleStatusOficina(oficina)}
                       style={{

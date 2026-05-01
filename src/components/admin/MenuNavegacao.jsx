@@ -64,11 +64,19 @@ export default function MenuNavegacao({ t, MAIN, MASTER, papelLogado, abaAtiva, 
         if (aba === 'clientes') botaoId = 'menu-clientes';
 
         // Atualização de Rótulos
-        let labelFinal = LABELS_ABAS[aba];
+        let labelFinal = (LABELS_ABAS && LABELS_ABAS[aba]) || '';
+        if (!labelFinal) {
+            if (aba === 'fechamento_caixa') labelFinal = '📊 FECHAMENTO DE CAIXA';
+            else if (aba === 'pagamentos_equipe') labelFinal = '👥 GESTÃO DE EQUIPE/PAGAMENTOS';
+            else labelFinal = aba.toUpperCase();
+        }
         if (aba === 'dashboard') labelFinal = '📊 VISÃO GERAL';
         if (aba === 'contador') labelFinal = '📋 ASSIST. FISCAL';
         if (aba === 'retorno') labelFinal = '📅 RETORNO';
+        if (aba === 'fechamento_caixa') labelFinal = '📊 FECHAMENTO DE CAIXA';
+        if (aba === 'pagamentos_equipe') labelFinal = '👥 GESTÃO DE EQUIPE/PAGAMENTOS';
         if (aba === 'revisaopremium' || aba === 'revisao') labelFinal = '🛡️ REVISÃO';
+        if (aba === 'estrategia') labelFinal = '🧠 ESTRATÉGIA';
 
         return (
             <button
@@ -154,7 +162,7 @@ export default function MenuNavegacao({ t, MAIN, MASTER, papelLogado, abaAtiva, 
                     🚀 MÓDULOS ASSINANTES (LEVAM TODOS ESSES + GRÁTIS. ATIVE EM MEU PLANO)
                 </p>
                 <div style={{ display: 'flex', gap: '8px', overflowX: 'auto', marginBottom: '12px', paddingBottom: '4px' }}>
-                    {['leads', 'mercadolivre', 'precificacao', 'revisaopremium', 'desmanche', 'notafiscal']
+                    {['leads', 'fechamento_caixa', 'pagamentos_equipe', 'mercadolivre', 'precificacao', 'revisaopremium', 'desmanche', 'notafiscal']
                         .map(aba => makeButton(aba, 'pro'))}
                 </div>
 

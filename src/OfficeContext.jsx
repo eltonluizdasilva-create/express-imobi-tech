@@ -523,6 +523,7 @@ export default function Admin() {
     lavajato: 'Lava Jato', estetica: 'Estética',
     copiloto: 'Copiloto IA', secretaria: 'Secretária IA', administrador: 'Administrador IA',
     contador: 'Assistente Fiscal IA', mercadolivre: 'Compras',
+    fechamento_caixa: 'Fechamento de Caixa', pagamentos_equipe: 'Gestão de Equipe/Pagamentos',
   };
 
   const dispararLembreteOleo = (os) => {
@@ -576,6 +577,7 @@ export default function Admin() {
     secretaria: '👩‍💼 SECRETÁRIA', administrador: '👔 ADMINISTRADOR', contador: '📋 ASSIST. FISCAL',
     mercadolivre: '📦 COMPRAS', mercado_livre: '📦 COMPRAS',
     financeiro: '📊 FINANCEIRO', estoque: '📦 ESTOQUE', leads: '👥 CLIENTES', historico: '📋 HISTÓRICO',
+    fechamento_caixa: '📊 FECHAMENTO DE CAIXA', pagamentos_equipe: '👥 GESTÃO DE EQUIPE/PAGAMENTOS',
     tarefa: '📋 TAREFA', notafiscal: '📄 NOTA FISCAL', retorno: '📅 RETORNO', patrimonio: '📊 PATRIMÔNIO', fornecedores: '🤝 FORNECEDORES',
     precificacao: '💰 PRECIFICAÇÃO',
     equipe: '👥 EQUIPE', config: '⚙️ AJUSTES', marketing: '📣 MARKETING', estrategia: '🚀 ESTRATÉGIA', ajuda: '❓ AJUDA',

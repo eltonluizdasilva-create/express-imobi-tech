@@ -1,4 +1,6 @@
 import React from 'react';
+import FechamentoCaixa from '../../FechamentoCaixa';
+import PagamentosEquipe from '../../PagamentosEquipe';
 
 // ✅ O "export default" no início da função resolve o erro da tela branca
 export default function ConteudoAbas(props) {
@@ -7,6 +9,7 @@ export default function ConteudoAbas(props) {
     oficinaId,
     dadosOficina,
     listaCarros,
+    listaFinanceiro,
     onSalvo,
     handleOSCriada,
     buscarDadosPorPlaca,
@@ -123,7 +126,7 @@ export default function ConteudoAbas(props) {
 
       {/* 💰 FINANCEIRO */}
       {abaAtiva === 'financeiro' && Financeiro && (
-        <Financeiro oficinaId={oficinaId} />
+        <Financeiro oficinaId={oficinaId} listaFinanceiro={listaFinanceiro} />
       )}
 
       {/* 📦 ESTOQUE */}
@@ -144,6 +147,16 @@ export default function ConteudoAbas(props) {
       {/* ⚙️ AJUSTES */}
       {abaAtiva === 'config' && ConfiguracoesPage && (
         <ConfiguracoesPage oficinaId={oficinaId} config={config} />
+      )}
+
+      {/* 📊 FECHAMENTO DE CAIXA */}
+      {abaAtiva === 'fechamento_caixa' && (
+        <FechamentoCaixa oficinaId={oficinaId} listaFinanceiro={listaFinanceiro} />
+      )}
+
+      {/* 👥 GESTÃO DE EQUIPE/PAGAMENTOS */}
+      {abaAtiva === 'pagamentos_equipe' && (
+        <PagamentosEquipe oficinaId={oficinaId} listaCarros={listaCarros} onSalvo={onSalvo} />
       )}
 
     </div>

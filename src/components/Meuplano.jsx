@@ -58,6 +58,8 @@ const IA_MODULOS = [
     { id: 'contador', label: 'Assistente Fiscal', icon: '📋' },
     { id: 'retorno', label: 'Máquina de Retorno', icon: '📅' },
     { id: 'estrategia', label: 'Estratégia', icon: '🚀' },
+    { id: 'fechamento_caixa', label: '💎 Fechamento Diário (Elite)', icon: '📊' },
+    { id: 'pagamentos_equipe', label: '💎 Gestão Equipe/Pagamentos (Elite)', icon: '👥' },
 ];
 
 const FALLBACK_PLANOS = {

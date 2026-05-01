@@ -71,6 +71,8 @@ import OSModulo from './components/admin/OS';
 import ListaOS from './components/admin/ListaOS';
 import Precificacao from './components/admin/Precificacao';
 import AbaAjudaIA from './components/AbaAjudaIA';
+import FechamentoCaixa from './FechamentoCaixa';
+import PagamentosEquipe from './PagamentosEquipe';
 
 // Novo componente de gerenciamento de módulos
 import GerenciadorDeModulos from './components/admin/GerenciadorDeModulos';
@@ -202,6 +204,8 @@ const MODULOS_MAP = {
   ConfiguracoesPage: ConfiguracoesPage, // Suporte para ambos os nomes
   meuplano: ModuloMeuPlano,
   master: MasterPanel,
+  fechamento_caixa: FechamentoCaixa,
+  pagamentos_equipe: PagamentosEquipe,
 };
 
 

@@ -243,7 +243,7 @@ function ReminderCard({ title, subtitle, meta, onClick, t }) {
     );
 }
 
-function ChartCard({ dados, t }) {
+function ChartCard({ dados, t, isDemo }) {
     if (!dados || dados.length === 0) return null;
 
     return (
@@ -260,7 +260,14 @@ function ChartCard({ dados, t }) {
                     <p style={{ margin: 0, color: t.textSoft, fontSize: '11px', fontWeight: 700, letterSpacing: '0.12em', textTransform: 'uppercase' }}>
                         Tendência de Fechamento
                     </p>
-                    <h3 style={{ margin: '8px 0 0', color: t.text, fontSize: '1.2rem' }}>Real × Projetado do Mês</h3>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginTop: '6px' }}>
+                        <h3 style={{ margin: 0, color: t.text, fontSize: '1.2rem' }}>Real × Projetado do Mês</h3>
+                        {isDemo && (
+                            <span className="bg-amber-500/10 border border-amber-500/20 text-amber-400 px-2 py-0.5 rounded-lg font-black text-[9px] uppercase tracking-wider animate-pulse">
+                                💡 DEMO: Ative o Financeiro Pro
+                            </span>
+                        )}
+                    </div>
                 </div>
                 <div style={{ display: 'flex', gap: '14px', flexWrap: 'wrap' }}>
                     <span style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', color: t.textSoft, fontSize: '12px' }}>
@@ -308,7 +315,7 @@ function ChartCard({ dados, t }) {
     );
 }
 
-function TinyRevenueChart({ dados, t }) {
+function TinyRevenueChart({ dados, t, isDemo }) {
     if (!dados || dados.length === 0) return null;
 
     return (
@@ -321,7 +328,14 @@ function TinyRevenueChart({ dados, t }) {
             <p style={{ margin: 0, color: t.textSoft, fontSize: '11px', fontWeight: 700, letterSpacing: '0.12em', textTransform: 'uppercase' }}>
                 Últimos 7 dias
             </p>
-            <h3 style={{ margin: '10px 0 18px', color: t.text, fontSize: '1.05rem' }}>Pulso de receita</h3>
+            <div style={{ display: 'flex', alignItems: 'center', justifyBetween: 'space-between', gap: '10px', marginTop: '6px', marginBottom: '14px' }}>
+                <h3 style={{ margin: 0, color: t.text, fontSize: '1.05rem' }}>Pulso de receita</h3>
+                {isDemo && (
+                    <span className="bg-amber-500/10 border border-amber-500/20 text-amber-400 px-2 py-0.5 rounded-lg font-black text-[9px] uppercase tracking-wider animate-pulse">
+                        💡 DEMO
+                    </span>
+                )}
+            </div>
             <div style={{ width: '100%', height: '190px', minWidth: '0' }}>
                 <ResponsiveContainer width="99%" height={190}>
                     <BarChart data={dados}>
@@ -434,22 +448,47 @@ export default function DashboardTab({
     }, [financeiro.faturamentoMes, lembretesDeOleo.length, lembretesDebateria.length, listaCarros, listaEstoque]);
 
     // ── Dados do gráfico de forecast ─────────────────────────────────────────
-    const dadosForecast = useMemo(() => {
-        const base = dadosGrafico.length
-            ? dadosGrafico
-            : Array.from({ length: 7 }, (_, i) => ({ data: `${i + 1}`, valor: 0 }));
+    const hasRealFinance = useMemo(() => {
+        return temPermissao('financeiro') && (dadosGrafico && dadosGrafico.some(d => Number(d.valor) > 0));
+    }, [dadosGrafico, temPermissao]);
 
-        let running = 0;
-        return base.map((item, index) => {
-            running += Number(item.valor) || 0;
-            const progresso = (index + 1) / base.length;
-            const forecast =
-                financeiro.faturamentoMes +
-                metricas.totalAReceber * progresso +
-                metricas.potencialRetorno * progresso;
-            return { label: item.data, real: running, forecast };
-        });
-    }, [dadosGrafico, financeiro.faturamentoMes, metricas.potencialRetorno, metricas.totalAReceber]);
+    const dadosGraficoExibicao = useMemo(() => {
+        if (hasRealFinance) return dadosGrafico;
+        return [
+            { data: 'Seg', valor: 2850 },
+            { data: 'Ter', valor: 3420 },
+            { data: 'Qua', valor: 2180 },
+            { data: 'Qui', valor: 4520 },
+            { data: 'Sex', valor: 5100 },
+            { data: 'Sáb', valor: 3890 },
+            { data: 'Dom', valor: 4210 }
+        ];
+    }, [dadosGrafico, hasRealFinance]);
+
+    const dadosForecastExibicao = useMemo(() => {
+        if (hasRealFinance) {
+            const base = dadosGrafico.length
+                ? dadosGrafico
+                : Array.from({ length: 7 }, (_, i) => ({ data: `${i + 1}`, valor: 0 }));
+
+            let running = 0;
+            return base.map((item, index) => {
+                running += Number(item.valor) || 0;
+                const progresso = (index + 1) / base.length;
+                const forecast =
+                    financeiro.faturamentoMes +
+                    metricas.totalAReceber * progresso +
+                    metricas.potencialRetorno * progresso;
+                return { label: item.data, real: running, forecast };
+            });
+        }
+        return [
+            { label: 'Semana 1', real: 3500, forecast: 4200 },
+            { label: 'Semana 2', real: 8200, forecast: 9500 },
+            { label: 'Semana 3', real: 12100, forecast: 14000 },
+            { label: 'Semana 4', real: 16800, forecast: 18500 }
+        ];
+    }, [dadosGrafico, hasRealFinance, financeiro.faturamentoMes, metricas.potencialRetorno, metricas.totalAReceber]);
 
     // ── Insights automáticos ─────────────────────────────────────────────────
     const insights = useMemo(() => {
@@ -724,6 +763,37 @@ export default function DashboardTab({
                     badge="Operação"
                     t={t}
                 />
+            </section>
+
+            {/* ── Gráficos: Forecast + Pulso (Topo) ─────────────────────────── */}
+            <section style={{ display: 'grid', gridTemplateColumns: 'minmax(0,1.7fr) minmax(0,1fr)', gap: '18px', marginBottom: '24px' }}>
+                <div>
+                    {mounted && (
+                        <ChartCard dados={dadosForecastExibicao} t={t} isDemo={!hasRealFinance} />
+                    )}
+                </div>
+                <div style={{ display: 'grid', gap: '18px', gridTemplateRows: '1fr auto' }}>
+                    {mounted && (
+                        <TinyRevenueChart dados={dadosGraficoExibicao} t={t} isDemo={!hasRealFinance} />
+                    )}
+                    <div style={{ background: t.card, border: `1px solid ${t.stroke}`, borderRadius: '22px', padding: '18px' }}>
+                        <p style={{ margin: 0, color: t.textSoft, fontSize: '11px', fontWeight: 700, letterSpacing: '0.12em', textTransform: 'uppercase' }}>
+                            Resumo Rápido
+                        </p>
+                        <div style={{ display: 'grid', gap: '12px', marginTop: '14px' }}>
+                            {[
+                                { label: 'Lembretes ativos', val: lembretesDeOleo.length + lembretesDebateria.length },
+                                { label: 'Estoque crítico', val: estoqueCritico.length },
+                                { label: 'Ticket médio', val: fmtMoeda(metricas.ticketMedio) },
+                            ].map(({ label, val }) => (
+                                <div key={label} style={{ display: 'flex', justifyContent: 'space-between', gap: '12px' }}>
+                                    <span style={{ color: t.textSoft, fontSize: '13px' }}>{label}</span>
+                                    <strong style={{ color: t.text, fontSize: '13px' }}>{val}</strong>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                </div>
             </section>
 
             {/* ── LISTA DE CLIENTES QUE PRECISAM DE RETORNO (Amostra Grátis) ────────────────── */}
@@ -1095,43 +1165,6 @@ export default function DashboardTab({
                 </div>
               </div>
             </div>
-
-            {/* ── Gráficos: Forecast + Pulso ───────────────────────────────── */}
-            <section style={{ display: 'grid', gridTemplateColumns: 'minmax(0,1.7fr) minmax(0,1fr)', gap: '18px', marginBottom: '24px' }}>
-                <div>
-                    {mounted && temPermissao('financeiro') ? (
-                        <ChartCard dados={dadosForecast} t={t} />
-                    ) : (
-                        <div style={{ background: t.card, border: `1px solid ${t.stroke}`, borderRadius: '26px', padding: '22px', minHeight: '360px', display: 'grid', placeItems: 'center' }}>
-                            <div style={{ textAlign: 'center' }}>
-                                <div style={{ fontSize: '36px', marginBottom: '12px' }}>🔒</div>
-                                <h3 style={{ margin: 0, color: t.text }}>Módulo Financeiro Bloqueado</h3>
-                                <p style={{ margin: '10px 0 0', color: t.textSoft }}>Habilite um plano Pro para ver a previsão de fechamento em tempo real.</p>
-                            </div>
-                        </div>
-                    )}
-                </div>
-                <div style={{ display: 'grid', gap: '18px', gridTemplateRows: '1fr auto' }}>
-                    {mounted && <TinyRevenueChart dados={dadosGrafico} t={t} />}
-                    <div style={{ background: t.card, border: `1px solid ${t.stroke}`, borderRadius: '22px', padding: '18px' }}>
-                        <p style={{ margin: 0, color: t.textSoft, fontSize: '11px', fontWeight: 700, letterSpacing: '0.12em', textTransform: 'uppercase' }}>
-                            Resumo Rápido
-                        </p>
-                        <div style={{ display: 'grid', gap: '12px', marginTop: '14px' }}>
-                            {[
-                                { label: 'Lembretes ativos', val: lembretesDeOleo.length + lembretesDebateria.length },
-                                { label: 'Estoque crítico', val: estoqueCritico.length },
-                                { label: 'Ticket médio', val: fmtMoeda(metricas.ticketMedio) },
-                            ].map(({ label, val }) => (
-                                <div key={label} style={{ display: 'flex', justifyContent: 'space-between', gap: '12px' }}>
-                                    <span style={{ color: t.textSoft, fontSize: '13px' }}>{label}</span>
-                                    <strong style={{ color: t.text, fontSize: '13px' }}>{val}</strong>
-                                </div>
-                            ))}
-                        </div>
-                    </div>
-                </div>
-            </section>
 
             {/* ── Insights Automáticos ─────────────────────────────────────── */}
             <section style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '16px', marginBottom: '24px' }}>

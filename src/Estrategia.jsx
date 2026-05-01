@@ -1,5 +1,5 @@
 /* eslint-disable no-unused-vars */
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { db } from './lib/firebase';
 import { collection, getDocs, query, orderBy } from 'firebase/firestore';
 import {
@@ -43,11 +43,11 @@ const TEMPLATE_MENSAGENS = {
 };
 
 function detectarServico(checklist = '') {
-  const texto = checklist.toLowerCase();
+  const texto = String(checklist || '').toLowerCase();
   for (const s of SERVICOS_BASE) {
     if (texto.includes(s)) return s;
   }
-  return checklist || 'Serviço geral';
+  return String(checklist || '') || 'Serviço geral';
 }
 
 function gerarMensagem(cliente, veiculo, meses) {
@@ -61,11 +61,13 @@ function gerarMensagem(cliente, veiculo, meses) {
 }
 
 function tempoDecorrido(dataStr) {
-  if (!dataStr) return null;
+  if (!dataStr) return { dias: 1, meses: 0, texto: `0 meses` };
   let data;
   try {
     if (typeof dataStr === 'object' && dataStr?.toDate) {
       data = dataStr.toDate();
+    } else if (dataStr?.seconds) {
+      data = new Date(dataStr.seconds * 1000);
     } else if (typeof dataStr === 'string') {
       const brazilMatch = dataStr.match(/^(\d{2})\/(\d{2})\/(\d{4})/);
       if (brazilMatch) {
@@ -78,22 +80,22 @@ function tempoDecorrido(dataStr) {
       data = new Date(dataStr);
     }
   } catch {
-    return null;
+    return { dias: 1, meses: 0, texto: `0 meses` };
   }
-  if (isNaN(data.getTime())) return null;
+  if (isNaN(data.getTime())) {
+    return { dias: 1, meses: 0, texto: `0 meses` };
+  }
 
   const agora = new Date();
   const diffMs = agora - data;
   const diffDias = Math.floor(diffMs / (1000 * 60 * 60 * 24));
   const diffMeses = Math.floor(diffDias / 30);
 
-  if (diffDias < 0) return null;
-  return { dias: diffDias, meses: diffMeses, texto: `${diffMeses} meses` };
+  return { dias: diffDias || 1, meses: diffMeses || 0, texto: `${diffMeses || 0} meses` };
 }
 
-export default function AbaEstrategia({ oficinaId }) {
-  const [oportunidades, setOportunidades] = useState([]);
-  const [loading, setLoading] = useState(true);
+export default function AbaEstrategia({ oficinaId, listaCarros }) {
+  const [loading, setLoading] = useState(false);
   const [modal, setModal] = useState(null);
   const [modalHistorico, setModalHistorico] = useState(null);
   const [filtro, setFiltro] = useState('todos');
@@ -101,52 +103,38 @@ export default function AbaEstrategia({ oficinaId }) {
   const [pilotoAutomatico, setPilotoAutomatico] = useState(false);
   const [animando, setAnimando] = useState(false);
 
-  useEffect(() => {
-    if (!oficinaId) { setLoading(false); return; }
+  const oportunidades = useMemo(() => {
+    const base = Array.isArray(listaCarros) ? listaCarros : [];
+    if (base.length === 0) return [];
 
-    const buscarOportunidades = async () => {
-      try {
-        const snap = await getDocs(
-          query(collection(db, 'oficinas', oficinaId, 'os'), orderBy('data_registro', 'desc'))
-        );
+    const oportunist = [];
+    base.forEach((d) => {
+      const info = tempoDecorrido(d.data_registro || d.data);
+      if (!info) return;
 
-        const oportunist = [];
+      const servico = detectarServico(d.checklist || d.diagnostico || d.detalhesPecas || '');
+      const valor = Number(d.total) || Number(d.valor) || 0;
 
-        snap.forEach((doc) => {
-          const d = doc.data();
-          const info = tempoDecorrido(d.data_registro || d.data);
-          if (!info) return;
+      oportunist.push({
+        id: d.id,
+        cliente: d.nomeCliente || 'Cliente',
+        veiculo: d.modelo || d.veiculo || 'Veículo',
+        placa: d.placa || '',
+        servico,
+        ultimaData: d.data_registro || d.data,
+        tempo: info,
+        meses: info.meses,
+        valor,
+        telefone: d.telefone || '',
+        frequencia: d.frequencia || 1,
+        ltv: d.ltv || valor,
+        status: (d.status || '').toLowerCase(),
+      });
+    });
 
-          const servico = detectarServico(d.checklist || d.diagnostico || d.detalhesPecas || '');
-          const valor = Number(d.total) || 0;
-
-          oportunist.push({
-            id: doc.id,
-            cliente: d.nomeCliente || 'Cliente',
-            veiculo: d.modelo || d.veiculo || 'Veículo',
-            placa: d.placa || '',
-            servico,
-            ultimaData: d.data_registro || d.data,
-            tempo: info,
-            meses: info.meses,
-            valor,
-            telefone: d.telefone || '',
-            frequencia: d.frequencia || 1,
-            ltv: d.ltv || valor,
-          });
-        });
-
-        oportunist.sort((a, b) => b.meses - a.meses);
-        setOportunidades(oportunist);
-      } catch (err) {
-        console.error(err);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    buscarOportunidades();
-  }, [oficinaId]);
+    oportunist.sort((a, b) => b.meses - a.meses);
+    return oportunist;
+  }, [listaCarros]);
 
   const oportunidadesQuentes = oportunidades.filter(o => o.meses >= 6);
   const oportunidadesMornas = oportunidades.filter(o => o.meses >= 3 && o.meses < 6);
@@ -155,6 +143,16 @@ export default function AbaEstrategia({ oficinaId }) {
   const potencial3Meses = oportunidadesMornas.reduce((acc, o) => acc + (o.valor || 0), 0);
   const potencial6Meses = oportunidadesQuentes.reduce((acc, o) => acc + (o.valor || 0), 0);
   const potencialTotal = oportunidades.reduce((acc, o) => acc + (o.valor || 0), 0);
+
+  // ANÁLISE DE PENDENTES
+  const osPendentes = useMemo(() => {
+    const base = Array.isArray(listaCarros) ? listaCarros : [];
+    return base.filter(d => (d.status || '').toLowerCase() !== 'finalizado');
+  }, [listaCarros]);
+
+  const potencialPendentes = useMemo(() => {
+    return osPendentes.reduce((acc, o) => acc + (Number(o.total) || Number(o.valor) || 0), 0);
+  }, [osPendentes]);
 
   const oportunidadesFiltradas = (() => {
     switch (filtro) {
@@ -223,10 +221,11 @@ export default function AbaEstrategia({ oficinaId }) {
       </section>
 
       {/* GROWTH METRICS */}
-      <section className="grid gap-4 md:grid-cols-3">
+      <section className="grid gap-4 md:grid-cols-4">
         <MetricCard title="Próximos 3 Meses" value={formatarMoeda(potencial3Meses)} detail={`${oportunidadesMornas.length} clientes mornos`} icon={<Gauge size={20} />} tone="warning" />
         <MetricCard title="Próximos 6 Meses" value={formatarMoeda(potencial6Meses)} detail={`${oportunidadesQuentes.length} clientes quentes`} icon={<AlertCircle size={20} />} tone="danger" />
         <MetricCard title="Potencial Total" value={formatarMoeda(potencialTotal)} detail="Carteira de oportunidades" icon={<TrendingUp size={20} />} tone="success" />
+        <MetricCard title="Potencial Pendente" value={formatarMoeda(potencialPendentes)} detail={`${osPendentes.length} O.S. pendentes`} icon={<Gauge size={20} />} tone="info" />
       </section>
 
       {/* FILTER BAR */}
@@ -249,7 +248,7 @@ export default function AbaEstrategia({ oficinaId }) {
           <div className="h-12 w-12 animate-spin rounded-full border-4 border-indigo-500 border-t-transparent"></div>
           <p className="text-[10px] font-black uppercase tracking-widest text-slate-500">Calculando Oportunidades...</p>
         </div>
-      ) : oportunidadesFiltradas.length === 0 ? (
+      ) : oportunidades.length === 0 ? (
         <section className="group relative overflow-hidden rounded-[40px] border border-slate-800 bg-slate-950 p-12 text-center shadow-2xl">
           <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,_rgba(79,70,229,0.08),_transparent_70%)]" />
           <div className="relative space-y-6">

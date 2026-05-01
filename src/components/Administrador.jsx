@@ -1,5 +1,7 @@
 /* eslint-disable */
-import React, { useState, useRef, useMemo } from 'react';
+import React, { useState, useRef, useMemo, useEffect } from 'react';
+import { collection, getDocs } from 'firebase/firestore';
+import { db } from '../lib/firebase';
 import { useGroq } from '../hooks/useGroq';
 import {
     Briefcase, Sparkles, TrendingUp, Target, BarChart3,
@@ -22,10 +24,31 @@ export default function AdministradorIA({
     setAbaAtiva,
     listaCarros = [],
     listaFinanceiro = [],
+    listaUsuarios = [],
+    fechamentosDiarios = [],
     oficinaId
 }) {
+    const [usuariosLocal, setUsuariosLocal] = useState([]);
+    const [fechamentosLocal, setFechamentosLocal] = useState([]);
+
+    useEffect(() => {
+        if (!oficinaId) return;
+        const fetchExtra = async () => {
+            try {
+                const snapU = await getDocs(collection(db, "oficinas", oficinaId, "equipe"));
+                setUsuariosLocal(snapU.docs.map(d => ({ id: d.id, ...d.data() })));
+
+                const snapF = await getDocs(collection(db, "oficinas", oficinaId, "fechamentos_diarios"));
+                setFechamentosLocal(snapF.docs.map(d => ({ id: d.id, ...d.data() })));
+            } catch (err) {
+                console.error(err);
+            }
+        };
+        fetchExtra();
+    }, [oficinaId]);
+
     const recognitionRef = useRef(null);
-    const { analyzeText } = useGroq(oficinaId); // Mantido o seu hook atual
+    const { analyzeText } = useGroq(oficinaId);
 
     const [duvida, setDuvida] = useState('');
     const [escutando, setEscutando] = useState(false);
@@ -55,7 +78,17 @@ export default function AdministradorIA({
     const gerarConsultoria = async () => {
         if (!duvida) return alert('⚠️ Descreva qual a sua dúvida ou desafio de gestão!');
 
-        const ctx = `Faturamento no mês: ${fmt(financeiro.total)}. Ticket Médio: ${fmt(financeiro.ticketMedio)}. O.S. no mês: ${financeiro.osMes}.`;
+        const uArray = (Array.isArray(listaUsuarios) && listaUsuarios.length > 0) ? listaUsuarios : (Array.isArray(usuariosLocal) ? usuariosLocal : []);
+        const fArray = (Array.isArray(fechamentosDiarios) && fechamentosDiarios.length > 0) ? fechamentosDiarios : (Array.isArray(fechamentosLocal) ? fechamentosLocal : []);
+
+        const ctxUsers = uArray.map(u => `- ${u.nome || u.name} (Cargo: ${u.cargo || 'Funcionário'}, Comissão: ${u.comissao || u.comissaoMaoDeObra || 0}%, Salário Fixo/Meta: R$ ${u.salarioFixo || 0})`).join('\n');
+        const ctxFechamentos = fArray.map(f => `- Data: ${f.data || ''}, Esperado: R$ ${f.saldoEsperado || 0}, Informado: R$ ${f.saldoInformado || 0}, Diferença: R$ ${f.diferenca || 0}`).join('\n');
+
+        const ctx = `Faturamento no mês: ${fmt(financeiro.total)}. Ticket Médio: ${fmt(financeiro.ticketMedio)}. O.S. no mês: ${financeiro.osMes}.
+        Dados de funcionários e suas comissões/salários atuais:
+        ${ctxUsers || 'Nenhum funcionário cadastrado.'}
+        Dados dos últimos fechamentos de caixa diários registrados:
+        ${ctxFechamentos || 'Nenhum fechamento registrado ainda.'}`;
 
         // NOVO PROMPT: Focado totalmente em responder a pergunta do usuário
         const prompt = `Você é um consultor financeiro e estrategista de negócios sênior prestando serviço para uma oficina mecânica. 
