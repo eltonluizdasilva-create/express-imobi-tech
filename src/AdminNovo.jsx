@@ -73,6 +73,8 @@ import Precificacao from './components/admin/Precificacao';
 import AbaAjudaIA from './components/AbaAjudaIA';
 import FechamentoCaixa from './FechamentoCaixa';
 import PagamentosEquipe from './PagamentosEquipe';
+import MigracaoDados from './components/MigracaoDados';
+import Especialista from './components/Especialista';
 
 // Novo componente de gerenciamento de módulos
 import GerenciadorDeModulos from './components/admin/GerenciadorDeModulos';
@@ -82,7 +84,7 @@ import GerenciadorDeModulos from './components/admin/GerenciadorDeModulos';
 const { MAIN, GREEN, MASTER } = COLORS;
 const APP_BASE_URL = 'https://oficina.expresstech.com.br';
 const MODULOS_GRATIS_VITALICIOS = [
-  'meuplano', 'config', 'equipe', 'marketing', 'ajuda', 'dashboard', 'os', 'lista'
+  'meuplano', 'config', 'equipe', 'marketing', 'ajuda', 'dashboard', 'os', 'lista', 'migracao', 'especialista'
 ];
 
 const SERVICOS_ESTETICA_ABAS = [
@@ -135,6 +137,8 @@ const LABELS_ABAS = {
   equipe: '👥 EQUIPE', config: '⚙️ AJUSTES',
   marketing: '📣 MARKETING', estrategia: '🚀 ESTRATÉGIA',
   ajuda: '❓ AJUDA', master: '👑 MASTER', meuplano: '💰 MEU PLANO',
+  migracao: '👑 MIGRAÇÃO DE DADOS',
+  especialista: '🛠️ ESPECIALISTA',
 };
 
 const LABELS_ABAS_MODAL = {
@@ -206,6 +210,8 @@ const MODULOS_MAP = {
   master: MasterPanel,
   fechamento_caixa: FechamentoCaixa,
   pagamentos_equipe: PagamentosEquipe,
+  migracao: MigracaoDados,
+  especialista: Especialista,
 };
 
 

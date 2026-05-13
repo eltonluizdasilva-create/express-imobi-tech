@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { db } from './lib/firebase';
-import { collectionGroup, query, where, getDocs } from 'firebase/firestore';
+import { collectionGroup, query, where, getDocs, collection, addDoc } from 'firebase/firestore';
 import { useGroq } from './hooks/useGroq';
 import ChecklistViagem from './ChecklistViagem';
 import AbaAjudaIA from './components/AbaAjudaIA';
@@ -551,6 +551,115 @@ function DicasTecnicas({ theme, onBack }) {
 }
 
 // ==========================================
+// 📅 FORMULÁRIO SIMPLIFICADO DE AGENDAMENTO
+// ==========================================
+function AgendamentoVisita({ oficinaId, placaVeiculo, nomePadrao, onBack }) {
+    const [nome, setNome] = useState(nomePadrao || '');
+    const [data, setData] = useState('');
+    const [loading, setLoading] = useState(false);
+    const [sucesso, setSucesso] = useState(false);
+
+    const enviarAgendamento = async (e) => {
+        e.preventDefault();
+        if (!nome || !data) return alert("Preencha seu nome e a data sugerida.");
+        if (!oficinaId) return alert("Erro: Oficina não identificada.");
+        
+        setLoading(true);
+        try {
+            await addDoc(collection(db, "oficinas", oficinaId, "leads"), {
+                nome: nome,
+                veiculo: placaVeiculo,
+                problema: `Solicitação de agendamento via Portal do Cliente.`,
+                status: 'novo',
+                data_registro: new Date().toISOString(),
+                origem: 'portal_cliente',
+                dataAgendamentoSugerido: data,
+                tipo: 'agendamento'
+            });
+            setSucesso(true);
+        } catch (error) {
+            console.error(error);
+            alert("Erro ao enviar agendamento. Tente novamente.");
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    if (sucesso) {
+        return (
+            <div className="w-full max-w-md mx-auto text-center py-16 animate-fade-in px-6">
+                <div className="w-20 h-20 bg-green-500/20 rounded-full flex items-center justify-center mx-auto mb-6 shadow-[0_0_40px_rgba(34,197,94,0.4)] border border-green-500/30">
+                    <span className="text-4xl">✅</span>
+                </div>
+                <h2 className="text-2xl font-black text-white uppercase mb-4 tracking-tight">Solicitação Enviada!</h2>
+                <p className="text-zinc-400 text-sm mb-10 leading-relaxed">Recebemos seu interesse para o dia <strong className="text-white">{data.split('-').reverse().join('/')}</strong>. <br /> Nossa equipe entrará em contato em breve para confirmar!</p>
+                <button onClick={onBack} className="bg-white text-black px-8 py-4 rounded-2xl font-black text-xs uppercase tracking-widest shadow-xl hover:scale-105 transition-transform">Voltar ao Painel</button>
+            </div>
+        );
+    }
+
+    return (
+        <div className="w-full max-w-md mx-auto text-center pt-4 pb-20 px-4 animate-fade-in">
+            <div className="mb-8 flex justify-start">
+                <button onClick={onBack} className="text-neutral-500 font-black text-[10px] uppercase tracking-widest flex items-center gap-2 hover:text-white transition-all">
+                    <ArrowLeft size={14} /> VOLTAR AO MENU
+                </button>
+            </div>
+            
+            <h2 className="text-3xl font-black text-white mb-3 uppercase tracking-tighter">Agendar <span className="text-red-600">Serviço</span></h2>
+            <p className="text-zinc-500 text-xs font-medium mb-8 tracking-wide uppercase">Simples e Rápido • Apenas 3 passos</p>
+            
+            <form onSubmit={enviarAgendamento} className="bg-[#0a0a0a] border border-neutral-800 p-8 md:p-10 rounded-[2.5rem] space-y-6 shadow-[0_20px_50px_rgba(0,0,0,0.5)] text-left relative overflow-hidden">
+                <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-red-600 to-transparent"></div>
+                
+                <div>
+                    <label className="text-[10px] font-black uppercase text-red-500 tracking-widest mb-2 block">1. Seu Nome</label>
+                    <input 
+                        type="text" 
+                        placeholder="Digite seu nome completo" 
+                        value={nome} 
+                        onChange={e => setNome(e.target.value)} 
+                        className="w-full p-4 bg-black border border-neutral-900 rounded-xl text-white font-bold outline-none focus:border-red-600 focus:ring-2 focus:ring-red-600/20 transition-all" 
+                        required
+                    />
+                </div>
+                
+                <div>
+                    <label className="text-[10px] font-black uppercase text-neutral-500 tracking-widest mb-2 block">2. Placa do Veículo</label>
+                    <input 
+                        type="text" 
+                        value={placaVeiculo} 
+                        disabled
+                        className="w-full p-4 bg-neutral-900/50 border border-neutral-800 rounded-xl text-neutral-400 font-black uppercase outline-none cursor-not-allowed" 
+                    />
+                </div>
+
+                <div>
+                    <label className="text-[10px] font-black uppercase text-red-500 tracking-widest mb-2 block">3. Data Sugerida</label>
+                    <input 
+                        type="date" 
+                        value={data} 
+                        onChange={e => setData(e.target.value)} 
+                        className="w-full p-4 bg-black border border-neutral-900 rounded-xl text-white font-bold outline-none focus:border-red-600 focus:ring-2 focus:ring-red-600/20 transition-all" 
+                        min={new Date().toISOString().split('T')[0]}
+                        required
+                        style={{colorScheme: 'dark'}}
+                    />
+                </div>
+
+                <button 
+                    type="submit" 
+                    disabled={loading}
+                    className="w-full py-5 bg-gradient-to-r from-red-600 to-red-700 rounded-2xl font-black uppercase text-white hover:opacity-90 active:scale-[0.98] transition-all shadow-lg shadow-red-600/30 tracking-widest disabled:opacity-50 mt-6 flex items-center justify-center gap-3"
+                >
+                    {loading ? 'ENVIANDO...' : <><span>🚀</span> SOLICITAR AGENDAMENTO</>}
+                </button>
+            </form>
+        </div>
+    );
+}
+
+// ==========================================
 // COMPONENTE PRINCIPAL: PORTAL DO CLIENTE
 // ==========================================
 export default function PortalCliente() {
@@ -560,6 +669,7 @@ export default function PortalCliente() {
     const [todasAsOs, setTodasAsOs] = useState(null);
     const [osSelecionada, setOsSelecionada] = useState(null);
     const [abaAtiva, setAbaAtiva] = useState('home');
+    const [oficinaIdPortal, setOficinaIdPortal] = useState(null);
     const navigate = useNavigate();
 
     const formatarDataBR = (valor) => {
@@ -576,6 +686,7 @@ export default function PortalCliente() {
             const q = query(collectionGroup(db, "os"), where("placa", "==", placa.toUpperCase()));
             const snap = await getDocs(q);
             const list = [];
+            let idDaOficina = null;
             snap.forEach(doc => {
                 const d = doc.data();
                 const senhaArmazenada = String(d.senhaConsulta || '').trim();
@@ -584,9 +695,11 @@ export default function PortalCliente() {
                 const senhaDigitada = String(senha).trim();
                 if (senhaArmazenada === senhaDigitada || senhaLegado === senhaDigitada) {
                     list.push({ id: doc.id, ...d });
+                    if (!idDaOficina) idDaOficina = doc.ref.parent.parent?.id;
                 }
             });
             if (list.length > 0) {
+                setOficinaIdPortal(idDaOficina);
                 setTodasAsOs(list.sort((a, b) => (b.data_registro || b.data || '').localeCompare(a.data_registro || a.data || '')));
                 setAbaAtiva('dashboard');
             } else {
@@ -789,7 +902,13 @@ export default function PortalCliente() {
                                     </div>
                                 </div>
 
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-16">
+                                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-16">
+                                    <button onClick={() => setAbaAtiva('agendamento')} className="flex flex-col items-center justify-center p-8 bg-[#0a0a0a] border border-red-500 rounded-[2rem] hover:bg-red-500/10 transition-all shadow-[0_0_30px_rgba(220,38,38,0.2)] group relative overflow-hidden">
+                                        <div className="absolute top-0 right-0 bg-red-600 text-white text-[7px] font-black px-2 py-1 rounded-bl-lg tracking-widest">NOVO</div>
+                                        <span className="text-4xl mb-4 group-hover:scale-110 group-hover:-rotate-6 transition-transform">📅</span>
+                                        <span className="text-red-500 font-black uppercase tracking-widest text-xs">Agendar Visita</span>
+                                        <span className="text-neutral-500 text-[9px] mt-2 text-center uppercase font-medium">Solicite seu horário rápido</span>
+                                    </button>
                                     <button onClick={() => setAbaAtiva('rastreamento')} className="flex flex-col items-center justify-center p-8 bg-[#0a0a0a] border border-[#a855f7] rounded-[2rem] hover:bg-[#a855f7]/10 transition-all shadow-[0_0_20px_rgba(168,85,247,0.15)] group">
                                         <span className="text-4xl mb-4 group-hover:scale-110 transition-transform">📍</span>
                                         <span className="text-[#a855f7] font-black uppercase tracking-widest text-xs">Rastrear Serviço</span>
@@ -945,6 +1064,16 @@ export default function PortalCliente() {
                                     </div>
                                 </div>
                             </div>
+                        )}
+
+                        {/* AGENDAMENTO SIMPLIFICADO */}
+                        {abaAtiva === 'agendamento' && (
+                            <AgendamentoVisita 
+                                oficinaId={oficinaIdPortal} 
+                                placaVeiculo={placa} 
+                                nomePadrao={todasAsOs[0]?.cliente || todasAsOs[0]?.nome || ''}
+                                onBack={() => setAbaAtiva('dashboard')} 
+                            />
                         )}
 
                         {/* RASTREAMENTO */}

@@ -1,15 +1,6 @@
 {
-    "headers": [
-        {
-            "source": "/(.*)",
-            "headers": [
-                {
-                    "key": "Cross-Origin-Opener-Policy",
-                    "value": "same-origin-allow-popups"
-                }
-            ]
-        }
-    ],
+    "version": 2,
+    "cleanUrls": true,
     "rewrites": [
         {
             "source": "/(.*)",

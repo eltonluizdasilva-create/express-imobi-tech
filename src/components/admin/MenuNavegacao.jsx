@@ -8,13 +8,12 @@ const COLORS_CAT = {
     livre: '#22c55e',     // Verde para os Módulos Essenciais (Grátis)
     pro: '#FF0033',       // Vermelho para os Módulos de Crescimento (Pago)
     elite: '#a855f7',     // Roxo para Inteligência Artificial
+    vip: '#fbbf24',       // Dourado para VIP/Exclusivos
 };
 
 const BASE_STYLE = {
     borderRadius: '12px',
-    padding: '0 14px',
     height: '32px',
-    fontSize: '11px',
     fontWeight: 'bold',
     textTransform: 'uppercase',
     letterSpacing: '0.5px',
@@ -22,7 +21,6 @@ const BASE_STYLE = {
     cursor: 'pointer',
     whiteSpace: 'nowrap',
     boxSizing: 'border-box',
-    flexShrink: 0,
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
@@ -34,7 +32,7 @@ export default function MenuNavegacao({ t, MAIN, MASTER, papelLogado, abaAtiva, 
     const trialAtivo = dadosOficina?.tipoPlano === 'trial' && dadosOficina?.dataFimTrial && new Date() < (dadosOficina.dataFimTrial.toDate ? dadosOficina.dataFimTrial.toDate() : new Date(dadosOficina.dataFimTrial));
 
     // ✅ LISTA ATUALIZADA DE MÓDULOS GRATUITOS
-    const MODULOS_GRATUITOS = ['dashboard', 'estoque', 'financeiro', 'tarefa', 'patrimonio', 'fornecedores', 'historico', 'config', 'meuplano', 'ajuda', 'equipe', 'marketing'];
+    const MODULOS_GRATUITOS = ['dashboard', 'estoque', 'financeiro', 'tarefa', 'patrimonio', 'fornecedores', 'historico', 'config', 'meuplano', 'ajuda', 'equipe', 'marketing', 'migracao', 'especialista'];
 
     const makeButton = (aba, category) => {
         const corCat = COLORS_CAT[category];
@@ -83,6 +81,7 @@ export default function MenuNavegacao({ t, MAIN, MASTER, papelLogado, abaAtiva, 
                 key={aba}
                 id={botaoId}
                 data-tour={aba}
+                className="w-full md:w-auto flex-shrink-0 md:flex-shrink-0 px-2 md:px-3 text-[9px] md:text-[11px] overflow-hidden text-ellipsis"
                 onClick={() => {
                     if (aba === 'mercadolivre') {
                         if (!liberado && !ehIscaDeVenda) lidarModuloBloqueado(aba);
@@ -135,10 +134,10 @@ export default function MenuNavegacao({ t, MAIN, MASTER, papelLogado, abaAtiva, 
                 <p style={{ color: COLORS_CAT.livre, fontSize: '9px', fontWeight: 'bold', letterSpacing: '2px', margin: '0 0 6px', textTransform: 'uppercase' }}>
                     🎁 MÓDULOS ESSENCIAIS (GRÁTIS - APENAS 100 VAGAS)
                 </p>
-                <div style={{ display: 'flex', gap: '8px', overflowX: 'auto', marginBottom: '12px', paddingBottom: '4px' }}>
+                <div className="grid grid-cols-2 sm:grid-cols-3 md:flex md:overflow-x-auto gap-2 mb-4 pb-1 overflow-hidden">
                     {[
                         'dashboard', 'estoque', 'financeiro', 'tarefa', 'patrimonio', 'fornecedores', 'historico',
-                        'meuplano', 'config', 'equipe', 'marketing', 'ajuda', 'master'
+                        'meuplano', 'config', 'equipe', 'marketing', 'especialista', 'ajuda', 'master'
                     ]
                         .filter(aba => {
                             // Dashboard só para donos/master
@@ -161,8 +160,8 @@ export default function MenuNavegacao({ t, MAIN, MASTER, papelLogado, abaAtiva, 
                 <p style={{ color: COLORS_CAT.pro, fontSize: '9px', fontWeight: 'bold', letterSpacing: '2px', margin: '0 0 6px', textTransform: 'uppercase' }}>
                     🚀 MÓDULOS ASSINANTES (LEVAM TODOS ESSES + GRÁTIS. ATIVE EM MEU PLANO)
                 </p>
-                <div style={{ display: 'flex', gap: '8px', overflowX: 'auto', marginBottom: '12px', paddingBottom: '4px' }}>
-                    {['leads', 'fechamento_caixa', 'pagamentos_equipe', 'mercadolivre', 'precificacao', 'revisaopremium', 'desmanche', 'notafiscal']
+                <div className="grid grid-cols-2 sm:grid-cols-3 md:flex md:overflow-x-auto gap-2 mb-4 pb-1 overflow-hidden">
+                    {['leads', 'fechamento_caixa', 'pagamentos_equipe', 'mercadolivre', 'precificacao', 'revisaopremium', 'desmanche', 'notafiscal', 'migracao']
                         .map(aba => makeButton(aba, 'pro'))}
                 </div>
 
@@ -170,7 +169,7 @@ export default function MenuNavegacao({ t, MAIN, MASTER, papelLogado, abaAtiva, 
                 <p style={{ color: COLORS_CAT.elite, fontSize: '9px', fontWeight: 'bold', letterSpacing: '2px', margin: '0 0 6px', textTransform: 'uppercase' }}>
                     🧠 Inteligência Artificial (Elite)
                 </p>
-                <div style={{ display: 'flex', gap: '8px', overflowX: 'auto', marginBottom: '12px', paddingBottom: '4px' }}>
+                <div className="grid grid-cols-2 sm:grid-cols-3 md:flex md:overflow-x-auto gap-2 mb-4 pb-1 overflow-hidden">
                     {['copiloto', 'secretaria', 'administrador', 'contador', 'retorno', 'estrategia']
                         .map(aba => makeButton(aba, 'elite'))}
                 </div>

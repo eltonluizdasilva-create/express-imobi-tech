@@ -319,7 +319,14 @@ export default function LeadsPage() {
                       
                       <div className="space-y-3">
                         <div>
-                          <strong className="block text-sm font-black text-white">{lead.nome}</strong>
+                          <strong className="flex items-center flex-wrap gap-2 text-sm font-black text-white">
+                            {lead.nome}
+                            {(lead.importadoViaIA || lead.origem === 'ia' || lead.problema === 'Extraído via IA') && (
+                              <span className="inline-flex items-center gap-1 bg-violet-500/20 text-violet-300 text-[9px] font-bold px-2 py-0.5 rounded-md border border-violet-500/30 animate-in fade-in zoom-in duration-300">
+                                <Sparkles size={10} /> IA
+                              </span>
+                            )}
+                          </strong>
                           {lead.veiculo && (
                             <p className="mt-1 flex items-center gap-1.5 text-[11px] text-slate-400 font-bold uppercase tracking-wider">
                               <Car size={12} className="text-violet-500" />
