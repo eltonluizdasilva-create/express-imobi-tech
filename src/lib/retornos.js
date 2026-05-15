@@ -4,7 +4,7 @@ import { db } from './firebase';
 const DIA_MS = 24 * 60 * 60 * 1000;
 
 export const MAPA_RETORNOS = {
-  MECANICA: 180,
+  MECANICA: 365,
   OLEO: 180,
   ALINHAMENTO: 180,
   HIBRIDOS: 180,
@@ -14,7 +14,7 @@ export const MAPA_RETORNOS = {
   AMORTECEDOR: 180,
   INJECAO: 180,
   ELÉTRICA: 180,
-  REVISAO: 180,
+  REVISAO: 365,
   AR_CONDICIONADO: 180,
   AR_CONDICIONADO_HIGIENIZACAO: 30,
   PNEUS: 180,

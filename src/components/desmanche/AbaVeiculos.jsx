@@ -17,8 +17,15 @@ import {
   Mic,
   X,
   Save,
-  Image as ImageIcon
+  Image as ImageIcon,
+  ShieldCheck,
+  ShieldAlert,
+  FileText,
+  UploadCloud,
+  HelpCircle,
+  Sparkles
 } from 'lucide-react';
+import { useGroq } from '../../hooks/useGroq';
 
 const COR = '#ef4444';
 const VERDE = '#10b981';
@@ -45,11 +52,17 @@ export default function AbaVeiculos({
   const [salvando, setSalvando] = useState(false);
   const [patioFiltro, setPatioFiltro] = useState('Todos');
   const [ouvindo, setOuvindo] = useState(false);
+  const [preenchendoVoz, setPreenchendoVoz] = useState(false);
+  const { analyzeText } = useGroq(oficinaId);
 
   const formInicial = {
     modelo: '', ano: '', cor: '', placa: '',
     valorLeilao: '', procedencia: '', patio: '',
     detalhes: '', fotos: [], status: 'em_desmonte',
+    numBaixaDetran: '', notaLeilaoUrl: '',
+    descontaminadoFluidos: false,
+    descontaminadoBateria: false,
+    descontaminadoExtintor: false,
   };
   const [form, setForm] = useState(formInicial);
 
@@ -70,17 +83,93 @@ export default function AbaVeiculos({
     const SpeechRec = window.SpeechRecognition || window.webkitSpeechRecognition;
     const rec = new SpeechRec();
     rec.lang = 'pt-BR';
-    rec.onstart = () => setOuvindo(true);
-    rec.onresult = e => setForm(prev => ({
-      ...prev,
-      [fieldKey]: (prev[fieldKey] || '') + ' ' + e.results[0][0].transcript,
-    }));
+    rec.onstart = () => setOuvindo(fieldKey);
+    rec.onresult = e => {
+      const texto = e.results[0][0].transcript;
+      setForm(prev => ({
+        ...prev,
+        [fieldKey]: (prev[fieldKey] || '') + ' ' + texto,
+      }));
+    };
     rec.onend = () => setOuvindo(false);
     rec.start();
   };
 
+  const ouvirEPreencherVeiculoComIA = () => {
+    if (!('webkitSpeechRecognition' in window || 'SpeechRecognition' in window))
+      return alert('Use o Chrome para reconhecimento de voz.');
+    const SpeechRec = window.SpeechRecognition || window.webkitSpeechRecognition;
+    const rec = new SpeechRec();
+    rec.lang = 'pt-BR';
+    rec.onstart = () => setPreenchendoVoz('ouvindo');
+    rec.onresult = async (e) => {
+      const transcricao = e.results[0][0].transcript;
+      if (!transcricao.trim()) {
+        setPreenchendoVoz(false);
+        return;
+      }
+      setPreenchendoVoz('processando');
+      try {
+        const prompt = `Aja como um extrator inteligente de dados de veículos para um sistema de desmanche. Analise a frase narrada pelo mecânico e extraia os campos do veículo para preenchimento.
+Retorne APENAS um objeto JSON estruturado seguindo exatamente este formato, sem explicações adicionais, sem crases de markdown, sem blocos de código:
+{
+  "modelo": "Modelo do veículo (Ex: VW Golf, Fiat Uno)",
+  "ano": "Ano do veículo ou do modelo (Ex: 2018 ou 2015/2016)",
+  "cor": "Cor do veículo",
+  "placa": "Placa do veículo em letras maiúsculas sem hifen, ou com hifen (Ex: ABC1234 ou ABC-1234)",
+  "valorLeilao": "Valor pago no leilão ou de compra, APENAS números, sem R$ (Ex: 15000)",
+  "procedencia": "Local de compra ou origem citada (Ex: Leilão Copart, Particular)",
+  "numBaixaDetran": "Número ou código da baixa do Detran, se citado"
+}
+
+Fala transcrita: "${transcricao}"`;
+
+        const response = await analyzeText(prompt);
+        const cleanJson = response.replace(/```json|```/g, '').trim();
+        const parsed = JSON.parse(cleanJson);
+
+        setForm(prev => ({
+          ...prev,
+          modelo: parsed.modelo || prev.modelo,
+          ano: parsed.ano || prev.ano,
+          cor: parsed.cor || prev.cor,
+          placa: parsed.placa || prev.placa,
+          valorLeilao: parsed.valorLeilao || prev.valorLeilao,
+          procedencia: parsed.procedencia || prev.procedencia,
+          numBaixaDetran: parsed.numBaixaDetran || prev.numBaixaDetran,
+        }));
+      } catch (err) {
+        console.error('[Voz Veículo] Erro:', err);
+        alert('Não conseguimos mapear os dados do veículo. Fale de forma mais pausada.');
+      } finally {
+        setPreenchendoVoz(false);
+      }
+    };
+    rec.onend = () => {
+      setTimeout(() => setPreenchendoVoz(p => p === 'ouvindo' ? false : p), 500);
+    };
+    rec.start();
+  };
+
+  const handleNotaSelect = async (e) => {
+    const files = Array.from(e.target.files);
+    if (files.length === 0) return;
+    const urls = await uploadImages([files[0]], oficinaId, 'desmanche_doc');
+    if (urls && urls.length > 0) {
+      setForm(prev => ({ ...prev, notaLeilaoUrl: urls[0] }));
+      alert('✅ Nota Fiscal de Leilão enviada com sucesso!');
+    }
+  };
+
   const salvar = async () => {
     if (!form.modelo.trim()) return alert('⚠️ Preencha o modelo do veículo!');
+    
+    const checklistConcluido = form.descontaminadoFluidos && form.descontaminadoBateria && form.descontaminadoExtintor;
+    
+    if ((form.status === 'desmontado' || form.status === 'encerrado') && !checklistConcluido) {
+      return alert('⚠️ ERRO DE COMPLIANCE AMBIENTAL:\nNão é possível alterar o status para Desmontado ou Encerrado sem concluir 100% do Checklist de Descontaminação Obrigatório!');
+    }
+
     setSalvando(true);
     try {
       const dados = { ...form, data_entrada: new Date().toISOString() };
@@ -106,6 +195,11 @@ export default function AbaVeiculos({
       procedencia: v.procedencia || '', patio: v.patio || '',
       detalhes: v.detalhes || '', fotos: v.fotos || [],
       status: v.status || 'em_desmonte',
+      numBaixaDetran: v.numBaixaDetran || '',
+      notaLeilaoUrl: v.notaLeilaoUrl || '',
+      descontaminadoFluidos: !!v.descontaminadoFluidos,
+      descontaminadoBateria: !!v.descontaminadoBateria,
+      descontaminadoExtintor: !!v.descontaminadoExtintor,
     });
     setEditando(v.id);
     setMostrarForm(true);
@@ -191,7 +285,18 @@ export default function AbaVeiculos({
                     <InfoRow icon={<Key size={14} />} label="Placa" value={carro.placa} />
                     <InfoRow icon={<DollarSign size={14} />} label="Leilão" value={formatCurrency(carro.valorLeilao)} tone="danger" />
                     <InfoRow icon={<Info size={14} />} label="Procedência" value={carro.procedencia} />
+                    {carro.numBaixaDetran && (
+                      <InfoRow icon={<ShieldCheck size={14} />} label="Baixa Detran" value={carro.numBaixaDetran} tone="success" />
+                    )}
                   </div>
+
+                  {carro.notaLeilaoUrl && (
+                    <div className="pt-1">
+                      <a href={carro.notaLeilaoUrl} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1.5 text-xs font-bold text-rose-400 hover:text-rose-300 bg-rose-500/10 px-3 py-1.5 rounded-xl border border-rose-500/20 transition-all">
+                        <FileText size={12} /> Ver Nota Fiscal do Leilão
+                      </a>
+                    </div>
+                  )}
 
                   {carro.detalhes && (
                     <p className="text-sm text-slate-400 italic bg-slate-900/50 p-3 rounded-2xl border border-slate-800/50">
@@ -270,16 +375,88 @@ export default function AbaVeiculos({
               </button>
             </div>
 
+            {/* 🧠 PREENCHIMENTO INTELIGENTE POR VOZ */}
+            <div className="mb-6">
+              <button
+                type="button"
+                onClick={ouvirEPreencherVeiculoComIA}
+                disabled={preenchendoVoz === 'processando'}
+                className={`w-full flex items-center justify-center gap-2 py-3.5 px-4 rounded-2xl text-xs font-black uppercase tracking-[0.15em] border transition-all active:scale-[0.98] ${
+                  preenchendoVoz === 'ouvindo'
+                    ? 'bg-rose-500/10 text-rose-500 border-rose-500 animate-pulse shadow-[0_0_15px_rgba(239,68,68,0.2)]'
+                    : 'bg-rose-500/5 text-rose-400 border-rose-500/20 hover:bg-rose-500/10'
+                }`}
+              >
+                {preenchendoVoz === 'processando' ? (
+                  <>⏳ Processando Dados do Veículo...</>
+                ) : preenchendoVoz === 'ouvindo' ? (
+                  <>🔴 Pode falar os dados do veículo...</>
+                ) : (
+                  <>
+                    <Sparkles size={14} />
+                    <Mic size={14} />
+                    Preenchimento Inteligente por Voz
+                  </>
+                )}
+              </button>
+              <p className="text-[10px] text-slate-500 mt-2 text-center">
+                💡 Diga: <i>"Chegou um Gol branco 2018 placa ABC1234, comprado no leilão Copart por 15 mil."</i>
+              </p>
+            </div>
+
             <div className="max-h-[60vh] overflow-y-auto pr-2 space-y-6 scrollbar-hide">
               <div className="grid gap-4 md:grid-cols-2">
                 <div className="md:col-span-2">
-                  <Field label="Modelo do Veículo *" value={form.modelo} onChange={val => setForm(p => ({ ...p, modelo: val }))} placeholder="Ex: VW Golf 2018" />
+                  <Field 
+                    label="Modelo do Veículo *" 
+                    value={form.modelo} 
+                    onChange={val => setForm(p => ({ ...p, modelo: val }))} 
+                    placeholder="Ex: VW Golf 2018" 
+                    showMic={true}
+                    onMic={() => iniciarVoz('modelo')}
+                    ouvindo={ouvindo === 'modelo'}
+                  />
                 </div>
-                <Field label="Ano" value={form.ano} onChange={val => setForm(p => ({ ...p, ano: val }))} placeholder="Ex: 2018/2019" />
-                <Field label="Cor" value={form.cor} onChange={val => setForm(p => ({ ...p, cor: val }))} placeholder="Ex: Branco" />
-                <Field label="Placa" value={form.placa} onChange={val => setForm(p => ({ ...p, placa: val }))} placeholder="ABC-1234" />
-                <Field label="Valor Leilão (R$)" type="number" value={form.valorLeilao} onChange={val => setForm(p => ({ ...p, valorLeilao: val }))} placeholder="0,00" />
-                <Field label="Procedência" value={form.procedencia} onChange={val => setForm(p => ({ ...p, procedencia: val }))} placeholder="Ex: Leilão Copart" />
+                <Field 
+                  label="Ano" 
+                  value={form.ano} 
+                  onChange={val => setForm(p => ({ ...p, ano: val }))} 
+                  placeholder="Ex: 2018/2019" 
+                />
+                <Field 
+                  label="Cor" 
+                  value={form.cor} 
+                  onChange={val => setForm(p => ({ ...p, cor: val }))} 
+                  placeholder="Ex: Branco" 
+                  showMic={true}
+                  onMic={() => iniciarVoz('cor')}
+                  ouvindo={ouvindo === 'cor'}
+                />
+                <Field 
+                  label="Placa" 
+                  value={form.placa} 
+                  onChange={val => setForm(p => ({ ...p, placa: val }))} 
+                  placeholder="ABC-1234" 
+                  showMic={true}
+                  onMic={() => iniciarVoz('placa')}
+                  ouvindo={ouvindo === 'placa'}
+                />
+                <Field 
+                  label="Valor Leilão (R$)" 
+                  type="number" 
+                  value={form.valorLeilao} 
+                  onChange={val => setForm(p => ({ ...p, valorLeilao: val }))} 
+                  placeholder="0,00" 
+                />
+                <Field 
+                  label="Procedência" 
+                  value={form.procedencia} 
+                  onChange={val => setForm(p => ({ ...p, procedencia: val }))} 
+                  placeholder="Ex: Leilão Copart" 
+                  showMic={true}
+                  onMic={() => iniciarVoz('procedencia')}
+                  ouvindo={ouvindo === 'procedencia'}
+                />
                 
                 <label className="block">
                   <span className="mb-2 block text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">Pátio</span>
@@ -307,6 +484,102 @@ export default function AbaVeiculos({
                     <option value='encerrado'>Encerrado</option>
                   </select>
                 </label>
+
+                <div className="md:col-span-2 border-t border-slate-800 pt-4 mt-2 space-y-4">
+                  <h4 className="text-xs font-black text-rose-400 tracking-widest uppercase flex items-center gap-2">
+                    <ShieldCheck size={14} /> 
+                    Documentação Lícita (Lei 12.977)
+                    <div className="group/tip relative inline-block normal-case tracking-normal">
+                      <HelpCircle size={13} className="text-slate-500 cursor-help hover:text-rose-400 transition-colors" />
+                      <div className="absolute bottom-full mb-2 left-1/2 -translate-x-1/2 w-56 p-3 bg-slate-950 border border-rose-500/20 text-[10px] text-slate-300 rounded-xl opacity-0 pointer-events-none group-hover/tip:opacity-100 transition-all duration-200 shadow-2xl leading-relaxed font-medium z-50">
+                        <span className="text-rose-400 font-black uppercase block mb-1">Conformidade Penal</span>
+                        Anexar a nota do leilão e a baixa oficial impede acusações de receptação.
+                      </div>
+                    </div>
+                  </h4>
+                  <div className="grid gap-4 md:grid-cols-2">
+                    <Field 
+                      label="Nº da Baixa do Detran" 
+                      value={form.numBaixaDetran} 
+                      onChange={val => setForm(p => ({ ...p, numBaixaDetran: val }))} 
+                      placeholder="Ex: 9392/2024" 
+                      showMic={true}
+                      onMic={() => iniciarVoz('numBaixaDetran')}
+                      ouvindo={ouvindo === 'numBaixaDetran'}
+                    />
+                    
+                    <div className="flex flex-col">
+                      <span className="mb-2 block text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">Nota do Leilão</span>
+                      {form.notaLeilaoUrl ? (
+                        <div className="flex items-center gap-2 p-3 rounded-2xl border border-emerald-500/20 bg-emerald-500/10">
+                          <FileText className="text-emerald-400" size={20} />
+                          <span className="text-xs text-slate-300 font-medium truncate flex-1">Nota Anexada</span>
+                          <button onClick={() => setForm(p => ({ ...p, notaLeilaoUrl: '' }))} className="text-rose-400 text-xs font-bold hover:underline">Remover</button>
+                        </div>
+                      ) : (
+                        <label className="flex items-center justify-center gap-2 cursor-pointer p-3 rounded-2xl border-2 border-dashed border-slate-800 hover:border-slate-600 text-slate-400 transition">
+                          <UploadCloud size={18} />
+                          <span className="text-xs font-bold">Upload Nota</span>
+                          <input type="file" accept="image/*,application/pdf" onChange={handleNotaSelect} className="hidden" />
+                        </label>
+                      )}
+                    </div>
+                  </div>
+                </div>
+
+                <div className="md:col-span-2 border-t border-slate-800 pt-4 mt-2 space-y-3 bg-rose-950/10 p-4 rounded-2xl border border-rose-500/10">
+                  <div className="flex items-center justify-between">
+                    <h4 className="text-xs font-black text-rose-400 tracking-widest uppercase flex items-center gap-2">
+                      <ShieldAlert size={14} /> 
+                      Checklist de Descontaminação Obrigatório
+                      <div className="group/tip relative inline-block normal-case tracking-normal">
+                        <HelpCircle size={13} className="text-slate-500 cursor-help hover:text-rose-400 transition-colors" />
+                        <div className="absolute bottom-full mb-2 left-1/2 -translate-x-1/2 w-56 p-3 bg-slate-950 border border-rose-500/20 text-[10px] text-slate-300 rounded-xl opacity-0 pointer-events-none group-hover/tip:opacity-100 transition-all duration-200 shadow-2xl leading-relaxed font-medium z-50">
+                          <span className="text-rose-400 font-black uppercase block mb-1">Aviso Ecológico CONAMA</span>
+                          Obrigatório: Drenar fluidos e remover baterias evita crime ambiental.
+                        </div>
+                      </div>
+                    </h4>
+                    {form.descontaminadoFluidos && form.descontaminadoBateria && form.descontaminadoExtintor ? (
+                      <span className="text-[10px] bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 px-2 py-0.5 rounded-full font-black">100% CONCLUÍDO</span>
+                    ) : (
+                      <span className="text-[10px] bg-rose-500/20 text-rose-400 border border-rose-500/30 px-2 py-0.5 rounded-full font-black">PENDENTE</span>
+                    )}
+                  </div>
+                  <p className="text-[10px] text-slate-500 leading-tight">Obrigatório para cumprimento de exigências ambientais de reciclagem de veículos.</p>
+                  
+                  <div className="space-y-2 mt-2">
+                    <label className="flex items-center gap-3 cursor-pointer group">
+                      <input 
+                        type="checkbox" 
+                        checked={!!form.descontaminadoFluidos}
+                        onChange={e => setForm(p => ({ ...p, descontaminadoFluidos: e.target.checked }))}
+                        className="w-5 h-5 rounded border-slate-700 bg-slate-900 text-rose-500 focus:ring-rose-500"
+                      />
+                      <span className="text-xs font-bold text-slate-300 group-hover:text-white">Retirada e Coleta de Fluidos (Óleo, Combustível, Radiador)</span>
+                    </label>
+
+                    <label className="flex items-center gap-3 cursor-pointer group">
+                      <input 
+                        type="checkbox" 
+                        checked={!!form.descontaminadoBateria}
+                        onChange={e => setForm(p => ({ ...p, descontaminadoBateria: e.target.checked }))}
+                        className="w-5 h-5 rounded border-slate-700 bg-slate-900 text-rose-500 focus:ring-rose-500"
+                      />
+                      <span className="text-xs font-bold text-slate-300 group-hover:text-white">Remoção Segura da Bateria</span>
+                    </label>
+
+                    <label className="flex items-center gap-3 cursor-pointer group">
+                      <input 
+                        type="checkbox" 
+                        checked={!!form.descontaminadoExtintor}
+                        onChange={e => setForm(p => ({ ...p, descontaminadoExtintor: e.target.checked }))}
+                        className="w-5 h-5 rounded border-slate-700 bg-slate-900 text-rose-500 focus:ring-rose-500"
+                      />
+                      <span className="text-xs font-bold text-slate-300 group-hover:text-white">Retirada de Cilindros de GNV e Extintores</span>
+                    </label>
+                  </div>
+                </div>
               </div>
 
               <div className="space-y-2">
@@ -409,10 +682,32 @@ function Badge({ icon, label, tone }) {
   );
 }
 
-function Field({ label, value, onChange, placeholder, type = 'text' }) {
+function Field({ label, value, onChange, placeholder, type = 'text', tooltip, showMic, onMic, ouvindo }) {
   return (
     <label className="block">
-      <span className="mb-2 block text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">{label}</span>
+      <span className="mb-2 block text-xs font-semibold uppercase tracking-[0.2em] text-slate-500 flex justify-between items-center">
+        <span className="flex items-center gap-2">
+          {label}
+          {tooltip && (
+            <div className="group/tip relative inline-block normal-case tracking-normal">
+              <HelpCircle size={13} className="text-slate-500 cursor-help hover:text-rose-400 transition-colors" />
+              <div className="absolute bottom-full mb-2 left-1/2 -translate-x-1/2 w-60 p-3 bg-slate-950 border border-rose-500/20 text-[10px] text-slate-300 rounded-xl opacity-0 pointer-events-none group-hover/tip:opacity-100 transition-all duration-200 shadow-2xl leading-relaxed font-medium z-50">
+                <span className="text-rose-400 font-black uppercase block mb-1">Dica de Preenchimento</span>
+                {tooltip}
+              </div>
+            </div>
+          )}
+        </span>
+        {showMic && (
+          <button 
+            type="button"
+            onClick={onMic} 
+            className={`flex items-center gap-1 text-[10px] font-bold tracking-widest uppercase ${ouvindo ? 'text-rose-500 animate-pulse' : 'text-slate-600 hover:text-slate-400'}`}
+          >
+            <Mic size={12} /> {ouvindo ? 'Ouvindo...' : 'Voz'}
+          </button>
+        )}
+      </span>
       <input
         type={type}
         value={value}

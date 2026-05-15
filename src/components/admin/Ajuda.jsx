@@ -7,7 +7,7 @@ import {
   CreditCard, UserPlus, Megaphone, Rocket, HelpCircle, Wrench, Battery,
   Zap, Bike, Car, Hammer, Activity, Cpu, MoveHorizontal, Droplet,
   ShieldCheck, Snowflake, Circle, Scissors, Wind, CloudRain, Sparkles,
-  Brain, Briefcase, Shield, Calculator, ShoppingCart, Play, Info, Video, MessageCircle
+  Brain, Briefcase, Shield, Calculator, ShoppingCart, Play, Info, Video, MessageCircle, ShieldAlert
 } from 'lucide-react';
 
 const ESTILO_BIBLIOTECA = `
@@ -94,6 +94,7 @@ const ESTILO_BIBLIOTECA = `
 export default function BibliotecaTreinamento() {
   const [links, setLinks] = useState({});
   const [loading, setLoading] = useState(true);
+  const [abaAjuda, setAbaAjuda] = useState('videos'); // 'videos' | 'burocracias'
 
   useEffect(() => {
     const fetchConfig = async () => {
@@ -160,61 +161,205 @@ export default function BibliotecaTreinamento() {
           </div>
         </div>
 
-        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '30px' }}>
-          <Info size={20} color="#ff3131" />
-          <h2 style={{ fontSize: '18px', fontWeight: '900', margin: 0 }}>BIBLIOTECA DE VÍDEOS</h2>
-        </div>
-
-        {/* ==========================================
-            SEÇÃO 0: FERRAMENTAS GRATUITAS (NOVO)
-        ========================================== */}
-        <div style={{
-          background: 'linear-gradient(145deg, rgba(255,215,0,0.06) 0%, rgba(255,160,0,0.04) 50%, #0a0a0a 100%)',
-          borderRadius: '24px',
-          border: '1px solid rgba(255,215,0,0.25)',
-          padding: '30px',
-          marginBottom: '50px',
-          boxShadow: '0 0 30px rgba(255,215,0,0.05)'
+        {/* ── MENU DE ABAS DE SUPORTE ── */}
+        <div style={{ 
+          display: 'flex', 
+          background: '#0a0a0a', 
+          border: '1px solid #222', 
+          borderRadius: '18px', 
+          padding: '6px', 
+          marginBottom: '40px',
+          gap: '10px'
         }}>
-          <h3 style={{
-            color: '#FFD700', margin: '0 0 10px 0', fontSize: '24px', fontWeight: '900',
-            textShadow: '0 0 30px rgba(255,215,0,0.4)'
-          }}>
-            🎁 Ferramenta Grátis: Sua Oficina Organizada
-          </h3>
-          <p style={{ color: '#aaa', fontSize: '14px', lineHeight: '1.6', margin: '0 0 25px 0' }}>
-            Acesso vitalício para organizar sua oficina com as 7 ferramentas essenciais de gestão.
-          </p>
+          <button 
+            onClick={() => setAbaAjuda('videos')}
+            style={{
+              flex: 1,
+              padding: '14px 20px',
+              borderRadius: '14px',
+              border: 'none',
+              background: abaAjuda === 'videos' ? '#ff3131' : 'transparent',
+              color: abaAjuda === 'videos' ? 'black' : '#888',
+              fontSize: '13px',
+              fontWeight: '900',
+              cursor: 'pointer',
+              transition: '0.2s',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: '8px',
+              textTransform: 'uppercase',
+              letterSpacing: '0.5px'
+            }}
+          >
+            <Video size={16} fill={abaAjuda === 'videos' ? 'black' : 'transparent'} /> Vídeos & Manuais
+          </button>
 
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '12px' }}>
-            {[
-              { icon: '👥', label: 'Clientes', desc: 'Cadastro e gestão ilimitada da sua base de contatos.' },
-              { icon: '💰', label: 'Financeiro', desc: 'Controle total de entradas e saídas do fluxo de caixa.' },
-              { icon: '📊', label: 'Visão Geral', desc: 'Dashboard intuitivo da saúde e produtividade da oficina.' },
-              { icon: '📋', label: 'Tarefa', desc: 'Organize atividades e acompanhe o que precisa ser feito.' },
-              { icon: '📊', label: 'Patrimônio', desc: 'Inventário de ferramentas, elevadores e equipamentos.' },
-              { icon: '🤝', label: 'Fornecedores', desc: 'Lista de parceiros e autopeças para cotações rápidas.' },
-              { icon: '📋', label: 'Histórico', desc: 'Auditoria completa com segurança e transparência.' },
-            ].map(item => (
-              <div key={item.label} style={{
-                background: 'rgba(255,255,255,0.02)',
-                padding: '16px',
-                borderRadius: '16px',
-                border: '1px solid rgba(255,255,255,0.05)',
-              }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '8px' }}>
-                  <span style={{ fontSize: '18px' }}>{item.icon}</span>
-                  <span style={{ color: '#fff', fontSize: '13px', fontWeight: '900', textTransform: 'uppercase' }}>
-                    {item.label}
-                  </span>
-                </div>
-                <p style={{ color: '#777', fontSize: '11px', margin: 0, lineHeight: '1.5' }}>
-                  {item.desc}
-                </p>
-              </div>
-            ))}
-          </div>
+          <button 
+            onClick={() => setAbaAjuda('burocracias')}
+            style={{
+              flex: 1,
+              padding: '14px 20px',
+              borderRadius: '14px',
+              border: 'none',
+              background: abaAjuda === 'burocracias' ? '#ff3131' : 'transparent',
+              color: abaAjuda === 'burocracias' ? 'black' : '#888',
+              fontSize: '13px',
+              fontWeight: '900',
+              cursor: 'pointer',
+              transition: '0.2s',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: '8px',
+              textTransform: 'uppercase',
+              letterSpacing: '0.5px'
+            }}
+          >
+            <Shield size={16} /> Burocracias Legal
+          </button>
         </div>
+
+        {abaAjuda === 'videos' && (
+          <>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '30px' }}>
+              <Info size={20} color="#ff3131" />
+              <h2 style={{ fontSize: '18px', fontWeight: '900', margin: 0 }}>BIBLIOTECA DE VÍDEOS</h2>
+            </div>
+
+            {/* ==========================================
+                SEÇÃO 0: FERRAMENTAS GRATUITAS (NOVO)
+            ========================================== */}
+            <div style={{
+              background: 'linear-gradient(145deg, rgba(255,215,0,0.06) 0%, rgba(255,160,0,0.04) 50%, #0a0a0a 100%)',
+              borderRadius: '24px',
+              border: '1px solid rgba(255,215,0,0.25)',
+              padding: '30px',
+              marginBottom: '50px',
+              boxShadow: '0 0 30px rgba(255,215,0,0.05)'
+            }}>
+              <h3 style={{
+                color: '#FFD700', margin: '0 0 10px 0', fontSize: '24px', fontWeight: '900',
+                textShadow: '0 0 30px rgba(255,215,0,0.4)'
+              }}>
+                🎁 Ferramenta Grátis: Sua Oficina Organizada
+              </h3>
+              <p style={{ color: '#aaa', fontSize: '14px', lineHeight: '1.6', margin: '0 0 25px 0' }}>
+                Acesso vitalício para organizar sua oficina com as 7 ferramentas essenciais de gestão.
+              </p>
+
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '12px' }}>
+                {[
+                  { icon: '👥', label: 'Clientes', desc: 'Cadastro e gestão ilimitada da sua base de contatos.' },
+                  { icon: '💰', label: 'Financeiro', desc: 'Controle total de entradas e saídas do fluxo de caixa.' },
+                  { icon: '📊', label: 'Visão Geral', desc: 'Dashboard intuitivo da saúde e produtividade da oficina.' },
+                  { icon: '📋', label: 'Tarefa', desc: 'Organize atividades e acompanhe o que precisa ser feito.' },
+                  { icon: '📊', label: 'Patrimônio', desc: 'Inventário de ferramentas, elevadores e equipamentos.' },
+                  { icon: '🤝', label: 'Fornecedores', desc: 'Lista de parceiros e autopeças para cotações rápidas.' },
+                  { icon: '📋', label: 'Histórico', desc: 'Auditoria completa com segurança e transparência.' },
+                ].map(item => (
+                  <div key={item.label} style={{
+                    background: 'rgba(255,255,255,0.02)',
+                    padding: '16px',
+                    borderRadius: '16px',
+                    border: '1px solid rgba(255,255,255,0.05)',
+                  }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '8px' }}>
+                      <span style={{ fontSize: '18px' }}>{item.icon}</span>
+                      <span style={{ color: '#fff', fontSize: '13px', fontWeight: '900', textTransform: 'uppercase' }}>
+                        {item.label}
+                      </span>
+                    </div>
+                    <p style={{ color: '#777', fontSize: '11px', margin: 0, lineHeight: '1.5' }}>
+                      {item.desc}
+                    </p>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </>
+        )}
+
+        {abaAjuda === 'burocracias' && (
+          <div style={{ animation: 'fadeIn 0.3s ease-out' }}>
+            {/* ALERTA ALTO RISCO - LEI DO DESMANCHE */}
+            <div style={{
+              background: 'linear-gradient(145deg, rgba(239,68,68,0.12) 0%, rgba(153,27,27,0.05) 50%, #070000 100%)',
+              border: '1px solid rgba(239,68,68,0.4)',
+              borderRadius: '24px',
+              padding: '30px',
+              marginBottom: '40px',
+              boxShadow: '0 10px 30px rgba(220,38,38,0.1)'
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '15px' }}>
+                <div style={{ width: '40px', height: '40px', background: '#EF4444', borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                  <ShieldAlert size={22} color="black" />
+                </div>
+                <h3 style={{
+                  color: '#EF4444', margin: 0, fontSize: '18px', fontWeight: '900',
+                  textShadow: '0 0 20px rgba(239,68,68,0.2)', textTransform: 'uppercase'
+                }}>
+                  ⚠️ CUIDADO COM A LEI DO DESMANCHE (12.977/14)
+                </h3>
+              </div>
+              <p style={{ color: '#fca5a5', fontSize: '14px', lineHeight: '1.7', margin: 0, fontWeight: '600' }}>
+                Peças substituídas (lataria, motor, suspensão) são consideradas <strong>SUCATA METÁLICA</strong> e não podem ser enviadas para desmanches para revenda sem rastreabilidade do Detran. O descarte correto é vender por quilo para Empresas de Reciclagem de Metais ou Ferros-Velhos que destinam o material para derretimento.
+              </p>
+            </div>
+
+            {/* GUIA DE SOBREVIVÊNCIA LEGAL (MIGRADO PARA CÁ) */}
+            <div style={{
+              background: 'linear-gradient(145deg, rgba(16,185,129,0.06) 0%, rgba(52,211,153,0.03) 50%, #0a0a0a 100%)',
+              borderRadius: '24px',
+              border: '1px solid rgba(16,185,129,0.25)',
+              padding: '30px',
+              marginBottom: '50px',
+              boxShadow: '0 0 30px rgba(16,185,129,0.05)'
+            }}>
+              <h3 style={{
+                color: '#10B981', margin: '0 0 10px 0', fontSize: '22px', fontWeight: '900',
+                textShadow: '0 0 20px rgba(16,185,129,0.2)', display: 'flex', alignItems: 'center', gap: '10px'
+              }}>
+                🛡️ Guia de Sobrevivência Legal da Oficina (PNRS)
+              </h3>
+              <p style={{ color: '#aaa', fontSize: '14px', lineHeight: '1.6', margin: '0 0 25px 0' }}>
+                Manual de orientação para micro e pequenos empresários evitarem as multas mais comuns em fiscalizações sanitárias e ambientais.
+              </p>
+
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '20px' }}>
+                <div style={{ background: 'rgba(255,255,255,0.02)', padding: '20px', borderRadius: '16px', border: '1px solid rgba(255,255,255,0.04)' }}>
+                  <h4 style={{ fontSize: '14px', fontWeight: '900', marginBottom: '10px', textTransform: 'uppercase', color: '#a7f3d0' }}>📄 Como conseguir os Alvarás?</h4>
+                  <p style={{ color: '#888', fontSize: '12px', lineHeight: '1.6', margin: 0 }}>
+                    1. <strong>Funcionamento:</strong> Solicite na Prefeitura (Portal do Empreendedor). Microempresas em zonas industriais/comerciais têm facilidades.<br />
+                    2. <strong>AVCB (Bombeiros):</strong> Exige extintores carregados e sinalização de saídas. Empresas de pequeno porte (CLCB) resolvem 100% online.<br />
+                    3. <strong>Ambiental:</strong> Dependendo da cidade, oficinas precisam de dispensa ou licença simplificada comprovando a destinação dos resíduos.
+                  </p>
+                </div>
+
+                <div style={{ background: 'rgba(255,255,255,0.02)', padding: '20px', borderRadius: '16px', border: '1px solid rgba(255,255,255,0.04)' }}>
+                  <h4 style={{ fontSize: '14px', fontWeight: '900', marginBottom: '10px', textTransform: 'uppercase', color: '#a7f3d0' }}>🛢️ Achar Coletores de Óleo (OLUC)</h4>
+                  <p style={{ color: '#888', fontSize: '12px', lineHeight: '1.6', margin: 0 }}>
+                    Nunca pague para descartar óleo usado! Existem coletores autorizados pela ANP que coletam na sua oficina de graça (e muitas vezes até pagam por litro).<br />
+                    <strong>Busca Segura:</strong> Pesquise no Google por "Coletor Autorizado ANP de Óleo Lubrificante Usado [Sua Região]". Lembre-se sempre de exigir o Certificado de Coleta (MTR).
+                  </p>
+                </div>
+
+                <div style={{ background: 'rgba(255,255,255,0.02)', padding: '20px', borderRadius: '16px', border: '1px solid rgba(255,255,255,0.04)' }}>
+                  <h4 style={{ fontSize: '14px', fontWeight: '900', marginBottom: '10px', textTransform: 'uppercase', color: '#a7f3d0' }}>🚨 Preparar para Inspeção</h4>
+                  <p style={{ color: '#888', fontSize: '12px', lineHeight: '1.6', margin: 0 }}>
+                    A Vigilância Sanitária foca em organização:<br />
+                    • Mantenha o <strong>Certificado de Dedetização</strong> na parede.<br />
+                    • Evite focos de dengue: cubra <strong>100% dos pneus velhos</strong> (proteção de chuva).<br />
+                    • Guarde óleo novo e filtros em bandejas metálicas ou diques antiderramamento. Nunca direto no piso!
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {abaAjuda === 'videos' && (
+          <>
 
         {/* ==========================================
             SEÇÃO 1: CONFIGURAÇÃO INICIAL
@@ -337,9 +482,21 @@ export default function BibliotecaTreinamento() {
         </div>
 
         {/* ==========================================
-            SEÇÃO 4: EQUIPE E CRESCIMENTO
+            SEÇÃO 4: PROTEÇÃO JURÍDICA (BUROCRACIAS)
         ========================================== */}
-        <div className="titulo-sessao"><div style={{ width: 4, height: 15, background: '#ff3131' }} /> 4. Equipe e Crescimento</div>
+        <div className="titulo-sessao"><div style={{ width: 4, height: 15, background: '#ff3131' }} /> 4. Proteção Jurídica (Burocracias)</div>
+
+        <div className="item-biblioteca">
+          <div className="icone-box"><Shield size={20} color="#10b981" /></div>
+          <div className="label-nome">🛡️ Burocracias & Descartes</div>
+          {renderBotaoVideo(links.burocracias)}
+          <div className="box-resumo">Controle de Alvarás, descarte de óleo, destinação de sucata metálica (Lei do Desmanche) e ativação do Selo Oficina Blindada.</div>
+        </div>
+
+        {/* ==========================================
+            SEÇÃO 5: EQUIPE E CRESCIMENTO
+        ========================================== */}
+        <div className="titulo-sessao"><div style={{ width: 4, height: 15, background: '#ff3131' }} /> 5. Equipe e Crescimento</div>
 
         <div className="item-biblioteca">
           <div className="icone-box"><UserPlus size={20} color="#22c55e" /></div>
@@ -370,9 +527,9 @@ export default function BibliotecaTreinamento() {
         </div>
 
         {/* ==========================================
-            SEÇÃO 5: ESPECIALIDADES TÉCNICAS
+            SEÇÃO 6: ESPECIALIDADES TÉCNICAS
         ========================================== */}
-        <div className="titulo-sessao"><div style={{ width: 4, height: 15, background: '#ff3131' }} /> 5. Especialidades Técnicas</div>
+        <div className="titulo-sessao"><div style={{ width: 4, height: 15, background: '#ff3131' }} /> 6. Especialidades Técnicas</div>
 
         <div className="item-biblioteca">
           <div className="icone-box"><Wrench size={20} color="#ffc107" /></div>
@@ -487,15 +644,22 @@ export default function BibliotecaTreinamento() {
         </div>
 
         {/* ==========================================
-            SEÇÃO 6: INTELIGÊNCIA E SUPORTE
+            SEÇÃO 7: INTELIGÊNCIA E SUPORTE
         ========================================== */}
-        <div className="titulo-sessao"><div style={{ width: 4, height: 15, background: '#ff3131' }} /> 6. Inteligência e Suporte Admin</div>
+        <div className="titulo-sessao"><div style={{ width: 4, height: 15, background: '#ff3131' }} /> 7. Inteligência e Suporte Admin</div>
 
         <div className="item-biblioteca">
           <div className="icone-box"><Brain size={20} color="#ff3131" /></div>
           <div className="label-nome">🤖 Copiloto IA</div>
           {renderBotaoVideo(links.copiloto)}
           <div className="box-resumo">Inteligência Artificial para diagnósticos avançados e esquemas técnicos.</div>
+        </div>
+
+        <div className="item-biblioteca">
+          <div className="icone-box"><Brain size={20} color="#a855f7" /></div>
+          <div className="label-nome">🚀 Especialista IA</div>
+          {renderBotaoVideo(links.especialista)}
+          <div className="box-resumo">O mentor de negócios e conselheiro jurídico da oficina. Dúvidas de leis, descartes e lucro real.</div>
         </div>
 
         <div className="item-biblioteca">
@@ -528,15 +692,15 @@ export default function BibliotecaTreinamento() {
 
         <div className="item-biblioteca">
           <div className="icone-box"><Scissors size={20} color="#e91e63" /></div>
-          <div className="label-nome">🚗 Desmanche</div>
+          <div className="label-nome">🚗 Desmanche Legal</div>
           {renderBotaoVideo(links.desmanche)}
-          <div className="box-resumo">Gestão de peças de reaproveitamento, rede global e WhatsApp.</div>
+          <div className="box-resumo"><strong>Como operar um Desmanche Legalizado:</strong> Manual prático sobre gestão de peças de reaproveitamento, rastreabilidade da Lei 12.977 e compartilhamento via WhatsApp.</div>
         </div>
 
         {/* ==========================================
-            SEÇÃO 7: MÓDULOS PRO & ELITE
+            SEÇÃO 8: MÓDULOS PRO & ELITE
         ========================================== */}
-        <div className="titulo-sessao"><div style={{ width: 4, height: 15, background: '#ff3131' }} /> 7. Recursos Avançados</div>
+        <div className="titulo-sessao"><div style={{ width: 4, height: 15, background: '#ff3131' }} /> 8. Recursos Avançados</div>
 
         <div className="item-biblioteca">
           <div className="icone-box"><DollarSign size={20} color="#22c55e" /></div>
@@ -551,6 +715,15 @@ export default function BibliotecaTreinamento() {
           {renderBotaoVideo(links.pagamentos_equipe)}
           <div className="box-resumo">Crie uma lista de funcionários, calcule automaticamente as comissões com base na mão de obra das O.S. finalizadas e registre vales.</div>
         </div>
+
+        <div className="item-biblioteca">
+          <div className="icone-box"><Sparkles size={20} color="#f59e0b" /></div>
+          <div className="label-nome">👑 Migração de Dados</div>
+          {renderBotaoVideo(links.migracao)}
+          <div className="box-resumo">Transforme seu histórico antigo de Excel e CSV em vendas recorrentes com Inteligência Artificial e reativação ativa.</div>
+        </div>
+      </>
+    )}
 
       </div>
 

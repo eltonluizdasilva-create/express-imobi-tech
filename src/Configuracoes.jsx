@@ -1,6 +1,7 @@
 /* eslint-disable react/prop-types */
 import React, { useEffect, useState } from 'react';
-import { doc, getDoc, setDoc } from 'firebase/firestore';
+import { doc, getDoc, setDoc, collection, getDocs, deleteDoc } from 'firebase/firestore';
+import { getAuth, deleteUser } from 'firebase/auth';
 import { db } from './lib/firebase';
 
 const ESTADO_INICIAL = {
@@ -14,6 +15,7 @@ const ESTADO_INICIAL = {
 export default function Configuracoes({ oficinaId, onSalvo }) {
   const [config, setConfig] = useState(ESTADO_INICIAL);
   const [salvando, setSalvando] = useState(false);
+  const [excluindo, setExcluindo] = useState(false);
 
   useEffect(() => {
     async function carregar() {
@@ -43,6 +45,91 @@ export default function Configuracoes({ oficinaId, onSalvo }) {
       alert('Erro ao salvar configurações: ' + error.message);
     } finally {
       setSalvando(false);
+    }
+  };
+
+  const handleExcluirConta = async () => {
+    if (!oficinaId) return;
+
+    const confirmacao1 = window.confirm(
+      "🚨 ATENÇÃO MÁXIMA! 🚨\n\nVocê está prestes a excluir permanentemente a sua oficina e TODOS os seus dados vinculados.\nEsta ação é irreversível nos termos da LGPD.\n\nTem certeza absoluta que deseja prosseguir?"
+    );
+    if (!confirmacao1) return;
+
+    const confirmacao2 = window.prompt(
+      'Para confirmar a exclusão definitiva em cascata, digite exatamente a palavra "EXCLUIR" em letras maiúsculas:'
+    );
+    if (confirmacao2 !== "EXCLUIR") {
+      alert("Confirmação incorreta. Ação cancelada por segurança.");
+      return;
+    }
+
+    setExcluindo(true);
+    try {
+      console.log("Iniciando limpeza em cascata para oficina:", oficinaId);
+
+      // Subcoleções mapeadas do Firestore vinculadas à oficina
+      const subcolecoes = [
+        'os',
+        'estoque',
+        'retornos',
+        'burocracias',
+        'descartes',
+        'relatorios_mensais',
+        'configuracoes',
+        'funcionarios',
+        'despesas',
+        'equipe'
+      ];
+
+      // 1. Deleta documentos de cada subcoleção concorrentemente
+      await Promise.all(subcolecoes.map(async (subColNome) => {
+        try {
+          const colRef = collection(db, 'oficinas', oficinaId, subColNome);
+          const snap = await getDocs(colRef);
+          await Promise.all(snap.docs.map(d => deleteDoc(d.ref)));
+          console.log(`Limpeza concluída: subcoleção /${subColNome}`);
+        } catch (err) {
+          console.warn(`Aviso na limpeza da subcoleção /${subColNome}:`, err);
+        }
+      }));
+
+      // 2. Deleta o documento raiz da oficina
+      await deleteDoc(doc(db, 'oficinas', oficinaId));
+      console.log("Documento raiz da oficina deletado.");
+
+      // 3. Deleta documento de usuário no Firestore (se houver)
+      const auth = getAuth();
+      const user = auth.currentUser;
+      if (user) {
+        try {
+          await deleteDoc(doc(db, 'usuarios', user.uid));
+          console.log("Dados do usuário no Firestore deletados.");
+        } catch (err) {
+          console.warn("Erro ao apagar dados extras de usuário:", err);
+        }
+
+        // 4. Exclusão da Conta Auth Engine do Firebase
+        try {
+          await deleteUser(user);
+          console.log("Conta de Autenticação deletada com sucesso.");
+        } catch (err) {
+          console.warn("Aviso Auth: deleteUser falhou ou exige login recente.", err);
+          if (err.code === 'auth/requires-recent-login') {
+             alert("Por motivos de segurança do Firebase, esta operação exige que você tenha feito login recentemente. Por favor, faça logout, logue de novo e repita o processo.");
+             setExcluindo(false);
+             return;
+          }
+        }
+      }
+
+      alert("Todos os seus dados foram apagados permanentemente em conformidade com a LGPD! Redirecionando...");
+      window.location.href = '/';
+    } catch (error) {
+      console.error("Erro crítico na deleção cascata LGPD:", error);
+      alert("Erro ao excluir dados: " + error.message);
+    } finally {
+      setExcluindo(false);
     }
   };
 
@@ -122,6 +209,43 @@ export default function Configuracoes({ oficinaId, onSalvo }) {
       >
         {salvando ? 'SALVANDO...' : '💾 SALVAR CONFIGURAÇÕES'}
       </button>
+
+      {/* 🔒 ÁREA DE PRIVACIDADE E LGPD */}
+      <div style={{
+        marginTop: '30px',
+        borderTop: '1px dashed #222',
+        paddingTop: '30px'
+      }}>
+        <div style={{ marginBottom: '16px' }}>
+          <h3 style={{ margin: '0 0 6px 0', color: '#fff', fontSize: '15px', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <span style={{ color: '#00E676' }}>🔒</span> Segurança e Privacidade (LGPD)
+          </h3>
+          <p style={{ margin: 0, color: '#666', fontSize: '12px', lineHeight: 1.5 }}>
+            Como titular dos dados, você possui o <strong>Direito ao Esquecimento</strong> digital. Você pode solicitar a eliminação permanente e definitiva de todas as suas informações dos nossos servidores a qualquer momento.
+          </p>
+        </div>
+
+        <button
+          onClick={handleExcluirConta}
+          disabled={excluindo || salvando}
+          style={{
+            width: '100%',
+            padding: '14px',
+            background: 'rgba(255, 49, 49, 0.05)',
+            border: '1px solid rgba(255, 49, 49, 0.3)',
+            color: '#FF3131',
+            borderRadius: '12px',
+            fontSize: '12px',
+            fontWeight: '900',
+            cursor: 'pointer',
+            transition: '0.2s',
+            textTransform: 'uppercase',
+            letterSpacing: '0.5px'
+          }}
+        >
+          {excluindo ? 'DELETANDO TUDO EM CASCATA...' : '⚠️ Excluir Minha Conta e Dados Permanentemente'}
+        </button>
+      </div>
     </div>
   );
 }

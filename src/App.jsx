@@ -5,6 +5,7 @@ import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { OficinaProvider } from './components/OficinaContext';
 
 import Layout from './components/Layout';
+import CookieBanner from './components/CookieBanner';
 
 // ============================================================
 // IMPORTAÇÕES DINÂMICAS (LAZY LOADING)
@@ -18,6 +19,8 @@ const OSPage = lazy(() => import('./OSPage'));
 const PortalCliente = lazy(() => import('./PortalCliente'));
 const StatusOS = lazy(() => import('./StatusOS'));
 const RevisaoPremium = lazy(() => import('./pages/admin/RevisaoPremium'));
+const Termos = lazy(() => import('./pages/Termos'));
+const Privacidade = lazy(() => import('./pages/Privacidade'));
 
 // ============================================================
 // ERROR BOUNDARY
@@ -84,7 +87,7 @@ function AppRoutes() {
     return <TelaCarregamento />;
   }
 
-  const rotasSemLayout = ['/', '/login', '/login-admin', '/portal', '/portal2'];
+  const rotasSemLayout = ['/', '/login', '/login-admin', '/portal', '/portal2', '/termos', '/privacidade'];
   const mostrarMenuInferior =
     !rotasSemLayout.includes(location.pathname) &&
     !location.pathname.startsWith('/status/');
@@ -147,6 +150,9 @@ function AppRoutes() {
           )}
         />
 
+        <Route path="/termos" element={<Termos />} />
+        <Route path="/privacidade" element={<Privacidade />} />
+
         <Route path="*" element={<Navigate to={logado ? '/admin' : '/login-admin'} replace />} />
       </Routes>
 
@@ -167,6 +173,7 @@ export default function App() {
           <ErrorBoundary>
             <Suspense fallback={<TelaCarregamento />}>
               <AppRoutes />
+              <CookieBanner />
             </Suspense>
           </ErrorBoundary>
         </OficinaProvider>

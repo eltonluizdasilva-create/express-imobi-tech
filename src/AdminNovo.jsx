@@ -75,6 +75,7 @@ import FechamentoCaixa from './FechamentoCaixa';
 import PagamentosEquipe from './PagamentosEquipe';
 import MigracaoDados from './components/MigracaoDados';
 import Especialista from './components/Especialista';
+import Burocracias from './components/Burocracias';
 
 // Novo componente de gerenciamento de módulos
 import GerenciadorDeModulos from './components/admin/GerenciadorDeModulos';
@@ -84,7 +85,7 @@ import GerenciadorDeModulos from './components/admin/GerenciadorDeModulos';
 const { MAIN, GREEN, MASTER } = COLORS;
 const APP_BASE_URL = 'https://oficina.expresstech.com.br';
 const MODULOS_GRATIS_VITALICIOS = [
-  'meuplano', 'config', 'equipe', 'marketing', 'ajuda', 'dashboard', 'os', 'lista', 'migracao', 'especialista'
+  'meuplano', 'config', 'equipe', 'marketing', 'ajuda', 'dashboard', 'os', 'lista', 'migracao', 'especialista', 'burocracias'
 ];
 
 const SERVICOS_ESTETICA_ABAS = [
@@ -139,6 +140,7 @@ const LABELS_ABAS = {
   ajuda: '❓ AJUDA', master: '👑 MASTER', meuplano: '💰 MEU PLANO',
   migracao: '👑 MIGRAÇÃO DE DADOS',
   especialista: '🛠️ ESPECIALISTA',
+  burocracias: '🛡️ BUROCRACIAS',
 };
 
 const LABELS_ABAS_MODAL = {
@@ -212,6 +214,7 @@ const MODULOS_MAP = {
   pagamentos_equipe: PagamentosEquipe,
   migracao: MigracaoDados,
   especialista: Especialista,
+  burocracias: Burocracias,
 };
 
 
@@ -593,6 +596,12 @@ export default function Admin() {
         valorPecas: osEditando.valorPecas,
         valorMaoObra: osEditando.valorMaoObra,
         total: (Number(osEditando.valorPecas) || 0) + (Number(osEditando.valorMaoObra) || 0),
+        custoPecas: osEditando.custoPecas || 0,
+        horasTecnicas: osEditando.horasTecnicas || 0,
+        valorHoraTecnica: osEditando.valorHoraTecnica || 120,
+        taxasImpostos: osEditando.taxasImpostos || 6,
+        lucroLimpo: osEditando.lucroLimpo || 0,
+        margemLucro: osEditando.margemLucro || 0,
         fotos: osEditando.fotos || [],
         kmAtual: osEditando.kmAtual || '',
         kmProxima: osEditando.kmProxima || '',

@@ -1,5 +1,6 @@
-import React from 'react';
-import { Wallet, Users, Lock } from 'lucide-react';
+import React, { useState } from 'react';
+import { Wallet, Users, Lock, Sparkles, Mic } from 'lucide-react';
+import { useGroq } from '../hooks/useGroq';
 
 const QuickActions = ({
     oficinaId, GREEN_MONEY,
@@ -25,7 +26,123 @@ const QuickActions = ({
     moduloLiberado, lidarModuloBloqueado,
     tema = 'escuro', t = { card: '#111', bg: '#000', text: '#fff', stroke: '#333', textSoft: '#888' }
 }) => {
-    
+    const { analyzeText } = useGroq(oficinaId);
+    const [preenchendoVoz, setPreenchendoVoz] = useState(false);
+
+    const ouvirEPreencherTudo = () => {
+        if (!('webkitSpeechRecognition' in window || 'SpeechRecognition' in window))
+            return alert('Use o Chrome para reconhecimento de voz.');
+        
+        const SpeechRec = window.SpeechRecognition || window.webkitSpeechRecognition;
+        const rec = new SpeechRec();
+        rec.lang = 'pt-BR';
+        
+        rec.onstart = () => {
+            setPreenchendoVoz('ouvindo');
+        };
+        
+        rec.onresult = async (e) => {
+            const transcricao = e.results[0][0].transcript;
+            if (!transcricao.trim()) {
+                setPreenchendoVoz(false);
+                return;
+            }
+            
+            setPreenchendoVoz('processando');
+            
+            try {
+                const prompt = `Aja como um extrator de dados JSON estruturado. Analise a seguinte fala transcrita de um dono de oficina mecânica descrevendo a chegada de um cliente. Extraia exatamente e APENAS as informações solicitadas abaixo, retornando SEMPRE um objeto JSON no seguinte formato, sem textos adicionais, sem explicações, sem blocos de código:
+{
+  "nome": "Nome do cliente extraído (capitalize as primeiras letras)",
+  "telefone": "Apenas os números do telefone celular contendo DDD, ex: 34999998888 (converta números falados por extenso para algarismos se necessário)",
+  "problema": "O problema do carro, o serviço solicitado ou modelo do veículo citado"
+}
+
+Fala transcrita: "${transcricao}"`;
+
+                const response = await analyzeText(prompt);
+                const cleanJson = response.replace(/```json|```/g, '').trim();
+                const parsed = JSON.parse(cleanJson);
+                
+                if (parsed.nome) setLeadNome(parsed.nome);
+                if (parsed.telefone) setLeadTelefone(parsed.telefone);
+                if (parsed.problema) setLeadProblema(parsed.problema);
+            } catch (err) {
+                console.error('[Voz IA] Erro:', err);
+                alert('Não foi possível decifrar o áudio. Tente falar mais pausadamente.');
+            } finally {
+                setPreenchendoVoz(false);
+            }
+        };
+        
+        rec.onend = () => {
+            setTimeout(() => setPreenchendoVoz(p => p === 'ouvindo' ? false : p), 500);
+        };
+        
+        rec.start();
+    };
+
+    const ouvirERegistrarTarefa = () => {
+        if (!('webkitSpeechRecognition' in window || 'SpeechRecognition' in window))
+            return alert('Use o Chrome para reconhecimento de voz.');
+        
+        const SpeechRec = window.SpeechRecognition || window.webkitSpeechRecognition;
+        const rec = new SpeechRec();
+        rec.lang = 'pt-BR';
+        
+        rec.onstart = () => {
+            setPreenchendoVoz('ouvindo_tarefa');
+        };
+        
+        rec.onresult = async (e) => {
+            const transcricao = e.results[0][0].transcript;
+            if (!transcricao.trim()) {
+                setPreenchendoVoz(false);
+                return;
+            }
+            
+            setPreenchendoVoz('processando');
+            
+            try {
+                const hoje = new Date();
+                const hojeIso = hoje.toISOString().split('T')[0];
+                const dias = ['domingo', 'segunda-feira', 'terça-feira', 'quarta-feira', 'quinta-feira', 'sexta-feira', 'sábado'];
+                const diaSemana = dias[hoje.getDay()];
+
+                const prompt = `Aja como um extrator inteligente para um painel de tarefas rápidas de oficina. Hoje é dia ${hojeIso} (${diaSemana}). Analise a frase ditada pelo mecânico e extraia o título, detalhes da tarefa, a data e a hora. ATENÇÃO: Converta datas relativas citadas (ex: amanhã, hoje de tarde, próxima terça às 14h, daqui a dois dias) para os formatos AAAA-MM-DD e HH:MM de forma precisa baseado na data de hoje (${hojeIso}).
+Retorne APENAS um objeto JSON estruturado seguindo exatamente este formato:
+{
+  "titulo": "Resumo da tarefa (máx 5 palavras, ex: Comprar Óleo, Ligar para Seguradora)",
+  "detalhes": "Explicação complementar da tarefa caso exista",
+  "data": "AAAA-MM-DD (A data exata calculada. IMPORTANTE: Se nenhuma data for citada, use a data de hoje ${hojeIso})",
+  "hora": "HH:MM (A hora exata citada. Se não for citada, deixe vazio)"
+}
+
+Fala do mecânico: "${transcricao}"`;
+
+                const response = await analyzeText(prompt);
+                const cleanJson = response.replace(/```json|```/g, '').trim();
+                const parsed = JSON.parse(cleanJson);
+                
+                if (parsed.titulo) setTarefaRapidaTitulo(parsed.titulo);
+                if (parsed.detalhes) setTarefaRapidaDesc(parsed.detalhes);
+                if (parsed.data) setTarefaRapidaData(parsed.data);
+                if (parsed.hora) setTarefaRapidaHora(parsed.hora);
+            } catch (err) {
+                console.error('[Voz Tarefa] Erro:', err);
+                alert('Não consegui capturar os detalhes da tarefa. Fale mais pausadamente.');
+            } finally {
+                setPreenchendoVoz(false);
+            }
+        };
+        
+        rec.onend = () => {
+            setTimeout(() => setPreenchendoVoz(p => p === 'ouvindo_tarefa' ? false : p), 500);
+        };
+        
+        rec.start();
+    };
+
     const BTN_SIZE = '44px'; // Aumentado levemente para acomodar o cadeado se necessário
     const BTN_RADIUS = '12px';
 
@@ -89,7 +206,52 @@ const QuickActions = ({
                 <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.8)', zIndex: 1000000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px', backdropFilter: 'blur(5px)' }}>
                     <div style={{ background: t.card, width: '100%', maxWidth: '420px', borderRadius: '24px', padding: '30px', border: `1px solid ${t.stroke}`, position: 'relative', boxShadow: '0 20px 50px rgba(0,0,0,0.5)' }}>
                         <button onClick={() => setModalTarefaAberto(false)} style={{ position: 'absolute', top: '20px', right: '20px', background: t.card, border: `1px solid ${t.stroke}`, color: '#ef4444', width: '32px', height: '32px', borderRadius: '50%', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 'bold' }}>✕</button>
-                        <h3 style={{ margin: '0 0 25px', color: '#10b981', textAlign: 'center', fontWeight: '900', fontSize: '18px', letterSpacing: '1px' }}>📝 NOVA TAREFA RÁPIDA</h3>
+                        <h3 style={{ margin: '0 0 15px', color: '#10b981', textAlign: 'center', fontWeight: '900', fontSize: '18px', letterSpacing: '1px' }}>📝 NOVA TAREFA RÁPIDA</h3>
+
+                        {/* 🧠 PREENCHIMENTO INTELIGENTE POR VOZ */}
+                        <div style={{ marginBottom: '20px' }}>
+                            <button
+                                type="button"
+                                onClick={ouvirERegistrarTarefa}
+                                disabled={preenchendoVoz === 'processando'}
+                                style={{
+                                    width: '100%',
+                                    padding: '14px',
+                                    borderRadius: '16px',
+                                    border: preenchendoVoz === 'ouvindo_tarefa' ? '2px solid #ef4444' : '1px solid rgba(16, 185, 129, 0.3)',
+                                    background: preenchendoVoz === 'ouvindo_tarefa' ? 'rgba(239, 68, 68, 0.1)' : 'rgba(16, 185, 129, 0.05)',
+                                    color: preenchendoVoz === 'ouvindo_tarefa' ? '#ef4444' : '#10b981',
+                                    fontWeight: '900',
+                                    fontSize: '12px',
+                                    textTransform: 'uppercase',
+                                    letterSpacing: '1px',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    gap: '8px',
+                                    cursor: preenchendoVoz === 'processando' ? 'wait' : 'pointer',
+                                    boxShadow: preenchendoVoz === 'ouvindo_tarefa' ? '0 0 20px rgba(239,68,68,0.2)' : 'none',
+                                    outline: 'none',
+                                    boxSizing: 'border-box'
+                                }}
+                                className={preenchendoVoz === 'ouvindo_tarefa' ? 'animate-pulse' : ''}
+                            >
+                                {preenchendoVoz === 'processando' ? (
+                                    <>⏳ PROCESSANDO TAREFA...</>
+                                ) : preenchendoVoz === 'ouvindo_tarefa' ? (
+                                    <>🔴 PODE FALAR AGORA...</>
+                                ) : (
+                                    <>
+                                        <Sparkles size={14} />
+                                        <Mic size={14} />
+                                        Criar Tarefa por Voz (IA)
+                                    </>
+                                )}
+                            </button>
+                            <p style={{ margin: '6px 0 0', fontSize: '9px', color: '#777', textAlign: 'center', lineHeight: '1.3' }}>
+                                💡 Clique e diga: <i>"Comprar pastilhas de freio amanhã às duas da tarde."</i>
+                            </p>
+                        </div>
 
                         <label style={{ color: '#666', fontSize: '10px', fontWeight: '900', display: 'block', marginBottom: '8px', letterSpacing: '1.5px', textTransform: 'uppercase' }}>Título da Tarefa</label>
                         <input
@@ -212,7 +374,52 @@ const QuickActions = ({
                 <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.8)', zIndex: 1000000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px', backdropFilter: 'blur(5px)' }}>
                     <div style={{ background: t.card, width: '100%', maxWidth: '420px', borderRadius: '24px', padding: '30px', border: `1px solid ${t.stroke}`, position: 'relative', boxShadow: '0 20px 50px rgba(0,0,0,0.5)' }}>
                         <button onClick={() => setModalClienteAberto(false)} style={{ position: 'absolute', top: '20px', right: '20px', background: t.card, border: `1px solid ${t.stroke}`, color: '#ef4444', width: '32px', height: '32px', borderRadius: '50%', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 'bold' }}>✕</button>
-                        <h3 style={{ margin: '0 0 25px', color: GREEN_MONEY, textAlign: 'center', fontWeight: '900', fontSize: '18px', letterSpacing: '1px' }}>🎯 Clientes</h3>
+                        <h3 style={{ margin: '0 0 15px', color: GREEN_MONEY, textAlign: 'center', fontWeight: '900', fontSize: '18px', letterSpacing: '1px' }}>🎯 Clientes</h3>
+
+                        {/* 🧠 PREENCHIMENTO INTELIGENTE POR VOZ */}
+                        <div style={{ marginBottom: '20px' }}>
+                            <button
+                                type="button"
+                                onClick={ouvirEPreencherTudo}
+                                disabled={preenchendoVoz === 'processando'}
+                                style={{
+                                    width: '100%',
+                                    padding: '14px',
+                                    borderRadius: '16px',
+                                    border: preenchendoVoz === 'ouvindo' ? '2px solid #ef4444' : `1px solid ${GREEN_MONEY}44`,
+                                    background: preenchendoVoz === 'ouvindo' ? 'rgba(239, 68, 68, 0.1)' : `${GREEN_MONEY}11`,
+                                    color: preenchendoVoz === 'ouvindo' ? '#ef4444' : '#00E676',
+                                    fontWeight: '900',
+                                    fontSize: '12px',
+                                    textTransform: 'uppercase',
+                                    letterSpacing: '1px',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    gap: '8px',
+                                    cursor: preenchendoVoz === 'processando' ? 'wait' : 'pointer',
+                                    boxShadow: preenchendoVoz === 'ouvindo' ? '0 0 20px rgba(239,68,68,0.2)' : 'none',
+                                    outline: 'none',
+                                    boxSizing: 'border-box'
+                                }}
+                                className={preenchendoVoz === 'ouvindo' ? 'animate-pulse' : ''}
+                            >
+                                {preenchendoVoz === 'processando' ? (
+                                    <>⏳ PROCESSANDO FALA...</>
+                                ) : preenchendoVoz === 'ouvindo' ? (
+                                    <>🔴 PODE FALAR AGORA...</>
+                                ) : (
+                                    <>
+                                        <Sparkles size={14} />
+                                        <Mic size={14} />
+                                        Preenchimento Rápido por Voz
+                                    </>
+                                )}
+                            </button>
+                            <p style={{ margin: '6px 0 0', fontSize: '9px', color: '#777', textAlign: 'center', lineHeight: '1.3' }}>
+                                💡 Clique e diga: <i>"Cadastra o Antônio, ZAP trinta e quatro nove nove nove e nove, trocar radiador do Celta."</i>
+                            </p>
+                        </div>
 
                         <input
                             type="text"

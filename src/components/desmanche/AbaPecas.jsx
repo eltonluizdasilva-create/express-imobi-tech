@@ -16,8 +16,13 @@ import {
   Save, 
   Car,
   Tag,
-  Warehouse
+  Warehouse,
+  ShieldCheck,
+  HelpCircle,
+  ShieldAlert,
+  Sparkles
 } from 'lucide-react';
+import { useGroq } from '../../hooks/useGroq';
 
 const COR = '#ef4444';
 const COR2 = '#f97316';
@@ -40,6 +45,8 @@ export default function AbaPecas({
   onVenderPeca,
   dadosOficina,
   carregarFinanceiro,
+  filtroApenasIrregulares,
+  setFiltroApenasIrregulares,
 }) {
   const [mostrarForm, setMostrarForm] = useState(false);
   const [editando, setEditando] = useState(null);
@@ -47,12 +54,14 @@ export default function AbaPecas({
   const [busca, setBusca] = useState('');
   const [filtroStatus, setFiltroStatus] = useState('todos');
   const [ouvindo, setOuvindo] = useState(false);
+  const [preenchendoVoz, setPreenchendoVoz] = useState(false);
+  const { analyzeText } = useGroq(oficinaId);
 
   const formInicial = {
     nome: '', veiculoId: '', veiculoNome: '',
     preco: '', condicao: 'otima', codigo: '',
     prateleira: '', fotos: [], status: 'disponivel',
-    descricao: '',
+    descricao: '', seloDetran: '',
   };
   const [form, setForm] = useState(formInicial);
 
@@ -62,7 +71,8 @@ export default function AbaPecas({
       p.veiculoNome?.toLowerCase().includes(busca.toLowerCase()) ||
       p.codigo?.toLowerCase().includes(busca.toLowerCase());
     const sOk = filtroStatus === 'todos' || p.status === filtroStatus;
-    return bOk && sOk;
+    const iOk = !filtroApenasIrregulares || !p.seloDetran?.trim();
+    return bOk && sOk && iOk;
   });
 
   const handleFileSelect = async (e) => {
@@ -84,6 +94,56 @@ export default function AbaPecas({
       [fieldKey]: (prev[fieldKey] || '') + ' ' + e.results[0][0].transcript,
     }));
     rec.onend = () => setOuvindo(false);
+    rec.start();
+  };
+
+  const ouvirEPreencherPecaComIA = () => {
+    if (!('webkitSpeechRecognition' in window || 'SpeechRecognition' in window))
+      return alert('Use o Chrome para reconhecimento de voz.');
+    const SpeechRec = window.SpeechRecognition || window.webkitSpeechRecognition;
+    const rec = new SpeechRec();
+    rec.lang = 'pt-BR';
+    rec.onstart = () => setPreenchendoVoz('ouvindo');
+    rec.onresult = async (e) => {
+      const transcricao = e.results[0][0].transcript;
+      if (!transcricao.trim()) {
+        setPreenchendoVoz(false);
+        return;
+      }
+      setPreenchendoVoz('processando');
+      try {
+        const prompt = `Aja como um extrator inteligente de dados de autopeças para um sistema de estoque de desmanche legalizado. Analise a frase narrada pelo mecânico e extraia os campos para preenchimento do formulário da nova peça.
+Retorne APENAS um objeto JSON estruturado seguindo exatamente este formato, sem explicações adicionais, sem crases de markdown, sem blocos de código:
+{
+  "nome": "Nome da peça cadastrada (Ex: Alternador, Caixa de Marchas, Cabeçote)",
+  "preco": "Preço de venda estimado, APENAS números, sem R$ (Ex: 450)",
+  "seloDetran": "Código numérico do Selo de Rastreabilidade do Detran, se citado",
+  "condicao": "Condição da peça: APENAS um dos seguintes termos exatos: 'otima', 'boa', 'regular' ou 'sucata'"
+}
+
+Fala transcrita: "${transcricao}"`;
+
+        const response = await analyzeText(prompt);
+        const cleanJson = response.replace(/```json|```/g, '').trim();
+        const parsed = JSON.parse(cleanJson);
+
+        setForm(prev => ({
+          ...prev,
+          nome: parsed.nome || prev.nome,
+          preco: parsed.preco || prev.preco,
+          seloDetran: parsed.seloDetran || prev.seloDetran,
+          condicao: parsed.condicao || prev.condicao,
+        }));
+      } catch (err) {
+        console.error('[Voz Peça] Erro:', err);
+        alert('Não conseguimos mapear os dados da peça. Fale de forma mais pausada.');
+      } finally {
+        setPreenchendoVoz(false);
+      }
+    };
+    rec.onend = () => {
+      setTimeout(() => setPreenchendoVoz(p => p === 'ouvindo' ? false : p), 500);
+    };
     rec.start();
   };
 
@@ -115,6 +175,7 @@ export default function AbaPecas({
       condicao: p.condicao || 'otima', codigo: p.codigo || '',
       prateleira: p.prateleira || '', fotos: p.fotos || [],
       status: p.status || 'disponivel', descricao: p.descricao || '',
+      seloDetran: p.seloDetran || '',
     });
     setEditando(p.id);
     setMostrarForm(true);
@@ -173,6 +234,15 @@ export default function AbaPecas({
               {s}
             </button>
           ))}
+          {filtroApenasIrregulares && (
+            <button 
+              onClick={() => setFiltroApenasIrregulares(false)} 
+              className="px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all border border-rose-500/40 whitespace-nowrap bg-rose-500/20 text-rose-400 hover:bg-rose-500/30 shadow-lg shadow-rose-500/10 flex items-center gap-1.5 animate-pulse"
+            >
+              <ShieldAlert size={12} />
+              ⚠️ SEM SELO (RISCO) ✕
+            </button>
+          )}
         </div>
 
         <button 
@@ -218,12 +288,20 @@ export default function AbaPecas({
                   <span className={`px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider border ${peca.status === 'vendida' ? 'text-emerald-400 bg-emerald-400/10 border-emerald-400/20' : 'text-slate-500 bg-slate-900 border-slate-800'}`}>
                     {peca.status}
                   </span>
+                  {peca.seloDetran && (
+                    <span className="px-3 py-1 rounded-full text-[10px] font-black bg-emerald-500/15 text-emerald-400 border border-emerald-500/25 flex items-center gap-1">
+                      <ShieldCheck size={12} /> ORIGEM LÍCITA
+                    </span>
+                  )}
                 </div>
 
                 <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
                   <InfoRow icon={<Car size={14} />} label="Origem" value={peca.veiculoNome} />
                   <InfoRow icon={<Tag size={14} />} label="Código" value={peca.codigo} />
                   <InfoRow icon={<Warehouse size={14} />} label="Local" value={peca.prateleira} />
+                  {peca.seloDetran && (
+                    <InfoRow icon={<ShieldCheck size={14} />} label="Selo Detran" value={peca.seloDetran} />
+                  )}
                 </div>
 
                 {peca.descricao && (
@@ -307,6 +385,35 @@ export default function AbaPecas({
               </button>
             </div>
 
+            {/* 🧠 PREENCHIMENTO INTELIGENTE POR VOZ */}
+            <div className="mb-6">
+              <button
+                type="button"
+                onClick={ouvirEPreencherPecaComIA}
+                disabled={preenchendoVoz === 'processando'}
+                className={`w-full flex items-center justify-center gap-2 py-3.5 px-4 rounded-2xl text-xs font-black uppercase tracking-[0.15em] border transition-all active:scale-[0.98] ${
+                  preenchendoVoz === 'ouvindo'
+                    ? 'bg-orange-500/10 text-orange-500 border-orange-500 animate-pulse shadow-[0_0_15px_rgba(249,115,22,0.2)]'
+                    : 'bg-orange-500/5 text-orange-400 border-orange-500/20 hover:bg-orange-500/10'
+                }`}
+              >
+                {preenchendoVoz === 'processando' ? (
+                  <>⏳ Processando Dados da Peça...</>
+                ) : preenchendoVoz === 'ouvindo' ? (
+                  <>🔴 Pode ditar os detalhes da peça...</>
+                ) : (
+                  <>
+                    <Sparkles size={14} />
+                    <Mic size={14} />
+                    Preenchimento Inteligente por Voz
+                  </>
+                )}
+              </button>
+              <p className="text-[10px] text-slate-500 mt-2 text-center">
+                💡 Diga: <i>"Cadastra o motor, selo do detran 999999, condição ótima por mil e quinhentos reais."</i>
+              </p>
+            </div>
+
             <div className="max-h-[60vh] overflow-y-auto pr-2 space-y-6 scrollbar-hide">
               <div className="space-y-4">
                 <label className="block">
@@ -340,6 +447,13 @@ export default function AbaPecas({
                   </div>
                   <Field label="Preço de Venda (R$)" type="number" value={form.preco} onChange={val => setForm(p => ({ ...p, preco: val }))} placeholder="0,00" />
                   <Field label="Código / Ref." value={form.codigo} onChange={val => setForm(p => ({ ...p, codigo: val }))} placeholder="Ex: 93402-2" />
+                  <Field 
+                    label="Selo de Rastreabilidade / Código Detran" 
+                    value={form.seloDetran} 
+                    onChange={val => setForm(p => ({ ...p, seloDetran: val }))} 
+                    placeholder="Ex: DETRAN-BR-123" 
+                    tooltip="Peça sem selo do Detran não pode ser comercializada legalmente."
+                  />
                   <Field label="Prateleira / Local" value={form.prateleira} onChange={val => setForm(p => ({ ...p, prateleira: val }))} placeholder="Ex: A-12" />
                   
                   <label className="block">
@@ -437,11 +551,22 @@ function InfoRow({ icon, label, value }) {
   );
 }
 
-function Field({ label, value, onChange, placeholder, type = 'text', showMic, onMic, ouvindo }) {
+function Field({ label, value, onChange, placeholder, type = 'text', showMic, onMic, ouvindo, tooltip }) {
   return (
     <label className="block">
       <span className="mb-2 block text-xs font-semibold uppercase tracking-[0.2em] text-slate-500 flex justify-between items-center">
-        {label}
+        <span className="flex items-center gap-2">
+          {label}
+          {tooltip && (
+            <div className="group/tip relative inline-block normal-case tracking-normal">
+              <HelpCircle size={13} className="text-slate-500 cursor-help hover:text-orange-400 transition-colors" />
+              <div className="absolute bottom-full mb-2 left-1/2 -translate-x-1/2 w-60 p-3 bg-slate-950 border border-orange-500/20 text-[10px] text-slate-300 rounded-xl opacity-0 pointer-events-none group-hover/tip:opacity-100 transition-all duration-200 shadow-2xl leading-relaxed font-medium z-50">
+                <span className="text-orange-400 font-black uppercase block mb-1">Rastreabilidade Legal</span>
+                {tooltip}
+              </div>
+            </div>
+          )}
+        </span>
         {showMic && (
           <button onClick={onMic} className={`flex items-center gap-1 ${ouvindo ? 'text-rose-500 animate-pulse' : 'text-slate-600'}`}>
             <Mic size={12} /> {ouvindo ? 'Ouvindo...' : 'Voz'}

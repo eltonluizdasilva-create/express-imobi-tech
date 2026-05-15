@@ -124,24 +124,30 @@ export const CONHECIMENTO_OFICINA_IA = {
         },
 
         DESMANCHE: {
-            nome: "Desmanche",
+            nome: "Desmanche Legalizado (Lei 12.977/14)",
             icone: "🔧",
             descricao:
-                "Gestão de peças usadas e sucatas com rastreabilidade. Permite recuperar valor de peças com defeito.",
+                "Gestão de peças usadas de reaproveitamento com rastreabilidade jurídica total e descontaminação ecológica. Evita o crime de receptação e protege a liberdade e o patrimônio do dono.",
             funcionalidades: [
-                "Registro de peças removidas (motor, câmbio, farol)",
-                "Preço de venda para sucata ou revenda",
-                "Rastreabilidade por veículo",
-                "Integração com estoque (peças recuperadas)",
+                "Checklist de Descontaminação Obrigatório (óleos, bateria, extintor)",
+                "Upload da Nota do Leilão e Registro de Baixa do Detran",
+                "Selo de Rastreabilidade / Código Detran por peça ativa",
+                "Ícone Escudo Verde: Destaque visual de Origem Lícita",
+                "Alerta de Compliance no Dashboard para rastreabilidade pendente",
             ],
-            beneficio:
-                "Aumenta a margem em serviços de baixo custo (ex: troca de óleo vira oportunidade de vender peças usadas)",
+            leis_ambientais_e_criminais: {
+                lei_12977: "Exige rastreabilidade absoluta de cada peça de reaproveitamento para evitar comércio de veículos furtados/roubados.",
+                descontaminacao: "Regulamento CONAMA impõe a retirada total de fluidos e baterias antes do corte do veículo para evitar crime ambiental de contaminação do solo.",
+                receptacao: "A venda ou desmonte de veículo sem baixa ou sem o respectivo selo Detran nas peças configura crime de Receptação Qualificada.",
+            },
             exemplos_perguntas: [
-                "Como registrar peças usadas?",
-                "Qual é o valor de revenda de uma peça?",
-                "Quais peças desmanchei este mês?",
+                "O que diz a Lei do Desmanche?",
+                "Quais as regras para operar um desmanche legalizado?",
+                "O que é o checklist de descontaminação?",
+                "Por que preciso registrar o selo do Detran nas peças?",
+                "Qual o perigo de desmontar carro sem baixa?",
             ],
-            tags: ["desmanche", "peças usadas", "sucata", "revenda"],
+            tags: ["desmanche", "peças usadas", "sucata", "revenda", "lei", "rastreabilidade", "detran", "conama"],
         },
 
         CLIENTES: {
@@ -169,6 +175,29 @@ export const CONHECIMENTO_OFICINA_IA = {
                 "Qual cliente vai fazer serviço em breve?",
             ],
             tags: ["clientes", "crm", "histórico", "fidelização", "segmentação"],
+        },
+
+        RETORNO: {
+            nome: "Máquina de Retorno (Vendas Preditivas)",
+            icone: "📅",
+            descricao:
+                "O cérebro de vendas preditivas do sistema que antecipa as necessidades do cliente antes dele procurar a concorrência, recuperando clientes inativos.",
+            regras_preditivas: {
+                oleo: "Data do serviço + 180 dias (6 meses)",
+                revisao: "Data do serviço + 365 dias (1 ano)",
+                filtros: "A cada 2 trocas de óleo",
+                acao: "Envio de mensagem proativa via Evolution API 15 dias antes do vencimento da revisão preventiva.",
+            },
+            lucro_real: {
+                descricao: "Assistente de Preço Inteligente no Financeiro para evitar margens de lucro no vermelho.",
+                diagnostico: "Cruza custo de peças + impostos + horas de mão de obra, identificando serviços com margem crítica (< 20%).",
+            },
+            exemplos_perguntas: [
+                "Como funciona a Máquina de Retorno?",
+                "O que fazer quando a margem de lucro está vermelha?",
+                "Como a IA ajuda na fidelização e recorrência?",
+            ],
+            tags: ["retorno", "vendas", "preditiva", "margem", "vermelho", "revisão", "lucro real"],
         },
 
         TAREFA: {
@@ -268,6 +297,68 @@ export const CONHECIMENTO_OFICINA_IA = {
                 "Posso negociar volume com fornecedores?",
             ],
             tags: ["fornecedores", "compras", "preço", "prazo"],
+        },
+
+        BUROCRACIAS: {
+            nome: "Gestão de Conformidade / Burocracias & Descartes",
+            icone: "🛡️",
+            descricao:
+                "A aba Burocracias é o seu escudo jurídico. Lá você controla seus alvarás, registra o descarte correto de óleo e sucata metálica (evitando multas da Vigilância Sanitária) e conquista o Selo de Oficina Blindada.",
+            funcionalidades: [
+                "Gestão de Alvarás (Funcionamento, Bombeiros, Vigilância)",
+                "Registro de Coleta de Óleo Lubrificante (OLUC)",
+                "Descarte de Peças Inservíveis / Sucata Metálica (Lei 12.977/14)",
+                "Checklist da Caixa Separadora de Água e Óleo (SAO)",
+                "Gamificação: Selo Oficina Blindada & Sustentável",
+            ],
+            exemplos_perguntas: [
+                "o que é a aba burocracia?",
+                "Como conseguir o Selo Oficina Blindada?",
+                "Qual é a lei do desmanche?",
+                "Onde registro descarte de sucata?",
+            ],
+            tags: ["burocracia", "alvará", "descarte", "sucata", "selo", "blindada", "óleo"],
+        },
+
+        MIGRACAO: {
+            nome: "👑 Migração de Dados (Inteligência de Dados Antigos)",
+            icone: "💎",
+            descricao:
+                "Recurso exclusivo Premium que transforma o 'arquivo morto' (planilhas Excel, CSV, Zip) em vendas reais através de leitura inteligente e reativação de clientes adormecidos.",
+            etapas: [
+                "1. Leitura Profunda: IA escaneia planilhas antigas detectando nomes, telefones e veículos.",
+                "2. Limpeza & Cura: Remove duplicados, valida CPFs e formata WhatsApps.",
+                "3. Reativação Ativa: Histórico vira lembretes preditivos para agendar retornos automaticamente.",
+            ],
+            beneficios: [
+                "Identificação de 'Dorminhocos': Localiza clientes inativos há mais de 6 meses.",
+                "Potencial de Faturamento Oculto: Calcula receita prevista represada no passado.",
+                "Re-engajamento Preditivo: Lê OS antigas para disparar avisos (ex: troca de óleo programada).",
+            ],
+            exemplos_perguntas: [
+                "Como funciona a migração de dados?",
+                "Posso importar planilhas antigas do Excel?",
+                "Como a IA reativa clientes antigos?",
+            ],
+            tags: ["migracao", "dados", "excel", "csv", "importar", "dorminhocos", "histórico"],
+        },
+
+        ESPECIALISTA: {
+            nome: "🚀 Especialista IA (Mentor de Negócios & Leis)",
+            icone: "🤖",
+            descricao:
+                "Sua inteligência de bordo focada em mentoria estratégica de gestão, legislação ambiental e lucratividade extrema. O Especialista IA correlaciona dados operacionais com as leis de descarte e estratégias comerciais para servir como o escudo jurídico da oficina.",
+            funcionalidades: [
+                "Mentoria Jurídica: Domina a Lei do Desmanche (12.977/14), descartes PNRS, descarte de óleo e multas da Vigilância Sanitária.",
+                "Assessoria Comercial: Analisa as regras da Máquina de Retorno (180 dias para óleo, 365 dias para revisões) e fidelização ativa.",
+                "Prevenção Financeira: Detecta margens vermelhas e ensina a reprecificar com foco no lucro real.",
+            ],
+            exemplos_perguntas: [
+                "O que o Especialista IA faz?",
+                "Como você me ajuda com leis ambientais?",
+                "Como posso aumentar meu lucro real usando a IA?",
+            ],
+            tags: ["especialista", "mentor", "dúvida", "inteligência", "leis", "estratégia"],
         },
     },
 
@@ -607,11 +698,79 @@ export function gerarContextoPorAba(abaAtiva) {
       `;
         },
         retorno: () => {
+            const aba = CONHECIMENTO_OFICINA_IA.ABAS_GESTAO.RETORNO;
             return `
-        ABA ATIVA: Gestão de Retorno
-        DESCRIÇÃO: Módulo focado em fidelização e recorrência. 
-        AÇÃO: O dono deve filtrar por categoria e convidar clientes via WhatsApp para revisões pendentes.
-        DICA IA: Clientes que retornam gastam até 3x mais do que clientes novos. Foque nos 'Híbridos' e 'Mecânica' hoje.
+        ABA ATIVA: ${aba.nome}
+        DESCRIÇÃO: ${aba.descricao}
+        
+        REGRAS DE RETORNO PREVENTIVO:
+        • Óleo: ${aba.regras_preditivas.oleo}
+        • Revisão: ${aba.regras_preditivas.revisao}
+        • Filtros: ${aba.regras_preditivas.filtros}
+        • Ação: ${aba.regras_preditivas.acao}
+        
+        💡 ASSISTENTE DE LUCRO REAL (MARGENS):
+        ${aba.lucro_real.descricao}
+        Diagnóstico Crítico: ${aba.lucro_real.diagnostico}
+        
+        DICA IA: Se o serviço estiver com margem vermelha (< 20%), use o Assistente de Preço para reprecificar a hora técnica ou renegociar o custo de peças. Aborde o cliente de forma motivada para agendar a preventiva!
+      `;
+        },
+        burocracias: () => {
+            const aba = CONHECIMENTO_OFICINA_IA.ABAS_GESTAO.BUROCRACIAS;
+            return `
+        ABA ATIVA: ${aba.nome}
+        DESCRIÇÃO: ${aba.descricao}
+        
+        FUNCIONALIDADES CRÍTICAS:
+        ${aba.funcionalidades.map((f) => `  • ${f}`).join("\n")}
+        
+        DICA IA: Mantenha o descarte de óleo nos últimos 90 dias e sucata metálica nos últimos 180 dias para manter o Selo de Oficina Blindada ativo e utilizá-lo comercialmente!
+      `;
+        },
+        migracao: () => {
+            const aba = CONHECIMENTO_OFICINA_IA.ABAS_GESTAO.MIGRACAO;
+            return `
+        ABA ATIVA: ${aba.nome}
+        DESCRIÇÃO: ${aba.descricao}
+        
+        ETAPAS DO MOTOR DE DADOS:
+        ${aba.etapas.map((e) => `  • ${e}`).join("\n")}
+        
+        RECURSOS ESTRATÉGICOS:
+        ${aba.beneficios.map((b) => `  • ${b}`).join("\n")}
+        
+        DICA IA: Sugira ao dono importar o backup antigo em Excel/CSV para caçar 'orçamentos perdidos' e reativar 'dorminhocos' imediatamente!
+      `;
+        },
+        especialista: () => {
+            const aba = CONHECIMENTO_OFICINA_IA.ABAS_GESTAO.ESPECIALISTA;
+            return `
+        ABA ATIVA: ${aba.nome}
+        DESCRIÇÃO: ${aba.descricao}
+        
+        CONHECIMENTOS INTEGRADOS:
+        ${aba.funcionalidades.map((f) => `  • ${f}`).join("\n")}
+        
+        DICA IA: Você está em modo de autoconhecimento! Lembre o dono de que você é o mentor 24h dele para blindar juridicamente a oficina e garantir lucro real em cada ordem de serviço!
+      `;
+        },
+        desmanche: () => {
+            const aba = CONHECIMENTO_OFICINA_IA.ABAS_GESTAO.DESMANCHE;
+            const leis = aba.leis_ambientais_e_criminais;
+            return `
+        ABA ATIVA: ${aba.nome}
+        DESCRIÇÃO: ${aba.descricao}
+        
+        LEIS E REGRAS DE COMPLIANCE:
+        • Lei 12.977/14: ${leis.lei_12977}
+        • Descontaminação Ambiental: ${leis.descontaminacao}
+        • Risco Criminal: ${leis.receptacao}
+        
+        CHECKLIST OBRIGATÓRIO:
+        ${aba.funcionalidades.map((f) => `  • ${f}`).join("\n")}
+        
+        DICA IA: Alerte firmemente o usuário que desmontar carros sem baixa no Detran ou vender peças sem selo de rastreabilidade é crime de receptação. O sistema bloqueia o status 'Desmontado' se a descontaminação não for atestada para protegê-lo de sanções ecológicas do CONAMA!
       `;
         },
         sistema: () => {

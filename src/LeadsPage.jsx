@@ -54,6 +54,14 @@ export default function LeadsPage() {
   const [fotoLead, setFotoLead] = useState(null);
   const [processandoIA, setProcessandoIA] = useState(false);
 
+  // ============================================
+  // 🎯 NOVOS ESTADOS: MÁQUINA DE RETORNO PREDITIVO
+  // ============================================
+  const [abaInterna, setAbaInterna] = useState('funil'); // 'funil' | 'retorno'
+  const [retornos, setRetornos] = useState([]);
+  const [carregandoRetornos, setCarregandoRetornos] = useState(false);
+  const [nomeOficina, setNomeOficina] = useState('Oficina');
+
   const carregarLeads = async () => {
     if (!oficinaId) return;
     setLoading(true);
@@ -66,6 +74,31 @@ export default function LeadsPage() {
       setLoading(false);
     }
   };
+
+  const carregarDadosRetorno = async () => {
+    if (!oficinaId) return;
+    setCarregandoRetornos(true);
+    try {
+      // 1. Carrega nome da oficina
+      const ofiSnap = await getDocs(query(collection(db, "oficinas")));
+      const docOfi = ofiSnap.docs.find(d => d.id === oficinaId);
+      if (docOfi) setNomeOficina(docOfi.data().nomeOficina || 'Nossa Oficina');
+
+      // 2. Carrega Retornos Agendados
+      const snap = await getDocs(collection(db, "oficinas", oficinaId, "retornos"));
+      setRetornos(snap.docs.map(d => ({ id: d.id, ...d.data() })));
+    } catch (err) {
+      console.error("Erro ao carregar retornos preditivos:", err);
+    } finally {
+      setCarregandoRetornos(false);
+    }
+  };
+
+  useEffect(() => {
+    if (oficinaId) {
+      carregarDadosRetorno();
+    }
+  }, [oficinaId, abaInterna]);
 
   useEffect(() => {
     carregarLeads();
@@ -244,8 +277,34 @@ export default function LeadsPage() {
         </div>
       </div>
 
-      {/* METRIC CARDS GRID */}
-      <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+      {/* MENU DE NAVEGAÇÃO INTERNA - MÁQUINA DE RETORNO */}
+      <div className="flex items-center gap-4 border-b border-slate-800 pb-4 mb-6">
+        <button
+          onClick={() => setAbaInterna('funil')}
+          className={`flex items-center gap-2 px-6 py-3 rounded-xl text-xs font-black uppercase tracking-widest transition-all ${
+            abaInterna === 'funil'
+              ? 'bg-violet-500 text-white shadow-lg shadow-violet-500/30'
+              : 'bg-slate-900 text-slate-400 hover:bg-slate-800 border border-slate-800'
+          }`}
+        >
+          <Users size={16} /> Funil de Vendas (CRM)
+        </button>
+        <button
+          onClick={() => setAbaInterna('retorno')}
+          className={`flex items-center gap-2 px-6 py-3 rounded-xl text-xs font-black uppercase tracking-widest transition-all ${
+            abaInterna === 'retorno'
+              ? 'bg-emerald-500 text-black shadow-lg shadow-emerald-500/30'
+              : 'bg-slate-900 text-slate-400 hover:bg-slate-800 border border-slate-800'
+          }`}
+        >
+          <Sparkles size={16} /> Máquina de Retorno Preditivo
+        </button>
+      </div>
+
+      {abaInterna === 'funil' ? (
+        <>
+          {/* METRIC CARDS GRID */}
+          <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
         <MetricCard 
           title="Total de Leads" 
           value={totalLeads} 
@@ -450,6 +509,210 @@ export default function LeadsPage() {
                 Cadastrar no Kanban
               </button>
             </div>
+          </div>
+        </div>
+      </div>
+    </>
+  ) : (
+    <RetornoPreditivoDashboard 
+          retornos={retornos}
+          carregando={carregandoRetornos}
+          nomeOficina={nomeOficina}
+          onRecarregar={carregarDadosRetorno}
+        />
+      )}
+    </div>
+  );
+}
+
+// ==============================================
+// 🎯 NOVO SUB-COMPONENTE: RETORNO PREDITIVO
+// ==============================================
+function RetornoPreditivoDashboard({ retornos, carregando, nomeOficina, onRecarregar }) {
+  const getDiasRestantes = (dataVencimento) => {
+    const agora = new Date();
+    const venc = new Date(dataVencimento);
+    const diff = venc.getTime() - agora.getTime();
+    return Math.ceil(diff / (1000 * 3600 * 24));
+  };
+
+  const grupos = useMemo(() => {
+    const hoje = [];
+    const emBreve = [];
+
+    retornos.forEach(r => {
+      if (r.statusRetorno === 'concluido') return; // Pula concluídos
+      const dias = getDiasRestantes(r.dataVencimento);
+      // Classifica como crítico se falta menos de 15 dias para o prazo final (6 meses óleo / 12 meses revisão)
+      if (dias <= 15) {
+        hoje.push({ ...r, diasRestantes: dias });
+      } else if (dias <= 30) {
+        emBreve.push({ ...r, diasRestantes: dias });
+      }
+    });
+
+    const sortFn = (a, b) => a.diasRestantes - b.diasRestantes;
+    return {
+      hoje: hoje.sort(sortFn),
+      emBreve: emBreve.sort(sortFn)
+    };
+  }, [retornos]);
+
+  const dispararWhatsApp = (retorno) => {
+    const nomeClie = retorno.nomeCliente || 'Cliente';
+    const veiculo = retorno.modelo || retorno.veiculo || 'Veículo';
+    const telefone = (retorno.telefone || '').replace(/\D/g, '');
+    
+    let texto = '';
+    if (String(retorno.servico).toUpperCase().includes('OLEO') || String(retorno.servicoLabel).toLowerCase().includes('óleo')) {
+      // Gatilho Exato solicitado pelo Usuário para Óleo:
+      texto = `Olá, ${nomeClie}! Aqui é da ${nomeOficina}. O seu ${veiculo} está chegando na quilometragem ideal para a próxima troca de óleo. Manter o óleo em dia economiza até 30% de combustível e evita quebras graves. Vamos reservar um horário para você nesta semana?`;
+    } else {
+      // Gatilho Exato solicitado pelo Usuário para Revisão Geral:
+      texto = `Oi ${nomeClie}, tudo bem? Faz quase um ano que revisamos a segurança do seu ${veiculo}. Para sua tranquilidade em viagens e no dia a dia, gostaria de te convidar para um check-up gratuito de 10 itens. Segurança em primeiro lugar, né? Posso agendar?`;
+    }
+
+    if (!telefone) {
+      alert("Telefone do cliente não cadastrado no registro desta O.S.!");
+      return;
+    }
+
+    const telFormatado = telefone.startsWith('55') ? telefone : '55' + telefone;
+    window.open(`https://wa.me/${telFormatado}?text=${encodeURIComponent(texto)}`, '_blank');
+  };
+
+  if (carregando) {
+    return (
+      <div className="flex flex-col items-center justify-center py-20 text-emerald-400 bg-slate-950/50 rounded-[32px] border border-slate-900">
+        <Clock size={48} className="animate-spin mb-4 opacity-50" />
+        <p className="text-xs font-black uppercase tracking-[0.25em] text-slate-400 animate-pulse">Processando Dados Preditivos...</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-8 fade-in animate-in zoom-in-95 duration-300">
+      {/* BANNER DE INTELIGÊNCIA */}
+      <div className="p-8 rounded-[32px] bg-[radial-gradient(circle_at_top_left,_rgba(16,185,129,0.12),_transparent_40%),linear-gradient(135deg,_rgba(15,23,42,0.98),_rgba(3,7,18,0.96))] border border-emerald-500/20 shadow-2xl flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
+        <div className="max-w-2xl">
+          <h3 className="text-emerald-400 font-black text-xl uppercase tracking-widest flex items-center gap-2">
+            <Sparkles size={20} /> Cérebro de Vendas Preditivas Ativado
+          </h3>
+          <p className="text-xs text-slate-400 mt-2 leading-relaxed">
+            Antecipe-se à concorrência. O Copiloto analisou o histórico de serviços e mapeou os clientes que precisam retornar (6 meses para troca de óleo e 12 meses para mecânica geral). Utilize os botões para disparar convites magnéticos.
+          </p>
+        </div>
+        <div className="flex gap-3 items-center">
+          <div className="bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 px-5 py-3 rounded-2xl text-xs font-black uppercase tracking-widest">
+            🔥 {grupos.hoje.length} OPORTUNIDADES DE HOJE
+          </div>
+        </div>
+      </div>
+
+      {/* GRID DE LISTAS */}
+      <div className="grid lg:grid-cols-2 gap-8 items-start">
+        
+        {/* COLUNA 1: RECUPERAÇÃO CRÍTICA */}
+        <div className="space-y-6">
+          <div className="flex items-center justify-between px-2">
+            <h4 className="text-[10px] font-black text-rose-500 uppercase tracking-[0.3em] flex items-center gap-2">
+              <AlertCircle size={14} /> 🔥 Para Recuperar Hoje (Janela de 15 Dias)
+            </h4>
+            <span className="text-[9px] font-bold text-slate-600 uppercase bg-slate-900 border border-slate-800 px-2 py-1 rounded">CRÍTICO</span>
+          </div>
+
+          <div className="space-y-4 max-h-[700px] overflow-y-auto pr-2 styled-scrollbar">
+            {grupos.hoje.length === 0 ? (
+              <div className="bg-slate-950/50 border-2 border-dashed border-slate-900 p-10 text-center rounded-[32px] text-slate-600 italic text-xs">
+                Excelente trabalho! Nenhum retorno crítico pendente para contato no momento.
+              </div>
+            ) : (
+              grupos.hoje.map(r => (
+                <div key={r.id} className="bg-gradient-to-br from-slate-900/80 to-slate-950 border-2 border-rose-500/20 p-6 rounded-[32px] hover:border-rose-500/40 transition-all flex flex-col gap-5 relative overflow-hidden group shadow-xl">
+                  
+                  <div className="absolute top-0 right-0 bg-rose-500/10 px-4 py-1 rounded-bl-2xl border-l border-b border-rose-500/20 text-[9px] font-black text-rose-400 flex items-center gap-1">
+                    <Clock size={10} />
+                    {r.diasRestantes < 0 ? `EXPIROU HÁ ${Math.abs(r.diasRestantes)} DIAS` : `EXPIRA EM ${r.diasRestantes} DIAS`}
+                  </div>
+
+                  <div className="pt-2">
+                    <span className="bg-rose-500/10 text-rose-400 text-[9px] font-black px-3 py-1 rounded-full border border-rose-500/20 uppercase tracking-wider">
+                      {r.servicoLabel || 'Serviço Automotivo'}
+                    </span>
+                    <h5 className="text-white font-black text-xl mt-4 leading-none">{r.nomeCliente}</h5>
+                    <div className="text-xs text-slate-400 font-bold mt-2 flex items-center gap-2 bg-slate-900/50 px-3 py-2 rounded-xl border border-slate-800/50 w-fit">
+                      <Car size={12} className="text-slate-500" />
+                      <span>{r.modelo || 'Modelo'} • <span className="font-mono uppercase text-slate-300">{r.placa || 'SEM PLACA'}</span></span>
+                    </div>
+                  </div>
+
+                  <div className="border-t border-slate-800/60 pt-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mt-2">
+                    <div>
+                      <p className="text-[9px] font-bold text-slate-500 uppercase tracking-wider">Último Registro</p>
+                      <p className="text-xs font-black text-slate-400 mt-0.5">{new Date(r.dataBase).toLocaleDateString('pt-BR')}</p>
+                    </div>
+                    <button 
+                      onClick={() => dispararWhatsApp(r)}
+                      className="w-full sm:w-auto bg-emerald-500 hover:bg-emerald-400 text-black px-6 py-4 rounded-2xl font-black text-xs uppercase tracking-wider flex items-center justify-center gap-2 transition-all active:scale-95 shadow-lg shadow-emerald-500/20 group-hover:scale-[1.02]"
+                    >
+                      <Zap size={14} fill="currentColor" /> DISPARAR CONVITE
+                    </button>
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
+        </div>
+
+        {/* COLUNA 2: EM BREVE */}
+        <div className="space-y-6">
+          <div className="flex items-center justify-between px-2">
+            <h4 className="text-[10px] font-black text-amber-500 uppercase tracking-[0.3em] flex items-center gap-2">
+              <Clock size={14} /> ⏳ Monitoramento Próximos 30 Dias
+            </h4>
+            <span className="text-[9px] font-bold text-slate-600 uppercase bg-slate-900 border border-slate-800 px-2 py-1 rounded">ALERTA</span>
+          </div>
+
+          <div className="space-y-4 max-h-[700px] overflow-y-auto pr-2 styled-scrollbar">
+            {grupos.emBreve.length === 0 ? (
+              <div className="bg-slate-950/50 border-2 border-dashed border-slate-900 p-10 text-center rounded-[32px] text-slate-600 italic text-xs">
+                Sem clientes na janela de aproximação nos próximos 30 dias.
+              </div>
+            ) : (
+              grupos.emBreve.map(r => (
+                <div key={r.id} className="bg-slate-950 border border-slate-900 p-6 rounded-[32px] hover:border-amber-500/20 transition-all flex flex-col gap-4 shadow-sm relative group">
+                  <div className="flex justify-between items-start">
+                    <div>
+                      <span className="bg-amber-500/10 text-amber-400 text-[9px] font-black px-3 py-1 rounded-full border border-amber-500/20 uppercase tracking-wider">
+                        {r.servicoLabel || 'Revisão'}
+                      </span>
+                      <h5 className="text-white font-black text-lg mt-3">{r.nomeCliente}</h5>
+                      <p className="text-xs text-slate-500 font-bold mt-1.5 flex items-center gap-1.5">
+                        <Car size={12} />
+                        <span>{r.modelo} • <span className="font-mono uppercase">{r.placa}</span></span>
+                      </p>
+                    </div>
+                    <div className="bg-slate-900 border border-slate-800 px-4 py-2 rounded-2xl text-right min-w-[90px]">
+                      <p className="text-[8px] text-slate-600 font-black uppercase tracking-widest">Ciclo IA</p>
+                      <p className="text-sm font-black text-amber-400 mt-0.5">{r.diasRestantes} DIAS</p>
+                    </div>
+                  </div>
+
+                  <div className="border-t border-slate-900/60 pt-4 flex justify-between items-center mt-2">
+                    <div>
+                      <p className="text-[8px] text-slate-600 font-black uppercase">Previsão Vencimento</p>
+                      <p className="text-[11px] font-bold text-slate-500 mt-0.5">{new Date(r.dataVencimento).toLocaleDateString('pt-BR')}</p>
+                    </div>
+                    <button 
+                      onClick={() => dispararWhatsApp(r)}
+                      className="bg-slate-900 hover:bg-emerald-500 text-slate-400 hover:text-black border border-slate-800 hover:border-emerald-500 px-4 py-2.5 rounded-xl font-black text-[9px] uppercase tracking-wider flex items-center gap-2 transition-all"
+                    >
+                      ANTECIPAR
+                    </button>
+                  </div>
+                </div>
+              ))
+            )}
           </div>
         </div>
       </div>

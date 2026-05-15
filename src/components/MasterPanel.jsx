@@ -6,6 +6,9 @@ import {
   LayoutDashboard, FileText, Wrench, Users, Package,
   Calculator, Rocket, MessageCircle, Database
 } from 'lucide-react';
+import {
+  ResponsiveContainer, AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip
+} from 'recharts';
 
 const MASTER_COLOR = '#D4AF37'; // Dourado Master
 const GREEN_MONEY = '#00E676';
@@ -63,7 +66,17 @@ export default function MasterPanel({ setPlanosGlobais }) {
   const [salvandoPlanos, setSalvandoPlanos] = useState(false);
   const [videosAjuda, setVideosAjuda] = useState({});
   const [salvandoVideos, setSalvandoVideos] = useState(false);
-  const [abaInterna, setAbaInterna] = useState('viewer'); // 'viewer', 'config', 'videos' ou 'oficinas'
+  const [abaInterna, setAbaInterna] = useState('viewer'); // 'viewer', 'config', 'videos', 'oficinas' ou 'risco'
+  const [dadosRisco, setDadosRisco] = useState([]);
+  const [carregandoRisco, setCarregandoRisco] = useState(false);
+  const [filtroSeloAtivo, setFiltroSeloAtivo] = useState(false);
+
+  // ==========================================
+  // 📊 NOVOS ESTADOS: INTEGRAÇÃO TICKET E MARGEM
+  // ==========================================
+  const [dadosFinanceiros, setDadosFinanceiros] = useState({});
+  const [carregandoFin, setCarregandoFin] = useState(false);
+  const [dadosCrescimentoRede, setDadosCrescimentoRede] = useState([]);
 
   // Lista de 28 Categorias para o Gerenciamento de Vídeos
   const ABAS_VIDEOS = [
@@ -143,6 +156,173 @@ export default function MasterPanel({ setPlanosGlobais }) {
     fetchDados();
   }, []);
 
+  const carregarDadosDeRisco = async () => {
+    if (oficinas.length === 0) return;
+    setCarregandoRisco(true);
+    try {
+      const promessas = oficinas.map(async (ofi) => {
+        try {
+          const alvSnap = await getDoc(doc(db, 'oficinas', ofi.id, 'burocracias', 'alvaras'));
+          const alvData = alvSnap.exists() ? alvSnap.data() : null;
+
+          const descSnap = await getDocs(collection(db, 'oficinas', ofi.id, 'descartes'));
+          const totalDescartes = descSnap.size;
+
+          let temVencido = false;
+          let preenchidos = 0;
+          const hoje = new Date();
+
+          if (alvData) {
+            Object.values(alvData).forEach((val) => {
+              if (val && val.dataVencimento) {
+                preenchidos++;
+                const dv = new Date(val.dataVencimento);
+                if (dv < hoje) temVencido = true;
+              }
+            });
+          }
+
+          // VERIFICAÇÕES DO SELO
+          // A. Alvará de Funcionamento Válido
+          let alvaraValido = false;
+          if (alvData?.funcionamento?.dataVencimento) {
+            alvaraValido = new Date(alvData.funcionamento.dataVencimento + 'T00:00:00') >= hoje;
+          }
+
+          // B. Óleo nos últimos 90 dias
+          const noventaDiasAtras = new Date();
+          noventaDiasAtras.setDate(hoje.getDate() - 90);
+          const temOleoRecente = descSnap.docs.some(doc => {
+            const d = doc.data();
+            return d.tipoResiduo === 'Óleo Lubrificante' && d.dataColeta && new Date(d.dataColeta + 'T00:00:00') >= noventaDiasAtras;
+          });
+
+          // C. Caixa SAO nos últimos 120 dias
+          const centoEVinteDiasAtras = new Date();
+          centoEVinteDiasAtras.setDate(hoje.getDate() - 120);
+          const saoSnap = await getDoc(doc(db, 'oficinas', ofi.id, 'burocracias', 'checklist'));
+          const saoData = saoSnap.exists() ? saoSnap.data() : null;
+          const saoEmDia = saoData && saoData.saoUltimaLimpeza && new Date(saoData.saoUltimaLimpeza + 'T00:00:00') >= centoEVinteDiasAtras;
+
+          const temSelo = alvaraValido && temOleoRecente && saoEmDia;
+
+          return {
+            id: ofi.id,
+            nome: ofi.nomeOficina || 'Sem Nome',
+            telefone: ofi.telefone || '',
+            totalDescartes,
+            temVencido,
+            preenchidos,
+            temSelo,
+            alvaras: alvData
+          };
+        } catch (err) {
+          return { id: ofi.id, nome: ofi.nomeOficina || 'Sem Nome', erro: true };
+        }
+      });
+
+      const res = await Promise.all(promessas);
+      setDadosRisco(res.filter((r) => !r.erro));
+    } catch (e) {
+      console.error('Erro ao buscar riscos:', e);
+    } finally {
+      setCarregandoRisco(false);
+    }
+  };
+
+  const carregarMetricasFinanceiras = async () => {
+    if (oficinas.length === 0) return;
+    setCarregandoFin(true);
+    try {
+      const results = {};
+      const faturamentosMensais = [];
+
+      await Promise.all(oficinas.map(async (ofi) => {
+        try {
+          const snap = await getDocs(collection(db, 'oficinas', ofi.id, 'os'));
+          let totalOS = 0;
+          let countValidos = 0;
+          let somaMargem = 0;
+          let countMargem = 0;
+
+          const meuFaturamentoMensal = {};
+
+          snap.docs.forEach(d => {
+            const data = d.data();
+            const total = Number(data.total) || 0;
+            
+            // Agrupamento mensal para Gráfico de Crescimento de Rede
+            const ts = data.data_registro?.toDate ? data.data_registro.toDate() : new Date(data.data_registro || data.data);
+            if (ts instanceof Date && !isNaN(ts.getTime())) {
+               const chaveMes = `${ts.getFullYear()}-${String(ts.getMonth() + 1).padStart(2, '0')}`;
+               meuFaturamentoMensal[chaveMes] = (meuFaturamentoMensal[chaveMes] || 0) + total;
+            }
+
+            if (total > 0) {
+              totalOS += total;
+              countValidos++;
+            }
+            // Margem real que agora salvamos via Assistente de Lucro Real
+            const margem = Number(data.margemLucro);
+            if (margem !== undefined && !isNaN(margem) && margem !== 0) {
+              somaMargem += margem;
+              countMargem++;
+            }
+          });
+
+          faturamentosMensais.push(meuFaturamentoMensal);
+
+          results[ofi.id] = {
+            ticketMedio: countValidos > 0 ? totalOS / countValidos : 0,
+            margemMedia: countMargem > 0 ? somaMargem / countMargem : 0,
+            totalOS: snap.size
+          };
+        } catch (e) {
+          console.error(`Erro ao carregar métricas de ${ofi.id}:`, e);
+          results[ofi.id] = { ticketMedio: 0, margemMedia: 0, totalOS: 0 };
+        }
+      }));
+
+      // Consolidação do faturamento de rede global por mês
+      const consolidado = {};
+      faturamentosMensais.forEach(mapa => {
+         Object.keys(mapa).forEach(chave => {
+            consolidado[chave] = (consolidado[chave] || 0) + mapa[chave];
+         });
+      });
+
+      // Ordenar meses e formatar para Recharts
+      const nomesMeses = ["Jan", "Fev", "Mar", "Abr", "Mai", "Jun", "Jul", "Ago", "Set", "Out", "Nov", "Dez"];
+      const listaOrdenada = Object.keys(consolidado)
+         .sort()
+         .map(chave => {
+            const [ano, mes] = chave.split('-');
+            return {
+               mesLabel: `${nomesMeses[parseInt(mes) - 1]}/${ano.slice(-2)}`,
+               chave,
+               faturamento: consolidado[chave]
+            };
+         })
+         .slice(-12); // Último ano de atividade da rede
+
+      setDadosCrescimentoRede(listaOrdenada);
+      setDadosFinanceiros(results);
+    } catch (err) {
+      console.error("Erro agregando financeiro global:", err);
+    } finally {
+      setCarregandoFin(false);
+    }
+  };
+
+  useEffect(() => {
+    if (abaInterna === 'risco' && dadosRisco.length === 0) {
+      carregarDadosDeRisco();
+    }
+    if (abaInterna === 'oficinas' && Object.keys(dadosFinanceiros).length === 0) {
+      carregarMetricasFinanceiras();
+    }
+  }, [abaInterna, oficinas]);
+
   const salvarPlanos = async () => {
     setSalvandoPlanos(true);
     try {
@@ -212,6 +392,7 @@ export default function MasterPanel({ setPlanosGlobais }) {
           <button onClick={() => setAbaInterna('config')} style={{ padding: '10px 20px', background: abaInterna === 'config' ? MASTER_COLOR : '#111', color: abaInterna === 'config' ? 'black' : '#888', border: 'none', borderRadius: '8px', fontWeight: 'bold', cursor: 'pointer', whiteSpace: 'nowrap', transition: '0.2s' }}>⚙️ Planos</button>
           <button onClick={() => setAbaInterna('videos')} style={{ padding: '10px 20px', background: abaInterna === 'videos' ? MASTER_COLOR : '#111', color: abaInterna === 'videos' ? 'black' : '#888', border: 'none', borderRadius: '8px', fontWeight: 'bold', cursor: 'pointer', whiteSpace: 'nowrap', transition: '0.2s' }}>🎬 Editar Vídeos</button>
           <button onClick={() => setAbaInterna('oficinas')} style={{ padding: '10px 20px', background: abaInterna === 'oficinas' ? MASTER_COLOR : '#111', color: abaInterna === 'oficinas' ? 'black' : '#888', border: 'none', borderRadius: '8px', fontWeight: 'bold', cursor: 'pointer', whiteSpace: 'nowrap', transition: '0.2s' }}>🏢 Oficinas</button>
+          <button onClick={() => setAbaInterna('risco')} style={{ padding: '10px 20px', background: abaInterna === 'risco' ? '#10B981' : '#111', color: abaInterna === 'risco' ? 'black' : '#888', border: 'none', borderRadius: '8px', fontWeight: 'bold', cursor: 'pointer', whiteSpace: 'nowrap', transition: '0.2s' }}>🛡️ Risco & Conformidade</button>
         </div>
       </div>
 
@@ -529,51 +710,277 @@ export default function MasterPanel({ setPlanosGlobais }) {
       {abaInterna === 'oficinas' && (
         <div className="fade-in">
           <div style={{ background: '#0a0a0a', border: `1px solid ${MASTER_COLOR}44`, borderRadius: '16px', padding: '25px' }}>
-            <h2 style={{ color: MASTER_COLOR, fontSize: '18px', marginBottom: '20px' }}>🏢 Oficinas Cadastradas ({oficinas.length})</h2>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+              <h2 style={{ color: MASTER_COLOR, fontSize: '18px', margin: 0 }}>🏢 Oficinas Cadastradas ({oficinas.length})</h2>
+              <button 
+                onClick={carregarMetricasFinanceiras}
+                disabled={carregandoFin}
+                style={{ padding: '8px 15px', background: '#111', border: '1px solid #333', borderRadius: '8px', color: '#aaa', fontWeight: 'bold', fontSize: '11px', cursor: 'pointer' }}
+              >
+                {carregandoFin ? '🔄 CALCULANDO...' : '🔄 REATUALIZAR MÉTRICAS'}
+              </button>
+            </div>
 
-            <div style={{ display: 'grid', gap: '10px' }}>
-              {oficinas.map(oficina => (
-                <div key={oficina.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#111', padding: '15px', borderRadius: '12px', border: '1px solid #222' }}>
+            {/* ── GRÁFICO: CRESCIMENTO DA REDE GERAL (IMPACTO OFICINA IA) ────────────── */}
+            {dadosCrescimentoRede.length > 0 && (
+              <div style={{
+                background: '#111',
+                border: '1px solid #222',
+                borderRadius: '16px',
+                padding: '20px',
+                marginBottom: '25px'
+              }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '15px', flexWrap: 'wrap', gap: '10px' }}>
                   <div>
-                    <span style={{ fontWeight: 'bold', fontSize: '16px', color: 'white' }}>{oficina.nomeOficina || 'Sem Nome'}</span>
-                    <div style={{ fontSize: '12px', color: '#666', marginTop: '4px' }}>
-                      ID: {oficina.id} | Plano: <span style={{ color: MASTER_COLOR }}>{oficina.plano || 'TRIAL'}</span>
-                    </div>
+                    <p style={{ margin: 0, color: MASTER_COLOR, fontSize: '10px', fontWeight: '900', textTransform: 'uppercase', letterSpacing: '1.5px' }}>
+                      🚀 Impacto de Mercado Real
+                    </p>
+                    <h3 style={{ margin: '2px 0 0', fontSize: '16px', fontWeight: 'bold', color: 'white' }}>
+                      Crescimento e Faturamento Total da Rede (R$)
+                    </h3>
                   </div>
-                  <div style={{ display: 'flex', gap: '10px' }}>
-                    <a
-                      href={`https://wa.me/${oficina.telefone || ''}?text=Olá!%20Seja%20bem-vindo(a)%20à%20equipe%20da%20nossa%20oficina.%20Aqui%20está%20o%20seu%20link%20de%20acesso%20ao%20sistema:%20${window.location.origin}`}
-                      target="_blank"
-                      rel="noreferrer"
-                      style={{
-                        padding: '8px 15px', borderRadius: '6px', fontWeight: 'bold', cursor: 'pointer',
-                        background: '#25D36622',
-                        color: '#25D366',
-                        border: '1px solid #25D366',
-                        textDecoration: 'none',
-                        fontSize: '13px',
-                        display: 'flex',
-                        alignItems: 'center'
-                      }}
-                    >
-                      WHATSAPP
-                    </a>
-                    <button
-                      onClick={() => toggleStatusOficina(oficina)}
-                      style={{
-                        padding: '8px 15px', borderRadius: '6px', fontWeight: 'bold', cursor: 'pointer',
-                        background: oficina.ativo ? '#ff313122' : '#00E67622',
-                        color: oficina.ativo ? '#ff3131' : '#00E676',
-                        border: `1px solid ${oficina.ativo ? '#ff3131' : '#00E676'}`
-                      }}
-                    >
-                      {oficina.ativo ? 'BLOQUEAR' : 'ATIVAR'}
-                    </button>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#00E676', background: 'rgba(0,230,118,0.08)', padding: '6px 12px', borderRadius: '8px', border: '1px solid rgba(0,230,118,0.2)', fontSize: '11px', fontWeight: '900' }}>
+                    💰 Total Consolidado: {
+                      new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL', notation: 'compact' }).format(
+                        dadosCrescimentoRede.reduce((acc, val) => acc + val.faturamento, 0)
+                      )
+                    }
                   </div>
                 </div>
-              ))}
 
+                <div style={{ width: '100%', height: '200px' }}>
+                  <ResponsiveContainer width="99%" height="100%">
+                    <AreaChart data={dadosCrescimentoRede} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
+                      <defs>
+                        <linearGradient id="corFaturamento" x1="0" y1="0" x2="0" y2="1">
+                          <stop offset="5%" stopColor="#00E676" stopOpacity={0.3}/>
+                          <stop offset="95%" stopColor="#00E676" stopOpacity={0}/>
+                        </linearGradient>
+                      </defs>
+                      <CartesianGrid strokeDasharray="3 3" stroke="#222" vertical={false} />
+                      <XAxis dataKey="mesLabel" stroke="#555" fontSize={10} tickLine={false} />
+                      <YAxis stroke="#555" fontSize={10} tickLine={false} axisLine={false} tickFormatter={(v) => `R$ ${Intl.NumberFormat('pt-BR', { notation: 'compact' }).format(v)}`} />
+                      <RechartsTooltip
+                        contentStyle={{ background: '#0a0a0a', border: '1px solid #333', borderRadius: '8px', color: '#fff', fontSize: '12px' }}
+                        formatter={(v) => [new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(v), 'Faturamento']}
+                      />
+                      <Area type="monotone" dataKey="faturamento" stroke="#00E676" strokeWidth={2} fillOpacity={1} fill="url(#corFaturamento)" />
+                    </AreaChart>
+                  </ResponsiveContainer>
+                </div>
+              </div>
+            )}
+
+            <div style={{ display: 'grid', gap: '12px' }}>
+              {oficinas.map(oficina => {
+                const fin = dadosFinanceiros[oficina.id] || { ticketMedio: 0, margemMedia: 0, totalOS: 0 };
+                const precisaTreinamento = fin.margemMedia > 0 && fin.margemMedia < 15;
+                const formatarMoeda = (v) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(v);
+
+                return (
+                  <div key={oficina.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#111', padding: '20px', borderRadius: '16px', border: '1px solid #222', flexWrap: 'wrap', gap: '20px' }}>
+                    <div style={{ minWidth: '200px', flex: '1 1 0' }}>
+                      <span style={{ fontWeight: 'bold', fontSize: '16px', color: 'white' }}>{oficina.nomeOficina || 'Sem Nome'}</span>
+                      <div style={{ fontSize: '12px', color: '#666', marginTop: '4px' }}>
+                        ID: {oficina.id} | Plano: <span style={{ color: MASTER_COLOR, fontWeight: 'bold' }}>{oficina.plano || 'TRIAL'}</span>
+                      </div>
+                    </div>
+
+                    {/* INDICADORES DE DESEMPENHO FINANCEIRO */}
+                    <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap', flex: '2 1 0', alignItems: 'center' }}>
+                      {carregandoFin ? (
+                        <span style={{ color: '#444', fontSize: '12px', fontStyle: 'italic' }}>Analisando base fiscal...</span>
+                      ) : (
+                        <>
+                          <div style={{ background: '#0a0a0a', padding: '8px 12px', borderRadius: '8px', border: '1px solid #222', minWidth: '120px' }}>
+                            <p style={{ fontSize: '9px', color: '#555', fontWeight: 'bold', margin: 0, textTransform: 'uppercase' }}>Ticket Médio</p>
+                            <p style={{ fontSize: '13px', fontWeight: 'bold', color: '#fff', margin: '2px 0 0' }}>{formatarMoeda(fin.ticketMedio)}</p>
+                          </div>
+                          <div style={{ background: '#0a0a0a', padding: '8px 12px', borderRadius: '8px', border: '1px solid #222', minWidth: '110px' }}>
+                            <p style={{ fontSize: '9px', color: '#555', fontWeight: 'bold', margin: 0, textTransform: 'uppercase' }}>Margem Média</p>
+                            <p style={{ fontSize: '13px', fontWeight: '900', color: fin.margemMedia >= 15 ? '#00E676' : fin.margemMedia > 0 ? '#F59E0B' : '#555', margin: '2px 0 0' }}>
+                              {fin.margemMedia > 0 ? `${fin.margemMedia.toFixed(1)}%` : 'Sem Histórico'}
+                            </p>
+                          </div>
+                          {precisaTreinamento && (
+                            <div title="Oficina com margem de lucro crítica na precificação real" style={{ background: 'rgba(245,158,11,0.08)', border: '1px solid rgba(245,158,11,0.25)', color: '#F59E0B', display: 'flex', alignItems: 'center', gap: '6px', padding: '8px 12px', borderRadius: '8px', fontSize: '10px', fontWeight: 'bold', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                              <Calculator size={12} /> 🎓 Oferecer Treinamento Precificação
+                            </div>
+                          )}
+                        </>
+                      )}
+                    </div>
+
+                    <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+                      <a
+                        href={`https://wa.me/${oficina.telefone || ''}?text=Olá!%20Seja%20bem-vindo(a)%20à%20equipe%20da%20nossa%20oficina.%20Aqui%20está%20o%20seu%20link%20de%20acesso%20ao%20sistema:%20${window.location.origin}`}
+                        target="_blank"
+                        rel="noreferrer"
+                        style={{
+                          padding: '8px 15px', borderRadius: '6px', fontWeight: 'bold', cursor: 'pointer',
+                          background: '#25D36622',
+                          color: '#25D366',
+                          border: '1px solid #25D366',
+                          textDecoration: 'none',
+                          fontSize: '13px',
+                          display: 'flex',
+                          alignItems: 'center'
+                        }}
+                      >
+                        WHATSAPP
+                      </a>
+                      <button
+                        onClick={() => toggleStatusOficina(oficina)}
+                        style={{
+                          padding: '8px 15px', borderRadius: '6px', fontWeight: 'bold', cursor: 'pointer',
+                          background: oficina.ativo ? '#ff313122' : '#00E67622',
+                          color: oficina.ativo ? '#ff3131' : '#00E676',
+                          border: `1px solid ${oficina.ativo ? '#ff3131' : '#00E676'}`
+                        }}
+                      >
+                        {oficina.ativo ? 'BLOQUEAR' : 'ATIVAR'}
+                      </button>
+                    </div>
+                  </div>
+                );
+              })}
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* CONTEÚDO: DASHBOARD DE RISCO E CONFORMIDADE */}
+      {abaInterna === 'risco' && (
+        <div className="fade-in">
+          <div style={{ background: '#0a0a0a', border: '1px solid #10B98144', borderRadius: '16px', padding: '25px', position: 'relative' }}>
+            
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '30px' }}>
+              <div>
+                <h2 style={{ color: '#10B981', fontSize: '20px', fontWeight: '900', margin: 0, display: 'flex', alignItems: 'center', gap: '10px' }}>
+                  <ShieldCheck size={24} /> Dashboard de Risco Legal & Ecológico
+                </h2>
+                <p style={{ color: '#666', fontSize: '13px', margin: '5px 0 0' }}>
+                  Monitore em tempo real quais oficinas estão sob risco jurídico imediato (alvarás vencidos) ou ecológico (sem descartes).
+                </p>
+              </div>
+              <button 
+                onClick={carregarDadosDeRisco}
+                disabled={carregandoRisco}
+                style={{ background: '#10B98122', color: '#10B981', border: '1px solid #10B981', borderRadius: '8px', padding: '10px 15px', fontSize: '12px', fontWeight: 'bold', cursor: 'pointer' }}
+              >
+                {carregandoRisco ? 'CARREGANDO...' : '🔄 RECARREGAR LISTA'}
+              </button>
+            </div>
+
+            {carregandoRisco ? (
+              <div style={{ padding: '60px', textAlign: 'center', color: '#10B981', fontWeight: 'bold' }}>
+                <div style={{ width: '30px', height: '30px', border: '3px solid #10B981', borderTopColor: 'transparent', borderRadius: '50%', animation: 'spin 1s linear infinite', margin: '0 auto 15px' }} />
+                ANALISANDO SITUAÇÃO DE TODAS AS OFICINAS...
+              </div>
+            ) : (
+              <>
+                {/* GRIDS DE MÉTRICAS */}
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '15px', marginBottom: '30px' }}>
+                  <div style={{ background: '#111', padding: '20px', borderRadius: '12px', border: '1px solid #222' }}>
+                    <span style={{ fontSize: '11px', color: '#666', fontWeight: 'bold', textTransform: 'uppercase' }}>Total de Oficinas</span>
+                    <h3 style={{ fontSize: '28px', fontWeight: '900', margin: '5px 0 0', color: 'white' }}>{dadosRisco.length}</h3>
+                  </div>
+
+                  <div style={{ background: '#111', padding: '20px', borderRadius: '12px', border: '1px solid #10B98144', borderColor: '#10B98166' }}>
+                    <span style={{ fontSize: '11px', color: '#10B981', fontWeight: 'bold', textTransform: 'uppercase' }}>🏅 Selo Ativo (Blindada)</span>
+                    <h3 style={{ fontSize: '28px', fontWeight: '900', margin: '5px 0 0', color: '#10B981', textShadow: '0 0 15px rgba(16,185,129,0.3)' }}>
+                      {dadosRisco.filter(r => r.temSelo).length}
+                    </h3>
+                  </div>
+
+                  <div style={{ background: '#111', padding: '20px', borderRadius: '12px', border: '1px solid #ef444455' }}>
+                    <span style={{ fontSize: '11px', color: '#ef4444', fontWeight: 'bold', textTransform: 'uppercase' }}>Risco Elevado (Vencido)</span>
+                    <h3 style={{ fontSize: '28px', fontWeight: '900', margin: '5px 0 0', color: '#ef4444' }}>
+                      {dadosRisco.filter(r => r.temVencido).length}
+                    </h3>
+                  </div>
+
+                  <div style={{ background: '#111', padding: '20px', borderRadius: '12px', border: '1px solid #f59e0b55' }}>
+                    <span style={{ fontSize: '11px', color: '#f59e0b', fontWeight: 'bold', textTransform: 'uppercase' }}>Sem Descarte Ecológico</span>
+                    <h3 style={{ fontSize: '28px', fontWeight: '900', margin: '5px 0 0', color: '#f59e0b' }}>
+                      {dadosRisco.filter(r => r.totalDescartes === 0).length}
+                    </h3>
+                  </div>
+                </div>
+
+                {/* FILTRO REATIVO SELO */}
+                <div style={{ marginBottom: '20px', display: 'flex', justifyContent: 'flex-end' }}>
+                  <label style={{ display: 'flex', alignItems: 'center', gap: '8px', background: '#111', padding: '10px 15px', borderRadius: '8px', border: '1px solid #222', cursor: 'pointer', fontSize: '13px', color: filtroSeloAtivo ? '#10B981' : '#666', fontWeight: 'bold', transition: '0.2s', borderColor: filtroSeloAtivo ? '#10B98155' : '#222' }}>
+                    <input 
+                      type="checkbox" 
+                      checked={filtroSeloAtivo} 
+                      onChange={(e) => setFiltroSeloAtivo(e.target.checked)} 
+                      style={{ cursor: 'pointer' }}
+                    />
+                    🏅 VER APENAS OFICINAS COM SELO ATIVO
+                  </label>
+                </div>
+
+                {/* TABELA DETALHADA */}
+                <div style={{ overflowX: 'auto' }}>
+                  <table style={{ width: '100%', borderCollapse: 'collapse', border: '1px solid #222', fontSize: '13px' }}>
+                    <thead>
+                      <tr style={{ background: '#111', color: '#666', textTransform: 'uppercase', fontWeight: 'bold', textAlign: 'left' }}>
+                        <th style={{ padding: '15px' }}>Oficina</th>
+                        <th style={{ padding: '15px' }}>Alvarás Documentados</th>
+                        <th style={{ padding: '15px' }}>Situação Jurídica</th>
+                        <th style={{ padding: '15px' }}>Histórico Descartes</th>
+                        <th style={{ padding: '15px' }}>Ações</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {dadosRisco
+                        .filter(ofi => filtroSeloAtivo ? ofi.temSelo : true)
+                        .map((ofi) => {
+                        const waMsg = `Olá!%20Identificamos%20pelo%20sistema%20que%20a%20sua%20oficina%20pode%20estar%20com%20algum%20documento%20vencido%20ou%20pendente%20na%20aba%20Burocracias.%20Podemos%20te%20auxiliar%20a%20regularizar%20para%20evitar%20multas?`;
+                        return (
+                          <tr key={ofi.id} style={{ borderBottom: '1px solid #222', color: '#ccc' }}>
+                            <td style={{ padding: '15px', fontWeight: 'bold', color: 'white', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                              {ofi.nome}
+                              {ofi.temSelo && (
+                                <span style={{ color: '#10B981', background: '#10B98122', border: '1px solid #10B981', padding: '2px 6px', borderRadius: '6px', fontSize: '10px', fontWeight: 'black' }}>🏅 SELO ATIVO</span>
+                              )}
+                            </td>
+                            <td style={{ padding: '15px' }}>{ofi.preenchidos} preenchido(s)</td>
+                            <td style={{ padding: '15px' }}>
+                              {ofi.temVencido ? (
+                                <span style={{ color: '#ef4444', background: '#ef444422', border: '1px solid #ef4444', padding: '3px 8px', borderRadius: '4px', fontSize: '11px', fontWeight: 'bold' }}>🔴 VENCIDO / RISCO</span>
+                              ) : ofi.preenchidos > 0 ? (
+                                <span style={{ color: '#10b981', background: '#10b98122', border: '1px solid #10b981', padding: '3px 8px', borderRadius: '4px', fontSize: '11px', fontWeight: 'bold' }}>🟢 EM DIA</span>
+                              ) : (
+                                <span style={{ color: '#666', background: '#222', padding: '3px 8px', borderRadius: '4px', fontSize: '11px', fontWeight: 'bold' }}>⚪ INCOMPLETO</span>
+                              )}
+                            </td>
+                            <td style={{ padding: '15px' }}>
+                              {ofi.totalDescartes === 0 ? (
+                                <span style={{ color: '#f59e0b' }}>Nenhum descarte ⚠️</span>
+                              ) : (
+                                <span style={{ color: '#10b981' }}>{ofi.totalDescartes} coleta(s) registrada(s) 🌱</span>
+                              )}
+                            </td>
+                            <td style={{ padding: '15px' }}>
+                              <a
+                                href={`https://wa.me/${ofi.telefone}?text=${waMsg}`}
+                                target="_blank"
+                                rel="noreferrer"
+                                style={{ background: '#25D36622', color: '#25D366', border: '1px solid #25D366', padding: '6px 12px', borderRadius: '6px', fontSize: '11px', fontWeight: 'bold', textDecoration: 'none', display: 'inline-block' }}
+                              >
+                                📞 COBRAR REGULARIZAÇÃO
+                              </a>
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              </>
+            )}
           </div>
         </div>
       )}

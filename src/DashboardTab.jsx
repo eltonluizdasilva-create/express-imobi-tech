@@ -14,9 +14,9 @@ import {
 } from 'recharts';
 import { useNavigate } from 'react-router-dom';
 import { getAuth } from 'firebase/auth';
-import { Lock } from 'lucide-react';
+import { Lock, Trophy, Share2 } from 'lucide-react';
 import { db } from './lib/firebase';
-import { collection, getDocs } from 'firebase/firestore';
+import { collection, getDocs, doc, getDoc, setDoc } from 'firebase/firestore';
 
 // ─── EXPORT mantido: AdminNovo.jsx importa { TEMAS } deste arquivo ────────────
 export const TEMAS = {
@@ -385,10 +385,115 @@ export default function DashboardTab({
     onAgendarRevisao = () => { },
 }) {
     const t = TEMAS[tema] || TEMAS.escuro;
-    const [mounted, setMounted] = useState(false);
     const navigate = useNavigate();
+    const [mounted, setMounted] = useState(false);
+    const [relatorioAnterior, setRelatorioAnterior] = useState(null);
+    const [carregandoRelatorio, setCarregandoRelatorio] = useState(false);
 
     useEffect(() => { setMounted(true); }, []);
+
+    useEffect(() => {
+        if (!oficinaId || !mounted || !listaCarros.length) return;
+
+        const processarFechamentoMensal = async () => {
+            setCarregandoRelatorio(true);
+            try {
+                const agora = new Date();
+                // Mês anterior
+                let mesAnt = agora.getMonth() - 1;
+                let anoAnt = agora.getFullYear();
+                if (mesAnt < 0) {
+                    mesAnt = 11;
+                    anoAnt -= 1;
+                }
+
+                const idRelatorio = `${anoAnt}_${String(mesAnt + 1).padStart(2, '0')}`;
+                const docRef = doc(db, 'oficinas', oficinaId, 'relatorios_mensais', idRelatorio);
+                const snap = await getDoc(docRef);
+
+                if (snap.exists()) {
+                    setRelatorioAnterior(snap.data());
+                } else {
+                    // EXECUÇÃO DA ROTINA DE FECHAMENTO: Computa apenas se ausente para poupar Firebase Reads
+                    let lucroLimpoTotal = 0;
+                    let custoPecasTotal = 0;
+                    let somaMargem = 0;
+                    let countMargem = 0;
+                    let totalOSPeriodo = 0;
+
+                    listaCarros.forEach(data => {
+                        const ts = data.data_registro?.toDate ? data.data_registro.toDate() : new Date(data.data_registro || data.data);
+                        if (ts instanceof Date && !isNaN(ts.getTime())) {
+                            if (ts.getMonth() === mesAnt && ts.getFullYear() === anoAnt) {
+                                totalOSPeriodo++;
+                                lucroLimpoTotal += Number(data.lucroLimpo) || 0;
+                                custoPecasTotal += Number(data.custoPecas) || 0;
+                                const mg = Number(data.margemLucro);
+                                if (mg !== undefined && !isNaN(mg) && mg !== 0) {
+                                    somaMargem += mg;
+                                    countMargem++;
+                                }
+                            }
+                        }
+                    });
+
+                    // Buscar retornos concluídos no mês anterior
+                    const retSnap = await getDocs(collection(db, 'oficinas', oficinaId, 'retornos'));
+                    let clientesRecuperados = 0;
+
+                    retSnap.docs.forEach(d => {
+                        const data = d.data();
+                        if (data.statusRetorno === 'concluido' && data.dataConclusao) {
+                            const dc = new Date(data.dataConclusao);
+                            if (dc instanceof Date && !isNaN(dc.getTime())) {
+                                if (dc.getMonth() === mesAnt && dc.getFullYear() === anoAnt) {
+                                    clientesRecuperados++;
+                                }
+                            }
+                        }
+                    });
+
+                    const payload = {
+                        id: idRelatorio,
+                        mes: mesAnt + 1,
+                        ano: anoAnt,
+                        lucroLimpoTotal,
+                        custoPecasTotal,
+                        margemLucroMedia: countMargem > 0 ? somaMargem / countMargem : 0,
+                        totalOS: totalOSPeriodo,
+                        clientesRecuperados,
+                        criadoEm: new Date().toISOString()
+                    };
+
+                    await setDoc(docRef, payload);
+                    setRelatorioAnterior(payload);
+                }
+            } catch (err) {
+                console.error("Erro na rotina de fechamento mensal:", err);
+            } finally {
+                setCarregandoRelatorio(false);
+            }
+        };
+
+        processarFechamentoMensal();
+    }, [oficinaId, mounted, listaCarros]);
+
+    const enviarResumoWhatsApp = () => {
+        if (!relatorioAnterior) return;
+        const mesesStr = ["Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho", "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"];
+        const mesNome = mesesStr[relatorioAnterior.mes - 1];
+        const nomeOfi = dadosOficina?.nomeOficina || "sua Oficina";
+
+        const msg = `🏆 *CONQUISTA DA INTELIGÊNCIA: RELATÓRIO DE ${mesNome.toUpperCase()}/${relatorioAnterior.ano}* 🏆\n\n` +
+                    `Fala parceiro(a)! Aqui é o relatório consolidado de inteligência da sua oficina: *${nomeOfi}*! 🚀\n\n` +
+                    `🔥 *Lucro Real Limpo Acumulado:* ${fmtMoeda(relatorioAnterior.lucroLimpoTotal)}\n` +
+                    `🎯 *Margem Real Média:* ${Number(relatorioAnterior.margemLucroMedia || 0).toFixed(1)}%\n` +
+                    `⚙️ *Investimento Gerido em Peças:* ${fmtMoeda(relatorioAnterior.custoPecasTotal)}\n` +
+                    `🔄 *Clientes Recuperados:* ${relatorioAnterior.clientesRecuperados} clientes voltaram ao pátio!\n\n` +
+                    `Você dominou a precificação, travou o prejuízo e rodou acima da média de mercado. *Parabéns pelo lucro real e gestão de elite!* Continuamos acelerando no próximo mês! 💪😎🔥`;
+
+        window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(msg)}`, '_blank');
+    };
 
     // Verificação de segurança: removida para evitar loops de redirecionamento. 
     // O PrivateRoute no App.jsx já garante que apenas usuários autorizados acessem esta área.
@@ -728,6 +833,120 @@ export default function DashboardTab({
                     </div>
                 </div>
             </section>
+
+            {/* ── CONQUISTA DO MÊS ANTERIOR (TROFÉU DE ELITE) ───────────────────────── */}
+            {relatorioAnterior && (
+                <section className="fade-in" style={{
+                    background: `linear-gradient(135deg, ${t.bgCard || t.card} 0%, rgba(212,175,55,0.04) 100%)`,
+                    border: `1px dashed rgba(212,175,55,0.4)`,
+                    borderRadius: '24px',
+                    padding: '22px 28px',
+                    marginBottom: '24px',
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                    gap: '20px',
+                    flexWrap: 'wrap',
+                    boxShadow: '0 20px 50px -20px rgba(212,175,55,0.1)',
+                    position: 'relative',
+                    overflow: 'hidden'
+                }}>
+                    {/* Efeito de Glow Dourado */}
+                    <div style={{
+                        position: 'absolute',
+                        top: '50%',
+                        right: '10%',
+                        transform: 'translateY(-50%)',
+                        width: '150px',
+                        height: '150px',
+                        borderRadius: '50%',
+                        background: '#D4AF37',
+                        opacity: 0.06,
+                        filter: 'blur(40px)',
+                        pointerEvents: 'none'
+                    }} />
+
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '22px', flexWrap: 'wrap', flex: '1 1 500px' }}>
+                        <div style={{
+                            width: '64px',
+                            height: '64px',
+                            borderRadius: '20px',
+                            background: 'rgba(212, 175, 55, 0.1)',
+                            border: '1px solid rgba(212, 175, 55, 0.3)',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            color: '#FFD700',
+                            boxShadow: '0 0 25px rgba(212, 175, 55, 0.25)',
+                            flexShrink: 0,
+                            animation: 'pulseGlow 2s infinite alternate'
+                        }}>
+                            <Trophy size={32} />
+                        </div>
+                        <div>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
+                                <span style={{ fontSize: '10px', fontWeight: '900', color: '#D4AF37', textTransform: 'uppercase', letterSpacing: '1.5px' }}>
+                                    🏆 Conquista Consolidada
+                                </span>
+                                <span style={{ background: 'rgba(0,230,118,0.1)', color: '#00E676', border: '1px solid rgba(0,230,118,0.2)', fontSize: '9px', fontWeight: 'bold', padding: '2px 8px', borderRadius: '99px', textTransform: 'uppercase' }}>
+                                    Fechamento Automático
+                                </span>
+                            </div>
+                            <h2 style={{ margin: 0, fontSize: '1.4rem', fontWeight: '900', color: t.text }}>
+                                Resumo do Mês ({String(relatorioAnterior.mes).padStart(2, '0')}/{relatorioAnterior.ano})
+                            </h2>
+                            <p style={{ margin: '4px 0 0', color: t.textSoft, fontSize: '13px' }}>
+                                Seus indicadores de lucro real e relacionamento processados pelo ecossistema Oficina IA.
+                            </p>
+                        </div>
+                    </div>
+
+                    <div style={{ display: 'flex', gap: '24px', flexWrap: 'wrap', flex: '1 1 400px', justifyContent: 'flex-end', alignItems: 'center' }}>
+                        <div style={{ display: 'flex', gap: '24px', flexWrap: 'wrap' }}>
+                            <div>
+                                <p style={{ margin: 0, color: t.textMute, fontSize: '10px', textTransform: 'uppercase', fontWeight: 'bold' }}>Lucro Real Limpo</p>
+                                <strong style={{ fontSize: '1.5rem', color: '#00E676', fontWeight: '900' }}>{fmtMoeda(relatorioAnterior.lucroLimpoTotal)}</strong>
+                            </div>
+                            <div style={{ borderLeft: `1px solid ${t.stroke}`, paddingLeft: '24px' }}>
+                                <p style={{ margin: 0, color: t.textMute, fontSize: '10px', textTransform: 'uppercase', fontWeight: 'bold' }}>Clientes Recuperados</p>
+                                <strong style={{ fontSize: '1.5rem', color: '#5EA8FF', fontWeight: '900', display: 'flex', alignItems: 'center', gap: '5px' }}>
+                                    🔥 {relatorioAnterior.clientesRecuperados}
+                                </strong>
+                            </div>
+                        </div>
+
+                        <button
+                            onClick={enviarResumoWhatsApp}
+                            style={{
+                                background: 'linear-gradient(90deg, #25D366 0%, #00E676 100%)',
+                                color: '#000',
+                                border: 'none',
+                                padding: '12px 22px',
+                                borderRadius: '14px',
+                                fontWeight: '900',
+                                fontSize: '12px',
+                                cursor: 'pointer',
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '8px',
+                                textTransform: 'uppercase',
+                                letterSpacing: '0.5px',
+                                boxShadow: '0 10px 25px rgba(0, 230, 118, 0.25)',
+                                transition: '0.2s'
+                            }}
+                        >
+                            <Share2 size={16} />
+                            Enviar p/ WhatsApp
+                        </button>
+                    </div>
+                    <style>{`
+                        @keyframes pulseGlow {
+                            from { box-shadow: 0 0 15px rgba(212, 175, 55, 0.15); }
+                            to { box-shadow: 0 0 35px rgba(212, 175, 55, 0.45); }
+                        }
+                    `}</style>
+                </section>
+            )}
 
             {/* ── 4 Stat Cards ─────────────────────────────────────────────── */}
             <section style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '16px', marginBottom: '24px' }}>
@@ -1241,6 +1460,31 @@ export default function DashboardTab({
                     </p>
                 </section>
             )}
+            {/* ── SELO LGPD FOOTER COMPLIANCE ───────────────────────────────────────── */}
+            <div style={{
+                marginTop: '50px',
+                borderTop: `1px solid ${t.stroke}`,
+                paddingTop: '20px',
+                display: 'flex',
+                justifyContent: 'center',
+                alignItems: 'center'
+            }}>
+                <div style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '8px',
+                    padding: '8px 16px',
+                    borderRadius: '999px',
+                    background: 'rgba(0, 230, 118, 0.04)',
+                    border: '1px solid rgba(0, 230, 118, 0.15)',
+                    color: '#00E676',
+                    fontSize: '11px',
+                    fontWeight: 'bold',
+                    letterSpacing: '0.5px'
+                }}>
+                    <span>🔒 Ambiente Seguro & LGPD Compliant</span>
+                </div>
+            </div>
         </div>
     );
 }

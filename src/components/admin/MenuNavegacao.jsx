@@ -32,7 +32,7 @@ export default function MenuNavegacao({ t, MAIN, MASTER, papelLogado, abaAtiva, 
     const trialAtivo = dadosOficina?.tipoPlano === 'trial' && dadosOficina?.dataFimTrial && new Date() < (dadosOficina.dataFimTrial.toDate ? dadosOficina.dataFimTrial.toDate() : new Date(dadosOficina.dataFimTrial));
 
     // ✅ LISTA ATUALIZADA DE MÓDULOS GRATUITOS
-    const MODULOS_GRATUITOS = ['dashboard', 'estoque', 'financeiro', 'tarefa', 'patrimonio', 'fornecedores', 'historico', 'config', 'meuplano', 'ajuda', 'equipe', 'marketing', 'migracao', 'especialista'];
+    const MODULOS_GRATUITOS = ['dashboard', 'estoque', 'financeiro', 'tarefa', 'patrimonio', 'fornecedores', 'historico', 'config', 'meuplano', 'ajuda', 'equipe', 'marketing', 'migracao', 'especialista', 'burocracias'];
 
     const makeButton = (aba, category) => {
         const corCat = COLORS_CAT[category];
@@ -137,11 +137,11 @@ export default function MenuNavegacao({ t, MAIN, MASTER, papelLogado, abaAtiva, 
                 <div className="grid grid-cols-2 sm:grid-cols-3 md:flex md:overflow-x-auto gap-2 mb-4 pb-1 overflow-hidden">
                     {[
                         'dashboard', 'estoque', 'financeiro', 'tarefa', 'patrimonio', 'fornecedores', 'historico',
-                        'meuplano', 'config', 'equipe', 'marketing', 'especialista', 'ajuda', 'master'
+                        'meuplano', 'config', 'equipe', 'marketing', 'especialista', 'burocracias', 'ajuda', 'master'
                     ]
                         .filter(aba => {
-                            // Dashboard só para donos/master
-                            if (aba === 'dashboard') return papelLogado === 'dono' || papelLogado === 'master';
+                            // Dashboard e Burocracias só para donos/master
+                            if (aba === 'dashboard' || aba === 'burocracias') return papelLogado === 'dono' || papelLogado === 'master';
 
                             // Botões de Sistema/Config só para donos/master
                             const isSistema = ['meuplano', 'config', 'equipe', 'marketing', 'ajuda', 'master'].includes(aba);

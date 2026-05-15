@@ -11,7 +11,9 @@ import {
   DollarSign, 
   Package,
   ArrowUpRight,
-  Plus
+  Plus,
+  ShieldAlert,
+  HelpCircle
 } from 'lucide-react';
 import AbaVeiculos from './AbaVeiculos';
 import AbaPecas from './AbaPecas';
@@ -35,6 +37,7 @@ export default function Desmanche({
   const [pecas, setPecas] = useState([]);
   const [parceiros, setParceiros] = useState([]);
   const [carregando, setCarregando] = useState(false);
+  const [filtroApenasIrregulares, setFiltroApenasIrregulares] = useState(false);
 
   useEffect(() => {
     if (oficinaId) carregarTudo();
@@ -69,6 +72,7 @@ export default function Desmanche({
   const lucro = totalVendas - totalInvestido;
   const pecasDisponiveis = pecas.filter(p => p.status === 'disponivel').length;
   const pecasVendidas = pecas.filter(p => p.status === 'vendida').length;
+  const pecasSemSelo = useMemo(() => pecas.filter(p => p.status === 'disponivel' && !p.seloDetran).length, [pecas]);
 
   const publicarChegada = async (carro) => {
     if (!window.confirm(`Publicar "${carro.modelo}" e avisar oficinas parceiras?`)) return;
@@ -126,6 +130,7 @@ export default function Desmanche({
         `Carro: *${carro.modelo} ${carro.ano || ''}* — ${carro.cor || ''}\n` +
         `Pátio: ${carro.patio || 'A definir'}\n` +
         `Peças: ${pecasNomes || 'Ver no app'}\n\n` +
+        `✅ Veículo com procedência lícita garantida e peças com rastreabilidade.\n\n` +
         (carro.detalhes ? `📝 ${carro.detalhes}\n\n` : '') +
         `Acesse o app → aba 🔩 FORNECEDORES para ver fotos.\nInteresse? Responda! ✅`
       );
@@ -189,7 +194,7 @@ export default function Desmanche({
       </section>
 
       {/* METRIC CARDS GRID */}
-      <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+      <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-5">
         <MetricCard 
           title="Investimento Total" 
           value={formatCurrency(totalInvestido)} 
@@ -218,7 +223,50 @@ export default function Desmanche({
           icon={<Package size={20} />} 
           tone="warning" 
         />
+        <MetricCard 
+          title="Alertas Compliance" 
+          value={
+            pecas.length === 0 
+              ? 'Aguardando Estoque' 
+              : pecasSemSelo > 0 
+                ? '🚨 Risco Detectado' 
+                : 'Tudo Regular'
+          } 
+          detail={
+            pecas.length === 0 
+              ? 'Cadastre peças com o Selo Detran para iniciar o monitoramento.' 
+              : pecasSemSelo > 0 
+                ? `${pecasSemSelo} ${pecasSemSelo === 1 ? 'peça sem selo' : 'peças sem selo'}` 
+                : 'Todas as peças rastreadas'
+          } 
+          icon={<ShieldAlert size={20} />} 
+          tone={pecas.length === 0 ? 'info' : pecasSemSelo > 0 ? 'danger' : 'success'} 
+          tooltip="O sistema verifica se 100% do seu estoque possui a numeração de rastreabilidade (Selo Detran)."
+          onClick={
+            pecasSemSelo > 0 
+              ? () => { setSubAba('pecas'); setFiltroApenasIrregulares(true); } 
+              : undefined
+          }
+        />
       </section>
+
+      {/* MENTORIA LEGAL CARD */}
+      <div className="relative overflow-hidden rounded-[24px] border border-rose-500/30 bg-gradient-to-r from-rose-950/30 to-slate-950 p-6 shadow-[0_0_30px_rgba(244,63,94,0.1)]">
+        <div className="absolute top-0 right-0 w-64 h-64 bg-rose-500/5 blur-[80px] rounded-full"></div>
+        <div className="relative flex flex-col md:flex-row items-start md:items-center gap-4">
+          <div className="p-3 rounded-2xl bg-rose-500/20 border border-rose-500/30 text-rose-400 flex-shrink-0 shadow-[0_0_15px_rgba(244,63,94,0.2)]">
+            <ShieldAlert size={24} />
+          </div>
+          <div className="space-y-1">
+            <h3 className="text-base font-black text-white tracking-wide flex items-center gap-2 uppercase">
+              🛡️ Mentoria Legal de Desmanche
+            </h3>
+            <p className="text-xs text-slate-400 leading-relaxed font-medium">
+              A Lei 12.977/14 exige rastreabilidade total. Desmontar carros sem baixa ou vender peças sem o selo do Detran é crime de receptação. <strong className="text-rose-400 font-black uppercase tracking-wider">Este painel protege sua liberdade e seu patrimônio.</strong>
+            </p>
+          </div>
+        </div>
+      </div>
 
       {/* SUB-ABA NAVIGATION */}
       <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide">
@@ -275,6 +323,8 @@ export default function Desmanche({
               onAbrirLightbox={abrirLightbox}
               dadosOficina={dadosOficina}
               carregarFinanceiro={carregarFinanceiro}
+              filtroApenasIrregulares={filtroApenasIrregulares}
+              setFiltroApenasIrregulares={setFiltroApenasIrregulares}
             />
           )}
 
@@ -298,7 +348,7 @@ export default function Desmanche({
 
 // SHARED UI COMPONENTS
 
-function MetricCard({ title, value, detail, icon, tone }) {
+function MetricCard({ title, value, detail, icon, tone, tooltip, onClick }) {
   const tones = {
     info: 'border-cyan-400/20 bg-cyan-400/10 text-cyan-200',
     success: 'border-emerald-400/20 bg-emerald-400/10 text-emerald-200',
@@ -307,14 +357,26 @@ function MetricCard({ title, value, detail, icon, tone }) {
   };
 
   return (
-    <div className="rounded-[24px] border border-slate-800 bg-slate-950/90 p-5 shadow-2xl shadow-slate-950/30">
-      <div className="flex items-start justify-between gap-4">
-        <div>
-          <p className="text-xs font-bold uppercase tracking-[0.22em] text-slate-500">{title}</p>
-          <h3 className="mt-3 text-2xl font-black text-white">{value}</h3>
-          <p className="mt-2 text-sm text-slate-400">{detail}</p>
+    <div 
+      onClick={onClick}
+      className={`rounded-[24px] border bg-slate-950/90 p-5 shadow-2xl shadow-slate-950/30 transition-all group relative ${onClick ? 'cursor-pointer hover:scale-[1.02] hover:border-rose-500/40 border-slate-800/60 active:scale-95 hover:shadow-rose-500/5' : 'border-slate-800'}`}
+    >
+      {tooltip && (
+        <div className="absolute top-3 right-3 group/tip">
+          <HelpCircle size={14} className="text-slate-600 cursor-help hover:text-rose-400 transition-colors" />
+          <div className="absolute bottom-full right-0 mb-2 w-56 p-3 bg-slate-950 border border-rose-500/20 text-[10px] leading-relaxed text-slate-300 rounded-xl opacity-0 pointer-events-none group-hover/tip:opacity-100 transition-all duration-200 shadow-2xl z-50">
+            <span className="text-rose-400 font-black uppercase block mb-0.5">Regra de Compliance</span>
+            {tooltip}
+          </div>
         </div>
-        <div className={`rounded-2xl border p-3 ${tones[tone]}`}>{icon}</div>
+      )}
+      <div className="flex items-start justify-between gap-4">
+        <div className="pr-2 flex-1">
+          <p className="text-xs font-bold uppercase tracking-[0.22em] text-slate-500">{title}</p>
+          <h3 className="mt-3 text-lg lg:text-xl font-black text-white break-words leading-tight">{value}</h3>
+          <p className="mt-2 text-[11px] leading-relaxed text-slate-400">{detail}</p>
+        </div>
+        <div className={`rounded-2xl border p-3 flex-shrink-0 ${tones[tone]}`}>{icon}</div>
       </div>
     </div>
   );

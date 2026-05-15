@@ -24,6 +24,7 @@ const FERRAMENTAS_GRATIS = [
     { id: 'historico', label: 'Histórico', desc: 'Auditoria completa de tudo o que acontece no sistema para total segurança.', icon: '📜' },
     { id: 'estoque', label: 'Estoque', desc: 'Controle de peças e produtos básicos da oficina.', icon: '📦' },
     { id: 'financeiro', label: 'Financeiro', desc: 'Controle de fluxo de caixa simplificado.', icon: '💰' },
+    { id: 'burocracias', label: '🛡️ Proteção Jurídica', desc: 'Módulo de Proteção Jurídica Ativo. Regularize seus alvarás e resíduos para evitar multas.', icon: '🛡️' },
 ];
 
 const SERVICOS_OPERACOES = [

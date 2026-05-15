@@ -94,18 +94,41 @@ export default function Home() {
                 O primeiro sistema ERP para oficinas mecânicas do Brasil movido a Inteligência Artificial. Diga adeus ao papel e aos orçamentos amadores. Transforme a sua oficina em uma concessionária digital.
               </p>
 
-              <ul className="space-y-4 mb-10">
-                <li className="flex items-center gap-3 text-gray-300">
-                  <span className="text-green-500 text-xl">✓</span> IA que lê o painel do veículo e extrai o KM.
+              <ul className="grid gap-4 mb-10 md:grid-cols-1">
+                <li className="flex items-start gap-3 text-gray-300">
+                  <div className="w-8 h-8 bg-emerald-500/10 border border-emerald-500/20 rounded-lg flex items-center justify-center text-sm flex-shrink-0">🛡️</div>
+                  <div>
+                    <strong className="text-white text-sm font-bold block">Oficina Blindada</strong>
+                    <span className="text-xs text-gray-500">Orientação ativa sobre alvarás, descarte de óleo e sucatas para evitar multas severas.</span>
+                  </div>
                 </li>
-                <li className="flex items-center gap-3 text-gray-300">
-                  <span className="text-green-500 text-xl">✓</span> Captação de Leads e orçamentos via foto e texto.
+                <li className="flex items-start gap-3 text-gray-300">
+                  <div className="w-8 h-8 bg-blue-500/10 border border-blue-500/20 rounded-lg flex items-center justify-center text-sm flex-shrink-0">💰</div>
+                  <div>
+                    <strong className="text-white text-sm font-bold block">Preço de Elite</strong>
+                    <span className="text-xs text-gray-500">Cálculo matemático preciso do custo de hora técnica para garantir lucro limpo de até 25%.</span>
+                  </div>
                 </li>
-                <li className="flex items-center gap-3 text-gray-300">
-                  <span className="text-green-500 text-xl">✓</span> Portal exclusivo para o cliente acompanhar o serviço.
+                <li className="flex items-start gap-3 text-gray-300">
+                  <div className="w-8 h-8 bg-purple-500/10 border border-purple-500/20 rounded-lg flex items-center justify-center text-sm flex-shrink-0">🔄</div>
+                  <div>
+                    <strong className="text-white text-sm font-bold block">Máquina de Retorno</strong>
+                    <span className="text-xs text-gray-500">Automação inteligente que caça clientes inativos no WhatsApp para encher sua agenda.</span>
+                  </div>
                 </li>
-                <li className="flex items-center gap-3 text-gray-300">
-                  <span className="text-green-500 text-xl">✓</span> Cobrança via PIX integrada ao caixa financeiro.
+                <li className="flex items-start gap-3 text-gray-300">
+                  <div className="w-8 h-8 bg-orange-500/10 border border-orange-500/20 rounded-lg flex items-center justify-center text-sm flex-shrink-0">🧠</div>
+                  <div>
+                    <strong className="text-white text-sm font-bold block">Especialista IA</strong>
+                    <span className="text-xs text-gray-500">Mentor virtual integrado 24h focado em legislação, tributação e lucratividade.</span>
+                  </div>
+                </li>
+                <li className="flex items-start gap-3 text-gray-300">
+                  <div className="w-8 h-8 bg-yellow-500/10 border border-yellow-500/20 rounded-lg flex items-center justify-center text-sm flex-shrink-0">📦</div>
+                  <div>
+                    <strong className="text-white text-sm font-bold block">Migração Inteligente</strong>
+                    <span className="text-xs text-gray-500">Leitura inteligente de backups antigos, importando planilhas Excel e CSV sem atrito.</span>
+                  </div>
                 </li>
               </ul>
 

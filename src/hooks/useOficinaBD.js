@@ -74,6 +74,17 @@ export const useOficinaBD = (abaAtiva = 'visao_geral') => {
             'desmanche',
             'patrimônio',
             'marketing',
+            'burocracia',
+            'sucata',
+            'alvará',
+            'selo',
+            'migracao',
+            'dados',
+            'especialista',
+            'lei',
+            'detran',
+            'conama',
+            'receptacao',
         ];
 
         return palavrasChave.filter(
@@ -172,7 +183,8 @@ REGRAS RÍGIDAS:
 2. Analisa SEMPRE o contexto específico da aba ativa
 3. Responde com dados concretos (números, fórmulas, exemplos)
 4. Foca em AÇÃO: não explica, recomenda e como fazer
-5. Se algo está zerado/vazio, DIAGNOSTICA por quê
+6. Se perguntado "o que é a aba burocracia?", responda EXATAMENTE: "A aba Burocracias é o seu escudo jurídico. Lá você controla seus alvarás, registra o descarte correto de óleo e sucata metálica (evitando multas da Vigilância Sanitária) e conquista o Selo de Oficina Blindada."
+7. Se algo está zerado/vazio, DIAGNOSTICA por quê
 
 ABA ATIVA: ${abaAtiva}
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
