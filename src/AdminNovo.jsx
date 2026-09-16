@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo, useRef } from 'react';
+﻿import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { db } from "./lib/firebase";
 import { collection, addDoc, updateDoc, doc, deleteDoc, onSnapshot, query, orderBy } from 'firebase/firestore';
 
@@ -10,7 +10,8 @@ import { TelaTrialExpirou, TelaBloqueado, TelaLogin } from './components/admin/T
 import TelaEdicaoOS from './components/admin/TelaEdicaoOS';
 import Header from './components/admin/Header';
 import NovaOSBar from './components/admin/NovaOSBar';
-import MenuNavegacao from './components/admin/MenuNavegacao';
+import MenuNavegacaoCompleto from './components/admin/MenuNavegacao';
+import MenuNavegacaoLite from './components/admin/MenuNavegacaoLite';
 import AvisoIA from './components/admin/AvisoIA';
 import ModuloBloqueado from './components/admin/ModuloBloqueado';
 import ModaisExtras from './components/admin/ModaisExtras';
@@ -221,6 +222,14 @@ const MODULOS_MAP = {
 // ─── Componente Principal ──────────────────────────────────────────────────────
 
 export default function Admin() {
+  const urlParamModo = typeof window !== 'undefined' ? new URLSearchParams(window.location.search).get('modo') : null;
+  const storageModo = typeof localStorage !== 'undefined' ? localStorage.getItem('modoPainel') : null;
+  const isLiteAtivo = urlParamModo === 'lite' || (!urlParamModo && storageModo === 'lite');
+  const MenuNavegacao = isLiteAtivo ? MenuNavegacaoLite : MenuNavegacaoCompleto;
+  const urlParamModo = typeof window !== 'undefined' ? new URLSearchParams(window.location.search).get('modo') : null;
+  const storageModo = typeof localStorage !== 'undefined' ? localStorage.getItem('modoPainel') : null;
+  const isLiteAtivo = urlParamModo === 'lite' || (!urlParamModo && storageModo === 'lite');
+  const MenuNavegacao = isLiteAtivo ? MenuNavegacaoLite : MenuNavegacaoCompleto;
   // ── Auth Context ──────────────────────────────────────────────────────────
   const auth = useAuth();
   const {
@@ -1009,6 +1018,9 @@ export default function Admin() {
     </div>
   );
 }
+
+
+
 
 
 
