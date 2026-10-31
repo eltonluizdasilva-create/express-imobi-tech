@@ -2,8 +2,8 @@ import OpenAI from "openai";
 
 const deepseek = new OpenAI({
   baseURL: "https://api.deepseek.com",
-  apiKey: process.env.DEEPSEEK_API_KEY,
-  dangerouslyAllowBrowser: true // Necessário para execução direta no frontend/browser se aplicável
+  apiKey: import.meta.env.VITE_DEEPSEEK_API_KEY,
+  dangerouslyAllowBrowser: true // Necessário para execução direta no frontend
 });
 
 // Chamada genérica reutilizável por qualquer agente
