@@ -1,0 +1,46 @@
+
+# Logs
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+node_modules
+dist
+dist-ssr
+*.local
+
+# Editor directories and files
+.vscode/*
+!.vscode/extensions.json
+.idea
+.DS_Store
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# Local Netlify folder
+.netlify
+
+.vercel
+.env*.local
+node_modules
+dist
+
+.env*
+
+# Segredos locais - nunca versionar
+imobi1106.txt
+
+# Scripts locais e credenciais de servico - NUNCA versionar
+scripts-locais/
+service-account*.json
+
+# Cloud Functions (dependencias e arquivo gerado)
+functions/node_modules/
+functions/planos.json

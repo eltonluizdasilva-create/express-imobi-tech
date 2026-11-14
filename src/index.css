@@ -1,0 +1,75 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color-scheme: dark;
+  --imobi-bg: #020408;
+  --imobi-panel: #0a0f14;
+  --imobi-border: rgba(16, 185, 129, 0.18);
+  --imobi-emerald: #10b981;
+  --imobi-emerald-dark: #059669;
+}
+
+html, body, #root {
+  background-color: #020408;
+  color: #f8fafc;
+  min-height: 100vh;
+}
+
+
+/* ==========================================================================
+   MODO CLARO — camada de compatibilidade
+   O app foi escrito com cores escuras fixas (bg-zinc-900, #020408, text-white).
+   Estas regras, ativas só sob .tema-claro, convertem as superfícies escuras em
+   claras sem reescrever componente por componente. Acentos (esmeralda, âmbar,
+   violeta, teal, azul) são preservados.
+   ========================================================================== */
+
+html.tema-claro,
+html.tema-claro body,
+html.tema-claro #root {
+  background-color: #f8fafc !important;
+  color: #0f172a !important;
+}
+
+/* Superfícies */
+.tema-claro [style*="#020408"] { background-color: #ffffff !important; }
+.tema-claro [class*="bg-[#020408]"] { background-color: #f8fafc !important; }
+.tema-claro [class*="bg-zinc-950"],
+.tema-claro [class*="bg-zinc-900"],
+.tema-claro [class*="bg-slate-950"],
+.tema-claro [class*="bg-slate-900"] { background-color: #ffffff !important; }
+.tema-claro [class*="bg-zinc-800"],
+.tema-claro [class*="bg-slate-800"] { background-color: #f1f5f9 !important; }
+
+/* Gradientes escuros viram superfície lisa */
+.tema-claro [class*="bg-gradient-to"][class*="from-zinc"],
+.tema-claro [class*="bg-gradient-to"][class*="from-slate"] { background-image: none !important; }
+
+/* Bordas */
+.tema-claro [class*="border-zinc-9"],
+.tema-claro [class*="border-zinc-8"],
+.tema-claro [class*="border-zinc-7"],
+.tema-claro [class*="border-slate-9"],
+.tema-claro [class*="border-slate-8"],
+.tema-claro [class*="border-neutral-8"] { border-color: #e2e8f0 !important; }
+
+/* Texto — preserva botões/pílulas coloridas */
+.tema-claro [class*="text-white"]:not([class*="bg-emerald"]):not([class*="bg-[#10b981]"]):not([class*="bg-amber"]):not([class*="bg-violet"]):not([class*="bg-teal"]):not([class*="bg-sky"]):not([class*="bg-blue"]):not([class*="bg-red"]):not([class*="bg-rose"]):not([class*="bg-gradient-to-r"]) {
+  color: #0f172a !important;
+}
+.tema-claro [class*="text-zinc-1"],
+.tema-claro [class*="text-zinc-2"],
+.tema-claro [class*="text-zinc-3"],
+.tema-claro [class*="text-slate-1"],
+.tema-claro [class*="text-slate-2"],
+.tema-claro [class*="text-slate-3"] { color: #334155 !important; }
+.tema-claro [class*="text-neutral-3"],
+.tema-claro [class*="text-neutral-4"],
+.tema-claro [class*="text-neutral-5"],
+.tema-claro [class*="text-neutral-6"] { color: #64748b !important; }
+.tema-claro [class*="text-zinc-4"],
+.tema-claro [class*="text-zinc-5"],
+.tema-claro [class*="text-slate-4"],
+.tema-claro [class*="text-slate-5"] { color: #475569 !important; }
