@@ -127,7 +127,7 @@ export default function Historico({ oficinaId }) {
 
       if (oficinaId) {
         await addDoc(collection(db, 'oficinas', oficinaId, 'propostas_imobi'), nova);
-        await registrarEventoLead(db, oficinaId, {
+        const eventoProposta = await registrarEventoLead(db, oficinaId, {
           leadId: nova.leadId,
           telefone: nova.telefone,
           tipo: TIPOS_EVENTO.PROPOSTA_CRIADA,
@@ -135,6 +135,9 @@ export default function Historico({ oficinaId }) {
           descricao: `Proposta ${nova.modalidade} de ${nova.valorProposta}`,
           metadados: { codigoImovel: nova.codigoImovel, status: nova.status },
         });
+        if (!eventoProposta.ok) {
+          console.error('Falha ao registrar evento de proposta:', eventoProposta.error);
+        }
       } else {
         setPropostas((prev) => [{ id: `local_${Date.now()}`, ...nova }, ...(prev || [])]);
       }

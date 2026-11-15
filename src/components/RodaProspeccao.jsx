@@ -35,6 +35,7 @@ export default function RodaProspeccao({
   oficinaId = null,
   papelLogado = '',
   usuarioNome = '',
+  usuarioUid = null,
   vgv = 0,
   comissao = 0,
   onAbrirAba,
@@ -42,7 +43,9 @@ export default function RodaProspeccao({
   const [modo, setModo] = useState('minha');
   const [filtro, setFiltro] = useState(null);
   const [feitos, setFeitos] = useState([]);
+  const [abertos, setAbertos] = useState([]);
   const [processando, setProcessando] = useState(null);
+  const [erro, setErro] = useState('');
 
   const ehGestor = ['master', 'admin', 'gestor', 'proprietario'].includes(String(papelLogado || '').toLowerCase());
 
@@ -51,8 +54,10 @@ export default function RodaProspeccao({
     visitas,
     propostas,
     tarefas,
-    corretorFiltro: modo === 'minha' && usuarioNome ? usuarioNome : null,
-  }), [leads, visitas, propostas, tarefas, modo, usuarioNome]);
+    corretorFiltro: modo === 'minha' && (usuarioUid || usuarioNome)
+      ? { uid: usuarioUid, nome: usuarioNome }
+      : null,
+  }), [leads, visitas, propostas, tarefas, modo, usuarioNome, usuarioUid]);
 
   const idsDoFiltro = filtro ? new Set(roda.detalhe.idsPorCategoria[filtro] || []) : null;
 
@@ -67,33 +72,55 @@ export default function RodaProspeccao({
 
   async function abrirWhatsApp(item) {
     const tel = String(item.telefone || '').replace(/\D/g, '');
-    if (!tel) return;
+    if (!tel) {
+      setErro('Lead sem telefone válido para abrir o WhatsApp.');
+      return;
+    }
     setProcessando(item.leadId);
+    setErro('');
     window.open(`https://wa.me/55${tel}?text=${encodeURIComponent(item.mensagemSugeridaWhatsapp || '')}`, '_blank', 'noopener');
-    await registrarEventoLead(db, oficinaId, {
+
+    // Só a abertura: NÃO é contato realizado, não move ultimoContatoEm
+    // e o lead continua na fila até o corretor confirmar.
+    const res = await registrarEventoLead(db, oficinaId, {
       leadId: item.leadId,
       telefone: tel,
-      tipo: TIPOS_EVENTO.CONTATO_WHATSAPP,
+      tipo: TIPOS_EVENTO.WHATSAPP_ABERTO,
       canal: 'whatsapp',
-      descricao: item.fraseAcao,
+      descricao: `WhatsApp aberto: ${item.fraseAcao}`,
       metadados: { categoria: item.categoria },
+      chaveIdempotencia: `${TIPOS_EVENTO.WHATSAPP_ABERTO}:${item.leadId}:${new Date().toISOString().slice(0, 13)}`,
     });
+    if (!res.ok) setErro(`Falha ao registrar a abertura do WhatsApp: ${res.error}`);
+    setAbertos((a) => [...a, item.leadId]);
+    setProcessando(null);
+  }
+
+  /** Confirmação explícita de que a conversa aconteceu. */
+  async function confirmarContato(item, viaWhatsapp = true) {
+    setProcessando(item.leadId);
+    setErro('');
+    const res = await registrarEventoLead(db, oficinaId, {
+      leadId: item.leadId,
+      telefone: item.telefone,
+      tipo: viaWhatsapp ? TIPOS_EVENTO.CONTATO_WHATSAPP : TIPOS_EVENTO.CONTATO,
+      canal: viaWhatsapp ? 'whatsapp' : 'painel',
+      descricao: `Contato confirmado pelo corretor: ${item.fraseAcao}`,
+      metadados: { categoria: item.categoria, confirmado: true },
+      chaveIdempotencia: `${TIPOS_EVENTO.CONTATO_WHATSAPP}:${item.leadId}:${new Date().toISOString().slice(0, 13)}`,
+    });
+    if (!res.ok) {
+      setErro(`Falha ao registrar o contato: ${res.error}`);
+      setProcessando(null);
+      return;
+    }
     setFeitos((f) => [...f, item.leadId]);
     setProcessando(null);
   }
 
   async function concluir(item) {
-    setProcessando(item.leadId);
-    await registrarEventoLead(db, oficinaId, {
-      leadId: item.leadId,
-      telefone: item.telefone,
-      tipo: TIPOS_EVENTO.CONTATO,
-      canal: 'painel',
-      descricao: `Acao concluida: ${item.fraseAcao}`,
-      metadados: { categoria: item.categoria },
-    });
-    setFeitos((f) => [...f, item.leadId]);
-    setProcessando(null);
+    // Concluir é confirmação explícita do corretor: registra contato.
+    await confirmarContato(item, false);
   }
 
   async function agendar(item, dias) {
@@ -101,7 +128,7 @@ export default function RodaProspeccao({
     const alvo = new Date();
     alvo.setDate(alvo.getDate() + dias);
     alvo.setHours(9, 0, 0, 0);
-    await registrarEventoLead(db, oficinaId, {
+    const res = await registrarEventoLead(db, oficinaId, {
       leadId: item.leadId,
       telefone: item.telefone,
       tipo: TIPOS_EVENTO.FOLLOWUP_AGENDADO,
@@ -109,7 +136,13 @@ export default function RodaProspeccao({
       descricao: `Follow-up agendado para ${alvo.toLocaleDateString('pt-BR')}`,
       proximoFollowUpEm: Timestamp.fromDate(alvo),
       metadados: { categoria: item.categoria },
+      chaveIdempotencia: `${TIPOS_EVENTO.FOLLOWUP_AGENDADO}:${item.leadId}:${alvo.toISOString().slice(0, 10)}`,
     });
+    if (!res.ok) {
+      setErro(`Falha ao agendar o follow-up: ${res.error}`);
+      setProcessando(null);
+      return;
+    }
     setFeitos((f) => [...f, item.leadId]);
     setProcessando(null);
   }
@@ -194,6 +227,11 @@ export default function RodaProspeccao({
 
       {/* Lista priorizada */}
       <div className={`${cardCls} p-5`}>
+        {erro && (
+          <p className="mb-3 rounded-xl border border-rose-500/40 bg-rose-500/10 px-3 py-2 text-[11px] font-bold text-rose-200">
+            {erro}
+          </p>
+        )}
         <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
           <p className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-slate-400">
             <RefreshCw size={12} /> Prioridades recomendadas
@@ -245,6 +283,21 @@ export default function RodaProspeccao({
                     </div>
 
                     <div className="flex shrink-0 flex-wrap items-center gap-1.5">
+                      {abertos.includes(item.leadId) && (
+                        <>
+                          <span className="rounded-full border border-amber-500/40 bg-amber-500/10 px-2 py-1 text-[9px] font-black uppercase tracking-wider text-amber-300">
+                            WhatsApp aberto · confirme após enviar
+                          </span>
+                          <button
+                            onClick={() => confirmarContato(item, true)}
+                            disabled={ocupado}
+                            className="inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-[10px] font-black uppercase tracking-wider text-slate-950 transition hover:brightness-110 disabled:opacity-40"
+                            style={{ backgroundColor: ACCENT }}
+                          >
+                            <Check size={12} /> Confirmar contato
+                          </button>
+                        </>
+                      )}
                       <button
                         onClick={() => abrirWhatsApp(item)}
                         disabled={ocupado || !item.telefone}

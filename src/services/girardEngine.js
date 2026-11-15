@@ -17,6 +17,10 @@ import { addDoc, collection, doc, serverTimestamp, updateDoc } from 'firebase/fi
 
 export const TIPOS_EVENTO = {
   CONTATO: 'contato',
+  // Abrir o wa.me NAO significa que a mensagem saiu: e apenas uma tentativa.
+  // Nao move ultimoContatoEm e nao tira o lead da fila.
+  WHATSAPP_ABERTO: 'whatsapp_aberto',
+  // Contato confirmado pelo corretor depois da conversa.
   CONTATO_WHATSAPP: 'contato_whatsapp',
   MUDANCA_ETAPA: 'mudanca_etapa',
   VISITA_AGENDADA: 'visita_agendada',
@@ -35,6 +39,19 @@ const TIPOS_INTERACAO = new Set([
   TIPOS_EVENTO.PROPOSTA_CRIADA,
   TIPOS_EVENTO.POS_VENDA,
 ]);
+
+/**
+ * Quais campos do lead um evento altera. Puro e exportado para teste:
+ * whatsapp_aberto NAO altera nada no lead.
+ */
+export function efeitosDoEvento(tipo, { proximoFollowUpEm = null } = {}) {
+  const patch = {};
+  if (TIPOS_INTERACAO.has(tipo)) patch.ultimoContatoEm = true;
+  if (tipo === TIPOS_EVENTO.MUDANCA_ETAPA) patch.etapaAlteradaEm = true;
+  if (tipo === TIPOS_EVENTO.POS_VENDA) patch.posVendaStatus = 'concluida';
+  if (proximoFollowUpEm) patch.proximoFollowUpEm = true;
+  return patch;
+}
 
 export const ESTAGIOS_NEGOCIACAO = [
   'Visita Agendada',
@@ -58,6 +75,16 @@ const ESTAGIOS_ATIVOS = new Set([
 const ESTAGIOS_ENCERRADOS = new Set(['Fechado', 'Perdido', 'Descartado']);
 
 /* ─────────────────────── helpers de data/telefone ─────────────────────── */
+
+/** Nome comparável: sem acento, minúsculo, espaços colapsados. */
+export function normalizarNome(valor) {
+  return String(valor || '')
+    .normalize('NFD')
+    .replace(/[̀-ͯ]/g, '')
+    .toLowerCase()
+    .replace(/\s+/g, ' ')
+    .trim();
+}
 
 export function normalizarTelefone(valor) {
   const digitos = String(valor || '').replace(/\D/g, '');
@@ -107,8 +134,14 @@ function normalizarEstagio(lead = {}) {
 /* ───────────────────── 1. registro de evento ───────────────────── */
 
 /**
- * Grava o evento e mantém o lead em sincronia.
- * Nunca lança: falha em evento não pode derrubar o fluxo comercial.
+ * Grava o evento e, quando há lead, atualiza o documento NA MESMA transação
+ * (writeBatch). Evento sem atualização de lead ou vice-versa seria histórico
+ * inconsistente — e é isso que o writeBatch impede.
+ *
+ * Idempotência: quem chama pode passar `chaveIdempotencia`; o documento recebe
+ * esse id fixo, então duplo clique / re-render não cria evento repetido.
+ *
+ * NUNCA engole erro: devolve { ok, id, error } e loga com console.error.
  */
 export async function registrarEventoLead(db, oficinaId, {
   leadId = null,
@@ -119,12 +152,25 @@ export async function registrarEventoLead(db, oficinaId, {
   autor = '',
   metadados = {},
   proximoFollowUpEm = null,
+  chaveIdempotencia = null,
 } = {}) {
-  if (!db || !oficinaId) return null;
+  if (!db || !oficinaId) {
+    const error = 'registrarEventoLead: oficinaId ausente';
+    console.error(error);
+    return { ok: false, id: null, error };
+  }
+  if (!tipo) {
+    const error = 'registrarEventoLead: tipo ausente';
+    console.error(error);
+    return { ok: false, id: null, error };
+  }
 
   const telefoneNorm = normalizarTelefone(telefone);
 
   try {
+    const { writeBatch, doc: docRef, collection: colRef } = await import('firebase/firestore');
+    const batch = writeBatch(db);
+
     const evento = {
       leadId: leadId || null,
       telefone: telefoneNorm,
@@ -135,23 +181,30 @@ export async function registrarEventoLead(db, oficinaId, {
       metadados,
       criadoEm: serverTimestamp(),
     };
-    const ref = await addDoc(collection(db, 'oficinas', oficinaId, 'eventos_lead'), evento);
 
-    if (leadId) {
-      const patch = {};
-      if (TIPOS_INTERACAO.has(tipo)) patch.ultimoContatoEm = serverTimestamp();
-      if (tipo === TIPOS_EVENTO.MUDANCA_ETAPA) patch.etapaAlteradaEm = serverTimestamp();
-      if (tipo === TIPOS_EVENTO.POS_VENDA) patch.posVendaStatus = 'concluida';
-      if (proximoFollowUpEm) patch.proximoFollowUpEm = proximoFollowUpEm;
-      if (Object.keys(patch).length > 0) {
-        await updateDoc(doc(db, 'oficinas', oficinaId, 'leads_imobi', leadId), patch);
+    const colecao = colRef(db, 'oficinas', oficinaId, 'eventos_lead');
+    const refEvento = chaveIdempotencia
+      ? docRef(colecao, String(chaveIdempotencia))
+      : docRef(colecao);
+    batch.set(refEvento, evento);
+
+    const patch = efeitosDoEvento(tipo, { proximoFollowUpEm });
+    if (leadId && Object.keys(patch).length > 0) {
+      const valores = {};
+      for (const chave of Object.keys(patch)) {
+        if (chave === 'posVendaStatus') valores[chave] = patch[chave];
+        else if (chave === 'proximoFollowUpEm') valores[chave] = proximoFollowUpEm;
+        else valores[chave] = serverTimestamp();
       }
+      batch.update(docRef(db, 'oficinas', oficinaId, 'leads_imobi', leadId), valores);
     }
 
-    return ref.id;
+    await batch.commit();
+    return { ok: true, id: refEvento.id, error: null };
   } catch (erro) {
-    console.warn('registrarEventoLead: falhou sem interromper o fluxo', erro);
-    return null;
+    const mensagem = erro?.message || String(erro);
+    console.error('registrarEventoLead falhou:', mensagem, { oficinaId, leadId, tipo });
+    return { ok: false, id: null, error: mensagem };
   }
 }
 
@@ -215,11 +268,40 @@ export function calcularRodaProspeccao({
   corretorFiltro = null,
   hoje = new Date(),
 } = {}) {
-  const listaLeads = (Array.isArray(leads) ? leads : []).filter((l) => {
-    if (!corretorFiltro) return true;
-    const dono = l?.corretorResponsavel || l?.corretor || '';
-    return String(dono).toLowerCase() === String(corretorFiltro).toLowerCase();
+  const filtro = corretorFiltro && typeof corretorFiltro === 'object'
+    ? { uid: corretorFiltro.uid || null, nome: normalizarNome(corretorFiltro.nome) }
+    : { uid: null, nome: normalizarNome(corretorFiltro) };
+
+  const filtrados = (Array.isArray(leads) ? leads : []).filter((l) => {
+    if (!filtro.uid && !filtro.nome) return true;
+    // 1) vínculo forte por uid (leads novos)
+    if (filtro.uid && (l?.corretorUid === filtro.uid || l?.corretorId === filtro.uid)) return true;
+    // 2) retrocompatível: nome do responsável (leads antigos, sem uid)
+    const dono = normalizarNome(l?.corretorResponsavel || l?.corretor || '');
+    return Boolean(filtro.nome) && dono === filtro.nome;
   });
+
+  // Telefone duplicado gera histórico duplicado: mantém o cadastro mais
+  // recente e ignora o clone, contando a ocorrência no detalhe.
+  const porTelefone = new Map();
+  const semTelefone = [];
+  const descartadosPorTelefone = [];
+  for (const l of filtrados) {
+    const tel = normalizarTelefone(l?.telefone);
+    if (!tel) { semTelefone.push(l); continue; }
+    const atual = porTelefone.get(tel);
+    if (!atual) { porTelefone.set(tel, l); continue; }
+    const dataAtual = primeiroValido(atual.criadoEm, atual.data_registro);
+    const dataNova = primeiroValido(l.criadoEm, l.data_registro);
+    const manterNovo = (dataNova?.getTime() || 0) > (dataAtual?.getTime() || 0);
+    if (manterNovo) {
+      descartadosPorTelefone.push(atual?.id || atual?.leadId);
+      porTelefone.set(tel, l);
+    } else {
+      descartadosPorTelefone.push(l?.id || l?.leadId);
+    }
+  }
+  const listaLeads = [...porTelefone.values(), ...semTelefone];
 
   const idxVisitas = indexarVisitas(visitas);
   const idxPropostas = indexarPropostas(propostas);
@@ -297,9 +379,12 @@ export function calcularRodaProspeccao({
 
     const fechamento = estagio === 'Fechado' ? (etapaAlterada || ultimoContato || criado) : null;
     const diasFechado = diasDesde(fechamento, hoje);
-    const posVendaPendente = lead?.posVendaStatus === 'pendente'
-      ? true
-      : estagio === 'Fechado' && diasFechado !== null && diasFechado >= 7 && diasFechado <= 90 && lead?.posVendaStatus !== 'concluida';
+    // A janela de 7 a 90 dias vale para os dois casos (flag explicita ou
+    // estagio Fechado): fechou hoje nao e pos-venda pendente.
+    const dentroJanelaPosVenda = diasFechado !== null && diasFechado >= 7 && diasFechado <= 90;
+    const posVendaPendente = (estagio === 'Fechado' || lead?.posVendaStatus === 'pendente')
+      && dentroJanelaPosVenda
+      && lead?.posVendaStatus !== 'concluida';
     if (posVendaPendente) { contadores.posVendasPendentes += 1; sets.posVendasPendentes.add(id); }
 
     /* ---------- candidatos a prioridade ---------- */
@@ -409,6 +494,7 @@ export function calcularRodaProspeccao({
       propostasIndexadas: (propostas || []).length,
       tarefasConsideradas: (tarefas || []).length,
       idsPorCategoria: Object.fromEntries(Object.entries(sets).map(([k, set]) => [k, [...set]])),
+      leadsDescartadosPorTelefoneDuplicado: descartadosPorTelefone.filter(Boolean),
     },
   };
 }

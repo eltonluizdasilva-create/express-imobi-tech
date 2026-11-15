@@ -51,6 +51,21 @@ service cloud.firestore {
       );
     }
 
+    function papelDoUsuario() {
+      return temDocUsuario()
+        ? get(/databases/$(database)/documents/usuarios/$(request.auth.uid)).data.get('papel', '')
+        : '';
+    }
+
+    // Dono da conta, admin da plataforma ou papel de gestão dentro do tenant.
+    function gestorDoTenant(oid) {
+      return authed() && (
+        request.auth.uid == oid
+        || isAdminPlataforma()
+        || papelDoUsuario() in ['dono', 'admin', 'master']
+      ) && membroOficina(oid);
+    }
+
     function camposComerciaisIntactos() {
       return !request.resource.data.diff(resource.data).affectedKeys()
         .hasAny(['plano', 'isPro', 'planoAssinante', 'tipoPlano', 'modulosPermitidos', 'papel']);
@@ -74,8 +89,25 @@ service cloud.firestore {
     // ------------------------- usuários -------------------------------------
     match /usuarios/{uid} {
       allow read: if authed() && (request.auth.uid == uid || isAdminPlataforma());
-      // cada usuário cria/atualiza o próprio vínculo
-      allow create, update: if authed() && request.auth.uid == uid;
+
+      // Cadastro: cada um cria o próprio vínculo e, se já informar oficinaId,
+      // ele tem de ser a própria conta — impede nascer filiado a tenant alheio.
+      allow create: if authed() && request.auth.uid == uid
+        && (
+          !request.resource.data.keys().hasAny(['oficinaId'])
+          || request.resource.data.oficinaId == uid
+        );
+
+      // Update: o próprio usuário, mas o oficinaId só pode ser DEFINIDO uma vez.
+      // Sem essa trava, qualquer conta trocava de tenant sozinha e passava a
+      // acessar dados de outra imobiliária (membroOficina usa este campo).
+      allow update: if authed() && request.auth.uid == uid
+        && (
+          !resource.data.keys().hasAny(['oficinaId'])
+          || !request.resource.data.diff(resource.data).affectedKeys().hasAny(['oficinaId'])
+          || request.resource.data.oficinaId == resource.data.oficinaId
+        );
+
       allow delete: if false;
     }
 
@@ -194,12 +226,102 @@ service cloud.firestore {
       allow read, write: if authed() && membroOficina(oid);
     }
 
-    // ---------------- demais subcoleções do tenant --------------------------
-    // estoque, financeiro, retornos, visitas_imobi, desmanche_*, burocracias,
-    // descartes, patrimonio, propostas_imobi, relatorios_mensais, revisoes_premium,
-    // agendamentos_retorno, fornecedores, notificacoes_desmanche, config…
-    match /oficinas/{oid}/{sub=**} {
+    // ------------- subcoleções do tenant (lista explícita) ------------------
+    // Sem curinga: coleção nova precisa de bloco próprio, senão fica negada.
+    // O curinga anterior também abria `equipe` para qualquer membro, o que
+    // permitia escalada de privilégio dentro do tenant.
+    match /oficinas/{oid}/config/{docId} {
       allow read, write: if authed() && membroOficina(oid);
+    }
+
+    match /oficinas/{oid}/configuracoes/{docId} {
+      allow read, write: if authed() && membroOficina(oid);
+    }
+
+    match /oficinas/{oid}/estoque/{docId} {
+      allow read, write: if authed() && membroOficina(oid);
+    }
+
+    match /oficinas/{oid}/financeiro/{docId} {
+      allow read, write: if authed() && membroOficina(oid);
+    }
+
+    match /oficinas/{oid}/fornecedores/{docId} {
+      allow read, write: if authed() && membroOficina(oid);
+    }
+
+    match /oficinas/{oid}/patrimonio/{docId} {
+      allow read, write: if authed() && membroOficina(oid);
+    }
+
+    match /oficinas/{oid}/retornos/{docId} {
+      allow read, write: if authed() && membroOficina(oid);
+    }
+
+    match /oficinas/{oid}/agendamentos_retorno/{docId} {
+      allow read, write: if authed() && membroOficina(oid);
+    }
+
+    match /oficinas/{oid}/visitas_imobi/{docId} {
+      allow read, write: if authed() && membroOficina(oid);
+    }
+
+    match /oficinas/{oid}/revisoes_premium/{docId} {
+      allow read, write: if authed() && membroOficina(oid);
+    }
+
+    match /oficinas/{oid}/vistorias/{docId} {
+      allow read, write: if authed() && membroOficina(oid);
+    }
+
+    match /oficinas/{oid}/propostas_imobi/{docId} {
+      allow read, write: if authed() && membroOficina(oid);
+    }
+
+    match /oficinas/{oid}/relatorios_mensais/{docId} {
+      allow read, write: if authed() && membroOficina(oid);
+    }
+
+    match /oficinas/{oid}/burocracias/{docId} {
+      allow read, write: if authed() && membroOficina(oid);
+    }
+
+    match /oficinas/{oid}/descartes/{docId} {
+      allow read, write: if authed() && membroOficina(oid);
+    }
+
+    match /oficinas/{oid}/desmanche_parceiros/{docId} {
+      allow read, write: if authed() && membroOficina(oid);
+    }
+
+    match /oficinas/{oid}/desmanche_pecas/{docId} {
+      allow read, write: if authed() && membroOficina(oid);
+    }
+
+    match /oficinas/{oid}/desmanche_veiculos/{docId} {
+      allow read, write: if authed() && membroOficina(oid);
+    }
+
+    match /oficinas/{oid}/notificacoes_desmanche/{docId} {
+      allow read, write: if authed() && membroOficina(oid);
+    }
+
+    match /oficinas/{oid}/usuarios/{docId} {
+      allow read, write: if authed() && membroOficina(oid);
+    }
+
+    match /oficinas/{oid}/tarefas/{docId} {
+      allow read, write: if authed() && membroOficina(oid);
+    }
+
+    match /oficinas/{oid}/eventos_lead/{docId} {
+      allow read, write: if authed() && membroOficina(oid);
+    }
+
+    // ---------------- equipe: leitura do tenant, escrita de gestor ----------
+    match /oficinas/{oid}/equipe/{uid} {
+      allow read: if authed() && membroOficina(oid);
+      allow write: if gestorDoTenant(oid);
     }
 
     // ---------------- organização MASTER (catálogo de planos) ---------------
@@ -226,8 +348,9 @@ service cloud.firestore {
       allow read, write: if authed();
     }
 
+    // Legado: o app grava em oficinas/{id}/tarefas. Nada aqui para cliente.
     match /tarefas/{docId} {
-      allow read, write: if authed();
+      allow read, write: if isAdminPlataforma();
     }
 
     match /desmanche_global/{docId} {

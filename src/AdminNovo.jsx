@@ -1124,7 +1124,7 @@ export default function Admin() {
         status: 'Confirmada',
         criadoEm: serverTimestamp(),
       });
-      await registrarEventoLead(db, imobiliariaId, {
+      const eventoVisita = await registrarEventoLead(db, imobiliariaId, {
         leadId: formVisita.leadId || null,
         telefone: formVisita.telefone,
         tipo: TIPOS_EVENTO.VISITA_AGENDADA,
@@ -1132,6 +1132,9 @@ export default function Admin() {
         descricao: `Visita agendada para ${formVisita.data || ''} ${formVisita.hora || ''}`.trim(),
         metadados: { imovel: formVisita.imovel, corretor: formVisita.corretor },
       });
+      if (!eventoVisita.ok) {
+        console.error('Falha ao registrar evento de visita:', eventoVisita.error);
+      }
       setFormVisita({ cliente: '', telefone: '', imovel: '', data: '', hora: '10:00', corretor: 'Corretor Plantão 01' });
       setModalNovaVisita(false);
       setAbaAtiva('visitas_imobi');
@@ -1150,13 +1153,17 @@ export default function Admin() {
         etapaAlteradaEm: serverTimestamp(),
         ...(novoEstagio === 'Fechado' ? { posVendaStatus: 'pendente' } : {}),
       });
-      await registrarEventoLead(db, imobiliariaId, {
+      const eventoEstagio = await registrarEventoLead(db, imobiliariaId, {
         leadId,
         tipo: TIPOS_EVENTO.MUDANCA_ETAPA,
         canal: 'painel',
         descricao: `Estagio alterado para ${novoEstagio}`,
         metadados: { estagioNovo: novoEstagio },
+        chaveIdempotencia: `${TIPOS_EVENTO.MUDANCA_ETAPA}:${leadId}:${novoEstagio}:${new Date().toISOString().slice(0, 13)}`,
       });
+      if (!eventoEstagio.ok) {
+        console.error('Falha ao registrar evento de mudanca de estagio:', eventoEstagio.error);
+      }
     } catch (err) {
       console.error('Erro ao mover lead no funil:', err);
     }
@@ -1800,6 +1807,7 @@ export default function Admin() {
             oficinaId={imobiliariaId}
             papelLogado={papelLogado}
             usuarioNome={dadosImobiliaria?.nomeCorretor || dadosImobiliaria?.corretorResponsavel || ''}
+            usuarioUid={currentUserId}
             vgv={(listaImoveis || []).reduce((acc, item) => acc + (Number(item?.valor) || 0), 0)}
             comissao={(listaImoveis || []).reduce((acc, item) => acc + (Number(item?.valor) || 0), 0) * 0.06}
             onAbrirAba={setAbaAtiva}
