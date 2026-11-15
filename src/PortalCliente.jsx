@@ -9,6 +9,7 @@ import {
   addDoc,
   serverTimestamp,
   limit,
+  where,
 } from 'firebase/firestore';
 import { useGroq } from './hooks/useGroq';
 import {
@@ -920,7 +921,7 @@ function ConsultaStatusVistoria({ onBack, leadInicial, codigoInicial, oficinaIdP
 
     let encontrada = null;
     try {
-      const snap = await getDocs(query(collectionGroup(db, 'vistorias'), limit(30)));
+      const snap = await getDocs(query(collectionGroup(db, 'vistorias'), where('publico', '==', true), limit(30)));
       const termo = codigoBusca.trim().toLowerCase();
       snap.forEach((docSnap) => {
         const d = docSnap.data() || {};
@@ -1526,7 +1527,7 @@ export default function PortalCliente() {
 
       const listaFirestore = [];
       try {
-        const snap = await getDocs(query(collectionGroup(db, 'imoveis_imobi'), limit(40)));
+        const snap = await getDocs(query(collectionGroup(db, 'imoveis_imobi'), where('publico', '==', true), limit(40)));
         snap.forEach((docSnap) => {
           const d = docSnap.data() || {};
           if (!d.status || d.status === 'Ativo' || d.status === 'Disponível') {
@@ -1617,7 +1618,7 @@ export default function PortalCliente() {
 
       // 1. Procura em vistorias
       try {
-        const snapVist = await getDocs(query(collectionGroup(db, 'vistorias'), limit(40)));
+        const snapVist = await getDocs(query(collectionGroup(db, 'vistorias'), where('publico', '==', true), limit(40)));
         snapVist.forEach((docSnap) => {
           const d = docSnap.data() || {};
           const texto = `${d.imovel || ''} ${d.proprietario || ''} ${d.inquilino || ''} ${docSnap.id}`.toLowerCase();
@@ -1640,7 +1641,7 @@ export default function PortalCliente() {
 
       // 2. Procura em imoveis_imobi
       try {
-        const snapImov = await getDocs(query(collectionGroup(db, 'imoveis_imobi'), limit(40)));
+        const snapImov = await getDocs(query(collectionGroup(db, 'imoveis_imobi'), where('publico', '==', true), limit(40)));
         snapImov.forEach((docSnap) => {
           const d = docSnap.data() || {};
           const texto = `${d.titulo || ''} ${d.codigo || ''} ${d.bairro || ''} ${docSnap.id}`.toLowerCase();
