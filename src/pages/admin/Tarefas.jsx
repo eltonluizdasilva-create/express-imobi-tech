@@ -13,7 +13,8 @@ const BLUE_INFO = '#3b82f6';
 /**
  * TarefaTab - Componente independente para gerenciar tarefas
  */
-function TarefaTab() {
+function TarefaTab({ oficinaId = null, dadosOficina = null, leadId = null } = {}) {
+    const tenantId = oficinaId || dadosOficina?.id || dadosOficina?.uid || null;
     const [tarefas, setTarefas] = useState([]);
     const [novoTitulo, setNovoTitulo] = useState('');
     const [novaDescricao, setNovaDescricao] = useState('');
@@ -31,16 +32,29 @@ function TarefaTab() {
 
     const carregarTarefas = async () => {
         try {
-            const q = query(
-                collection(db, 'tarefas'),
-                orderBy('dataCriacao', 'desc')
-            );
-            const snapshot = await getDocs(q);
-            const tarefasCarregadas = snapshot.docs.map(doc => ({
-                id: doc.id,
-                ...doc.data(),
-            }));
-            setTarefas(tarefasCarregadas);
+            // Regra nova: tudo sob oficinas/{tenantId}/tarefas.
+            // Fallback somente de LEITURA na colecao legada de topo, para nao
+            // sumir com tarefas antigas.
+            const carregadas = [];
+            if (tenantId) {
+                const qTenant = query(
+                    collection(db, 'oficinas', tenantId, 'tarefas'),
+                    orderBy('dataCriacao', 'desc')
+                );
+                const snapTenant = await getDocs(qTenant);
+                snapTenant.docs.forEach(d => carregadas.push({ id: d.id, ...d.data() }));
+            }
+            try {
+                const qLegado = query(collection(db, 'tarefas'), orderBy('dataCriacao', 'desc'));
+                const snapLegado = await getDocs(qLegado);
+                snapLegado.docs.forEach(d => {
+                    const item = { id: d.id, ...d.data() };
+                    if (!carregadas.some(t => t.id === item.id)) carregadas.push(item);
+                });
+            } catch (erroLegado) {
+                // colecao legada pode estar bloqueada pelas rules — nao e erro
+            }
+            setTarefas(carregadas);
         } catch (erro) {
             console.error('Erro ao carregar tarefas:', erro);
         }
@@ -60,10 +74,16 @@ function TarefaTab() {
                 descricao: novaDescricao.trim(),
                 dataHora: dataParsed ? Timestamp.fromDate(dataParsed) : null,
                 status: 'pendente',
+                leadId: leadId || null,
+                tipo: 'geral',
                 dataCriacao: Timestamp.now()
-            }; // <-- Removemos o usuarioId daqui
+            };
 
-            await addDoc(collection(db, 'tarefas'), novaTarefa);
+            // Grava sempre no tenant; a colecao de topo ficou so como legado.
+            const destino = tenantId
+                ? collection(db, 'oficinas', tenantId, 'tarefas')
+                : collection(db, 'tarefas');
+            await addDoc(destino, novaTarefa);
             setNovoTitulo('');
             setNovaDescricao('');
             setNovaDataHora('');

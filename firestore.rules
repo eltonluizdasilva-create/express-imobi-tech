@@ -178,6 +178,22 @@ service cloud.firestore {
       allow read, write: if authed() && membroOficina(oid);
     }
 
+    // ------------- eventos do lead (Roda de Prospeccao / Girard) ------------
+    // Gravado por src/services/girardEngine.js em cada interacao comercial.
+    match /oficinas/{oid}/eventos_lead/{eventoId} {
+      allow read, delete: if authed() && membroOficina(oid);
+      allow create: if authed() && membroOficina(oid)
+        && request.resource.data.tipo is string
+        && request.resource.data.tipo.size() > 0
+        && request.resource.data.descricao is string;
+      allow update: if authed() && membroOficina(oid);
+    }
+
+    // ------------- tarefas do tenant (follow-up / pos-venda) ----------------
+    match /oficinas/{oid}/tarefas/{tarefaId} {
+      allow read, write: if authed() && membroOficina(oid);
+    }
+
     // ---------------- demais subcoleções do tenant --------------------------
     // estoque, financeiro, retornos, visitas_imobi, desmanche_*, burocracias,
     // descartes, patrimonio, propostas_imobi, relatorios_mensais, revisoes_premium,

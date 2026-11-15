@@ -68,6 +68,8 @@ import { MODULOS_MAP } from './modulosMap';
 
 import { useAuth } from './contexts/AuthContext';
 import useCarregamentoInicial from './hooks/useCarregamentoInicial.jsx';
+import { registrarEventoLead, TIPOS_EVENTO } from './services/girardEngine';
+import RodaProspeccao from './components/RodaProspeccao';
 import useQuickActions, { parseMoedaBR } from './hooks/useQuickActions';
 
 // ─── Proteção Isolada para Modais Legados ──────────────────────────────────────
@@ -498,6 +500,8 @@ export default function Admin() {
   const [listaLeads, setListaLeads] = useState([]);
   const [listaImoveis, setListaImoveis] = useState([]);
   const [listaVisitas, setListaVisitas] = useState([]);
+  const [listaPropostas, setListaPropostas] = useState([]);
+  const [listaTarefas, setListaTarefas] = useState([]);
   const [listaFinanceiro, setListaFinanceiro] = useState([]);
   const [config, setConfig] = useState({});
   const [planosSistema, setPlanosSistema] = useState({});
@@ -677,6 +681,8 @@ export default function Admin() {
     const refImoveis = collection(db, 'oficinas', imobiliariaId, 'imoveis_imobi');
     const refVisitas = collection(db, 'oficinas', imobiliariaId, 'visitas_imobi');
     const refEquipe = collection(db, 'oficinas', imobiliariaId, 'equipe');
+    const refPropostas = collection(db, 'oficinas', imobiliariaId, 'propostas_imobi');
+    const refTarefas = collection(db, 'oficinas', imobiliariaId, 'tarefas');
 
     // Sincroniza leads capturados no Portal Público caso não tivessem imobiliariaId no momento da captura
     try {
@@ -758,11 +764,25 @@ export default function Admin() {
       (err) => console.warn('Aviso listener equipe roleta:', err.message)
     );
 
+    const unsubPropostas = onSnapshot(
+      refPropostas,
+      (snap) => setListaPropostas((snap?.docs || []).map((d) => ({ id: d.id, ...d.data() }))),
+      () => setListaPropostas([]),
+    );
+
+    const unsubTarefas = onSnapshot(
+      refTarefas,
+      (snap) => setListaTarefas((snap?.docs || []).map((d) => ({ id: d.id, ...d.data() }))),
+      () => setListaTarefas([]),
+    );
+
     return () => {
       unsubLeads();
       unsubImoveis();
       unsubVisitas();
       unsubEquipe();
+      unsubPropostas();
+      unsubTarefas();
     };
   }, [imobiliariaId, logado]);
 
@@ -1100,8 +1120,17 @@ export default function Admin() {
     try {
       await addDoc(collection(db, 'oficinas', imobiliariaId, 'visitas_imobi'), {
         ...formVisita,
+        leadId: formVisita.leadId || null,
         status: 'Confirmada',
         criadoEm: serverTimestamp(),
+      });
+      await registrarEventoLead(db, imobiliariaId, {
+        leadId: formVisita.leadId || null,
+        telefone: formVisita.telefone,
+        tipo: TIPOS_EVENTO.VISITA_AGENDADA,
+        canal: 'painel',
+        descricao: `Visita agendada para ${formVisita.data || ''} ${formVisita.hora || ''}`.trim(),
+        metadados: { imovel: formVisita.imovel, corretor: formVisita.corretor },
       });
       setFormVisita({ cliente: '', telefone: '', imovel: '', data: '', hora: '10:00', corretor: 'Corretor Plantão 01' });
       setModalNovaVisita(false);
@@ -1118,6 +1147,15 @@ export default function Admin() {
     try {
       await updateDoc(doc(db, 'oficinas', imobiliariaId, 'leads_imobi', leadId), {
         estagio: novoEstagio,
+        etapaAlteradaEm: serverTimestamp(),
+        ...(novoEstagio === 'Fechado' ? { posVendaStatus: 'pendente' } : {}),
+      });
+      await registrarEventoLead(db, imobiliariaId, {
+        leadId,
+        tipo: TIPOS_EVENTO.MUDANCA_ETAPA,
+        canal: 'painel',
+        descricao: `Estagio alterado para ${novoEstagio}`,
+        metadados: { estagioNovo: novoEstagio },
       });
     } catch (err) {
       console.error('Erro ao mover lead no funil:', err);
@@ -1754,284 +1792,20 @@ export default function Admin() {
 
         {/* ─── ABA 1: PAINEL EXECUTIVO (VISÃO GERAL) ─────────────────────────── */}
         {abaAtiva === 'dashboard_imobi' && (
-          <div className="space-y-6">
-            <GuiaDaAba
-              titulo="Visão Geral"
-              descricao="Aqui você vê o dia em uma tela: leads que chegaram, visitas marcadas e o que está em negociação. Os números sobem sozinhos conforme você usa o CRM — nada para preencher à mão."
-            />
-            {/* Banner Principal + Gráfico VGV */}
-            <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 bg-slate-900/90 border border-slate-800 rounded-3xl p-6 md:p-8 shadow-2xl">
-              <div className="lg:col-span-6 flex flex-col justify-between space-y-5">
-                <div>
-                  <span className="inline-flex items-center gap-2 text-[11px] font-extrabold uppercase tracking-widest px-3 py-1 rounded-full bg-[#10b981]/10 text-[#10b981] border border-[#10b981]/20 mb-3">
-                    <Sparkles size={13} />{' '}
-                    {isModoGratis
-                      ? 'Visão Geral — Módulos Essenciais 100% Gratuitos'
-                      : 'Visão Geral — Ecossistema Completo IA & Imobiliária (PRO)'}
-                  </span>
-                  <h1 className="text-3xl md:text-5xl font-black text-white tracking-tight leading-none mb-3">
-                    PAINEL <span style={{ color: '#10b981' }} className="text-[#10b981]">EXECUTIVO</span>
-                  </h1>
-                  <p className="text-slate-400 text-sm md:text-base max-w-xl">
-                    Dashboard principal com resumo em tempo real do dia (leads novos, visitas agendadas, conversões e cálculo dinâmico de VGV).
-                  </p>
-                </div>
-
-                {/* 4 Indicadores Principais com destaques numéricos em #10b981 (Tempo Real do CRM) */}
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                  <div className="bg-[#020408] border border-slate-800 rounded-2xl p-4">
-                    <div className="flex items-center justify-between">
-                      <p className="text-[10px] font-bold uppercase text-slate-400">VGV em Carteira</p>
-                      <span className="text-[9px] font-extrabold uppercase px-1.5 py-0.5 rounded bg-[#10b981]/15 text-[#10b981]">CRM Vivo</span>
-                    </div>
-                    <p style={{ color: '#10b981' }} className="text-lg font-black text-[#10b981] mt-1">{fmtBRL(metricas.vgvCarteira)}</p>
-                    <p className="text-[10px] text-slate-400 mt-1">
-                      CRM: {fmtBRL(metricas.vgvLeadsCRM)} • Imóveis: {fmtBRL(metricas.vgvImoveis)}
-                    </p>
-                  </div>
-                  <div className="bg-[#020408] border border-slate-800 rounded-2xl p-4">
-                    <div className="flex items-center justify-between">
-                      <p className="text-[10px] font-bold uppercase text-slate-400">Comissão Prevista (6%)</p>
-                      <span className="text-[9px] font-extrabold uppercase px-1.5 py-0.5 rounded bg-[#10b981]/15 text-[#10b981]">6% Real</span>
-                    </div>
-                    <p style={{ color: '#10b981' }} className="text-lg font-black text-[#10b981] mt-1">{fmtBRL(metricas.comissaoPrevista)}</p>
-                    <p className="text-[10px] text-slate-400 mt-1">
-                      Leads CRM: {fmtBRL(metricas.comissaoLeadsCRM)} • Fechamento: {fmtBRL(metricas.vgvEmNegociacao * 0.06)}
-                    </p>
-                  </div>
-                  <div className="bg-[#020408] border border-slate-800 rounded-2xl p-4">
-                    <p className="text-[10px] font-bold uppercase text-slate-400">Leads no Funil</p>
-                    <p style={{ color: '#10b981' }} className="text-2xl font-black text-[#10b981] mt-1">{(listaLeads || []).length}</p>
-                    <p className="text-[10px] text-slate-400 mt-1">
-                      Próximo da Roleta: {roletaAtiva && proximoCorretorDaVez ? String(proximoCorretorDaVez?.nome || 'Plantão').split(' ')[0] : 'Fila Manual'}
-                    </p>
-                  </div>
-                  <div className="bg-[#020408] border border-slate-800 rounded-2xl p-4">
-                    <p className="text-[10px] font-bold uppercase text-slate-400">Visitas Agendadas</p>
-                    <p style={{ color: '#10b981' }} className="text-2xl font-black text-[#10b981] mt-1">{(listaVisitas || []).length}</p>
-                    <p className="text-[10px] text-slate-400 mt-1">
-                      Em negociação: {fmtBRL(metricas.vgvEmNegociacao)}
-                    </p>
-                  </div>
-                </div>
-              </div>
-
-              {/* Gráfico de Evolução de VGV sem erros de largura */}
-              <div className="lg:col-span-6 bg-[#020408] border border-slate-800 rounded-2xl p-5 flex flex-col justify-between min-w-0">
-                <div className="flex items-center justify-between mb-3">
-                  <span className="text-xs font-extrabold uppercase tracking-wider text-slate-300 flex items-center gap-2">
-                    <TrendingUp size={15} style={{ color: '#10b981' }} className="text-[#10b981]" /> Evolução de Demanda & VGV
-                  </span>
-                  <span style={{ color: '#10b981' }} className="text-[11px] text-[#10b981] font-bold">Tempo Real • Comissão 6%: {fmtBRL(metricas.comissaoPrevista)}</span>
-                </div>
-                <div style={{ width: '100%', height: 210, minWidth: 0 }}>
-                  <ResponsiveContainer width="100%" height={210}>
-                    <AreaChart data={dadosGraficoVGV}>
-                      <defs>
-                        <linearGradient id="gradImobi" x1="0" y1="0" x2="0" y2="1">
-                          <stop offset="5%" stopColor="#10b981" stopOpacity={0.35} />
-                          <stop offset="95%" stopColor="#10b981" stopOpacity={0} />
-                        </linearGradient>
-                      </defs>
-                      <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" vertical={false} />
-                      <XAxis dataKey="mes" stroke="#64748b" fontSize={11} tickLine={false} axisLine={false} />
-                      <YAxis
-                        stroke="#64748b"
-                        fontSize={11}
-                        tickLine={false}
-                        axisLine={false}
-                        tickFormatter={(v) => `${(v / 1000).toFixed(0)}k`}
-                      />
-                      <Tooltip
-                        contentStyle={{ background: '#020408', border: '1px solid #10b981', borderRadius: '12px', color: '#fff' }}
-                        formatter={(val) => [fmtBRL(val), 'VGV Movimentado']}
-                      />
-                      <Area type="monotone" dataKey="vgv" stroke="#10b981" strokeWidth={3} fill="url(#gradImobi)" />
-                    </AreaChart>
-                  </ResponsiveContainer>
-                </div>
-              </div>
-            </div>
-
-            {/* Módulos Essenciais de Operação Imobiliária (Grátis) com Ações Integradas */}
-            <div className="space-y-3">
-              <div className="flex flex-wrap items-center justify-between gap-2 px-1">
-                <div className="flex items-center gap-2">
-                  <span className="px-2.5 py-0.5 rounded-full bg-[#10b981]/15 border border-[#10b981]/40 text-[#10b981] text-[10px] font-extrabold uppercase">
-                    Módulos Essenciais • 100% Grátis
-                  </span>
-                  <span className="text-xs text-slate-400">
-                    Operação diária gratuita para corretores e imobiliárias: CRM, Captação e Visitas.
-                  </span>
-                </div>
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div className="p-5 rounded-2xl bg-slate-900 border border-[#10b981]/40 hover:border-[#10b981] flex flex-col justify-between gap-4 transition">
-                  <div onClick={() => setAbaAtiva('funil_leads')} className="cursor-pointer">
-                    <div className="flex items-center justify-between mb-2">
-                      <Users style={{ color: '#10b981' }} className="text-[#10b981]" size={24} />
-                      <span className="text-[10px] font-extrabold uppercase px-2 py-0.5 rounded-full bg-[#10b981]/15 text-[#10b981]">
-                        Essencial • Grátis
-                      </span>
-                    </div>
-                    <h3 className="font-black text-white text-sm uppercase tracking-tight">
-                      FUNIL DE VENDAS & CRM (<span style={{ color: '#10b981' }} className="text-[#10b981]">{(listaLeads || []).length}</span>)
-                    </h3>
-                    <p className="text-xs text-slate-400 mt-1">
-                      Cadastre e acompanhe clientes em cada etapa da jornada de compra ou locação com rastreamento de origem e disparo direto para o WhatsApp.
-                    </p>
-                  </div>
-                  <div className="flex items-center gap-2 pt-2 border-t border-slate-800">
-                    <button
-                      onClick={() => setModalNovoLeadImobi(true)}
-                      style={{ backgroundColor: '#10b981' }}
-                      className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl hover:opacity-90 text-white text-xs font-bold transition cursor-pointer"
-                    >
-                      <Plus size={14} /> Novo Lead
-                    </button>
-                    <button
-                      onClick={() => setAbaAtiva('funil_leads')}
-                      className="px-3 py-2 rounded-xl bg-[#020408] border border-slate-800 hover:border-[#10b981] text-slate-300 hover:text-white text-xs font-bold transition cursor-pointer"
-                    >
-                      Abrir CRM
-                    </button>
-                  </div>
-                </div>
-
-                <div className="p-5 rounded-2xl bg-slate-900 border border-[#10b981]/40 hover:border-[#10b981] flex flex-col justify-between gap-4 transition">
-                  <div onClick={() => setAbaAtiva('captacao_imobi')} className="cursor-pointer">
-                    <div className="flex items-center justify-between mb-2">
-                      <Home style={{ color: '#10b981' }} className="text-[#10b981]" size={24} />
-                      <span className="text-[10px] font-extrabold uppercase px-2 py-0.5 rounded-full bg-[#10b981]/15 text-[#10b981]">
-                        Essencial • Grátis
-                      </span>
-                    </div>
-                    <h3 className="font-black text-white text-sm uppercase tracking-tight">
-                      GESTÃO & VITRINE DE IMÓVEIS (<span style={{ color: '#10b981' }} className="text-[#10b981]">{(listaImoveis || []).length}</span>)
-                    </h3>
-                    <p className="text-xs text-slate-400 mt-1">
-                      Imóveis prontos para qualificação por padrão (Minha Casa Minha Vida, Médio e Alto Padrão), upload com compressão em canvas e sincronização instantânea com a Vitrine Digital em /portal.
-                    </p>
-                  </div>
-                  <div className="flex items-center gap-2 pt-2 border-t border-slate-800">
-                    <button
-                      onClick={() => setModalNovoImovel(true)}
-                      style={{ backgroundColor: '#10b981' }}
-                      className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl hover:opacity-90 text-white text-xs font-bold transition cursor-pointer"
-                    >
-                      <Plus size={14} /> Captar Imóvel
-                    </button>
-                    <button
-                      onClick={() => setAbaAtiva('captacao_imobi')}
-                      className="px-3 py-2 rounded-xl bg-[#020408] border border-slate-800 hover:border-[#10b981] text-slate-300 hover:text-white text-xs font-bold transition cursor-pointer"
-                    >
-                      Ver Catálogo
-                    </button>
-                  </div>
-                </div>
-
-                <div className="p-5 rounded-2xl bg-slate-900 border border-[#10b981]/40 hover:border-[#10b981] flex flex-col justify-between gap-4 transition">
-                  <div onClick={() => setAbaAtiva('visitas_imobi')} className="cursor-pointer">
-                    <div className="flex items-center justify-between mb-2">
-                      <Calendar style={{ color: '#10b981' }} className="text-[#10b981]" size={24} />
-                      <span className="text-[10px] font-extrabold uppercase px-2 py-0.5 rounded-full bg-[#10b981]/15 text-[#10b981]">
-                        Essencial • Grátis
-                      </span>
-                    </div>
-                    <h3 className="font-black text-white text-sm uppercase tracking-tight">
-                      AGENDA DE VISITAS & PLANTÃO (<span style={{ color: '#10b981' }} className="text-[#10b981]">{(listaVisitas || []).length}</span>)
-                    </h3>
-                    <p className="text-xs text-slate-400 mt-1">
-                      Organize horários com corretores, automatize confirmações de presença via WhatsApp e elimine furos no plantão imobiliário.
-                    </p>
-                  </div>
-                  <div className="flex items-center gap-2 pt-2 border-t border-slate-800">
-                    <button
-                      onClick={() => setModalNovaVisita(true)}
-                      style={{ backgroundColor: '#10b981' }}
-                      className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl hover:opacity-90 text-white text-xs font-bold transition cursor-pointer"
-                    >
-                      <Plus size={14} /> Agendar Visita
-                    </button>
-                    <button
-                      onClick={() => setAbaAtiva('visitas_imobi')}
-                      className="px-3 py-2 rounded-xl bg-[#020408] border border-slate-800 hover:border-[#10b981] text-slate-300 hover:text-white text-xs font-bold transition cursor-pointer"
-                    >
-                      Ver Agenda
-                    </button>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* Ecossistema de IA & Gestão: Exibido apenas quando o Modo PRO estiver ativo */}
-            {modoPro && (
-              <div className="space-y-3">
-                <div className="flex flex-wrap items-center justify-between gap-2 px-1">
-                  <div className="flex items-center gap-2">
-                    <span className="px-2.5 py-0.5 rounded-full bg-[#10b981]/15 border border-[#10b981]/40 text-[#10b981] text-[10px] font-extrabold uppercase">
-                      Modo Completo (PRO) • Ecossistema IA & Assinantes Liberado
-                    </span>
-                    <span className="text-xs text-slate-400">
-                      7 Agentes IA, Roleta de Leads e Automação de WhatsApp ativos.
-                    </span>
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  <button
-                    onClick={() => setAbaAtiva('agentes_ia')}
-                    className="p-5 rounded-2xl bg-slate-900 border border-slate-800 hover:border-[#10b981] text-left transition cursor-pointer group"
-                  >
-                    <div className="flex items-center justify-between mb-2">
-                      <Bot style={{ color: '#10b981' }} className="text-[#10b981] group-hover:scale-110 transition" size={24} />
-                      <span className="text-[10px] font-extrabold uppercase px-2 py-0.5 rounded-full bg-[#10b981]/15 text-[#10b981]">
-                        PRO • IA
-                      </span>
-                    </div>
-                    <h3 className="font-black text-white text-sm uppercase tracking-tight">ESQUADRÃO DE INTELIGÊNCIA ARTIFICIAL</h3>
-                    <p className="text-xs text-slate-400 mt-1">
-                      Equipe de 7 agentes autônomos trabalhando 24h por dia na qualificação de leads, triagem, agendamento de visitas e reengajamento no WhatsApp.
-                    </p>
-                  </button>
-
-                  <button
-                    onClick={() => setAbaAtiva('roleta_imobi')}
-                    className="p-5 rounded-2xl bg-slate-900 border border-slate-800 hover:border-[#10b981] text-left transition cursor-pointer group"
-                  >
-                    <div className="flex items-center justify-between mb-2">
-                      <Shuffle style={{ color: '#10b981' }} className="text-[#10b981] group-hover:scale-110 transition" size={24} />
-                      <span className="text-[10px] font-extrabold uppercase px-2 py-0.5 rounded-full bg-[#10b981]/15 text-[#10b981]">
-                        PRO • Assinantes
-                      </span>
-                    </div>
-                    <h3 className="font-black text-white text-sm uppercase tracking-tight">Roleta de Leads ({corretoresAtivos.length} ativos)</h3>
-                    <p className="text-xs text-slate-400 mt-1">
-                      Próximo da vez: <span className="text-[#10b981] font-bold">{proximoCorretorDaVez?.nome || 'Sem plantão'}</span>. Distribuição rotativa justa.
-                    </p>
-                  </button>
-
-                  <button
-                    onClick={() => setAbaAtiva('whatsapp_hub')}
-                    className="p-5 rounded-2xl bg-slate-900 border border-slate-800 hover:border-[#10b981] text-left transition cursor-pointer group"
-                  >
-                    <div className="flex items-center justify-between mb-2">
-                      <MessageSquare style={{ color: '#10b981' }} className="text-[#10b981] group-hover:scale-110 transition" size={24} />
-                      <span className="text-[10px] font-extrabold uppercase px-2 py-0.5 rounded-full bg-[#10b981]/15 text-[#10b981]">
-                        PRO • WhatsApp
-                      </span>
-                    </div>
-                    <h3 className="font-black text-white text-sm uppercase tracking-tight">Conectar WhatsApp / Bot</h3>
-                    <p className="text-xs text-slate-400 mt-1">Integre Typebot, Evolution API e sua chave gratuita do Gemini.</p>
-                  </button>
-                </div>
-              </div>
-            )}
-          </div>
+          <RodaProspeccao
+            leads={listaLeads}
+            visitas={listaVisitas}
+            propostas={listaPropostas}
+            tarefas={listaTarefas}
+            oficinaId={imobiliariaId}
+            papelLogado={papelLogado}
+            usuarioNome={dadosImobiliaria?.nomeCorretor || dadosImobiliaria?.corretorResponsavel || ''}
+            vgv={(listaImoveis || []).reduce((acc, item) => acc + (Number(item?.valor) || 0), 0)}
+            comissao={(listaImoveis || []).reduce((acc, item) => acc + (Number(item?.valor) || 0), 0) * 0.06}
+            onAbrirAba={setAbaAtiva}
+          />
         )}
 
-        {/* ─── ABA 2: CAPTAÇÃO & CATÁLOGO DE IMÓVEIS (ESPECIALIZADO POR NICHO) ── */}
         {abaAtiva === 'captacao_imobi' && (
           <div className="space-y-6">
             <CaptacaoNicho

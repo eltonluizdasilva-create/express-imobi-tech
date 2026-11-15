@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { db } from './lib/firebase';
+import { registrarEventoLead, TIPOS_EVENTO } from './services/girardEngine';
 import { collection, addDoc, updateDoc, deleteDoc, doc, query, orderBy, onSnapshot, serverTimestamp } from 'firebase/firestore';
 import {
   Search,
@@ -119,11 +120,21 @@ export default function Historico({ oficinaId }) {
         status: formProposta.status || 'Em Análise',
         observacoes: formProposta.observacoes.trim(),
         dataRegistro: new Date().toISOString(),
+        leadId: formProposta.leadId || null,
+        ultimaMovimentacaoEm: serverTimestamp(),
         criadoEm: serverTimestamp(),
       };
 
       if (oficinaId) {
         await addDoc(collection(db, 'oficinas', oficinaId, 'propostas_imobi'), nova);
+        await registrarEventoLead(db, oficinaId, {
+          leadId: nova.leadId,
+          telefone: nova.telefone,
+          tipo: TIPOS_EVENTO.PROPOSTA_CRIADA,
+          canal: 'painel',
+          descricao: `Proposta ${nova.modalidade} de ${nova.valorProposta}`,
+          metadados: { codigoImovel: nova.codigoImovel, status: nova.status },
+        });
       } else {
         setPropostas((prev) => [{ id: `local_${Date.now()}`, ...nova }, ...(prev || [])]);
       }
