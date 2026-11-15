@@ -208,50 +208,85 @@ export async function registrarEventoLead(db, oficinaId, {
   }
 }
 
-/* ───────────────── 2. roda de prospecção (pura) ───────────────── */
+/* ───────────────── 2. identidade do corretor ───────────────── */
 
-function indexarVisitas(visitas = []) {
-  const porLead = new Map();
-  const porTelefone = new Map();
+/**
+ * Decide se o lead pertence ao corretor logado.
+ *
+ * Ordem (para no primeiro identificador encontrado no lead):
+ *   1. corretorId  === uid
+ *   2. corretorUid === uid
+ *   3. corretorResponsavel === uid   (quando já foi gravado como uid)
+ *   4. corretorEquipeId / equipeId === id do documento em oficinas/{id}/equipe
+ *   5. legado sem identificador: nome ou e-mail normalizados
+ *
+ * Regra de segurança: se o lead TEM identificador e ele não bate, o lead é de
+ * outro corretor — nomes iguais não podem promover o lead para a minha visão.
+ */
+export function pertenceAoCorretor(lead = {}, usuarioAtual = {}) {
+  if (!usuarioAtual) return true;
+  const uid = usuarioAtual.uid || null;
+  const equipeId = usuarioAtual.equipeId || usuarioAtual.idEquipe || null;
+  const nome = normalizarNome(usuarioAtual.nome);
+  const email = normalizarNome(usuarioAtual.email);
 
-  for (const v of visitas) {
-    const dataVisita = primeiroValido(v?.dataVisita, v?.criadoEm, v?.data, v?.dataHora);
-    const item = { ...v, _dataVisita: dataVisita, _telefone: normalizarTelefone(v?.telefone) };
-    if (v?.leadId) {
-      if (!porLead.has(v.leadId)) porLead.set(v.leadId, []);
-      porLead.get(v.leadId).push(item);
-    }
-    if (item._telefone) {
-      if (!porTelefone.has(item._telefone)) porTelefone.set(item._telefone, []);
-      porTelefone.get(item._telefone).push(item);
-    }
+  const idDoLead = lead.corretorId || lead.corretorUid || null;
+  const donoTexto = lead.corretorResponsavel || lead.corretor || '';
+
+  // 1-3: identificadores fortes
+  if (uid) {
+    if (lead.corretorId && lead.corretorId === uid) return true;
+    if (lead.corretorUid && lead.corretorUid === uid) return true;
+    if (lead.corretorResponsavel && lead.corretorResponsavel === uid) return true;
   }
 
-  for (const lista of [...porLead.values(), ...porTelefone.values()]) {
-    lista.sort((a, b) => (b._dataVisita?.getTime() || 0) - (a._dataVisita?.getTime() || 0));
+  // 4: vínculo pelo documento da equipe
+  const equipeDoLead = lead.corretorEquipeId || lead.equipeId || null;
+  if (equipeDoLead) {
+    if (!equipeId) return false;             // lead tem vínculo forte e eu não tenho: não é meu
+    return equipeDoLead === equipeId;
   }
-  return { porLead, porTelefone };
+
+  // Existe identificador forte no lead (uid) e não bateu: não é meu.
+  if (idDoLead && uid && idDoLead !== uid) return false;
+
+  // 5: legado — sem nenhum identificador, cai para nome/e-mail normalizados.
+  const donoNormalizado = normalizarNome(donoTexto);
+  if (!donoNormalizado) return false;
+  if (nome && donoNormalizado === nome) return true;
+  if (email && donoNormalizado === email) return true;
+  return false;
 }
 
-function indexarPropostas(propostas = []) {
+/* ───────────────── 3. roda de prospecção (pura) ───────────────── */
+
+function indexarPorChave(itens = [], obterLeadId, obterTelefone, obterData) {
   const porLead = new Map();
   const porTelefone = new Map();
-  for (const p of propostas) {
-    const mov = primeiroValido(p?.ultimaMovimentacaoEm, p?.criadoEm, p?.dataRegistro);
-    const item = { ...p, _mov: mov, _telefone: normalizarTelefone(p?.telefone) };
-    if (p?.leadId) {
-      if (!porLead.has(p.leadId)) porLead.set(p.leadId, []);
-      porLead.get(p.leadId).push(item);
+  for (const item of itens) {
+    const chave = obterLeadId(item);
+    const tel = obterTelefone(item);
+    const data = obterData(item);
+    const registro = { ...item, _data: data, _telefone: tel };
+    if (chave) {
+      if (!porLead.has(chave)) porLead.set(chave, []);
+      porLead.get(chave).push(registro);
     }
-    if (item._telefone) {
-      if (!porTelefone.has(item._telefone)) porTelefone.set(item._telefone, []);
-      porTelefone.get(item._telefone).push(item);
+    if (tel) {
+      if (!porTelefone.has(tel)) porTelefone.set(tel, []);
+      porTelefone.get(tel).push(registro);
     }
+  }
+  for (const lista of [...porLead.values(), ...porTelefone.values()]) {
+    lista.sort((a, b) => (b._data?.getTime() || 0) - (a._data?.getTime() || 0));
   }
   return { porLead, porTelefone };
 }
 
 const brl = (v) => (Number(v) || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL', maximumFractionDigits: 0 });
+
+/** Hierarquia de categoria principal: a primeira que bater vence. */
+export const HIERARQUIA_CATEGORIAS = ['negociacoesParadas', 'acompanhar', 'novosProspectos', 'posVendasPendentes'];
 
 /**
  * @returns {{
@@ -268,54 +303,42 @@ export function calcularRodaProspeccao({
   corretorFiltro = null,
   hoje = new Date(),
 } = {}) {
-  const filtro = corretorFiltro && typeof corretorFiltro === 'object'
-    ? { uid: corretorFiltro.uid || null, nome: normalizarNome(corretorFiltro.nome) }
-    : { uid: null, nome: normalizarNome(corretorFiltro) };
+  const usuarioAtual = corretorFiltro && typeof corretorFiltro === 'object'
+    ? corretorFiltro
+    : (corretorFiltro ? { nome: corretorFiltro } : null);
 
-  const filtrados = (Array.isArray(leads) ? leads : []).filter((l) => {
-    if (!filtro.uid && !filtro.nome) return true;
-    // 1) vínculo forte por uid (leads novos)
-    if (filtro.uid && (l?.corretorUid === filtro.uid || l?.corretorId === filtro.uid)) return true;
-    // 2) retrocompatível: nome do responsável (leads antigos, sem uid)
-    const dono = normalizarNome(l?.corretorResponsavel || l?.corretor || '');
-    return Boolean(filtro.nome) && dono === filtro.nome;
-  });
+  const filtrados = (Array.isArray(leads) ? leads : [])
+    .filter((l) => (usuarioAtual ? pertenceAoCorretor(l, usuarioAtual) : true));
 
-  // Telefone duplicado gera histórico duplicado: mantém o cadastro mais
-  // recente e ignora o clone, contando a ocorrência no detalhe.
-  const porTelefone = new Map();
-  const semTelefone = [];
-  const descartadosPorTelefone = [];
+  // Identidade por lead: NUNCA mesclar cadastros. O telefone só serve como
+  // ponte quando existe exatamente um lead ATIVO com aquele número.
+  const leadsPorTelefone = new Map();
   for (const l of filtrados) {
     const tel = normalizarTelefone(l?.telefone);
-    if (!tel) { semTelefone.push(l); continue; }
-    const atual = porTelefone.get(tel);
-    if (!atual) { porTelefone.set(tel, l); continue; }
-    const dataAtual = primeiroValido(atual.criadoEm, atual.data_registro);
-    const dataNova = primeiroValido(l.criadoEm, l.data_registro);
-    const manterNovo = (dataNova?.getTime() || 0) > (dataAtual?.getTime() || 0);
-    if (manterNovo) {
-      descartadosPorTelefone.push(atual?.id || atual?.leadId);
-      porTelefone.set(tel, l);
-    } else {
-      descartadosPorTelefone.push(l?.id || l?.leadId);
-    }
+    if (!tel) continue;
+    if (!leadsPorTelefone.has(tel)) leadsPorTelefone.set(tel, []);
+    leadsPorTelefone.get(tel).push(l);
   }
-  const listaLeads = [...porTelefone.values(), ...semTelefone];
 
-  const idxVisitas = indexarVisitas(visitas);
-  const idxPropostas = indexarPropostas(propostas);
+  const idxVisitas = indexarPorChave(
+    visitas,
+    (v) => v?.leadId || null,
+    (v) => normalizarTelefone(v?.telefone),
+    (v) => primeiroValido(v?.dataVisita, v?.criadoEm, v?.data, v?.dataHora),
+  );
+  const idxPropostas = indexarPorChave(
+    propostas,
+    (p) => p?.leadId || null,
+    (p) => normalizarTelefone(p?.telefone),
+    (p) => primeiroValido(p?.ultimaMovimentacaoEm, p?.criadoEm, p?.dataRegistro),
+  );
 
   const contadores = { acompanhar: 0, novosProspectos: 0, negociacoesParadas: 0, posVendasPendentes: 0 };
+  const idsPorCategoria = { acompanhar: [], novosProspectos: [], negociacoesParadas: [], posVendasPendentes: [] };
   const prioridades = [];
-  const sets = {
-    acompanhar: new Set(),
-    novosProspectos: new Set(),
-    negociacoesParadas: new Set(),
-    posVendasPendentes: new Set(),
-  };
+  const vinculosAmbiguos = [];
 
-  for (const lead of listaLeads) {
+  for (const lead of filtrados) {
     const id = lead?.id || lead?.leadId;
     if (!id) continue;
 
@@ -329,15 +352,35 @@ export function calcularRodaProspeccao({
     const etapaAlterada = primeiroValido(lead?.etapaAlteradaEm, lead?.etapaAlterada) || ultimoContato || criado;
     const proximoFollowUp = primeiroValido(lead?.proximoFollowUpEm, lead?.proximoFollowUp);
 
+    // ── vínculo visita/proposta ────────────────────────────────────────────
+    // leadId manda. Telefone só entra quando o registro não tem leadId E há
+    // um único lead ativo com aquele número.
+    const telefoneEhInequivoco = telefone && (leadsPorTelefone.get(telefone) || []).length === 1;
+
+    const visitasSemLead = telefoneEhInequivoco ? (idxVisitas.porTelefone.get(telefone) || []) : [];
+    const propostasSemLead = telefoneEhInequivoco ? (idxPropostas.porTelefone.get(telefone) || []) : [];
+
+    if (telefone && !telefoneEhInequivoco) {
+      const orfas = (idxVisitas.porTelefone.get(telefone) || []).filter((v) => !v.leadId).length
+        + (idxPropostas.porTelefone.get(telefone) || []).filter((p) => !p.leadId).length;
+      if (orfas > 0) {
+        vinculosAmbiguos.push({
+          telefone,
+          leadId: id,
+          registros: orfas,
+          motivo: 'telefone compartilhado por mais de um lead ativo',
+        });
+      }
+    }
+
     const visitasDoLead = [
       ...(idxVisitas.porLead.get(id) || []),
-      ...(telefone ? (idxVisitas.porTelefone.get(telefone) || []) : []),
-    ].filter((v, i, arr) => arr.findIndex((x) => x.id === v.id) === i);
-
+      ...visitasSemLead.filter((v) => !v.leadId),
+    ];
     const propostasDoLead = [
       ...(idxPropostas.porLead.get(id) || []),
-      ...(telefone ? (idxPropostas.porTelefone.get(telefone) || []) : []),
-    ].filter((p, i, arr) => arr.findIndex((x) => x.id === p.id) === i);
+      ...propostasSemLead.filter((p) => !p.leadId),
+    ];
 
     const diasCriado = diasDesde(criado, hoje);
     const diasContato = diasDesde(ultimoContato, hoje);
@@ -347,7 +390,7 @@ export function calcularRodaProspeccao({
     const emNegociacao = ESTAGIOS_NEGOCIACAO.includes(estagio);
 
     const visitaRecente = visitasDoLead
-      .map((v) => v._dataVisita)
+      .map((v) => v._data)
       .filter(Boolean)
       .sort((a, b) => b.getTime() - a.getTime())[0] || null;
 
@@ -356,38 +399,45 @@ export function calcularRodaProspeccao({
       return !['fechada', 'aceita', 'recusada', 'cancelada', 'perdida'].includes(st);
     }) || null;
 
-    /* ---------- contadores ---------- */
-    const precisaAcompanhar = !encerrado && (
-      followUpVencido
-      || (ESTAGIOS_ATIVOS.has(estagio) && diasContato !== null && diasContato > 3)
-    );
-    if (precisaAcompanhar) { contadores.acompanhar += 1; sets.acompanhar.add(id); }
-
-    const semInteracaoHumana = diasContato === null;
-    const novoProspecto = estagio === 'Novo Lead' && diasCriado !== null && diasCriado <= 7 && semInteracaoHumana;
-    if (novoProspecto) { contadores.novosProspectos += 1; sets.novosProspectos.add(id); }
-
     const propostaParada = propostaAberta
       && (() => {
-        const d = diasDesde(propostaAberta._mov, hoje);
+        const d = diasDesde(propostaAberta._data, hoje);
         return d === null || d > 4;
       })();
 
+    /* ── flags ── */
+    const semInteracaoHumana = diasContato === null;
+    const acompanhar = !encerrado && (
+      followUpVencido
+      || (ESTAGIOS_ATIVOS.has(estagio) && diasContato !== null && diasContato > 3)
+    );
+    const novoProspecto = estagio === 'Novo Lead' && diasCriado !== null && diasCriado <= 7 && semInteracaoHumana;
     const negociacaoParada = !encerrado
       && ((emNegociacao && diasEtapa !== null && diasEtapa > 5) || propostaParada);
-    if (negociacaoParada) { contadores.negociacoesParadas += 1; sets.negociacoesParadas.add(id); }
 
     const fechamento = estagio === 'Fechado' ? (etapaAlterada || ultimoContato || criado) : null;
     const diasFechado = diasDesde(fechamento, hoje);
-    // A janela de 7 a 90 dias vale para os dois casos (flag explicita ou
-    // estagio Fechado): fechou hoje nao e pos-venda pendente.
     const dentroJanelaPosVenda = diasFechado !== null && diasFechado >= 7 && diasFechado <= 90;
     const posVendaPendente = (estagio === 'Fechado' || lead?.posVendaStatus === 'pendente')
       && dentroJanelaPosVenda
       && lead?.posVendaStatus !== 'concluida';
-    if (posVendaPendente) { contadores.posVendasPendentes += 1; sets.posVendasPendentes.add(id); }
 
-    /* ---------- candidatos a prioridade ---------- */
+    const flags = {
+      negociacoesParadas: negociacaoParada,
+      acompanhar,
+      novosProspectos: novoProspecto,
+      posVendasPendentes: posVendaPendente,
+    };
+    const categoriasDoLead = HIERARQUIA_CATEGORIAS.filter((c) => flags[c]);
+
+    // ── contador EXCLUSIVO: o lead conta em uma única categoria ────────────
+    if (categoriasDoLead.length > 0) {
+      const principal = categoriasDoLead[0];
+      contadores[principal] += 1;
+      idsPorCategoria[principal].push(id);
+    }
+
+    /* ── candidatos a prioridade (mantém todos os motivos) ───────────────── */
     const empurrar = (categoria, score, tagUrgencia, fraseAcao, mensagemSugeridaWhatsapp) => {
       prioridades.push({
         id: `${categoria}:${id}`,
@@ -395,17 +445,19 @@ export function calcularRodaProspeccao({
         nome,
         telefone,
         categoria,
+        categorias: categoriasDoLead,
         score,
         tagUrgencia,
         fraseAcao,
         mensagemSugeridaWhatsapp,
         estagio,
         interesse,
+        vinculoAmbiguo: !telefoneEhInequivoco && (visitasSemLead.length + propostasSemLead.length) === 0 && Boolean(telefone),
       });
     };
 
     if (visitaRecente && diasDesde(visitaRecente, hoje) === 1) {
-      const imovelVisitado = visitasDoLead.find((v) => v._dataVisita === visitaRecente)?.imovel || interesse;
+      const imovelVisitado = visitasDoLead.find((v) => v._data === visitaRecente)?.imovel || interesse;
       empurrar(
         'visita',
         95,
@@ -426,7 +478,7 @@ export function calcularRodaProspeccao({
       );
     }
 
-    if (followUpVencido || (ESTAGIOS_ATIVOS.has(estagio) && diasContato !== null && diasContato > 3 && !novoProspecto)) {
+    if (acompanhar) {
       empurrar(
         'followup',
         85,
@@ -469,17 +521,14 @@ export function calcularRodaProspeccao({
     }
   }
 
-  // Um lead pode se encaixar em várias regras; a lista mostra a mais urgente
-  // e guarda as demais como contexto (sem repetir a mesma pessoa).
+  // Um lead pode ter vários motivos; a lista mostra o mais urgente.
   const porLead = new Map();
   for (const item of prioridades) {
     const atual = porLead.get(item.leadId);
-    if (!atual) {
-      porLead.set(item.leadId, { ...item, categorias: [item.categoria] });
-      continue;
-    }
-    const vencedor = item.score > atual.score ? { ...item } : { ...atual };
-    vencedor.categorias = [...new Set([...atual.categorias, item.categoria])];
+    if (!atual) { porLead.set(item.leadId, { ...item, motivos: [item.categoria] }); continue; }
+    const vencedor = item.score > atual.score ? { ...item, ...(atual.motivos ? { motivos: atual.motivos } : {}) } : { ...atual };
+    vencedor.categorias = [...new Set([...atual.categorias, ...item.categorias])];
+    vencedor.motivos = [...new Set([...(atual.motivos || [atual.categoria]), item.categoria, ...(item.motivos || [])])];
     porLead.set(item.leadId, vencedor);
   }
 
@@ -489,12 +538,13 @@ export function calcularRodaProspeccao({
     contadores,
     prioridades: ranking.slice(0, 10),
     detalhe: {
-      leadsConsiderados: listaLeads.length,
+      leadsConsiderados: filtrados.length,
+      somaContadores: Object.values(contadores).reduce((a, b) => a + b, 0),
       visitasIndexadas: (visitas || []).length,
       propostasIndexadas: (propostas || []).length,
       tarefasConsideradas: (tarefas || []).length,
-      idsPorCategoria: Object.fromEntries(Object.entries(sets).map(([k, set]) => [k, [...set]])),
-      leadsDescartadosPorTelefoneDuplicado: descartadosPorTelefone.filter(Boolean),
+      idsPorCategoria,
+      vinculosAmbiguos,
     },
   };
 }

@@ -110,8 +110,6 @@ service cloud.firestore {
 
       allow delete: if false;
     }
-
-    // ------------------------- organizações ---------------------------------
     match /oficinas/{oid} {
       allow get: if authed() && membroOficina(oid);
       allow list: if isAdminPlataforma();
@@ -128,8 +126,6 @@ service cloud.firestore {
 
       allow delete: if false;
     }
-
-    // --------- chamado público: /status/:oficinaId/:osId (sem login) --------
     match /oficinas/{oid}/os/{osId} {
       allow get: if true;
       allow list: if authed() && membroOficina(oid);
@@ -137,14 +133,11 @@ service cloud.firestore {
       allow update: if (authed() && membroOficina(oid))
         || request.resource.data.diff(resource.data).affectedKeys().hasOnly(['senhaConsulta']);
     }
-
     match /oficinas/{oid}/configuracoes/{docId} {
       // StatusOS lê configuracoes/geral para montar a página pública
       allow get: if true;
       allow list, write: if authed() && membroOficina(oid);
     }
-
-    // --------- captura pública de lead (portal /portal, sem login) ----------
     match /leads/{leadId} {
       allow create: if true;
       allow read, update, delete: if authed() && (
@@ -153,36 +146,26 @@ service cloud.firestore {
         || isAdminPlataforma()
       );
     }
-
     match /oficinas/{oid}/leads/{leadId} {
       allow create: if true;
       allow read, update, delete: if authed() && membroOficina(oid);
     }
-
     match /oficinas/{oid}/leads_imobi/{leadId} {
       allow create: if true;
       allow read, update, delete: if authed() && membroOficina(oid);
     }
-
-    // ---------------- vitrine pública (somente documentos marcados) --------
-    // Regra de caminho profundo também cobre collectionGroup(db, 'imoveis_imobi')
     match /{caminho=**}/imoveis_imobi/{docId} {
       allow read: if docPublico();
     }
-
     match /oficinas/{oid}/imoveis_imobi/{docId} {
       allow read, write: if authed() && membroOficina(oid);
     }
-
     match /{caminho=**}/vistorias/{docId} {
       allow read: if docPublico();
     }
-
     match /oficinas/{oid}/vistorias/{docId} {
       allow read, write: if authed() && membroOficina(oid);
     }
-
-    // ------------- captação por nicho (travas legais por segmento) ----------
     match /oficinas/{oid}/imoveis_nicho/{docId} {
       allow read, delete: if authed() && membroOficina(oid);
       allow create: if authed() && membroOficina(oid)
@@ -196,22 +179,15 @@ service cloud.firestore {
         && request.resource.data.cib is string
         && request.resource.data.cib.size() <= 20;
     }
-
-    // -------------- repasses e notas fiscais (NFS-e, CIB, IBS/CBS) ----------
     match /oficinas/{oid}/notas_fiscais_imobi/{docId} {
       allow read, delete: if authed() && membroOficina(oid);
       allow create, update: if authed() && membroOficina(oid)
         && (!request.resource.data.keys().hasAny(['cib'])
           || (request.resource.data.cib is string && request.resource.data.cib.size() <= 20));
     }
-
-    // ------------- acompanhamento do cliente (código + senha) ---------------
     match /oficinas/{oid}/acompanhamentos_imobi/{docId} {
       allow read, write: if authed() && membroOficina(oid);
     }
-
-    // ------------- eventos do lead (Roda de Prospeccao / Girard) ------------
-    // Gravado por src/services/girardEngine.js em cada interacao comercial.
     match /oficinas/{oid}/eventos_lead/{eventoId} {
       allow read, delete: if authed() && membroOficina(oid);
       allow create: if authed() && membroOficina(oid)
@@ -220,146 +196,94 @@ service cloud.firestore {
         && request.resource.data.descricao is string;
       allow update: if authed() && membroOficina(oid);
     }
-
-    // ------------- tarefas do tenant (follow-up / pos-venda) ----------------
     match /oficinas/{oid}/tarefas/{tarefaId} {
       allow read, write: if authed() && membroOficina(oid);
     }
-
-    // ------------- subcoleções do tenant (lista explícita) ------------------
-    // Sem curinga: coleção nova precisa de bloco próprio, senão fica negada.
-    // O curinga anterior também abria `equipe` para qualquer membro, o que
-    // permitia escalada de privilégio dentro do tenant.
     match /oficinas/{oid}/config/{docId} {
       allow read, write: if authed() && membroOficina(oid);
     }
-
-    match /oficinas/{oid}/configuracoes/{docId} {
-      allow read, write: if authed() && membroOficina(oid);
-    }
-
     match /oficinas/{oid}/estoque/{docId} {
       allow read, write: if authed() && membroOficina(oid);
     }
-
     match /oficinas/{oid}/financeiro/{docId} {
       allow read, write: if authed() && membroOficina(oid);
     }
-
     match /oficinas/{oid}/fornecedores/{docId} {
       allow read, write: if authed() && membroOficina(oid);
     }
-
     match /oficinas/{oid}/patrimonio/{docId} {
       allow read, write: if authed() && membroOficina(oid);
     }
-
     match /oficinas/{oid}/retornos/{docId} {
       allow read, write: if authed() && membroOficina(oid);
     }
-
     match /oficinas/{oid}/agendamentos_retorno/{docId} {
       allow read, write: if authed() && membroOficina(oid);
     }
-
     match /oficinas/{oid}/visitas_imobi/{docId} {
       allow read, write: if authed() && membroOficina(oid);
     }
-
     match /oficinas/{oid}/revisoes_premium/{docId} {
       allow read, write: if authed() && membroOficina(oid);
     }
-
-    match /oficinas/{oid}/vistorias/{docId} {
-      allow read, write: if authed() && membroOficina(oid);
-    }
-
     match /oficinas/{oid}/propostas_imobi/{docId} {
       allow read, write: if authed() && membroOficina(oid);
     }
-
     match /oficinas/{oid}/relatorios_mensais/{docId} {
       allow read, write: if authed() && membroOficina(oid);
     }
-
     match /oficinas/{oid}/burocracias/{docId} {
       allow read, write: if authed() && membroOficina(oid);
     }
-
     match /oficinas/{oid}/descartes/{docId} {
       allow read, write: if authed() && membroOficina(oid);
     }
-
     match /oficinas/{oid}/desmanche_parceiros/{docId} {
       allow read, write: if authed() && membroOficina(oid);
     }
-
     match /oficinas/{oid}/desmanche_pecas/{docId} {
       allow read, write: if authed() && membroOficina(oid);
     }
-
     match /oficinas/{oid}/desmanche_veiculos/{docId} {
       allow read, write: if authed() && membroOficina(oid);
     }
-
     match /oficinas/{oid}/notificacoes_desmanche/{docId} {
       allow read, write: if authed() && membroOficina(oid);
     }
-
     match /oficinas/{oid}/usuarios/{docId} {
       allow read, write: if authed() && membroOficina(oid);
     }
-
-    match /oficinas/{oid}/tarefas/{docId} {
-      allow read, write: if authed() && membroOficina(oid);
-    }
-
-    match /oficinas/{oid}/eventos_lead/{docId} {
-      allow read, write: if authed() && membroOficina(oid);
-    }
-
-    // ---------------- equipe: leitura do tenant, escrita de gestor ----------
     match /oficinas/{oid}/equipe/{uid} {
       allow read: if authed() && membroOficina(oid);
       allow write: if gestorDoTenant(oid);
     }
-
-    // ---------------- organização MASTER (catálogo de planos) ---------------
     match /oficinas/MASTER/{sub=**} {
       allow read: if authed();
       allow write: if isAdminPlataforma();
     }
-
-    // ------------------------- auxiliares -----------------------------------
     match /telegram_leads/{leadId} {
       allow read, write: if isAdminPlataforma();
     }
-
     match /configuracoes_admin/{doc=**} {
       allow read, write: if isAdminPlataforma();
     }
-
     match /planos/{docId} {
       allow read: if authed();
       allow write: if isAdminPlataforma();
     }
-
     match /ordensServico/{docId} {
-      allow read, write: if authed();
+      allow read, delete: if authed() && membroOficina(resource.data.get('oficinaId', ''));
+      allow create: if authed() && membroOficina(request.resource.data.get('oficinaId', ''));
+      allow update: if authed() && membroOficina(resource.data.get('oficinaId', ''))
+        && membroOficina(request.resource.data.get('oficinaId', ''));
     }
-
-    // Legado: o app grava em oficinas/{id}/tarefas. Nada aqui para cliente.
     match /tarefas/{docId} {
       allow read, write: if isAdminPlataforma();
     }
-
     match /desmanche_global/{docId} {
       allow read: if authed();
       allow write: if isAdminPlataforma();
     }
-
-    // ------------- acompanhamento público (código + senha) -----------------
-    // Consulta sem login por id (capability). Listagem proibida.
     match /acompanhamentos_publicos/{docId} {
       allow get: if true;
       allow list: if false;
@@ -371,8 +295,6 @@ service cloud.firestore {
         && request.resource.data.tenantId == resource.data.tenantId;
       allow delete: if authed() && membroOficina(resource.data.tenantId);
     }
-
-    // ------------------------- default deny --------------------------------
     match /{document=**} {
       allow read, write: if false;
     }
