@@ -44,3 +44,11 @@ service-account*.json
 # Cloud Functions (dependencias e arquivo gerado)
 functions/node_modules/
 functions/planos.json
+
+# Cache do otimizador Vite e artefatos de teste/emulador
+.vite/
+coverage/
+.firebase/
+
+# Exemplo de variaveis pode ser versionado
+!.env.example
