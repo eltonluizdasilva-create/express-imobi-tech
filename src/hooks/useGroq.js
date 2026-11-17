@@ -20,7 +20,9 @@ const MODELOS = {
   gemini: {
     nome: 'Google Gemini',
     provider: 'gemini',
-    model: 'gemini-2.0-flash-lite',
+    // gemini-2.0-flash-lite foi desligado em 01/06/2026 e 2.5-flash entrou em
+    // depreciação em 02/11/2026. api/ai.js já faz fallback na cadeia.
+    model: 'gemini-3.8-flash',
   },
   groq: {
     nome: 'Groq (Llama)',
@@ -89,7 +91,9 @@ export function useGroq(oficinaId) {
       if (dados?.variavel) {
         throw new Error(`IA indisponível: configure ${dados.variavel} na Vercel.`);
       }
-      throw new Error(`Erro na IA (${config.nome}): ${motivo}`);
+      // Repassa o motivo real do provedor + a dica (antes o erro era genérico).
+      const complemento = dados?.hint ? ` — ${dados.hint}` : '';
+      throw new Error(`${motivo}${complemento}`);
     }
 
     return dados.text;
