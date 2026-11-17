@@ -20,14 +20,14 @@ const MODELOS = {
   gemini: {
     nome: 'Google Gemini',
     provider: 'gemini',
-    // gemini-2.0-flash-lite foi desligado em 01/06/2026 e 2.5-flash entrou em
-    // depreciação em 02/11/2026. api/ai.js já faz fallback na cadeia.
-    model: 'gemini-3.8-flash',
+    // api/ai.js faz fallback na cadeia; este é o primeiro modelo que responde
+    // 200 de forma estável (3.8-flash fica em "high demand" com frequência).
+    model: 'gemini-3.5-flash-lite',
   },
   groq: {
-    nome: 'Groq (Llama)',
+    nome: 'Groq (GPT-OSS)',
     provider: 'groq',
-    model: 'llama-3.3-70b-versatile',
+    model: 'openai/gpt-oss-120b',
   },
   deepseek: {
     nome: 'DeepSeek',

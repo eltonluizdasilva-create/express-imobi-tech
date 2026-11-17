@@ -31,19 +31,20 @@ const PROVEDORES = {
     tipo: 'openai',
     url: 'https://api.groq.com/openai/v1/chat/completions',
     env: 'GROQ_API_KEY',
-    cadeia: [
-      'llama-3.3-70b-versatile',
-      'llama-3.1-8b-instant',
-      'meta-llama/llama-4-scout-17b-16e-instruct',
-    ],
+    // A Groq aposentou a familia llama-3.x/llama-4: a chave do projeto so tem
+    // acesso a estes. Confirmado em GET /openai/v1/models (nov/2026).
+    cadeia: ['openai/gpt-oss-120b', 'openai/gpt-oss-20b', 'qwen/qwen3.8-27b'],
   },
   gemini: {
     tipo: 'gemini',
     env: 'GEMINI_API_KEY',
-    // Ordem de tentativa. gemini-2.0-flash-lite foi DESLIGADO em 01/06/2026;
-    // gemini-2.5-flash foi depreciado em 02/11/2026 e só atende projetos que
-    // já o usavam. 3.8-flash é o substituto indicado pela Google hoje.
-    cadeia: ['gemini-3.8-flash', 'gemini-2.5-flash-lite', 'gemini-2.5-flash'],
+    // Verificado em GET /v1beta/models + chamada real (nov/2026):
+    //   3.5-flash-lite e 3.1-flash-lite  -> 200
+    //   3.8-flash / 3.5-flash / 3.6-flash -> 503 "high demand" (capacidade)
+    //   2.0-flash-lite (desligado 01/06/2026) e 2.5-flash-lite (fechado para
+    //   novas contas) -> 404
+    // Ordem: primeiro os que respondem, o modelo melhor por último.
+    cadeia: ['gemini-3.5-flash-lite', 'gemini-3.1-flash-lite', 'gemini-3.8-flash'],
   },
   zhipu: {
     tipo: 'openai',
@@ -358,12 +359,20 @@ export default async function handler(req, res) {
       const mensagem = mensagemDoProvedor(bruto);
       ultimo = { status: resposta.status, modelo, mensagem, bruto };
 
-      // Só vale a pena trocar de modelo quando o problema é o modelo.
-      const problemaDeModelo = resposta.status === 404 || /model|not found|not_found|unsupported/i.test(mensagem);
-      if (!problemaDeModelo) break;
+      // Vale trocar de modelo quando o problema é do modelo (404) ou de
+      // capacidade daquele modelo (429/503). Erro de chave/cobrança (401/402/
+      // 403/400) não melhora trocando de modelo.
+      const valeTrocar =
+        resposta.status === 404 || resposta.status === 429 || resposta.status === 503 ||
+        /model|not found|not_found|unsupported|high demand/i.test(mensagem);
+      if (!valeTrocar) break;
     } catch (erro) {
       const abortado = erro?.name === 'AbortError';
-      ultimo = { status: abortado ? 504 : 502, modelo, mensagem: String(erro?.message || erro), bruto: '' };
+      // Nunca ecoar cabeçalhos/URLs: só o essencial, e sem padrões de chave.
+      const limpo = String(erro?.cause?.code || erro?.message || erro)
+        .replace(/(sk-|gsk_|AQ\.)[A-Za-z0-9._-]+/g, '$1***')
+        .slice(0, 160);
+      ultimo = { status: abortado ? 504 : 502, modelo, mensagem: limpo, bruto: '' };
       break;
     } finally {
       clearTimeout(timer);
