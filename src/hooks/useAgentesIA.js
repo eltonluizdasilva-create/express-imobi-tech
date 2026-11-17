@@ -33,7 +33,10 @@ export function useAgentesIA() {
     const [error, setError] = useState(null);
 
     // Infraestrutura: o provedor é chamado pelo proxy /api/ai (chave no servidor).
-    const MODELO = "llama-3.3-70b-versatile"; // Modelo Llama estável de alto desempenho
+    // A Groq aposentou a família llama-3.x/llama-4: a chave do projeto só tem
+    // acesso a gpt-oss e qwen3.8 (confirmado em GET /openai/v1/models).
+    // Mesma cadeia de api/ai.js: o proxy ainda faz fallback automático.
+    const MODELO = "openai/gpt-oss-120b";
 
     /**
      * Função mestra flexível para despachar requisições para qualquer agente cadastrado.
