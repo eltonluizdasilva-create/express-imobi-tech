@@ -57,13 +57,29 @@ service cloud.firestore {
         : '';
     }
 
-    // Dono da conta, admin da plataforma ou papel de gestão dentro do tenant.
+    // Papel de gestão registrado DENTRO do tenant (convite real de equipe).
+    function papelNoTenant(oid) {
+      return exists(/databases/$(database)/documents/oficinas/$(oid)/equipe/$(request.auth.uid))
+        ? get(/databases/$(database)/documents/oficinas/$(oid)/equipe/$(request.auth.uid))
+            .data.get('nivelAcesso', '')
+        : '';
+    }
+
+    // Gestão de equipe exige autoridade comprovada NAQUELE tenant.
+    // O papel global (usuarios.papel) só conta quando o próprio documento do
+    // usuário aponta para este tenant — antes, um 'dono' de A que fosse membro
+    // de B por equipe/{uid} administrava a equipe de B.
     function gestorDoTenant(oid) {
-      return authed() && (
+      return authed() && membroOficina(oid) && (
         request.auth.uid == oid
         || isAdminPlataforma()
-        || papelDoUsuario() in ['dono', 'admin', 'master']
-      ) && membroOficina(oid);
+        || (
+          temDocUsuario()
+          && oficinaDoUsuario() == oid
+          && papelDoUsuario() in ['dono', 'admin', 'master']
+        )
+        || papelNoTenant(oid) in ['dono', 'admin', 'gerente']
+      );
     }
 
     function camposComerciaisIntactos() {
@@ -76,8 +92,78 @@ service cloud.firestore {
         && resource.data.plano.lower() in ['pro', 'profissional', 'esquadrao_ia', 'premium', 'pago', 'master', 'prime', 'planoprimeia'];
     }
 
-    function soMudaNivelIA() {
-      return request.resource.data.diff(resource.data).affectedKeys().hasOnly(['nivelInteligencia']);
+    // ---------- whitelists do portal público (fluxos separados) ----------
+    // Lead imobiliário — payload exato de PortalCliente.jsx:124-135.
+    // Nenhum campo fora desta lista entra, e nenhum campo do fluxo genérico
+    // (imovel, problema, status) é aceito aqui.
+    function leadPublicoImobiValido() {
+      return request.resource.data.keys().hasOnly([
+          'nome', 'telefone', 'interesse', 'bairro', 'orcamento', 'estagio',
+          'corretorResponsavel', 'origem', 'observacoes', 'data_registro', 'criadoEm'
+        ])
+        && request.resource.data.nome is string
+        && request.resource.data.nome.size() > 0
+        && request.resource.data.nome.size() <= 120
+        && request.resource.data.telefone is string
+        && request.resource.data.telefone.size() >= 8
+        && request.resource.data.telefone.size() <= 20
+        && (!request.resource.data.keys().hasAny(['interesse'])
+            || (request.resource.data.interesse is string
+                && request.resource.data.interesse.size() <= 60))
+        && (!request.resource.data.keys().hasAny(['bairro'])
+            || (request.resource.data.bairro is string
+                && request.resource.data.bairro.size() <= 80))
+        && (!request.resource.data.keys().hasAny(['origem'])
+            || (request.resource.data.origem is string
+                && request.resource.data.origem.size() <= 120))
+        && (!request.resource.data.keys().hasAny(['observacoes'])
+            || (request.resource.data.observacoes is string
+                && request.resource.data.observacoes.size() <= 1000))
+        && (!request.resource.data.keys().hasAny(['corretorResponsavel'])
+            || (request.resource.data.corretorResponsavel is string
+                && request.resource.data.corretorResponsavel.size() <= 80))
+        && (!request.resource.data.keys().hasAny(['orcamento'])
+            || (request.resource.data.orcamento is number
+                && request.resource.data.orcamento >= 0
+                && request.resource.data.orcamento <= 1000000000000))
+        && (!request.resource.data.keys().hasAny(['estagio'])
+            || request.resource.data.estagio in ['Novo Lead', 'Qualificado IA'])
+        && (!request.resource.data.keys().hasAny(['data_registro'])
+            || (request.resource.data.data_registro is string
+                && request.resource.data.data_registro.size() <= 40))
+        && (!request.resource.data.keys().hasAny(['criadoEm'])
+            || request.resource.data.criadoEm == request.time);
+    }
+
+    function leadPublicoGenericoValido() {
+      return request.resource.data.keys().hasOnly([
+          'nome', 'telefone', 'imovel', 'problema', 'status',
+          'origem', 'orcamento', 'data_registro'
+        ])
+        && request.resource.data.nome is string
+        && request.resource.data.nome.size() > 0
+        && request.resource.data.nome.size() <= 120
+        && request.resource.data.telefone is string
+        && request.resource.data.telefone.size() >= 8
+        && request.resource.data.telefone.size() <= 20
+        && (!request.resource.data.keys().hasAny(['imovel'])
+            || (request.resource.data.imovel is string
+                && request.resource.data.imovel.size() <= 120))
+        && (!request.resource.data.keys().hasAny(['problema'])
+            || (request.resource.data.problema is string
+                && request.resource.data.problema.size() <= 1000))
+        && (!request.resource.data.keys().hasAny(['status'])
+            || request.resource.data.status == 'novo')
+        && (!request.resource.data.keys().hasAny(['origem'])
+            || (request.resource.data.origem is string
+                && request.resource.data.origem.size() <= 120))
+        && (!request.resource.data.keys().hasAny(['orcamento'])
+            || (request.resource.data.orcamento is number
+                && request.resource.data.orcamento >= 0
+                && request.resource.data.orcamento <= 1000000000000))
+        && (!request.resource.data.keys().hasAny(['data_registro'])
+            || (request.resource.data.data_registro is string
+                && request.resource.data.data_registro.size() <= 40));
     }
 
     // Vitrine/vistoria só saem do tenant quando o documento é explicitamente
@@ -87,42 +173,132 @@ service cloud.firestore {
     }
 
     // ------------------------- usuários -------------------------------------
+    // O que o cliente realmente escreve hoje (verificado no código):
+    //   Cadastro.jsx / AuthContext.jsx  → create com {uid, oficinaId: uid, papel:'dono', permissoes}
+    //   AuthContext.jsx                 → repara oficinaId ausente (só para o próprio uid)
+    //   Meuplano.jsx                    → {solicitacaoEsquadraoIA, modulosOperacionais} (cache de UI)
+    //   OfficeContext.jsx               → {modulosPermitidos: null, dataFimTrial: null} no fim do trial
+    // Tudo o mais (papel, plano, isPro, admin, nível de acesso)`vem de Cloud Function.
     match /usuarios/{uid} {
       allow read: if authed() && (request.auth.uid == uid || isAdminPlataforma());
 
-      // Cadastro: cada um cria o próprio vínculo e, se já informar oficinaId,
-      // ele tem de ser a própria conta — impede nascer filiado a tenant alheio.
+      // Criação: whitelist positiva dos campos que Cadastro.jsx e
+      // AuthContext.jsx realmente enviam — nada fora desta lista é aceito.
       allow create: if authed() && request.auth.uid == uid
+        && request.resource.data.keys()
+          .hasOnly(['uid', 'oficinaId', 'nome', 'email', 'papel', 'permissoes', 'criadoEm'])
+        && request.resource.data.uid == uid
+        && request.resource.data.oficinaId == uid
+        && request.resource.data.email is string
+        && request.resource.data.email.size() <= 120
+        && (!request.resource.data.keys().hasAny(['nome'])
+          || (request.resource.data.nome is string && request.resource.data.nome.size() <= 120))
         && (
-          !request.resource.data.keys().hasAny(['oficinaId'])
-          || request.resource.data.oficinaId == uid
-        );
+          request.resource.data.get('papel', 'dono') == 'dono'
+          || (request.resource.data.get('papel', '') == 'master' && isAdminPlataforma())
+        )
+        // permissoes: mapa restrito às 11 chaves do painel, valores booleanos
+        && (!request.resource.data.keys().hasAny(['permissoes'])
+          || (
+            request.resource.data.permissoes is map
+            && request.resource.data.permissoes.keys().hasOnly([
+              'dashboard', 'os', 'oleo', 'alinhamento', 'retorno', 'estoque',
+              'financeiro', 'equipe', 'oficina', 'leads', 'config'
+            ])
+          ));
 
-      // Update: o próprio usuário, mas o oficinaId só pode ser DEFINIDO uma vez.
-      // Sem essa trava, qualquer conta trocava de tenant sozinha e passava a
-      // acessar dados de outra imobiliária (membroOficina usa este campo).
+      // Update: o único caso em que oficinaId pode ser escrito é o reparo de
+      // documento antigo que não tem o campo — e sempre para o próprio uid.
       allow update: if authed() && request.auth.uid == uid
         && (
-          !resource.data.keys().hasAny(['oficinaId'])
-          || !request.resource.data.diff(resource.data).affectedKeys().hasAny(['oficinaId'])
-          || request.resource.data.oficinaId == resource.data.oficinaId
+          !request.resource.data.diff(resource.data).affectedKeys().hasAny(['oficinaId'])
+          || (
+            !resource.data.keys().hasAny(['oficinaId'])
+            && request.resource.data.oficinaId == uid
+          )
+        )
+        && !request.resource.data.diff(resource.data).affectedKeys()
+          .hasAny([
+            'papel', 'isPro', 'plano', 'planoAssinante', 'tipoPlano', 'admin',
+            'nivelAcesso', 'creditosIA', 'nivelInteligencia', 'permissoes'
+          ])
+        // modulosPermitidos só pode ser LIMPO (fim do trial), nunca concedido.
+        && (
+          !request.resource.data.diff(resource.data).affectedKeys().hasAny(['modulosPermitidos'])
+          || request.resource.data.modulosPermitidos == null
         );
 
       allow delete: if false;
     }
+
     match /oficinas/{oid} {
       allow get: if authed() && membroOficina(oid);
       allow list: if isAdminPlataforma();
 
-      // auto-cadastro: só a própria conta, nascendo no plano gratuito
+      // Auto-cadastro: só a própria conta, nascendo no plano gratuito.
+      // Whitelist = payload real de Cadastro.jsx:52-63 (12 campos) unido ao
+      // bootstrap de AuthContext.jsx:68-79 (`nome`, plano 'grátis'), que roda
+      // quando o usuário ainda não tem documento de organização.
+      // Bloqueados por construção: creditosIA, limiteUsuarios, isPro,
+      // planoAssinante, tipoPlano, modulosPermitidos e qualquer campo novo.
       allow create: if authed()
         && request.auth.uid == oid
-        && request.resource.data.plano in ['GRATUITO', 'gratis', 'gratuito']
-        && !request.resource.data.keys().hasAny(['isPro', 'planoAssinante']);
+        && request.resource.data.keys().hasOnly([
+          'uid', 'nomeOficina', 'nome', 'cidade', 'telefone', 'email', 'plano',
+          'nivelInteligencia', 'trialInicio', 'trialFim', 'ativo', 'criadoEm',
+          'modulosAtivos'
+        ])
+        && request.resource.data.uid == oid
+        && request.resource.data.plano in ['GRATUITO', 'gratis', 'gratuito', 'grátis']
+        // nível de IA só nasce no padrão; upgrade é update (M4) ou Cloud Function
+        && request.resource.data.get('nivelInteligencia', 'padrao') == 'padrao'
+        && (!request.resource.data.keys().hasAny(['ativo'])
+          || request.resource.data.ativo == true)
+        && (!request.resource.data.keys().hasAny(['nomeOficina'])
+          || (request.resource.data.nomeOficina is string
+              && request.resource.data.nomeOficina.size() > 0
+              && request.resource.data.nomeOficina.size() <= 120))
+        && (!request.resource.data.keys().hasAny(['nome'])
+          || (request.resource.data.nome is string
+              && request.resource.data.nome.size() <= 120))
+        && (!request.resource.data.keys().hasAny(['cidade'])
+          || (request.resource.data.cidade is string
+              && request.resource.data.cidade.size() <= 80))
+        && (!request.resource.data.keys().hasAny(['telefone'])
+          || (request.resource.data.telefone is string
+              && request.resource.data.telefone.size() <= 20))
+        && (!request.resource.data.keys().hasAny(['email'])
+          || (request.resource.data.email is string
+              && request.resource.data.email.size() <= 160))
+        // Trial: 10 dias + 12h de folga (252h) para relógio do cliente.
+        && (!request.resource.data.keys().hasAny(['trialInicio'])
+          || request.resource.data.trialInicio is timestamp)
+        && (!request.resource.data.keys().hasAny(['criadoEm'])
+          || request.resource.data.criadoEm is timestamp)
+        && (!request.resource.data.keys().hasAny(['trialFim'])
+          || (
+            request.resource.data.trialFim is timestamp
+            && request.resource.data.trialFim > request.time
+            && request.resource.data.trialFim <= request.time + duration.value(252, 'h')
+          ))
+        // Módulos do cadastro: exatamente o trio Auto Tech do trial.
+        && (!request.resource.data.keys().hasAny(['modulosAtivos'])
+          || (
+            request.resource.data.modulosAtivos is list
+            && request.resource.data.modulosAtivos.size() > 0
+            && request.resource.data.modulosAtivos.size() <= 3
+            && request.resource.data.modulosAtivos.hasOnly(['os', 'oleo', 'alinhamento'])
+          ));
 
+      // Qualquer alteracao de nivelInteligencia exige plano PRO, mesmo quando
+      // combinada com outros campos (hasOnly(['nivelInteligencia']) permitia
+      // escapar da trava alterando nivel + qualquer outro campo junto).
       allow update: if authed() && membroOficina(oid)
         && camposComerciaisIntactos()
-        && (!soMudaNivelIA() || planoArmazenadoEhPro());
+        && (
+          !request.resource.data.diff(resource.data).affectedKeys().hasAny(['nivelInteligencia'])
+          || planoArmazenadoEhPro()
+        );
 
       allow delete: if false;
     }
@@ -130,16 +306,25 @@ service cloud.firestore {
       allow get: if true;
       allow list: if authed() && membroOficina(oid);
       allow create, delete: if authed() && membroOficina(oid);
-      allow update: if (authed() && membroOficina(oid))
-        || request.resource.data.diff(resource.data).affectedKeys().hasOnly(['senhaConsulta']);
+      // A antiga exceção `hasOnly(['senhaConsulta'])` deixava QUALQUER pessoa,
+      // inclusive anônima, reescrever a senha de consulta de qualquer OS.
+      // Não há fluxo no código que dependa disso — ver relatório, item 3.
+      allow update: if authed() && membroOficina(oid);
     }
     match /oficinas/{oid}/configuracoes/{docId} {
       // StatusOS lê configuracoes/geral para montar a página pública
       allow get: if true;
       allow list, write: if authed() && membroOficina(oid);
     }
+    // --------- criação pública de lead (Portal): 3 caminhos reais ----------
+    // PortalCliente.jsx grava nos três: 'leads' (topo), oficinas/{id}/leads e
+    // oficinas/{id}/leads_imobi. Os três exigem o mesmo payload mínimo.
     match /leads/{leadId} {
-      allow create: if true;
+      // Coleção global SEM consumidor no código (grep em src/, functions/,
+      // api/): gravar aqui só produzia dado morto. PortalCliente.jsx:156
+      // ainda tenta e engole o erro com .catch(() => null) — remover a
+      // escrita fica para uma rodada de src/.
+      allow create: if false;
       allow read, update, delete: if authed() && (
         request.auth.uid == resource.data.get('oficinaId', '')
         || request.auth.uid == resource.data.get('imobiliariaId', '')
@@ -147,11 +332,25 @@ service cloud.firestore {
       );
     }
     match /oficinas/{oid}/leads/{leadId} {
-      allow create: if true;
+      // Anônimo: payload público + oficina existente. Membro do tenant: livre
+      // (o painel cria lead com campos internos que a whitelist recusaria).
+      // A existência da oficina NÃO prova a origem do visitante: o oid vem do
+      // caminho e pode ser trocado — ver relatório, item 2 (alternativas A/B).
+      allow create: if (
+          request.auth == null
+          && exists(/databases/$(database)/documents/oficinas/$(oid))
+          && leadPublicoGenericoValido()
+          && !request.resource.data.keys().hasAny(['oficinaId'])
+        ) || (authed() && membroOficina(oid));
       allow read, update, delete: if authed() && membroOficina(oid);
     }
     match /oficinas/{oid}/leads_imobi/{leadId} {
-      allow create: if true;
+      allow create: if (
+          request.auth == null
+          && exists(/databases/$(database)/documents/oficinas/$(oid))
+          && leadPublicoImobiValido()
+          && !request.resource.data.keys().hasAny(['oficinaId'])
+        ) || (authed() && membroOficina(oid));
       allow read, update, delete: if authed() && membroOficina(oid);
     }
     match /{caminho=**}/imoveis_imobi/{docId} {
@@ -188,13 +387,27 @@ service cloud.firestore {
     match /oficinas/{oid}/acompanhamentos_imobi/{docId} {
       allow read, write: if authed() && membroOficina(oid);
     }
+    // Histórico comercial: evento é prova. Cria uma vez, nunca reescreve.
+    //   read   -> membro do tenant
+    //   create -> membro, com campos obrigatórios e limites de tamanho
+    //   update -> NEGADO (evento não pode ser reescrito)
+    //   delete -> NEGADO (não há purge de histórico no produto)
+    // Nenhum acesso público: nem get anônimo.
     match /oficinas/{oid}/eventos_lead/{eventoId} {
-      allow read, delete: if authed() && membroOficina(oid);
+      allow read: if authed() && membroOficina(oid);
       allow create: if authed() && membroOficina(oid)
         && request.resource.data.tipo is string
         && request.resource.data.tipo.size() > 0
-        && request.resource.data.descricao is string;
-      allow update: if authed() && membroOficina(oid);
+        && request.resource.data.tipo.size() <= 40
+        && request.resource.data.descricao is string
+        && request.resource.data.descricao.size() <= 500
+        && (!request.resource.data.keys().hasAny(['leadId'])
+          || request.resource.data.leadId is string)
+        && (!request.resource.data.keys().hasAny(['telefone'])
+          || (request.resource.data.telefone is string
+              && request.resource.data.telefone.size() <= 20))
+        && request.resource.data.criadoEm == request.time;
+      allow update, delete: if false;
     }
     match /oficinas/{oid}/tarefas/{tarefaId} {
       allow read, write: if authed() && membroOficina(oid);
@@ -250,8 +463,11 @@ service cloud.firestore {
     match /oficinas/{oid}/notificacoes_desmanche/{docId} {
       allow read, write: if authed() && membroOficina(oid);
     }
+    // Subcoleção sem uso no código atual (verificado). Escrita restrita a
+    // gestor do tenant: antes, qualquer membro criava "usuários" arbitrários.
     match /oficinas/{oid}/usuarios/{docId} {
-      allow read, write: if authed() && membroOficina(oid);
+      allow read: if authed() && membroOficina(oid);
+      allow write: if gestorDoTenant(oid);
     }
     match /oficinas/{oid}/equipe/{uid} {
       allow read: if authed() && membroOficina(oid);
@@ -271,18 +487,29 @@ service cloud.firestore {
       allow read: if authed();
       allow write: if isAdminPlataforma();
     }
+    // Documento carrega o tenant. Ninguém transfere OS entre oficinas, nem
+    // quem é membro das duas: o oficinaId é imutável depois de criado.
     match /ordensServico/{docId} {
       allow read, delete: if authed() && membroOficina(resource.data.get('oficinaId', ''));
-      allow create: if authed() && membroOficina(request.resource.data.get('oficinaId', ''));
-      allow update: if authed() && membroOficina(resource.data.get('oficinaId', ''))
-        && membroOficina(request.resource.data.get('oficinaId', ''));
+      allow create: if authed()
+        && request.resource.data.oficinaId is string
+        && request.resource.data.oficinaId.size() > 0
+        && membroOficina(request.resource.data.oficinaId);
+      allow update: if authed()
+        && membroOficina(resource.data.get('oficinaId', ''))
+        && membroOficina(request.resource.data.get('oficinaId', ''))
+        && request.resource.data.get('oficinaId', '') == resource.data.get('oficinaId', '');
     }
     match /tarefas/{docId} {
       allow read, write: if isAdminPlataforma();
     }
+    // docId == oficinaId (Desmanche.jsx:100). A escrita é do dono daquela
+    // entrada, não do admin da plataforma — antes, publicar na rede falhava
+    // com permission-denied para todo lojista. O catálogo segue legível por
+    // qualquer autenticado (AbaBuscaRede.jsx:37).
     match /desmanche_global/{docId} {
       allow read: if authed();
-      allow write: if isAdminPlataforma();
+      allow write: if authed() && membroOficina(docId);
     }
     match /acompanhamentos_publicos/{docId} {
       allow get: if true;
