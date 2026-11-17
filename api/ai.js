@@ -6,7 +6,10 @@
  *
  * CONTRATO
  *   POST /api/ai  { provider, prompt?, messages?, systemPrompt?, temperature?,
- *                   maxTokens?, model? }  →  200 { text, provider, model }
+ *                   maxTokens?, model?, images? }  →  200 { text, provider, model }
+ *                   images: array de data URLs (data:image/jpeg;base64,...),
+ *                   até 3, usadas como inline_data no Gemini. Em provedores
+ *                   OpenAI-compatíveis são ignoradas (campo `avisos`).
  *   GET  /api/ai?provider=deepseek          →  diagnóstico (não gasta tokens
  *                                              além de 1 chamada mínima)
  *
@@ -93,6 +96,27 @@ function lerChave(nomeEnv) {
   return { presente: valor.length > 0, valor };
 }
 
+const LIMITE_IMAGENS = 3;
+const MAX_BASE64_POR_IMAGEM = 3 * 1024 * 1024; // ~3 MB de base64 (~2,2 MB de imagem)
+
+/**
+ * Converte ["data:image/jpeg;base64,AAAA"] em [{ mimeType, data }].
+ * Entradas inválidas ou grandes demais são descartadas silenciosamente.
+ */
+function normalizarImagens(bruto) {
+  if (!Array.isArray(bruto)) return [];
+  const saida = [];
+  for (const item of bruto.slice(0, LIMITE_IMAGENS)) {
+    const texto = String(item || '');
+    const casou = texto.match(/^data:(image\/[a-zA-Z0-9.+-]+);base64,([A-Za-z0-9+/=\s]+)$/);
+    if (!casou) continue;
+    const dados = casou[2].replace(/\s+/g, '');
+    if (!dados.length || dados.length > MAX_BASE64_POR_IMAGEM) continue;
+    saida.push({ mimeType: casou[1].toLowerCase(), data: dados });
+  }
+  return saida;
+}
+
 function normalizarMensagens(corpo) {
   const lista = [];
 
@@ -115,12 +139,28 @@ function normalizarMensagens(corpo) {
   return lista;
 }
 
-function montarRequisicao(nome, provedor, modelo, mensagens, temperatura, maxTokens, chave) {
+function montarRequisicao(nome, provedor, modelo, mensagens, temperatura, maxTokens, chave, imagens = []) {
   if (provedor.tipo === 'gemini') {
     const sistema = mensagens.filter((m) => m.role === 'system').map((m) => m.content).join('\n');
     const conversa = mensagens
       .filter((m) => m.role !== 'system')
       .map((m) => ({ role: m.role === 'assistant' ? 'model' : 'user', parts: [{ text: m.content }] }));
+
+    // Multimodal: as imagens entram no ÚLTIMO turno do usuário, no formato
+    // inline_data do Gemini (v1beta aceita inline_data/inlineData).
+    if (imagens.length && conversa.length) {
+      let alvo = -1;
+      for (let i = conversa.length - 1; i >= 0; i -= 1) {
+        if (conversa[i].role === 'user') { alvo = i; break; }
+      }
+      if (alvo >= 0) {
+        for (const img of imagens) {
+          conversa[alvo].parts.push({
+            inline_data: { mime_type: img.mimeType, data: img.data },
+          });
+        }
+      }
+    }
 
     const corpo = {
       contents: conversa,
@@ -322,6 +362,15 @@ export default async function handler(req, res) {
     return res.status(400).json({ error: 'Envie prompt ou messages' });
   }
 
+  const imagens = normalizarImagens(corpo.images);
+  const avisos = [];
+  if (Array.isArray(corpo.images) && corpo.images.length && !imagens.length) {
+    avisos.push('Nenhuma imagem válida: envie data URLs image/*;base64 de até 3 MB.');
+  }
+  if (imagens.length && provedor.tipo !== 'gemini') {
+    avisos.push(`Provedor ${nome} não aceita imagem nesta API — use gemini para análise visual.`);
+  }
+
   const temperatura = Number.isFinite(corpo.temperature)
     ? Math.min(Math.max(corpo.temperature, 0), 2)
     : 0.7;
@@ -343,7 +392,10 @@ export default async function handler(req, res) {
     const controle = new AbortController();
     const timer = setTimeout(() => controle.abort(), TIMEOUT_MS);
     try {
-      const { url, init } = montarRequisicao(nome, provedor, modelo, mensagens, temperatura, maxTokens, chave.valor);
+      const { url, init } = montarRequisicao(
+        nome, provedor, modelo, mensagens, temperatura, maxTokens, chave.valor,
+        provedor.tipo === 'gemini' ? imagens : [],
+      );
       const resposta = await fetch(url, { ...init, signal: controle.signal });
       const bruto = await resposta.text();
 
@@ -353,7 +405,11 @@ export default async function handler(req, res) {
           ultimo = { status: 502, modelo, mensagem: 'Resposta sem texto', bruto };
           continue;
         }
-        return res.status(200).json({ text: texto, provider: nome, model: modelo });
+        return res.status(200).json({
+          text: texto, provider: nome, model: modelo,
+          ...(imagens.length && provedor.tipo === 'gemini' ? { imagensEnviadas: imagens.length } : {}),
+          ...(avisos.length ? { avisos } : {}),
+        });
       }
 
       const mensagem = mensagemDoProvedor(bruto);

@@ -2,12 +2,16 @@ import React, { useMemo, useState } from 'react';
 import {
   Ruler, Copy, Check, Printer, Sparkles, AlertTriangle, TrendingUp,
   Building2, MapPin, Gauge, FileText, MessageSquare, Info, ChevronDown, Stamp,
+  Camera, X, Loader2, ScanSearch,
 } from 'lucide-react';
 import HeroAba from '../admin/HeroAba';
 import GuiaDaAba from '../ui/GuiaDaAba';
 import SeletorUF from '../ui/SeletorUF';
 import { corDaAba, heroDaAba } from '../../lib/coresAbas';
 import { lerPreferencias } from '../../lib/preferencias';
+import LaudoExecutivo from './LaudoExecutivo';
+import useLaudoImobi, { comprimirImagem, CDI_PADRAO, FII_TIJOLO_PADRAO } from '../../hooks/useLaudoImobi.js';
+import { raioXDaVizinhanca } from '../../services/vizinhancaService.js';
 import {
   avaliarImovel, gerarPTAM, gerarResumoComercial, gerarDocumentoHtmlPTAM,
   TIPOLOGIAS, PADROES, ESTADOS_CONSERVACAO, TOPOGRAFIAS, CONDICOES_TESTADA, FINALIDADES_PTAM,
@@ -48,6 +52,19 @@ export default function AvaliacaoImovel() {
 
   const [abaSaida, setAbaSaida] = useState('resumo');
   const [copiado, setCopiado] = useState(false);
+
+  // --- Laudo executivo 5 agentes ---
+  const [cep, setCep] = useState('');
+  const [valorPedido, setValorPedido] = useState('');
+  const [cdi, setCdi] = useState(CDI_PADRAO);
+  const [fii, setFii] = useState(FII_TIJOLO_PADRAO);
+  const [fotos, setFotos] = useState([]);
+  const [erroFoto, setErroFoto] = useState('');
+  const [vizCarregando, setVizCarregando] = useState(false);
+  const {
+    fase, carregando: gerandoLaudo, erro: erroLaudo, laudo,
+    analiseFotos, vizinhanca, meta, gerar: gerarLaudoIA, setVizinhanca,
+  } = useLaudoImobi();
 
   const avaliacao = useMemo(() => avaliarImovel({
     uf, cidade, bairro, tipologia, padrao, estado, topografia, condicoes,
@@ -93,6 +110,55 @@ export default function AvaliacaoImovel() {
     janela.document.close();
     janela.focus();
     setTimeout(() => janela.print(), 350);
+  }
+
+  async function adicionarFotos(evento) {
+    const arquivos = Array.from(evento.target.files || []).slice(0, 3 - fotos.length);
+    if (!arquivos.length) return;
+    setErroFoto('');
+    const novas = [];
+    for (const arquivo of arquivos) {
+      try {
+        novas.push(await comprimirImagem(arquivo));
+      } catch (e) {
+        setErroFoto(String(e?.message || e));
+      }
+    }
+    setFotos((atual) => [...atual, ...novas].slice(0, 3));
+    evento.target.value = '';
+  }
+
+  async function gerarLaudoCompleto() {
+    setVizCarregando(true);
+    let viz = null;
+    try {
+      viz = await raioXDaVizinhanca({
+        cep,
+        endereco: [bairro, cidade].filter(Boolean).join(', '),
+        cidade,
+        uf,
+      });
+    } catch (e) {
+      viz = { ok: false, motivo: String(e?.message || e) };
+    } finally {
+      setVizCarregando(false);
+    }
+    setVizinhanca(viz);
+
+    await gerarLaudoIA({
+      dados: {
+        cidade, bairro, uf, tipologia, padrao, estado, topografia,
+        areaTotal: Number(areaTotal) || 0,
+        areaConstruida: Number(areaConstruida) || 0,
+        comparaveis,
+      },
+      avaliacao,
+      valorPedido: Number(valorPedido) || 0,
+      cdi: Number(cdi) || CDI_PADRAO,
+      fii: Number(fii) || FII_TIJOLO_PADRAO,
+      fotos,
+      vizinhanca: viz,
+    });
   }
 
   return (
@@ -325,6 +391,100 @@ export default function AvaliacaoImovel() {
           </div>
         </div>
       </div>
+
+      {/* ================= Laudo Executivo 5 Agentes ================= */}
+      <div className={`${card} p-5 space-y-4`}>
+        <div className="flex flex-wrap items-start justify-between gap-3">
+          <div>
+            <p className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest" style={{ color: corAba }}>
+              <ScanSearch size={13} /> Laudo executivo · 5 agentes de IA
+            </p>
+            <p className="mt-1 text-[11px] text-slate-400">
+              Cruza o PTAM com comparáveis reais, raio-X de vizinhança (OpenStreetMap), fotos do imóvel,
+              renda fixa e liquidez — e devolve score, faixa de preço, prazo e anúncio pronto.
+            </p>
+          </div>
+          <button
+            onClick={gerarLaudoCompleto}
+            disabled={!temArea || gerandoLaudo || vizCarregando}
+            className="inline-flex items-center gap-2 rounded-xl bg-[#10b981] px-4 py-2.5 text-[11px] font-black uppercase tracking-widest text-slate-950 transition hover:bg-[#0ea472] disabled:cursor-not-allowed disabled:opacity-40"
+          >
+            {gerandoLaudo || vizCarregando ? <Loader2 size={14} className="animate-spin" /> : <Sparkles size={14} />}
+            {gerandoLaudo ? 'Gerando…' : vizCarregando ? 'Consultando entorno…' : 'Gerar Laudo Executivo 5 Agentes'}
+          </button>
+        </div>
+
+        <div className="grid gap-3 md:grid-cols-4">
+          <div>
+            <label className={labelCls}>CEP do imóvel</label>
+            <input className={inputCls} value={cep} onChange={(e) => setCep(e.target.value)} placeholder="38400-000" inputMode="numeric" />
+          </div>
+          <div>
+            <label className={labelCls}>Valor pedido pelo dono (R$)</label>
+            <input className={inputCls} value={valorPedido} onChange={(e) => setValorPedido(e.target.value)} placeholder="450000" inputMode="decimal" />
+          </div>
+          <div>
+            <label className={labelCls}>CDI anual (%)</label>
+            <input className={inputCls} value={cdi} onChange={(e) => setCdi(e.target.value)} inputMode="decimal" />
+          </div>
+          <div>
+            <label className={labelCls}>FII de tijolo (%)</label>
+            <input className={inputCls} value={fii} onChange={(e) => setFii(e.target.value)} inputMode="decimal" />
+          </div>
+        </div>
+
+        <div>
+          <label className={labelCls}>Fotos do imóvel (até 3 · análise visual Gemini)</label>
+          <div className="flex flex-wrap items-center gap-2">
+            {fotos.map((foto, i) => (
+              <div key={i} className="relative h-20 w-20 overflow-hidden rounded-xl border border-slate-800">
+                <img src={foto} alt={`Foto ${i + 1}`} className="h-full w-full object-cover" />
+                <button
+                  onClick={() => setFotos((atual) => atual.filter((_, idx) => idx !== i))}
+                  className="absolute right-1 top-1 rounded-full bg-slate-950/80 p-0.5 text-slate-300 hover:text-white"
+                  title="Remover foto"
+                >
+                  <X size={12} />
+                </button>
+              </div>
+            ))}
+            {fotos.length < 3 && (
+              <label className="flex h-20 w-20 cursor-pointer flex-col items-center justify-center gap-1 rounded-xl border border-dashed border-slate-700 text-slate-500 transition hover:border-[#10b981] hover:text-[#10b981]">
+                <Camera size={18} />
+                <span className="text-[9px] font-bold uppercase">Anexar</span>
+                <input type="file" accept="image/*" multiple className="hidden" onChange={adicionarFotos} />
+              </label>
+            )}
+          </div>
+          {analiseFotos && (
+            <p className="mt-2 text-[10px] text-slate-400">
+              Fotos: padrão <strong className="text-slate-200">{analiseFotos.padraoConstrutivo}</strong> ·
+              conservação <strong className="text-slate-200">{analiseFotos.estadoConservacao}</strong>
+              {analiseFotos.confianca ? ` · confiança ${analiseFotos.confianca}%` : ''}
+            </p>
+          )}
+          {erroFoto && <p className="mt-1 text-[10px] text-amber-300">{erroFoto}</p>}
+        </div>
+
+        {!temArea && (
+          <p className="flex items-center gap-1.5 text-[10px] text-amber-300">
+            <AlertTriangle size={12} /> Informe a área do imóvel para liberar o laudo executivo.
+          </p>
+        )}
+      </div>
+
+      <LaudoExecutivo
+        laudo={laudo}
+        meta={meta}
+        vizinhanca={vizinhanca}
+        analiseFotos={analiseFotos}
+        avaliacao={avaliacao}
+        valorPedido={Number(valorPedido) || 0}
+        dados={{ cidade, bairro, uf, padrao, estado }}
+        carregando={gerandoLaudo || vizCarregando}
+        fase={vizCarregando ? 'Consultando ViaCEP, OpenStreetMap e Overpass…' : fase}
+        erro={erroLaudo}
+      />
 
       {/* Saídas */}
       <div className={`${card} p-5`}>
