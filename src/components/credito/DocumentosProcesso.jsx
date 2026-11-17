@@ -84,13 +84,15 @@ export default function DocumentosProcesso({ oficinaId, processo, usuario, papel
             >
               {copiado ? <Check size={12} /> : <Copy size={12} />} {copiado ? 'Copiado' : 'Copiar pendências p/ WhatsApp'}
             </button>
-            <button
-              onClick={gerarChecklist}
-              disabled={gerando}
-              className="inline-flex items-center gap-1.5 rounded-xl border border-slate-700 px-3 py-2 text-[10px] font-black uppercase tracking-widest text-slate-300 disabled:opacity-40"
-            >
-              <RefreshCw size={12} /> {docs.length ? 'Gerar de novo (outro perfil)' : 'Gerar checklist'}
-            </button>
+            {!docs.length && (
+              <button
+                onClick={gerarChecklist}
+                disabled={gerando}
+                className="inline-flex items-center gap-1.5 rounded-xl border border-slate-700 px-3 py-2 text-[10px] font-black uppercase tracking-widest text-slate-300 disabled:opacity-40"
+              >
+                <RefreshCw size={12} /> {gerando ? 'Gerando…' : 'Gerar checklist'}
+              </button>
+            )}
           </div>
         </div>
 
