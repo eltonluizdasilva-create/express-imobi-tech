@@ -36,7 +36,8 @@ export default function useCredito(oficinaId, usuario) {
     try {
       const doc = {
         oficinaId,
-        corretorId: usuario?.uid || extra.corretorId || null,
+        // gestor pode salvar em nome de um corretor da equipe
+        corretorId: extra.corretorId || usuario?.uid || null,
         criadoPor: usuario?.uid || null,
         criadoEm: serverTimestamp(),
         leadId: extra.leadId || null,

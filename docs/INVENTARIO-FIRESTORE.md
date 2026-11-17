@@ -64,10 +64,15 @@ Varredura estática de `src/**/*.{js,jsx}` (190 arquivos): **240 acessos**, **47
 | `oficinas/{oficinaId}/credito_simulacoes` | 0 | 1 | oficinaId, corretorId, criadoPor, criadoEm, leadId, leadNome, imovelId, rotulo, entrada{...}, saida{enquadramento,financiavel,entradaNecessaria,subsidio,parcelaInicial,parcelaFinal,comprometimento,taxaAnual,prazo,sistema,alertas}, parametrosVersao, parametrosValidados, resultadoOficial |
 | `oficinas/{oficinaId}/credito_processos` | 0 | 2 | oficinaId, corretorId, criadoPor, criadoEm, leadId, leadNome, imovelId, imovelTitulo, valorImovel, proponentes[{nome,cpfMascarado,renda,estadoCivil,regimeBens,perfil}], banco, modalidade, valorFinanciado, etapa, etapaDesde, motivoReprovacao, sla{etapa,prazoEm}, simulacaoId, consentimentoLGPD{aceito,em,versao}, historico[{de,para,em,autor,autorId,motivo}], atualizadoEm |
 
+| `oficinas/{oficinaId}/credito_documentos` | 1 | 5 | oficinaId, processoId, corretorId, criadoPor, criadoEm, bloco (comprador/vendedor/imovel), item, chave, obrigatorio, validadeMeses, validadeEm, status (pendente/recebido/vencido), recebidoEm, observacao, perfil, extra, ordem, atualizadoEm |
+
+> `credito_processos` ganhou (Fase 5): `comissaoPct`, `comissaoValor`, `statusRecebimento` (a_receber/faturado/recebido) e (Fase 4) `creditosEstimados`, `parecerGeradoEm`.
+
 **Queries do cliente:**
 ```js
 query(collection(db,'oficinas',oficinaId,'credito_processos'))                          // dono/admin
 query(..., where('corretorId','==',uid))                                                 // corretor
+query(collection(db,'oficinas',oficinaId,'credito_documentos'), where('processoId','==',id))
 getDoc(doc(db,'parametrosCredito',versao))                                               // qualquer logado
 ```
 `credito_simulacoes` só recebe `addDoc` (nenhuma leitura no cliente ainda).

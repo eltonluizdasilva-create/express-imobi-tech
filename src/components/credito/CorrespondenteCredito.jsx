@@ -13,6 +13,10 @@ import { simular, resumoWhatsApp } from '../../lib/credito/simulador';
 import { avisoDeParametros } from '../../lib/credito/parametros';
 import { consumeCreditoPrefill } from '../../lib/credito/prefill';
 import EsteiraKanban from './EsteiraKanban';
+import DocumentosProcesso from './DocumentosProcesso';
+import PainelReceita from './PainelReceita';
+import ParecerViabilidade from './ParecerViabilidade';
+import useEsteira from '../../hooks/useEsteira';
 import { useAuth } from '../../contexts/AuthContext';
 
 const card = 'bg-[#020408] border border-slate-800 rounded-3xl';
@@ -49,6 +53,9 @@ export default function CorrespondenteCredito({ dadosOficina, usuario: usuarioPr
   };
 
   const { parametros, carregando, aviso, salvando, erro, salvarSimulacao } = useCredito(oficinaId, usuario);
+  // Fases 3 e 5 usam a lista da esteira para escolher o processo.
+  const esteira = useEsteira(oficinaId, usuario, papelEfetivo);
+  const [processoSelId, setProcessoSelId] = useState('');
 
   const [aba, setAba] = useState('simulador');
   const [entrada, setEntrada] = useState(ENTRADA_VAZIA);
@@ -168,16 +175,33 @@ export default function CorrespondenteCredito({ dadosOficina, usuario: usuarioPr
         />
       )}
 
-      {(aba === 'documentos' || aba === 'receita') && (
-        <div className={`${card} p-6 text-center`}>
-          <p className="text-sm font-black text-white">
-            {aba === 'documentos' ? 'Checklist de documentos (Fase 3)' : 'Painel de receita (Fase 5)'}
-          </p>
-          <p className="mt-1 text-[11px] text-slate-400">
-            Estrutura reservada — a coleção oficinas/{'{oficinaId}'}/credito_documentos entra na Fase 3.
-          </p>
+      {aba === 'documentos' && (
+        <div className="space-y-4">
+          <div className={`${card} p-4`}>
+            <label className="block text-[9px] font-black uppercase tracking-widest text-slate-500 mb-1">Processo</label>
+            <select
+              className="w-full rounded-xl border border-slate-800 bg-slate-950 px-3 py-2 text-[12px] text-white focus:outline-none focus:border-[#10b981]"
+              value={processoSelId}
+              onChange={(e) => setProcessoSelId(e.target.value)}
+            >
+              <option value="">Selecione o processo…</option>
+              {esteira.processos.map((proc) => (
+                <option key={proc.id} value={proc.id}>
+                  {proc.leadNome || 'Sem lead'} — {proc.banco || 'banco'} · {proc.etapa}
+                </option>
+              ))}
+            </select>
+          </div>
+          <DocumentosProcesso
+            oficinaId={oficinaId}
+            processo={esteira.processos.find((x) => x.id === processoSelId) || null}
+            usuario={usuario}
+            papelLogado={papelEfetivo}
+          />
         </div>
       )}
+
+      {aba === 'receita' && <PainelReceita processos={esteira.processos} />}
 
       {aba === 'simulador' && (
         <>
@@ -307,6 +331,22 @@ export default function CorrespondenteCredito({ dadosOficina, usuario: usuarioPr
                 <FichaCaixa sim={sim} oficial={oficial} setOficial={setOficial} />
               </div>
             </div>
+          )}
+
+          {/* Parecer de viabilidade por IA (Fase 4) */}
+          {sim && (
+            <ParecerViabilidade
+              oficinaId={oficinaId}
+              nomeCliente={prefill?.leadNome || ''}
+              dadosBase={{
+                rendaTotal: sim.rendaTotal,
+                idade: sim.idade || 0,
+                fgts: Number(entrada.fgts) || 0,
+                entradaDisponivel: sim.entradaDisponivel,
+                valorImovel: Number(entrada.valorImovel) || 0,
+                numProponentes: Number(entrada.numProponentes) || 1,
+              }}
+            />
           )}
 
           {/* Cenários lado a lado */}

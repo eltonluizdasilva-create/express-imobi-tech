@@ -7,6 +7,9 @@ import EsteiraKanban from '../src/components/credito/EsteiraKanban.jsx';
 import FormularioSimulacao from '../src/components/credito/FormularioSimulacao.jsx';
 import { simular } from '../src/lib/credito/simulador.js';
 import { PARAMETROS_PADRAO } from '../src/lib/credito/parametrosPadrao.js';
+import DocumentosProcesso from '../src/components/credito/DocumentosProcesso.jsx';
+import ParecerViabilidade from '../src/components/credito/ParecerViabilidade.jsx';
+import PainelReceita from '../src/components/credito/PainelReceita.jsx';
 
 const html = renderToStaticMarkup(React.createElement(CorrespondenteCredito, {
   dadosOficina: { id: 'ofi_teste', nomeOficina: 'Imob Teste' },
@@ -37,7 +40,33 @@ const htmlEsteira = renderToStaticMarkup(React.createElement(EsteiraKanban, {
   papelLogado: 'corretor', simAtual: null, onAbrirSimulador: () => {},
 }));
 
+const htmlDocs = renderToStaticMarkup(React.createElement(DocumentosProcesso, {
+  oficinaId: 'ofi_teste', processo: null, usuario: { uid: 'u1' }, papelLogado: 'corretor',
+}));
+
+const htmlParecer = renderToStaticMarkup(React.createElement(ParecerViabilidade, {
+  oficinaId: 'ofi_teste',
+  dadosBase: { rendaTotal: 8500, idade: 38, fgts: 20000, entradaDisponivel: 60000, valorImovel: 450000, numProponentes: 2 },
+  processoId: null,
+}));
+
+const htmlReceita = renderToStaticMarkup(React.createElement(PainelReceita, {
+  processos: [
+    { etapa: 'assinatura', banco: 'Caixa', modalidade: 'SBPE', valorFinanciado: 400000, comissaoPct: 1.2, comissaoValor: 4800, statusRecebimento: 'recebido' },
+    { etapa: 'analise', banco: 'Itaú', modalidade: 'SBPE', valorFinanciado: 300000, comissaoPct: 1.3, comissaoValor: 3900, statusRecebimento: 'faturado' },
+  ],
+}));
+
 const checagensExtra = {
+  'docs: estado vazio': htmlDocs.includes('Selecione um processo'),
+  'parecer: botão IA': htmlParecer.includes('Gerar Parecer de Viabilidade IA'),
+  'parecer: aviso LGPD': htmlParecer.includes('nunca nome, CPF'),
+  'parecer: campo vínculo': htmlParecer.includes('Vínculo principal'),
+  'parecer: restrições': htmlParecer.includes('Registrato'),
+  'receita: total financiado': htmlReceita.includes('Total financiado'),
+  'receita: comissão prevista': htmlReceita.includes('Comissão prevista'),
+  'receita: tabela por banco': htmlReceita.includes('Comissão por banco') && htmlReceita.includes('Caixa'),
+  'receita: conversão': htmlReceita.includes('Conversão por etapa'),
   'esteira: cabeçalho': htmlEsteira.includes('Esteira de crédito'),
   'esteira: botão novo processo': htmlEsteira.includes('Novo processo'),
   'esteira: aviso de escopo do corretor': htmlEsteira.includes('apenas os processos'),

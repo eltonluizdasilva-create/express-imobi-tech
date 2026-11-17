@@ -8,7 +8,7 @@ import {
   ETAPAS, ETAPAS_LATERAIS, etapaPorKey, situacaoSla, mascararCpf,
   contarPorEtapa, totalFinanciado, BANCOS, ESTADOS_CIVIS, REGIMES_BENS,
 } from '../../lib/credito/esteira';
-import { PERFIS_DOCUMENTO } from '../../lib/credito/simulador';
+import { comissaoSugerida, valorComissao, STATUS_RECEBIMENTO } from '../../lib/credito/receita';
 
 const card = 'bg-[#020408] border border-slate-800 rounded-3xl';
 const inputCls = 'w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-sm text-white placeholder-slate-600 focus:outline-none focus:border-[#10b981]';
@@ -132,6 +132,41 @@ function DetalheProcesso({ processo, onFechar, onAtualizar }) {
             Motivo da reprovação: {processo.motivoReprovacao}
           </p>
         )}
+
+        <p className={`${labelCls} mt-3`}>Comissão do correspondente</p>
+        <div className="grid gap-2 sm:grid-cols-3">
+          <div className="rounded-xl border border-slate-800 p-2">
+            <p className={labelCls}>Percentual (%)</p>
+            <input
+              className={inputCls}
+              inputMode="decimal"
+              defaultValue={processo.comissaoPct ?? comissaoSugerida(processo.banco, processo.modalidade)}
+              onBlur={(e) => {
+                const pct = Number(e.target.value) || 0;
+                onAtualizar(processo, {
+                  comissaoPct: pct,
+                  comissaoValor: valorComissao(processo.valorFinanciado, pct),
+                });
+              }}
+            />
+          </div>
+          <div className="rounded-xl border border-slate-800 p-2">
+            <p className={labelCls}>Valor estimado</p>
+            <p className="pt-1 text-[12px] font-black text-[#10b981]">
+              {brl(processo.comissaoValor || valorComissao(processo.valorFinanciado, processo.comissaoPct ?? comissaoSugerida(processo.banco, processo.modalidade)))}
+            </p>
+          </div>
+          <div className="rounded-xl border border-slate-800 p-2">
+            <p className={labelCls}>Recebimento</p>
+            <select
+              className={inputCls}
+              value={processo.statusRecebimento || 'a_receber'}
+              onChange={(e) => onAtualizar(processo, { statusRecebimento: e.target.value })}
+            >
+              {STATUS_RECEBIMENTO.map((s) => <option key={s.key} value={s.key}>{s.label}</option>)}
+            </select>
+          </div>
+        </div>
 
         <div className="mt-3 flex items-center gap-2 rounded-xl border border-slate-800 px-2 py-1.5">
           <ShieldCheck size={12} className={processo.consentimentoLGPD?.aceito ? 'text-[#10b981]' : 'text-amber-300'} />

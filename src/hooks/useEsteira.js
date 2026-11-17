@@ -13,6 +13,7 @@ import {
 } from 'firebase/firestore';
 import { db } from '../lib/firebase';
 import { mascararCpf, prazoDaEtapa, registroHistorico, proximaEtapa, etapaAnterior } from '../lib/credito/esteira';
+import { comissaoSugerida, valorComissao } from '../lib/credito/receita';
 
 const PAPEIS_GESTAO = new Set(['dono', 'admin', 'master']);
 
@@ -71,6 +72,19 @@ export default function useEsteira(oficinaId, usuario, papelLogado) {
       banco: dados.banco || 'Caixa',
       modalidade: dados.modalidade || '',
       valorFinanciado: Number(dados.valorFinanciado) || 0,
+
+      // Fase 5 — comissão do correspondente
+      comissaoPct: Number(
+        dados.comissaoPct ?? comissaoSugerida(dados.banco || 'Caixa', dados.modalidade || ''),
+      ),
+      comissaoValor: valorComissao(
+        Number(dados.valorFinanciado) || 0,
+        Number(dados.comissaoPct ?? comissaoSugerida(dados.banco || 'Caixa', dados.modalidade || '')),
+      ),
+      statusRecebimento: dados.statusRecebimento || 'a_receber',
+
+      // Fase 4 — consumo estimado de IA (saldo real é do backend)
+      creditosEstimados: 0,
 
       etapa: 'simulacao',
       etapaDesde: serverTimestamp(),
