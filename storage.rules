@@ -1,0 +1,61 @@
+rules_version = '2';
+
+/**
+ * storage.rules — Express Imobi Tech / Express Auto Tech
+ * ============================================================================
+ * Isolamento por tenant: todo arquivo vive em oficinas/{oficinaId}/...
+ * (mesmo padrão já usado por src/components/desmanche/uploadImage.js).
+ *
+ * IMPORTANTE — isolamento fino depende do custom claim `oficinaId`:
+ *   Storage Rules NÃO conseguem ler o Firestore, então a associação
+ *   usuário -> oficina precisa vir do token. Enquanto o claim não existir,
+ *   uploads de crédito ficam bloqueados (fail closed) — o que é intencional.
+ *   Já arquivos de módulos existentes (ex.: desmanche) exigem apenas login.
+ *
+ * Este arquivo NÃO foi publicado. Publicar exige:
+ *   firebase deploy --only storage
+ * ============================================================================
+ */
+service firebase.storage {
+  match /b/{bucket}/o {
+
+    function autenticado() {
+      return request.auth != null;
+    }
+
+    /** Claim oficinaId (ou admin da plataforma). */
+    function daOficina(oficinaId) {
+      return autenticado() && (
+        request.auth.token.oficinaId == oficinaId ||
+        request.auth.token.admin == true
+      );
+    }
+
+    function tipoPermitido() {
+      return request.resource.contentType.matches('image/.*')
+          || request.resource.contentType == 'application/pdf';
+    }
+
+    function tamanhoOk() {
+      return request.resource.size < 12 * 1024 * 1024; // 12 MB
+    }
+
+    /* ---------------- CRÉDITO (novo): isolamento estrito ---------------- */
+    match /oficinas/{oficinaId}/credito/{processoId}/{arquivo} {
+      allow read: if daOficina(oficinaId);
+      allow create, update: if daOficina(oficinaId) && tipoPermitido() && tamanhoOk();
+      allow delete: if daOficina(oficinaId);
+    }
+
+    /* ---------------- Módulos existentes (fotos, laudos, desmanche) ------ */
+    match /oficinas/{oficinaId}/{allPaths=**} {
+      allow read: if autenticado();
+      allow write: if autenticado() && tamanhoOk();
+    }
+
+    /* ---------------- Nada fora de oficinas/ ----------------------------- */
+    match /{allPaths=**} {
+      allow read, write: if false;
+    }
+  }
+}

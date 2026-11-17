@@ -8,6 +8,7 @@ export const CORES_ABAS = {
   dashboard_imobi: { cor: '#10b981', nome: 'Esmeralda' },
   avaliacao_imovel: { cor: '#0ea5e9', nome: 'Azul-céu' },
   radar_captacao: { cor: '#f97316', nome: 'Laranja' },
+  credito: { cor: '#0ea5e9', nome: 'Azul-céu' },
   captacao_imobi: { cor: '#22c55e', nome: 'Verde' },
   funil_leads: { cor: '#14b8a6', nome: 'Teal' },
   visitas_imobi: { cor: '#38bdf8', nome: 'Céu' },

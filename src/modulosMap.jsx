@@ -55,6 +55,7 @@ import AssistenteJuridicoImobi from './components/AssistenteJuridicoImobi';
 import AcompanhamentoCliente from './components/acompanhamento/AcompanhamentoCliente';
 import AvaliacaoImovel from './components/imobi/AvaliacaoImovel';
 import RadarCaptacao from './components/imobi/RadarCaptacao';
+import CorrespondenteCredito from './components/credito/CorrespondenteCredito';
 
 const TriagemWrapper = (props) => (
   <div className="flex flex-col w-full gap-8">
@@ -118,4 +119,5 @@ export const MODULOS_MAP = {
   acompanhamento_cliente: AcompanhamentoCliente,
   avaliacao_imovel: AvaliacaoImovel,
   radar_captacao: RadarCaptacao,
+  credito: CorrespondenteCredito,
 };

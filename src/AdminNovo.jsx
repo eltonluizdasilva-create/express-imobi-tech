@@ -65,6 +65,7 @@ import ControleInteligenciaIA from './components/ControleInteligenciaIA';
 import GuiaDaAba from './components/ui/GuiaDaAba';
 import RodapeLegal from './components/ui/RodapeLegal';
 import { MODULOS_MAP } from './modulosMap';
+import { setCreditoPrefill } from './lib/credito/prefill';
 
 import { useAuth } from './contexts/AuthContext';
 import useCarregamentoInicial from './hooks/useCarregamentoInicial.jsx';
@@ -1594,6 +1595,7 @@ export default function Admin() {
     { id: 'notafiscal', icone: '📑', label: 'Repasses & NF' },
     { id: 'migracao', icone: '🔄', label: 'Migração de CRM' },
     { id: 'avaliacao_imovel', icone: '📐', label: 'Avaliação de Imóvel' },
+    { id: 'credito', icone: '🏦', label: 'Correspondente / Crédito' },
     { id: 'config', icone: '⚙️', label: 'Configurações' },
     { id: 'especialista', icone: '🎧', label: 'Suporte Especialista' },
   ];
@@ -1967,6 +1969,22 @@ export default function Admin() {
                                   {isAtivoVitrine ? '🟢 Ativo na Vitrine' : '⚪ Oculto'}
                                 </button>
                                 <button
+                                  type="button"
+                                  onClick={() => {
+                                    setCreditoPrefill({
+                                      imovelId: imv.id,
+                                      imovelTitulo: imv.titulo,
+                                      valorImovel: imv.valor,
+                                      bairro: imv.bairro,
+                                    });
+                                    setAbaAtiva('credito');
+                                  }}
+                                  title="Simular financiamento deste imóvel"
+                                  className="px-2 py-0.5 rounded-md text-[10px] font-extrabold cursor-pointer border bg-slate-800 text-[#10b981] border-slate-700 hover:border-[#10b981]"
+                                >
+                                  🏦 Simular
+                                </button>
+                                <button
                                   onClick={() => excluirRegistroImobi('imoveis_imobi', imv.id)}
                                   className="text-slate-500 hover:text-emerald-400 cursor-pointer"
                                 >
@@ -2127,6 +2145,21 @@ export default function Admin() {
                           </p>
                           <div className="flex items-center justify-between gap-2">
                             <p className="text-[11px] text-slate-300 truncate">👔 {lead.corretorResponsavel || 'Plantão'}</p>
+                            <button
+                              onClick={() => {
+                                setCreditoPrefill({
+                                  leadId: lead.id,
+                                  leadNome: lead.nome,
+                                  valorImovel: lead.orcamento,
+                                  imovelTitulo: lead.interesse,
+                                });
+                                setAbaAtiva('credito');
+                              }}
+                              title="Abrir o correspondente com este lead pré-carregado"
+                              className="px-2 py-0.5 rounded bg-slate-900 border border-slate-700 hover:border-[#10b981] text-[10px] font-bold text-[#10b981] cursor-pointer transition"
+                            >
+                              🏦 Simular
+                            </button>
                             <button
                               onClick={() => repassarLeadRoleta(lead)}
                               title="Repassar para o próximo corretor ativo na roleta"
