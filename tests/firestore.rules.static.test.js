@@ -109,7 +109,7 @@ describe('estrutura do arquivo', () => {
       'authed', 'isAdminPlataforma', 'temDocUsuario', 'oficinaDoUsuario',
       'membroOficina', 'papelDoUsuario', 'papelNoTenant', 'gestorDoTenant',
       'camposComerciaisIntactos', 'planoArmazenadoEhPro', 'docPublico',
-      'leadPublicoImobiValido', 'leadPublicoGenericoValido',
+      'leadPortalImobiValido', 'leadPortalGenericoValido',
     ]));
   });
 });
@@ -148,14 +148,14 @@ describe('superfície pública', () => {
     blocos.forEach((b) => {
       b.allow
         .filter((a) => a.startsWith('allow create'))
-        .forEach((a) => expect(a, `${b.caminho}: ${a}`).toMatch(/leadPublico|allow create: if false;/));
+        .forEach((a) => expect(a, `${b.caminho}: ${a}`).toMatch(/leadPortal|leadPublico|allow create: if false;/));
     });
   });
 
   it('toda criação é limitada por algum guarda de autorização', () => {
     const GUARDAS = [
       'membroOficina', 'gestorDoTenant', 'isAdminPlataforma',
-      'request.auth.uid', 'leadPublico', 'exists(',
+      'request.auth.uid', 'leadPortal', 'exists(',
     ];
     const criacoes = BLOCOS.flatMap((b) =>
       b.allow.filter((a) => a.startsWith('allow create')).map((a) => ({ caminho: b.caminho, a })),

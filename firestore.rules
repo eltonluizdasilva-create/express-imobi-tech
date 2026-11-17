@@ -69,7 +69,7 @@ service cloud.firestore {
     // O papel global (usuarios.papel) só conta quando o próprio documento do
     // usuário aponta para este tenant — antes, um 'dono' de A que fosse membro
     // de B por equipe/{uid} administrava a equipe de B.
-    function gestorDoTenant(oid) {
+    function ehGestor(oid) {
       return authed() && membroOficina(oid) && (
         request.auth.uid == oid
         || isAdminPlataforma()
@@ -82,9 +82,19 @@ service cloud.firestore {
       );
     }
 
+    // Alias mantido para não quebrar referências antigas.
+    function gestorDoTenant(oid) {
+      return ehGestor(oid);
+    }
+
+    // Campos que só o backend (Admin SDK) escreve. O cliente nunca altera.
     function camposComerciaisIntactos() {
       return !request.resource.data.diff(resource.data).affectedKeys()
-        .hasAny(['plano', 'isPro', 'planoAssinante', 'tipoPlano', 'modulosPermitidos', 'papel']);
+        .hasAny([
+          'plano', 'isPro', 'planoAssinante', 'tipoPlano', 'modulosPermitidos',
+          'modulosOperacionais', 'assinaturaAtiva', 'creditosIA', 'limiteUsuarios',
+          'papel'
+        ]);
     }
 
     function planoArmazenadoEhPro() {
@@ -96,7 +106,7 @@ service cloud.firestore {
     // Lead imobiliário — payload exato de PortalCliente.jsx:124-135.
     // Nenhum campo fora desta lista entra, e nenhum campo do fluxo genérico
     // (imovel, problema, status) é aceito aqui.
-    function leadPublicoImobiValido() {
+    function leadPortalImobiValido() {
       return request.resource.data.keys().hasOnly([
           'nome', 'telefone', 'interesse', 'bairro', 'orcamento', 'estagio',
           'corretorResponsavel', 'origem', 'observacoes', 'data_registro', 'criadoEm'
@@ -135,7 +145,7 @@ service cloud.firestore {
             || request.resource.data.criadoEm == request.time);
     }
 
-    function leadPublicoGenericoValido() {
+    function leadPortalGenericoValido() {
       return request.resource.data.keys().hasOnly([
           'nome', 'telefone', 'imovel', 'problema', 'status',
           'origem', 'orcamento', 'data_registro'
@@ -220,7 +230,9 @@ service cloud.firestore {
         && !request.resource.data.diff(resource.data).affectedKeys()
           .hasAny([
             'papel', 'isPro', 'plano', 'planoAssinante', 'tipoPlano', 'admin',
-            'nivelAcesso', 'creditosIA', 'nivelInteligencia', 'permissoes'
+            'nivelAcesso', 'creditosIA', 'limiteUsuarios', 'nivelInteligencia',
+            'permissoes', 'modulosOperacionais', 'modulosPermitidos',
+            'administrador_ia', 'modulos'
           ])
         // modulosPermitidos só pode ser LIMPO (fim do trial), nunca concedido.
         && (
@@ -312,9 +324,11 @@ service cloud.firestore {
       allow update: if authed() && membroOficina(oid);
     }
     match /oficinas/{oid}/configuracoes/{docId} {
-      // StatusOS lê configuracoes/geral para montar a página pública
-      allow get: if true;
-      allow list, write: if authed() && membroOficina(oid);
+      // StatusOS (público) lê SOMENTE configuracoes/geral. Antes o `get: true`
+      // valia para qualquer documento da subcoleção, expondo precificacao.
+      allow get: if docId == 'geral' || (authed() && membroOficina(oid));
+      allow list: if authed() && membroOficina(oid);
+      allow write: if authed() && ehGestor(oid);
     }
     // --------- criação pública de lead (Portal): 3 caminhos reais ----------
     // PortalCliente.jsx grava nos três: 'leads' (topo), oficinas/{id}/leads e
@@ -339,7 +353,7 @@ service cloud.firestore {
       allow create: if (
           request.auth == null
           && exists(/databases/$(database)/documents/oficinas/$(oid))
-          && leadPublicoGenericoValido()
+          && leadPortalGenericoValido()
           && !request.resource.data.keys().hasAny(['oficinaId'])
         ) || (authed() && membroOficina(oid));
       allow read, update, delete: if authed() && membroOficina(oid);
@@ -348,7 +362,7 @@ service cloud.firestore {
       allow create: if (
           request.auth == null
           && exists(/databases/$(database)/documents/oficinas/$(oid))
-          && leadPublicoImobiValido()
+          && leadPortalImobiValido()
           && !request.resource.data.keys().hasAny(['oficinaId'])
         ) || (authed() && membroOficina(oid));
       allow read, update, delete: if authed() && membroOficina(oid);
@@ -378,14 +392,12 @@ service cloud.firestore {
         && request.resource.data.cib is string
         && request.resource.data.cib.size() <= 20;
     }
+    // Repasses/NF: dado financeiro — leitura e escrita só de gestão.
     match /oficinas/{oid}/notas_fiscais_imobi/{docId} {
-      allow read, delete: if authed() && membroOficina(oid);
-      allow create, update: if authed() && membroOficina(oid)
+      allow read, delete: if authed() && ehGestor(oid);
+      allow create, update: if authed() && ehGestor(oid)
         && (!request.resource.data.keys().hasAny(['cib'])
           || (request.resource.data.cib is string && request.resource.data.cib.size() <= 20));
-    }
-    match /oficinas/{oid}/acompanhamentos_imobi/{docId} {
-      allow read, write: if authed() && membroOficina(oid);
     }
     // Histórico comercial: evento é prova. Cria uma vez, nunca reescreve.
     //   read   -> membro do tenant
@@ -409,60 +421,63 @@ service cloud.firestore {
         && request.resource.data.criadoEm == request.time;
       allow update, delete: if false;
     }
-    match /oficinas/{oid}/tarefas/{tarefaId} {
-      allow read, write: if authed() && membroOficina(oid);
+    // ========================================================================
+    // Subcoleções do tenant
+    // ------------------------------------------------------------------------
+    // NÃO existe catch-all aberto. No Firestore as regras combinam por OR: um
+    // `match /{subcolecao}/{docId}` genérico reabriria tudo o que as regras
+    // específicas fecham (assinaturas, financeiro, configuracoes…). Por isso o
+    // curinga aceita SOMENTE os nomes desta allowlist.
+    // ========================================================================
+
+    function subcolecaoOperacional(nome) {
+      return nome in [
+        'visitas_imobi', 'propostas_imobi', 'tarefas', 'retornos',
+        'agendamentos_retorno', 'estoque', 'acompanhamentos_imobi',
+        'descartes', 'revisoes_premium', 'burocracias',
+        'desmanche_pecas', 'desmanche_veiculos', 'desmanche_parceiros',
+        'notificacoes_desmanche'
+      ];
     }
-    match /oficinas/{oid}/config/{docId} {
-      allow read, write: if authed() && membroOficina(oid);
+
+    match /oficinas/{oid}/{subcolecao}/{docId} {
+      allow read, create, update: if authed() && membroOficina(oid)
+        && subcolecaoOperacional(subcolecao);
+      allow delete: if authed() && membroOficina(oid)
+        && subcolecaoOperacional(subcolecao);
     }
-    match /oficinas/{oid}/estoque/{docId} {
-      allow read, write: if authed() && membroOficina(oid);
-    }
+
+    // ---------------- financeiro/comercial: só gestão ----------------------
     match /oficinas/{oid}/financeiro/{docId} {
-      allow read, write: if authed() && membroOficina(oid);
+      allow read, write: if authed() && ehGestor(oid);
+    }
+    match /oficinas/{oid}/fechamentos_diarios/{docId} {
+      // FechamentoCaixa.jsx grava aqui e não havia regra (caía no deny-all).
+      allow read, write: if authed() && ehGestor(oid);
     }
     match /oficinas/{oid}/fornecedores/{docId} {
-      allow read, write: if authed() && membroOficina(oid);
+      allow read, write: if authed() && ehGestor(oid);
     }
     match /oficinas/{oid}/patrimonio/{docId} {
-      allow read, write: if authed() && membroOficina(oid);
-    }
-    match /oficinas/{oid}/retornos/{docId} {
-      allow read, write: if authed() && membroOficina(oid);
-    }
-    match /oficinas/{oid}/agendamentos_retorno/{docId} {
-      allow read, write: if authed() && membroOficina(oid);
-    }
-    match /oficinas/{oid}/visitas_imobi/{docId} {
-      allow read, write: if authed() && membroOficina(oid);
-    }
-    match /oficinas/{oid}/revisoes_premium/{docId} {
-      allow read, write: if authed() && membroOficina(oid);
-    }
-    match /oficinas/{oid}/propostas_imobi/{docId} {
-      allow read, write: if authed() && membroOficina(oid);
+      allow read, write: if authed() && ehGestor(oid);
     }
     match /oficinas/{oid}/relatorios_mensais/{docId} {
-      allow read, write: if authed() && membroOficina(oid);
+      allow read, write: if authed() && ehGestor(oid);
     }
-    match /oficinas/{oid}/burocracias/{docId} {
-      allow read, write: if authed() && membroOficina(oid);
+
+    // Assinatura: escrita EXCLUSIVA do backend (functions/pagamentoWebhook).
+    match /oficinas/{oid}/assinaturas/{docId} {
+      allow read: if authed() && ehGestor(oid);
+      allow write: if false;
     }
-    match /oficinas/{oid}/descartes/{docId} {
-      allow read, write: if authed() && membroOficina(oid);
+
+    // Configuração operacional: todo membro lê (o painel usa no boot),
+    // só a gestão escreve.
+    match /oficinas/{oid}/config/{docId} {
+      allow read: if authed() && membroOficina(oid);
+      allow write: if authed() && ehGestor(oid);
     }
-    match /oficinas/{oid}/desmanche_parceiros/{docId} {
-      allow read, write: if authed() && membroOficina(oid);
-    }
-    match /oficinas/{oid}/desmanche_pecas/{docId} {
-      allow read, write: if authed() && membroOficina(oid);
-    }
-    match /oficinas/{oid}/desmanche_veiculos/{docId} {
-      allow read, write: if authed() && membroOficina(oid);
-    }
-    match /oficinas/{oid}/notificacoes_desmanche/{docId} {
-      allow read, write: if authed() && membroOficina(oid);
-    }
+
     // Subcoleção sem uso no código atual (verificado). Escrita restrita a
     // gestor do tenant: antes, qualquer membro criava "usuários" arbitrários.
     match /oficinas/{oid}/usuarios/{docId} {
@@ -471,8 +486,84 @@ service cloud.firestore {
     }
     match /oficinas/{oid}/equipe/{uid} {
       allow read: if authed() && membroOficina(oid);
-      allow write: if gestorDoTenant(oid);
+      allow write: if authed() && ehGestor(oid);
+
+      // Trilha de auditoria da equipe (GestaoEquipe.jsx) — não estava coberta.
+      match /auditorias/{audId} {
+        allow read, create: if authed() && ehGestor(oid);
+        allow update, delete: if false;
+      }
     }
+    // ========================================================================
+    // Correspondente / Crédito
+    // ========================================================================
+    // Parâmetros globais (MCMV/SBPE/seguros/comissões): qualquer logado lê,
+    // ninguém escreve pelo cliente — só Admin SDK / console.
+    match /parametrosCredito/{versao} {
+      allow read: if authed();
+      allow write: if false;
+    }
+
+    // Identidade do registro de crédito não muda depois de criado.
+    function identidadeCreditoIntacta() {
+      return request.resource.data.get('oficinaId', '') == resource.data.get('oficinaId', '')
+        && request.resource.data.get('corretorId', '') == resource.data.get('corretorId', '')
+        && request.resource.data.get('criadoPor', '') == resource.data.get('criadoPor', '');
+    }
+
+    match /oficinas/{oid}/credito_simulacoes/{simId} {
+      allow create: if authed() && membroOficina(oid)
+        && request.resource.data.oficinaId == oid
+        && (request.resource.data.corretorId == request.auth.uid || ehGestor(oid))
+        && request.resource.data.criadoPor == request.auth.uid
+        && request.resource.data.criadoEm == request.time;
+      allow read: if authed() && (
+        ehGestor(oid)
+        || (membroOficina(oid) && resource.data.get('corretorId', '') == request.auth.uid)
+      );
+      allow update: if authed() && (
+        ehGestor(oid)
+        || (membroOficina(oid) && resource.data.get('corretorId', '') == request.auth.uid)
+      ) && identidadeCreditoIntacta();
+      allow delete: if authed() && ehGestor(oid);
+    }
+
+    match /oficinas/{oid}/credito_processos/{procId} {
+      allow create: if authed() && membroOficina(oid)
+        && request.resource.data.oficinaId == oid
+        && (request.resource.data.corretorId == request.auth.uid || ehGestor(oid))
+        && request.resource.data.criadoPor == request.auth.uid
+        && request.resource.data.criadoEm == request.time
+        && request.resource.data.etapa == 'simulacao';
+      allow read: if authed() && (
+        ehGestor(oid)
+        || (membroOficina(oid) && resource.data.get('corretorId', '') == request.auth.uid)
+      );
+      allow update: if authed() && (
+        ehGestor(oid)
+        || (membroOficina(oid) && resource.data.get('corretorId', '') == request.auth.uid)
+      ) && identidadeCreditoIntacta();
+      // Processo não se apaga: reprova/arquiva.
+      allow delete: if false;
+    }
+
+    match /oficinas/{oid}/credito_documentos/{docId} {
+      allow create: if authed() && membroOficina(oid)
+        && request.resource.data.oficinaId == oid
+        && (request.resource.data.corretorId == request.auth.uid || ehGestor(oid))
+        && request.resource.data.criadoPor == request.auth.uid
+        && request.resource.data.criadoEm == request.time;
+      allow read: if authed() && (
+        ehGestor(oid)
+        || (membroOficina(oid) && resource.data.get('corretorId', '') == request.auth.uid)
+      );
+      allow update: if authed() && (
+        ehGestor(oid)
+        || (membroOficina(oid) && resource.data.get('corretorId', '') == request.auth.uid)
+      ) && identidadeCreditoIntacta();
+      allow delete: if authed() && ehGestor(oid);
+    }
+
     match /oficinas/MASTER/{sub=**} {
       allow read: if authed();
       allow write: if isAdminPlataforma();
