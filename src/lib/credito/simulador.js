@@ -29,17 +29,36 @@ export const PERFIS_DOCUMENTO = [
 
 export const UF_NORTE = new Set(['AC', 'AP', 'AM', 'PA', 'RO', 'RR', 'TO']);
 
-/** Taxa mensal equivalente a partir da taxa anual nominal. */
-export function taxaMensal(taxaAnualPct) {
+/**
+ * Taxa MENSAL a partir da taxa anual.
+ *  - 'nominal' (padrão da Caixa): capitalização mensal, i = nominal / 12.
+ *  - 'efetiva': taxa anual já composta, i = (1 + i)^(1/12) - 1.
+ */
+export function taxaMensal(taxaAnualPct, modo = 'efetiva') {
   const i = (Number(taxaAnualPct) || 0) / 100;
   if (i <= 0) return 0;
+  if (modo === 'nominal') return i / 12;
   return Math.pow(1 + i, 1 / 12) - 1;
 }
 
+/** Converte nominal anual (capitalização mensal) em efetiva anual. */
+export function nominalParaEfetiva(taxaNominalPct) {
+  const i = taxaMensal(taxaNominalPct, 'nominal');
+  if (i <= 0) return 0;
+  return (Math.pow(1 + i, 12) - 1) * 100;
+}
+
+/** Converte efetiva anual em nominal anual (o que o banco divulga). */
+export function efetivaParaNominal(taxaEfetivaPct) {
+  const i = taxaMensal(taxaEfetivaPct, 'efetiva');
+  if (i <= 0) return 0;
+  return i * 12 * 100;
+}
+
 /** SAC: amortização constante, parcela inicial e final. */
-export function parcelaSAC(valorFinanciado, taxaAnualPct, meses) {
+export function parcelaSAC(valorFinanciado, taxaAnualPct, meses, modo = 'efetiva') {
   const n = Math.max(1, Math.trunc(meses));
-  const i = taxaMensal(taxaAnualPct);
+  const i = taxaMensal(taxaAnualPct, modo);
   const amortizacao = valorFinanciado / n;
   const primeira = amortizacao + valorFinanciado * i;
   const ultima = amortizacao + amortizacao * i;
@@ -48,9 +67,9 @@ export function parcelaSAC(valorFinanciado, taxaAnualPct, meses) {
 }
 
 /** Price: parcela fixa. */
-export function parcelaPrice(valorFinanciado, taxaAnualPct, meses) {
+export function parcelaPrice(valorFinanciado, taxaAnualPct, meses, modo = 'efetiva') {
   const n = Math.max(1, Math.trunc(meses));
-  const i = taxaMensal(taxaAnualPct);
+  const i = taxaMensal(taxaAnualPct, modo);
   const pmt = i === 0 ? valorFinanciado / n : (valorFinanciado * i) / (1 - Math.pow(1 + i, -n));
   return { primeira: pmt, ultima: pmt, total: pmt * n, meses: n };
 }
@@ -161,9 +180,10 @@ export function simular(entradaBruta, params) {
   let cota = ehMcmv ? params.mcmv.cotaMaxima : (sistema === 'sac' ? params.sbpe.cotaSAC : params.sbpe.cotaPrice);
   if (entradaBruta.tipo === 'planta') cota = Math.min(cota, 0.80);
 
-  const entradaTotal = entradaDinheiro + (usaFgts ? fgts : 0);
+  const fgtsUsado = usaFgts ? fgts : 0;
+  const entradaDisponivel = entradaDinheiro + fgtsUsado;
   const tetoPorCota = valorImovel * cota;
-  let financiavel = Math.max(0, Math.min(tetoPorCota, valorImovel - entradaTotal));
+  let financiavel = Math.max(0, Math.min(tetoPorCota, valorImovel - entradaDisponivel));
 
   // Subsídio (só MCMV faixas 1-3), estimativa interna limitada ao teto da região
   let subsidio = 0;
@@ -175,28 +195,52 @@ export function simular(entradaBruta, params) {
     financiavel = Math.max(0, financiavel - subsidio);
   }
 
-  const entradaNecessaria = Math.max(0, valorImovel - financiavel - subsidio - (usaFgts ? fgts : 0));
+  // Entrada EXIGIDA (dinheiro + FGTS) e o que falta para fechar
+  const entradaNecessaria = Math.max(0, valorImovel - financiavel - subsidio);
+  const deficitEntrada = Math.max(0, entradaNecessaria - entradaDisponivel);
 
-  // Taxa
+  // Taxa — nominal (padrão dos bancos) ou efetiva
+  const taxaTipo = entradaBruta.taxaTipo === 'efetiva' ? 'efetiva' : 'nominal';
   let taxaAnual = Number(entradaBruta.taxaAnual);
   if (!Number.isFinite(taxaAnual) || taxaAnual <= 0) {
     if (ehMcmv && enq.faixa !== 'Faixa 4') taxaAnual = params.mcmv.jurosFaixa1a3;
     else if (ehMcmv) taxaAnual = params.mcmv.jurosFaixa4Min;
     else taxaAnual = params.sbpe.taxaPadrao;
   }
+  const taxaEfetiva = taxaTipo === 'nominal' ? nominalParaEfetiva(taxaAnual) : taxaAnual;
+  const taxaNominal = taxaTipo === 'nominal' ? taxaAnual : efetivaParaNominal(taxaAnual);
 
   const prazoPedido = Number(entradaBruta.prazo) || 360;
   const prazo = prazoMaximoPorIdade(idade, prazoPedido);
   const calc = sistema === 'sac'
-    ? parcelaSAC(financiavel, taxaAnual, prazo)
-    : parcelaPrice(financiavel, taxaAnual, prazo);
+    ? parcelaSAC(financiavel, taxaAnual, prazo, taxaTipo)
+    : parcelaPrice(financiavel, taxaAnual, prazo, taxaTipo);
 
-  const comprometimento = rendaTotal > 0 ? calc.primeira / rendaTotal : 0;
+  // Seguros e tarifa (MIP sobre saldo inicial, DFI sobre valor do imóvel)
+  const seguros = params.seguros || { mipPct: 0, dfiPct: 0, tarifaMensal: 0 };
+  const mipPct = entradaBruta.mipPct !== undefined && entradaBruta.mipPct !== ''
+    ? Number(entradaBruta.mipPct) : Number(seguros.mipPct) || 0;
+  const dfiPct = entradaBruta.dfiPct !== undefined && entradaBruta.dfiPct !== ''
+    ? Number(entradaBruta.dfiPct) : Number(seguros.dfiPct) || 0;
+  const tarifaMensal = entradaBruta.tarifaMensal !== undefined && entradaBruta.tarifaMensal !== ''
+    ? Number(entradaBruta.tarifaMensal) : Number(seguros.tarifaMensal) || 0;
+
+  const mip = (financiavel * mipPct) / 100;
+  const dfi = (valorImovel * dfiPct) / 100;
+  const encargos = { mip, dfi, tarifa: tarifaMensal, total: mip + dfi + tarifaMensal };
+
+  const parcelaSemSeguros = calc.primeira;
+  const parcelaComSeguros = calc.primeira + encargos.total;
+  const parcelaFinalComSeguros = calc.ultima + encargos.total;
+  const comprometimento = rendaTotal > 0 ? parcelaComSeguros / rendaTotal : 0;
   const limiteComprometimento = params.sbpe.comprometimentoMax;
 
   const alertas = [...enq.alertas];
   if (comprometimento > limiteComprometimento) {
-    alertas.push(`Parcela inicial compromete ${(comprometimento * 100).toFixed(1)}% da renda (limite ${(limiteComprometimento * 100).toFixed(0)}%).`);
+    alertas.push(`Parcela com seguros compromete ${(comprometimento * 100).toFixed(1)}% da renda (limite ${(limiteComprometimento * 100).toFixed(0)}%).`);
+  }
+  if (deficitEntrada > 0) {
+    alertas.push(`Faltam ${fmt(deficitEntrada)} de entrada para fechar a operação.`);
   }
   if (idade != null && prazo < prazoPedido) {
     alertas.push(`Prazo reduzido de ${prazoPedido} para ${prazo} meses pela idade (${idade} anos; limite 80 anos).`);
@@ -209,18 +253,28 @@ export function simular(entradaBruta, params) {
     entrada,
     enquadramento: { ...enq, ehMcmv },
     rendaTotal,
-    entradaTotal,
+    entradaTotal: entradaDisponivel,
+    entradaDisponivel,
     cota: Number(cota.toFixed(4)),
     financiavel,
     subsidio,
     entradaNecessaria,
+    deficitEntrada,
+    taxaTipo,
     taxaAnual,
+    taxaNominal,
+    taxaEfetiva,
     sistema,
     prazoSolicitado: prazoPedido,
     prazo,
     idade,
-    parcelaInicial: calc.primeira,
-    parcelaFinal: calc.ultima,
+    encargos,
+    parcelaSemSeguros,
+    parcelaComSeguros,
+    parcelaInicial: parcelaComSeguros,
+    parcelaFinal: parcelaFinalComSeguros,
+    parcelaInicialSemSeguros: parcelaSemSeguros,
+    parcelaFinalSemSeguros: calc.ultima,
     totalPago: calc.total,
     comprometimento,
     limiteComprometimento,
@@ -240,8 +294,9 @@ export function resumoWhatsApp(sim, nomeCliente = '') {
     `Valor financiável: ${fmt(sim.financiavel)}`,
     sim.subsidio > 0 ? `Subsídio estimado: ${fmt(sim.subsidio)}` : null,
     `Entrada necessária: ${fmt(sim.entradaNecessaria)}`,
-    `Parcela inicial: ${fmt(sim.parcelaInicial)} · final: ${fmt(sim.parcelaFinal)}`,
-    `Sistema ${sim.sistema.toUpperCase()} · ${sim.prazo} meses · taxa ${sim.taxaAnual.toFixed(2)}% a.a.`,
+    `Parcela com seguros: ${fmt(sim.parcelaComSeguros)} · sem seguros: ${fmt(sim.parcelaSemSeguros)}`,
+    `Parcela final (com seguros): ${fmt(sim.parcelaFinal)}`,
+    `Sistema ${sim.sistema.toUpperCase()} · ${sim.prazo} meses · taxa ${sim.taxaAnual.toFixed(2)}% a.a. ${sim.taxaTipo === 'nominal' ? 'nominal' : 'efetiva'} (efetiva ${sim.taxaEfetiva.toFixed(2)}%)`,
     `Comprometimento da renda: ${(sim.comprometimento * 100).toFixed(1)}%`,
     '',
     '_Pré-simulação estimada, sujeita à análise do banco. Não é aprovação de crédito._',

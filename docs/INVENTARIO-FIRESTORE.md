@@ -56,6 +56,22 @@ Varredura estática de `src/**/*.{js,jsx}` (190 arquivos): **240 acessos**, **47
 | `oficinas/{oficinaId}/configuracoes/precificacao` | 1 | 1 | src\components\admin\Precificacao.jsx | **NÃO MAPEADO** (escrita por spread de estado do formulário) |
 | `oficinas/{oficinaId}/equipe/auditorias` | 0 | 1 | src\components\GestaoEquipe.jsx | **NÃO MAPEADO** (escrita por spread de estado do formulário) |
 
+## Coleções novas — Correspondente / Crédito (Fases 1 e 2)
+
+| Caminho | L | E | Campos |
+|---|---:|---:|---|
+| `parametrosCredito/{versao}` (global) | 1 | 0 | versao, vigenciaInicio, vigenciaFim, validado, mcmv{...}, sbpe{...}, seguros{mipPct,dfiPct,tarifaMensal}, estimativaSubsidio, comissoes[] — **escrita manual/Admin SDK** |
+| `oficinas/{oficinaId}/credito_simulacoes` | 0 | 1 | oficinaId, corretorId, criadoPor, criadoEm, leadId, leadNome, imovelId, rotulo, entrada{...}, saida{enquadramento,financiavel,entradaNecessaria,subsidio,parcelaInicial,parcelaFinal,comprometimento,taxaAnual,prazo,sistema,alertas}, parametrosVersao, parametrosValidados, resultadoOficial |
+| `oficinas/{oficinaId}/credito_processos` | 0 | 2 | oficinaId, corretorId, criadoPor, criadoEm, leadId, leadNome, imovelId, imovelTitulo, valorImovel, proponentes[{nome,cpfMascarado,renda,estadoCivil,regimeBens,perfil}], banco, modalidade, valorFinanciado, etapa, etapaDesde, motivoReprovacao, sla{etapa,prazoEm}, simulacaoId, consentimentoLGPD{aceito,em,versao}, historico[{de,para,em,autor,autorId,motivo}], atualizadoEm |
+
+**Queries do cliente:**
+```js
+query(collection(db,'oficinas',oficinaId,'credito_processos'))                          // dono/admin
+query(..., where('corretorId','==',uid))                                                 // corretor
+getDoc(doc(db,'parametrosCredito',versao))                                               // qualquer logado
+```
+`credito_simulacoes` só recebe `addDoc` (nenhuma leitura no cliente ainda).
+
 ## Quem mais escreve (fora do cliente)
 
 ### `functions/index.js` — Admin SDK, 2 exports

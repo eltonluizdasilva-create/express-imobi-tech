@@ -12,6 +12,8 @@ import useCredito from '../../hooks/useCredito';
 import { simular, resumoWhatsApp } from '../../lib/credito/simulador';
 import { avisoDeParametros } from '../../lib/credito/parametros';
 import { consumeCreditoPrefill } from '../../lib/credito/prefill';
+import EsteiraKanban from './EsteiraKanban';
+import { useAuth } from '../../contexts/AuthContext';
 
 const card = 'bg-[#020408] border border-slate-800 rounded-3xl';
 const labelCls = 'block text-[10px] font-black uppercase tracking-widest text-slate-400 mb-1.5';
@@ -22,7 +24,8 @@ const ENTRADA_VAZIA = {
   valorImovel: '', tipo: 'usado', uf: 'MG', cidade: '',
   rendas: [''], numProponentes: 1, nascimentoMaisVelho: '',
   fgts: '', usaFgts: true, entradaDinheiro: '', sistema: 'sac',
-  prazo: '360', taxaAnual: '', primeiroImovel: true,
+  prazo: '360', taxaAnual: '', taxaTipo: 'nominal', primeiroImovel: true,
+  mipPct: '', dfiPct: '', tarifaMensal: '',
 };
 
 const ABAS = [
@@ -32,9 +35,18 @@ const ABAS = [
   { id: 'receita', label: 'Receita', icone: Wallet },
 ];
 
-export default function CorrespondenteCredito({ dadosOficina, usuario, papelLogado }) {
+export default function CorrespondenteCredito({ dadosOficina, usuario: usuarioProp, papelLogado }) {
   const corAba = corDaAba('credito');
-  const oficinaId = dadosOficina?.id || dadosOficina?.uid || null;
+  // A oficina e o usuário vêm do AuthContext quando o shell não os repassa,
+  // mantendo o AdminNovo com o mínimo de alterações.
+  const auth = useAuth();
+  const oficinaId = dadosOficina?.id || dadosOficina?.uid || auth?.dadosOficina?.id || auth?.currentUserId || null;
+  const papelEfetivo = papelLogado || auth?.papelLogado || 'corretor';
+  const usuario = usuarioProp || {
+    uid: auth?.currentUserId || null,
+    email: auth?.currentUser?.email || null,
+    nome: auth?.currentUser?.displayName || null,
+  };
 
   const { parametros, carregando, aviso, salvando, erro, salvarSimulacao } = useCredito(oficinaId, usuario);
 
@@ -146,16 +158,23 @@ export default function CorrespondenteCredito({ dadosOficina, usuario, papelLoga
         ))}
       </div>
 
-      {aba !== 'simulador' && (
+      {aba === 'esteira' && (
+        <EsteiraKanban
+          oficinaId={oficinaId}
+          usuario={usuario}
+          papelLogado={papelEfetivo}
+          simAtual={sim}
+          onAbrirSimulador={() => setAba('simulador')}
+        />
+      )}
+
+      {(aba === 'documentos' || aba === 'receita') && (
         <div className={`${card} p-6 text-center`}>
           <p className="text-sm font-black text-white">
-            {aba === 'esteira' && 'Esteira de processos (Fase 2)'}
-            {aba === 'documentos' && 'Checklist de documentos (Fase 3)'}
-            {aba === 'receita' && 'Painel de receita (Fase 5)'}
+            {aba === 'documentos' ? 'Checklist de documentos (Fase 3)' : 'Painel de receita (Fase 5)'}
           </p>
           <p className="mt-1 text-[11px] text-slate-400">
-            Estrutura reservada nesta fase — as coleções oficinas/{'{oficinaId}'}/credito_processos e credito_documentos
-            entram na próxima entrega.
+            Estrutura reservada — a coleção oficinas/{'{oficinaId}'}/credito_documentos entra na Fase 3.
           </p>
         </div>
       )}
@@ -210,9 +229,11 @@ export default function CorrespondenteCredito({ dadosOficina, usuario, papelLoga
                     ['Entrada necessária', brl(sim.entradaNecessaria)],
                     ['Subsídio estimado', sim.subsidio > 0 ? brl(sim.subsidio) : '—'],
                     ['Prazo', `${sim.prazo} meses`],
-                    ['1ª parcela', brl(sim.parcelaInicial)],
+                    ['Parcela com seguros', brl(sim.parcelaComSeguros)],
+                    ['Parcela sem seguros', brl(sim.parcelaSemSeguros)],
                     ['Última parcela', brl(sim.parcelaFinal)],
-                    ['Taxa', `${sim.taxaAnual.toFixed(2)}% a.a.`],
+                    [`Taxa ${sim.taxaTipo}`, `${sim.taxaAnual.toFixed(2)}% a.a.`],
+                    ['Taxa efetiva equiv.', `${sim.taxaEfetiva.toFixed(2)}% a.a.`],
                     ['Cota', pct(sim.cota)],
                   ].map(([k, v]) => (
                     <div key={k} className="rounded-xl border border-slate-800 px-2 py-2">
@@ -222,8 +243,45 @@ export default function CorrespondenteCredito({ dadosOficina, usuario, papelLoga
                   ))}
                 </div>
 
+                <div className="grid grid-cols-3 gap-2">
+                  {[
+                    ['MIP', brl(sim.encargos.mip)],
+                    ['DFI', brl(sim.encargos.dfi)],
+                    ['Tarifa', brl(sim.encargos.tarifa)],
+                  ].map(([k, v]) => (
+                    <div key={k} className="rounded-xl border border-slate-800 px-2 py-1.5">
+                      <p className="text-[9px] font-black uppercase tracking-widest text-slate-500">{k}</p>
+                      <p className="text-[11px] font-bold text-slate-200">{v}</p>
+                    </div>
+                  ))}
+                </div>
+
+                <div className={`rounded-xl border px-3 py-2 ${sim.deficitEntrada > 0 ? 'border-red-500/40 bg-red-500/10' : 'border-[#10b981]/40 bg-[#10b981]/5'}`}>
+                  <div className="flex items-center justify-between gap-2">
+                    <div>
+                      <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Entrada exigida × disponível</p>
+                      <p className="text-[11px] text-slate-300">
+                        {brl(sim.entradaNecessaria)} exigida · {brl(sim.entradaDisponivel)} disponível (dinheiro + FGTS)
+                      </p>
+                    </div>
+                    <div className="text-right">
+                      <p className="text-[9px] font-black uppercase tracking-widest text-slate-500">
+                        {sim.deficitEntrada > 0 ? 'Déficit' : 'Folga'}
+                      </p>
+                      <p className={`text-lg font-black ${sim.deficitEntrada > 0 ? 'text-red-300' : 'text-[#10b981]'}`}>
+                        {brl(sim.deficitEntrada > 0 ? sim.deficitEntrada : sim.entradaDisponivel - sim.entradaNecessaria)}
+                      </p>
+                    </div>
+                  </div>
+                  {sim.deficitEntrada > 0 && (
+                    <p className="mt-1 text-[10px] text-red-300">
+                      Falta entrada: some FGTS, aumente a entrada em dinheiro ou reduza o valor do imóvel.
+                    </p>
+                  )}
+                </div>
+
                 <div className={`rounded-xl border px-3 py-2 ${sim.comprometimento > sim.limiteComprometimento ? 'border-red-500/40 bg-red-500/10' : 'border-slate-800'}`}>
-                  <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Comprometimento da renda</p>
+                  <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Comprometimento da renda (parcela com seguros)</p>
                   <p className={`text-lg font-black ${sim.comprometimento > sim.limiteComprometimento ? 'text-red-300' : 'text-white'}`}>
                     {pct(sim.comprometimento)} <span className="text-[10px] font-bold text-slate-500">limite {pct(sim.limiteComprometimento)}</span>
                   </p>
@@ -272,7 +330,7 @@ export default function CorrespondenteCredito({ dadosOficina, usuario, papelLoga
                       </button>
                     </div>
                     <p className="text-[11px] text-slate-300">{c.sim.enquadramento.linha} {c.sim.enquadramento.faixa || ''}</p>
-                    <p className="mt-1 text-sm font-black text-white">{brl(c.sim.parcelaInicial)}<span className="text-[9px] text-slate-500"> /mês</span></p>
+                    <p className="mt-1 text-sm font-black text-white">{brl(c.sim.parcelaComSeguros)}<span className="text-[9px] text-slate-500"> /mês c/ seguros</span></p>
                     <dl className="mt-1 space-y-0.5 text-[10px] text-slate-400">
                       <div className="flex justify-between"><dt>Financia</dt><dd className="text-slate-200">{brl(c.sim.financiavel)}</dd></div>
                       <div className="flex justify-between"><dt>Entrada</dt><dd className="text-slate-200">{brl(c.sim.entradaNecessaria)}</dd></div>

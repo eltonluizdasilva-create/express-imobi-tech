@@ -12,6 +12,9 @@ export const CAMPOS_CONFERIR = [
   'mcmv.subsidioMaxNorte',
   'mcmv.jurosFaixa1a3',
   'sbpe.cotaSAC',
+  'seguros.mipPct',
+  'seguros.dfiPct',
+  'seguros.tarifaMensal',
   'sbpe.cotaPrice',
   'estimativaSubsidio',
 ];
@@ -44,6 +47,14 @@ export const PARAMETROS_PADRAO = {
     tetoSFH: 2250000,        // informado
     comprometimentoMax: 0.30,// informado
     taxaPadrao: 10.5,        // CONFERIR
+  },
+
+  // Seguros e tarifa cobrados junto da parcela (CONFERIR — variam por banco,
+  // idade do proponente e valor financiado; aqui são taxas de trabalho).
+  seguros: {
+    mipPct: 0.05,        // % ao mês sobre o saldo devedor inicial
+    dfiPct: 0.015,       // % ao mês sobre o valor do imóvel
+    tarifaMensal: 25,    // R$ por mês (administração/TAC diluída)
   },
 
   // Estimativa interna de subsídio (a Caixa define o valor real).

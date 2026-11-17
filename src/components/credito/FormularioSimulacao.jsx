@@ -110,8 +110,40 @@ export default function FormularioSimulacao({ entrada, setEntrada, parametros, p
         </div>
         <div>
           <label className={labelCls}>Taxa anual % (editável)</label>
-          <input className={inputCls} inputMode="decimal" value={entrada.taxaAnual} onChange={(e) => set('taxaAnual', e.target.value)}
-                 placeholder={String(parametros?.sbpe?.taxaPadrao || 10.5)} />
+          <div className="flex gap-2">
+            <input className={inputCls} inputMode="decimal" value={entrada.taxaAnual} onChange={(e) => set('taxaAnual', e.target.value)}
+                   placeholder={String(parametros?.sbpe?.taxaPadrao || 10.5)} />
+            <select className={`${inputCls} w-32`} value={entrada.taxaTipo} onChange={(e) => set('taxaTipo', e.target.value)}>
+              <option value="nominal">nominal</option>
+              <option value="efetiva">efetiva</option>
+            </select>
+          </div>
+          <p className="mt-1 text-[9px] text-slate-500">
+            {entrada.taxaTipo === 'nominal'
+              ? 'Nominal: o banco divide por 12 (padrão da Caixa) — custa mais que a mesma taxa efetiva.'
+              : 'Efetiva: taxa anual já composta.'}
+          </p>
+        </div>
+      </div>
+
+      <div className="rounded-2xl border border-slate-800 p-3">
+        <p className={`${labelCls} mb-2`}>Seguros e tarifa mensais (entram na parcela)</p>
+        <div className="grid gap-3 md:grid-cols-3">
+          <div>
+            <label className="block text-[9px] font-bold uppercase tracking-widest text-slate-500 mb-1">MIP % ao mês (saldo)</label>
+            <input className={inputCls} inputMode="decimal" value={entrada.mipPct} onChange={(e) => set('mipPct', e.target.value)}
+                   placeholder={String(parametros?.seguros?.mipPct ?? 0.05)} />
+          </div>
+          <div>
+            <label className="block text-[9px] font-bold uppercase tracking-widest text-slate-500 mb-1">DFI % ao mês (imóvel)</label>
+            <input className={inputCls} inputMode="decimal" value={entrada.dfiPct} onChange={(e) => set('dfiPct', e.target.value)}
+                   placeholder={String(parametros?.seguros?.dfiPct ?? 0.015)} />
+          </div>
+          <div>
+            <label className="block text-[9px] font-bold uppercase tracking-widest text-slate-500 mb-1">Tarifa R$/mês</label>
+            <input className={inputCls} inputMode="decimal" value={entrada.tarifaMensal} onChange={(e) => set('tarifaMensal', e.target.value)}
+                   placeholder={String(parametros?.seguros?.tarifaMensal ?? 25)} />
+          </div>
         </div>
       </div>
 

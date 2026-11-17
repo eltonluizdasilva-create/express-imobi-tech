@@ -3,6 +3,7 @@ import React from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import CorrespondenteCredito from '../src/components/credito/CorrespondenteCredito.jsx';
 import FichaCaixa from '../src/components/credito/FichaCaixa.jsx';
+import EsteiraKanban from '../src/components/credito/EsteiraKanban.jsx';
 import FormularioSimulacao from '../src/components/credito/FormularioSimulacao.jsx';
 import { simular } from '../src/lib/credito/simulador.js';
 import { PARAMETROS_PADRAO } from '../src/lib/credito/parametrosPadrao.js';
@@ -31,9 +32,21 @@ const htmlForm = renderToStaticMarkup(React.createElement(FormularioSimulacao, {
   setEntrada: () => {}, parametros: PARAMETROS_PADRAO, prefilled: null,
 }));
 
+const htmlEsteira = renderToStaticMarkup(React.createElement(EsteiraKanban, {
+  oficinaId: 'ofi_teste', usuario: { uid: 'uid_corretor', nome: 'Corretor' },
+  papelLogado: 'corretor', simAtual: null, onAbrirSimulador: () => {},
+}));
+
 const checagensExtra = {
+  'esteira: cabeçalho': htmlEsteira.includes('Esteira de crédito'),
+  'esteira: botão novo processo': htmlEsteira.includes('Novo processo'),
+  'esteira: aviso de escopo do corretor': htmlEsteira.includes('apenas os processos'),
+  'esteira: estado de carregamento': htmlEsteira.includes('Carregando processos'),
   'ficha: título': htmlFicha.includes('Ficha espelho'),
-  'ficha: 11 linhas na ordem': htmlFicha.includes('1. Tipo de imóvel') && htmlFicha.includes('11. Enquadramento sugerido'),
+  'ficha: linhas na ordem': htmlFicha.includes('1. Tipo de imóvel') && htmlFicha.includes('11. Enquadramento sugerido'),
+  'ficha: taxa nominal rotulada': htmlFicha.includes('Taxa (nominal)'),
+  'ficha: seguros com/sem': htmlFicha.includes('Parcela com / sem seguros'),
+  'ficha: entrada exigida/disponível': htmlFicha.includes('Entrada exigida / disponível'),
   'ficha: campo nº da simulação': htmlFicha.includes('Nº da simulação'),
   'ficha: botão copiar': htmlFicha.includes('Copiar ficha'),
   'ficha: parcela calculada presente': /R\$ ?[\d.]+/.test(htmlFicha),

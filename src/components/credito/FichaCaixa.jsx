@@ -24,7 +24,11 @@ export default function FichaCaixa({ sim, oficial, setOficial }) {
     ['7. Nascimento do mais velho', e.nascimentoMaisVelho || '(informar)'],
     ['8. UF / Cidade', `${e.uf || '—'} / ${e.cidade || '—'}`],
     ['9. Sistema / prazo', `${sim.sistema.toUpperCase()} · ${sim.prazo} meses`],
-    ['10. Taxa considerada', `${sim.taxaAnual.toFixed(2)}% a.a.`],
+    [`10. Taxa (${sim.taxaTipo})`, `${sim.taxaAnual.toFixed(2)}% a.a.`],
+    ['10b. Taxa efetiva equivalente', `${sim.taxaEfetiva.toFixed(2)}% a.a.`],
+    ['10c. Seguros + tarifa', `MIP ${brl(sim.encargos.mip)} · DFI ${brl(sim.encargos.dfi)} · tarifa ${brl(sim.encargos.tarifa)}`],
+    ['10d. Parcela com / sem seguros', `${brl(sim.parcelaComSeguros)} / ${brl(sim.parcelaSemSeguros)}`],
+    ['10e. Entrada exigida / disponível', `${brl(sim.entradaNecessaria)} / ${brl(sim.entradaDisponivel)}`],
     ['11. Enquadramento sugerido', `${sim.enquadramento.linha}${sim.enquadramento.faixa ? ' — ' + sim.enquadramento.faixa : ''}`],
   ];
 

@@ -3,6 +3,7 @@ import { PARAMETROS_PADRAO, avisoDeParametros } from '../src/lib/credito/paramet
 import {
   simular, enquadrar, parcelaSAC, parcelaPrice, prazoMaximoPorIdade,
   idadeEmAnos, resumoWhatsApp, taxaMensal,
+  nominalParaEfetiva, efetivaParaNominal,
 } from '../src/lib/credito/simulador.js';
 
 let falhas = 0;
@@ -29,6 +30,19 @@ ok('Price custa mais no total que SAC', price.total > sac.total,
    `${brl(price.total)} > ${brl(sac.total)}`);
 ok('taxa mensal de 12% a.a. ≈ 0,9489%', Math.abs(taxaMensal(12) * 100 - 0.9489) < 0.001, (taxaMensal(12) * 100).toFixed(4));
 ok('taxa 0 não explode', parcelaPrice(100000, 0, 100).primeira === 1000);
+
+/* ---------- nominal vs efetiva ---------- */
+ok('nominal 12% a.a. → 1% ao mês', Math.abs(taxaMensal(12, 'nominal') * 100 - 1) < 1e-9, (taxaMensal(12, 'nominal') * 100).toFixed(4));
+ok('nominal 12% → efetiva 12,6825%', Math.abs(nominalParaEfetiva(12) - 12.6825) < 0.001, nominalParaEfetiva(12).toFixed(4) + '%');
+ok('efetiva 12,6825% → nominal 12%', Math.abs(efetivaParaNominal(12.6825) - 12) < 0.01, efetivaParaNominal(12.6825).toFixed(4) + '%');
+const parcNominal = parcelaSAC(400000, 10.5, 360, 'nominal');
+const parcEfetiva = parcelaSAC(400000, 10.5, 360, 'efetiva');
+// Com a MESMA taxa anual de 10,5%: nominal = 0,875%/mês, efetiva = 0,8354%/mês.
+// Ou seja, "10,5% nominal" custa MAIS que "10,5% efetiva" — é por isso que o
+// rótulo do tipo de taxa precisa aparecer na tela.
+ok('nominal rende parcela MAIOR que efetiva (mesma taxa anual)',
+   parcNominal.primeira > parcEfetiva.primeira,
+   `${brl(parcNominal.primeira)} > ${brl(parcEfetiva.primeira)}`);
 
 /* ---------- enquadramento ---------- */
 const e1 = enquadrar({ rendaTotal: 3000, valorImovel: 250000, uf: 'MG' }, P);
@@ -63,8 +77,19 @@ const s = simular({
 ok('renda somada dos proponentes', s.rendaTotal === 8500, brl(s.rendaTotal));
 ok('cota 80% (SBPE SAC)', s.cota === 0.8, String(s.cota));
 ok('financiável = 80% de 450k', Math.round(s.financiavel) === 360000, brl(s.financiavel));
-ok('entrada necessária = 450k - 360k - FGTS', Math.round(s.entradaNecessaria) === 70000, brl(s.entradaNecessaria));
+ok('entrada exigida = 450k - 360k financiados', Math.round(s.entradaNecessaria) === 90000, brl(s.entradaNecessaria));
+ok('disponível = 40k dinheiro + 20k FGTS', Math.round(s.entradaDisponivel) === 60000, brl(s.entradaDisponivel));
+ok('déficit de entrada = 30k', Math.round(s.deficitEntrada) === 30000, brl(s.deficitEntrada));
 ok('parcela inicial calculada', s.parcelaInicial > 1000, brl(s.parcelaInicial));
+ok('parcela com seguros > sem seguros', s.parcelaComSeguros > s.parcelaSemSeguros,
+   `${brl(s.parcelaComSeguros)} > ${brl(s.parcelaSemSeguros)}`);
+ok('encargos = MIP + DFI + tarifa', Math.abs(s.encargos.total - (s.encargos.mip + s.encargos.dfi + s.encargos.tarifa)) < 1e-9,
+   `MIP ${brl(s.encargos.mip)} + DFI ${brl(s.encargos.dfi)} + tarifa ${brl(s.encargos.tarifa)}`);
+ok('MIP = 0,05% do financiável', Math.abs(s.encargos.mip - 360000 * 0.0005) < 0.01, brl(s.encargos.mip));
+ok('DFI = 0,015% do valor do imóvel', Math.abs(s.encargos.dfi - 450000 * 0.00015) < 0.01, brl(s.encargos.dfi));
+ok('taxa nominal informada vira efetiva no retorno', Math.abs(s.taxaEfetiva - nominalParaEfetiva(10.5)) < 1e-9,
+   `${s.taxaNominal.toFixed(2)}% nominal = ${s.taxaEfetiva.toFixed(2)}% efetiva`);
+ok('rótulo do tipo de taxa', s.taxaTipo === 'nominal', s.taxaTipo);
 ok('comprometimento coerente', Math.abs(s.comprometimento - s.parcelaInicial / 8500) < 1e-9,
    (s.comprometimento * 100).toFixed(1) + '%');
 ok('alerta legal presente', s.avisoLegal.includes('sujeita à análise do banco'));
@@ -98,6 +123,8 @@ const wpp = resumoWhatsApp(s, 'João');
 ok('resumo cita enquadramento', wpp.includes('Enquadramento sugerido'));
 ok('resumo tem aviso legal', wpp.includes('sujeita à análise do banco'));
 ok('resumo NÃO contém CPF', !/\d{3}\.\d{3}\.\d{3}-\d{2}/.test(wpp));
+ok('resumo separa parcela com/sem seguros', wpp.includes('com seguros') && wpp.includes('sem seguros'));
+ok('resumo diz se a taxa é nominal', wpp.includes('nominal'));
 
 /* ---------- aviso de parâmetros ---------- */
 ok('defaults não validados exibem aviso', String(avisoDeParametros(P)).includes('não validados'));

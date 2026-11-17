@@ -21,6 +21,9 @@ const stubFirestore = {
         'export const serverTimestamp=()=>null;',
         'export const getFirestore=()=>({}), connectFirestoreEmulator=()=>{};',
         'export const onSnapshot=()=>()=>{};',
+        'export const arrayUnion=(...a)=>({__arrayUnion:a}), arrayRemove=(...a)=>({__arrayRemove:a});',
+        'export const increment=(n)=>({__increment:n}), Timestamp={fromDate:(d)=>d, now:()=>new Date()};',
+        'export const getFirestore2=()=>({}), initializeApp=()=>({});',
       ].join('\n'),
       loader: 'js',
     }));
