@@ -10,7 +10,7 @@ export function useGemini() {
     setError(null);
     try {
       // 🟢 A usar o Hermes com a DeepSeek (sem limites de cota do Google)
-      const promptSistema = "Você é o Hermes, o assistente especialista e orquestrador técnico do Express Auto Tech.";
+      const promptSistema = "Você é o Hermes Imobi, o assistente especialista e orquestrador técnico do Express Imobi Tech (mercado imobiliário: corretagem, locação, financiamento, VGV e gestão de carteira).";
       const historico = [{ role: "user", content: prompt }];
       
       const resposta = await executarAgenteHermes(promptSistema, historico);
