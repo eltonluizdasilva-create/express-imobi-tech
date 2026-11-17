@@ -66,6 +66,7 @@ import GuiaDaAba from './components/ui/GuiaDaAba';
 import RodapeLegal from './components/ui/RodapeLegal';
 import { MODULOS_MAP } from './modulosMap';
 import { setCreditoPrefill } from './lib/credito/prefill';
+import { MODULOS_SO_GESTAO, ehGestor as ehGestorDoPapel, filtrarModulos } from './lib/permissoes-menu';
 
 import { useAuth } from './contexts/AuthContext';
 import useCarregamentoInicial from './hooks/useCarregamentoInicial.jsx';
@@ -604,6 +605,15 @@ export default function Admin() {
     imobiliariaId: '',
     oficinaId: '',
   });
+
+  // ---- visibilidade do menu por papel (espelho das Firestore Rules) ----
+  const ehGestorUI = ehGestorDoPapel(papelLogado);
+  const filtrarPorPapel = useCallback((itens) => filtrarModulos(itens, papelLogado), [papelLogado]);
+
+  // Se o corretor cair numa aba de gestão (estado antigo/atalho), volta ao início.
+  useEffect(() => {
+    if (!ehGestorUI && MODULOS_SO_GESTAO.has(abaAtiva)) setAbaAtiva('dashboard_imobi');
+  }, [ehGestorUI, abaAtiva]);
 
   const alternarModoPainel = useCallback((novoModo) => {
     setModoPainel(novoModo);
@@ -1729,7 +1739,7 @@ export default function Admin() {
           <BarraModulos
             titulo="Essenciais · Grátis"
             tom="esmeralda"
-            itens={botoesBloco1Essencial}
+            itens={filtrarPorPapel(botoesBloco1Essencial)}
             abaAtiva={abaAtiva}
             setAbaAtiva={setAbaAtiva}
             detalhes={MAPA_DETALHES_ABAS}
@@ -1741,7 +1751,7 @@ export default function Admin() {
             <BarraModulos
               titulo="PRO · Assinantes"
               tom="roxo"
-              itens={botoesBloco3Gestao}
+              itens={filtrarPorPapel(botoesBloco3Gestao)}
               abaAtiva={abaAtiva}
               setAbaAtiva={setAbaAtiva}
               detalhes={MAPA_DETALHES_ABAS}
@@ -1753,7 +1763,7 @@ export default function Admin() {
             <BarraModulos
               titulo="Esquadrão de IA · Elite"
               tom="ambar"
-              itens={botoesBloco2EsquadraoIA}
+              itens={filtrarPorPapel(botoesBloco2EsquadraoIA)}
               abaAtiva={abaAtiva}
               setAbaAtiva={setAbaAtiva}
               detalhes={MAPA_DETALHES_ABAS}
