@@ -1,8 +1,15 @@
 import { useState, useEffect } from 'react';
-import { doc, getDoc, setDoc } from 'firebase/firestore';
+import { doc, getDoc } from 'firebase/firestore';
 import { db } from '../lib/firebase';
 
-// 🟢 Prompt de Sistema mais flexível para não "engessar" a resposta
+/**
+ * useGroq — camada fina de IA do painel.
+ *
+ * Nenhuma chave de provedor passa pelo navegador: tudo vai para POST /api/ai,
+ * que lê process.env.* no servidor (ver api/ai.js). O nome do hook foi mantido
+ * para não quebrar as telas que já o importam.
+ */
+
 const SYSTEM_PROMPT = `Você é o especialista da Express Auto Tech. 
 Sua missão é auxiliar mecânicos e gestores de oficina.
 Responda de forma direta, técnica quando necessário, mas sempre respeitando o contexto da pergunta do usuário. 
@@ -10,21 +17,33 @@ Se o usuário perguntar sobre gestão ou mercado, responda como um consultor de 
 NUNCA use asteriscos (**) para negrito ou formatação nas suas respostas.`;
 
 const MODELOS = {
-  groq: {
-    nome: 'Groq (Llama)',
-    api: 'https://api.groq.com/openai/v1/chat/completions',
-    model: 'llama-3.3-70b-versatile',
-    keyEnv: 'VITE_GROQ_API_KEY'
-  },
   gemini: {
     nome: 'Google Gemini',
-    // 🟢 Atualizado para a versão Flash Lite 2.0
-    api: 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-lite:generateContent',
-    keyEnv: 'VITE_GEMINI_API_KEY'
-  }
+    provider: 'gemini',
+    model: 'gemini-2.0-flash-lite',
+  },
+  groq: {
+    nome: 'Groq (Llama)',
+    provider: 'groq',
+    model: 'llama-3.3-70b-versatile',
+  },
+  deepseek: {
+    nome: 'DeepSeek',
+    provider: 'deepseek',
+    model: 'deepseek-chat',
+  },
+  zhipu: {
+    nome: 'Zhipu (GLM)',
+    provider: 'zhipu',
+    model: 'glm-4-flash',
+  },
+  siliconflow: {
+    nome: 'SiliconFlow',
+    provider: 'siliconflow',
+    model: 'Qwen/Qwen2.5-7B-Instruct',
+  },
 };
 
-// 🟢 Trocamos o padrão para Gemini
 const MODELO_PADRAO = 'gemini';
 
 export function useGroq(oficinaId) {
@@ -36,81 +55,64 @@ export function useGroq(oficinaId) {
       if (!oficinaId) return;
       try {
         const snap = await getDoc(doc(db, 'usuarios', oficinaId));
-        if (snap.exists() && snap.data().preferencia_modelo) {
-          const pref = snap.data().preferencia_modelo;
-          if (MODELOS[pref]) {
-            setModeloAtual(pref);
-          }
-        }
-      } catch (err) {
+        const pref = snap.exists() ? snap.data().preferencia_modelo : null;
+        if (pref && MODELOS[pref]) setModeloAtual(pref);
+      } catch {
         console.log('[IA] Usando modelo padrão');
       }
     };
     carregarPreferencia();
   }, [oficinaId]);
 
+  const chamarAPI = async (config, prompt) => {
+    const resposta = await fetch('/api/ai', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        provider: config.provider,
+        model: config.model,
+        systemPrompt: SYSTEM_PROMPT,
+        prompt,
+        temperature: 0.7,
+      }),
+    });
+
+    let dados = null;
+    try {
+      dados = await resposta.json();
+    } catch {
+      throw new Error(`Resposta inválida do servidor de IA (HTTP ${resposta.status}).`);
+    }
+
+    if (!resposta.ok || !dados?.text) {
+      const motivo = dados?.error || `HTTP ${resposta.status}`;
+      if (dados?.variavel) {
+        throw new Error(`IA indisponível: configure ${dados.variavel} na Vercel.`);
+      }
+      throw new Error(`Erro na IA (${config.nome}): ${motivo}`);
+    }
+
+    return dados.text;
+  };
+
   const analyzeText = async (prompt) => {
     setLoading(true);
     try {
-      const config = MODELOS[modeloAtual];
-      const apiKey = import.meta.env[config.keyEnv];
-
-      // Se não tiver a chave do Gemini, ele tenta o Groq como reserva
-      if (!apiKey) {
-        const fallback = MODELOS.groq;
-        const fallbackKey = import.meta.env[fallback.keyEnv];
-        return await chamarAPI(fallback, fallbackKey, prompt);
-      }
-
-      return await chamarAPI(config, apiKey, prompt);
+      return await chamarAPI(MODELOS[modeloAtual], prompt);
     } catch (err) {
+      // Reserva: se o modelo escolhido não estiver configurado no servidor,
+      // tenta o outro provedor antes de desistir.
+      if (modeloAtual !== 'groq') {
+        try {
+          return await chamarAPI(MODELOS.groq, prompt);
+        } catch {
+          /* mantém o erro original */
+        }
+      }
       throw err;
     } finally {
       setLoading(false);
     }
-  };
-
-  const chamarAPI = async (config, apiKey, prompt) => {
-    // 🟢 Configuração para o Google Gemini 2.0
-    if (config.nome.includes('Gemini')) {
-      const response = await fetch(`${config.api}?key=${apiKey}`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          contents: [{ parts: [{ text: prompt }] }],
-          systemInstruction: { parts: [{ text: SYSTEM_PROMPT }] }
-        })
-      });
-
-      if (!response.ok) throw new Error("Erro no Gemini. Verifique sua VITE_GEMINI_API_KEY.");
-      const data = await response.json();
-      return data.candidates[0].content.parts[0].text;
-    }
-
-    // Configuração para o Groq (Llama)
-    if (config.nome.includes('Groq')) {
-      const response = await fetch(config.api, {
-        method: "POST",
-        headers: {
-          "Authorization": `Bearer ${apiKey}`,
-          "Content-Type": "application/json"
-        },
-        body: JSON.stringify({
-          model: config.model,
-          messages: [
-            { role: 'system', content: SYSTEM_PROMPT },
-            { role: 'user', content: prompt }
-          ],
-          temperature: 0.7
-        })
-      });
-
-      if (!response.ok) throw new Error("Erro na Groq");
-      const data = await response.json();
-      return data.choices[0].message.content;
-    }
-
-    throw new Error("Modelo não suportado");
   };
 
   return { analyzeText, loading, modeloAtual, MODELOS };

@@ -32,9 +32,7 @@ export function useAgentesIA() {
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);
 
-    // Configurações de infraestrutura migrados para estabilidade na nuvem Groq
-    const API_KEY = import.meta.env.VITE_GROQ_API_KEY || "";
-    const API_URL = 'https://api.groq.com/openai/v1/chat/completions';
+    // Infraestrutura: o provedor é chamado pelo proxy /api/ai (chave no servidor).
     const MODELO = "llama-3.3-70b-versatile"; // Modelo Llama estável de alto desempenho
 
     /**
@@ -68,27 +66,24 @@ export function useAgentesIA() {
                 { role: 'user', content: promptUsuario }
             ];
 
-            const response = await fetch(API_URL, {
+            const response = await fetch('/api/ai', {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${API_KEY}`
-                },
+                headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
+                    provider: 'groq',
                     model: MODELO,
                     messages: messages,
                     temperature: 0.7,
-                    max_tokens: 1000
+                    maxTokens: 1000
                 })
             });
 
-            if (!response.ok) {
-                const erroServidor = await response.text();
-                throw new Error(`Erro na API SiliconFlow (${response.status}): ${erroServidor}`);
+            const data = await response.json().catch(() => null);
+            if (!response.ok || !data?.text) {
+                throw new Error(data?.error || `Erro no provedor de IA (${response.status})`);
             }
 
-            const data = await response.json();
-            const respostaFinal = data.choices?.[0]?.message?.content || '';
+            const respostaFinal = data.text;
 
             setLoading(false);
             return respostaFinal;

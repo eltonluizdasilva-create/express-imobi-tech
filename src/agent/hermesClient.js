@@ -1,21 +1,24 @@
-import OpenAI from "openai";
-
-const deepseek = new OpenAI({
-  baseURL: "https://api.deepseek.com",
-  apiKey: import.meta.env.VITE_DEEPSEEK_API_KEY,
-  dangerouslyAllowBrowser: true // Necessário para execução direta no frontend
-});
-
-// Chamada genérica reutilizável por qualquer agente
+/**
+ * Cliente do Agente Hermes (agent) — usa o proxy /api/ai.
+ * Chamada generica reutilizavel por qualquer agente.
+ */
 export async function executarAgenteHermes(promptSistema, historicoMensagens) {
-  const response = await deepseek.chat.completions.create({
-    model: "deepseek-chat", // V3 rápido e hiper-barato
-    messages: [
-      { role: "system", content: promptSistema },
-      ...historicoMensagens,
-    ],
-    temperature: 0.3, // Respostas mais precisas e estruturadas
+  const resposta = await fetch('/api/ai', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      provider: 'deepseek',
+      model: 'deepseek-chat',
+      systemPrompt: promptSistema,
+      messages: historicoMensagens,
+      temperature: 0.3,
+    }),
   });
 
-  return response.choices[0].message.content;
+  const dados = await resposta.json().catch(() => null);
+  if (!resposta.ok || !dados?.text) {
+    throw new Error(dados?.error || `Falha na IA (HTTP ${resposta.status})`);
+  }
+
+  return dados.text;
 }
