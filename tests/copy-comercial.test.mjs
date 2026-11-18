@@ -1,9 +1,10 @@
 /** Copy comercial + gate do alternador de demo. */
 import { readFileSync } from 'node:fs';
-import { DOR_SOLUCAO, DOR_PADRAO, textoDor, ABAS_COM_COPY } from '../src/lib/copyAbas.js';
+import { DOR_SOLUCAO, DOR_PADRAO, textoDor, ABAS_COM_COPY, VERSAO_COPY as VERSAO_SELO } from '../src/lib/copyAbas.js';
 import {
   ehMasterPlataforma, modoProEfetivo, rotuloModo, mostrarAlternadorDemo, mostrarBotaoUpgrade,
 } from '../src/lib/acesso-plano.js';
+import { HERO_ABAS, heroDaAba } from '../src/lib/coresAbas.js';
 
 let falhas = 0;
 const ok = (n, c, e = '') => { console.log(`${c ? 'PASS' : 'FAIL'}  ${n}${e ? ' — ' + e : ''}`); if (!c) falhas += 1; };
@@ -33,6 +34,18 @@ ok('rodapé é 2 linhas no celular (dor ≤ 95)', Object.values(DOR_SOLUCAO).eve
    String(Math.max(...Object.values(DOR_SOLUCAO).map((v) => v.dor.length))));
 ok('ganho ≤ 120', Object.values(DOR_SOLUCAO).every((v) => v.ganho.length <= 120),
    String(Math.max(...Object.values(DOR_SOLUCAO).map((v) => v.ganho.length))));
+
+// Cada aba principal precisa de hero próprio — senão cai no texto genérico
+// da descricao e a copy de dor não aparece onde o corretor olha.
+for (const [aba, nome] of COBERTURA) {
+  ok(`hero próprio em ${nome}`, Boolean(HERO_ABAS[aba]), aba);
+}
+ok('funil: hero com a dor do lead esfriando',
+   HERO_ABAS.funil_leads?.subtitulo?.includes('Nenhum lead esfria'),
+   HERO_ABAS.funil_leads?.subtitulo);
+ok('nenhum hero principal repete texto antigo',
+   !Object.values(HERO_ABAS).some((h) => h.subtitulo?.includes('Arraste o card conforme o cliente avança')));
+ok('selo de build exposto', Boolean(VERSAO_SELO) && /^v\d{4}\.\d{2}\.\d{2}/.test(VERSAO_SELO), VERSAO_SELO);
 
 const JARGAO = ['NBR', 'PTAM', 'SICAQ', 'IBS', 'CBS', 'ADN', 'NFS-e', 'multitenant', 'schema', 'split'];
 const temJargao = Object.entries(DOR_SOLUCAO).flatMap(([k, v]) =>

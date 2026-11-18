@@ -78,7 +78,7 @@ export const HERO_ABAS = {
   funil_leads: {
     chip: 'CRM IMOBILIÁRIO',
     titulo: 'Cada lead no lugar certo, sem planilha.',
-    subtitulo: 'Arraste o card conforme o cliente avança — o painel calcula o resto.',
+    subtitulo: 'Nenhum lead esfria por falta de retorno: cada cliente tem dono, etapa e prazo — e o card mostra quem está parado há mais tempo.',
   },
   visitas_imobi: {
     chip: 'AGENDA DE VISITAS',
@@ -99,6 +99,26 @@ export const HERO_ABAS = {
     chip: 'GESTÃO DE EQUIPE',
     titulo: 'Quem vende, quanto vende, com qual acesso.',
     subtitulo: 'Quem está produzindo e quem está parado, por corretor — escala e comissão com número na mão.',
+  },
+  tarefa: {
+    chip: 'VISTORIA & LAUDO IA',
+    titulo: 'A vistoria que evita discussão depois.',
+    subtitulo: 'Laudo fotográfico por ambiente na entrada e na saída: o estado do imóvel fica registrado, não na memória.',
+  },
+  notafiscal: {
+    chip: 'REPASSES & NOTA FISCAL',
+    titulo: 'Repasse sem conta errada.',
+    subtitulo: 'Emite a nota, divide o repasse com o proprietário e mostra quanto entra — no mesmo lugar.',
+  },
+  avaliacao_imovel: {
+    chip: 'AVALIAÇÃO DE IMÓVEL',
+    titulo: 'O número que convence o proprietário.',
+    subtitulo: 'Comparáveis reais e três cenários de preço: você mostra o valor, não a opinião.',
+  },
+  credito: {
+    chip: 'CORRESPONDENTE / CRÉDITO',
+    titulo: 'Só leve ao banco quem tem chance.',
+    subtitulo: 'Enquadramento, parcela e subsídio antes da visita — sem perder tempo com ficha que não passa.',
   },
   marketing: {
     chip: 'META ADS & CRIATIVOS',

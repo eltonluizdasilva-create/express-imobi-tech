@@ -166,6 +166,13 @@ export default defineConfig(({ mode }) => {
         workbox: {
           maximumFileSizeToCacheInBytes: 4000000,
           globPatterns: ['**/*.{js,css,html,ico,png,svg}'],
+          // Depois de um deploy o service worker antigo podia continuar
+          // servindo o index.html e os chunks da versão anterior. Estas três
+          // opções descartam o cache velho e ativam o SW novo na hora.
+          cleanupOutdatedCaches: true,
+          skipWaiting: true,
+          clientsClaim: true,
+          navigateFallbackDenylist: [/^\/api\//],
         },
         manifest: {
           name: 'Express Auto Tech Express',

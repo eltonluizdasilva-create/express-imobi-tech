@@ -1,6 +1,6 @@
 import React from 'react';
 import { Lightbulb } from 'lucide-react';
-import { textoDor } from '../../lib/copyAbas';
+import { textoDor, VERSAO_COPY } from '../../lib/copyAbas';
 
 /**
  * DorESolucao — rodapé contextual, discreto.
@@ -26,6 +26,10 @@ export default function DorESolucao({ abaAtiva }) {
             <span className="text-slate-200">{ganho}</span>
           </p>
         </div>
+
+        <span className="hidden shrink-0 text-[9px] font-mono text-slate-600 sm:inline" title="Versão da comunicação">
+          {VERSAO_COPY}
+        </span>
       </div>
     </div>
   );
