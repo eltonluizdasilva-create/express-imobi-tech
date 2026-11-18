@@ -35,15 +35,27 @@ ok('some em 3/3 (render vazio)', r3 === '', String(r3.length) + ' chars');
 
 /* ------------------------------ Meuplano ---------------------------- */
 const plano = renderToStaticMarkup(React.createElement(Meuplano, { dadosOficina: { plano: 'gratis' } }));
-ok('comparativo na tela', plano.includes('Modo Grátis × Plano PRO'));
-ok('botão pedido presente', plano.includes('Assinar Plano PRO Agora'));
-ok('linhas do comparativo', plano.includes('Corretores na equipe') && plano.includes('Vistoria com laudo por IA'));
-ok('explica o destino do clique', plano.includes('WhatsApp comercial') || plano.includes('ambiente seguro'));
-ok('mostra o preço do PRO', /R\$\s?99/.test(plano));
-ok('mantém os cards de plano', plano.includes('Plano Profissional') && plano.includes('Esquadrão de IA'));
+const semNbsp = plano.replace(/\u00a0/g, ' ');
+
+ok('3 degraus na tela',
+   semNbsp.includes('Essencial') && semNbsp.includes('Completo PRO') && semNbsp.includes('Imobiliárias &amp; Automação WhatsApp 24/7'));
+ok('selo Mais escolhido no PRO', plano.includes('Mais escolhido'));
+ok('seletor Mensal | Anual', plano.includes('Mensal') && plano.includes('Anual'));
+ok('selo de economia no seletor', plano.includes('Economize R$ 120'));
+ok('anual é o padrão (R$ 89,00)', /R\$ ?89,00/.test(semNbsp));
+ok('detalhe do anual com R$ 1.068,00', /1\.068,00/.test(semNbsp));
+ok('CTA do PRO', plano.includes('Assinar Plano PRO Agora'));
+ok('card 3 com a partir de R$ 497', /A partir de R\$ ?497/.test(semNbsp));
+ok('card 3 com taxa de implementação', plano.includes('Taxa única de implementação'));
+ok('CTA da implantação', plano.includes('Solicitar Implantação / Falar com Especialista'));
+ok('Essencial marcado como plano atual', plano.includes('Plano atual'));
+ok('PRO cita PTAM, crédito e portais',
+   plano.includes('Avaliação PTAM') && plano.includes('Correspondente / Crédito') && plano.includes('Portais XML'));
+ok('automação cita a Sofia 24/7', plano.includes('Agente Sofia 24/7'));
 
 const planoPro = renderToStaticMarkup(React.createElement(Meuplano, { dadosOficina: { plano: 'profissional' } }));
-ok('quem já é PRO não vê CTA ativo', planoPro.includes('Plano PRO ativo'));
+ok('quem já é PRO vê "Plano PRO ativo"', planoPro.includes('Plano PRO ativo'));
+ok('quem já é PRO pode pedir downgrade', planoPro.includes('Falar sobre downgrade'));
 
 console.log(`\n${falhas === 0 ? 'RENDER OK' : falhas + ' FALHA(S)'}`);
 process.exit(falhas === 0 ? 0 : 1);

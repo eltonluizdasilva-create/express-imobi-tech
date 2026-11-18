@@ -1861,7 +1861,12 @@ export default function Admin() {
         {/* ─── ABA 1: PAINEL EXECUTIVO (VISÃO GERAL) ─────────────────────────── */}
         {abaAtiva === 'dashboard_imobi' && (
           <div className="space-y-4">
-            <OnboardingPrimeiroUso config={config} imoveis={listaImoveis} onIrPara={setAbaAtiva} />
+            <OnboardingPrimeiroUso
+              config={config}
+              imoveis={listaImoveis}
+              onIrPara={setAbaAtiva}
+              onNovoImovel={() => setModalNovoImovel(true)}
+            />
           <RodaProspeccao
             leads={listaLeads}
             visitas={listaVisitas}

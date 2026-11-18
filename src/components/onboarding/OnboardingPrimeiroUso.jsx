@@ -9,7 +9,7 @@ import {
  * OnboardingPrimeiroUso — card de 3 passos na Visão Geral.
  * Some sozinho em 3/3 e não volta depois de "Já sei usar, fechar guia".
  */
-export default function OnboardingPrimeiroUso({ config, imoveis, onIrPara }) {
+export default function OnboardingPrimeiroUso({ config, imoveis, onIrPara, onNovoImovel }) {
   const [oculto, setOculto] = useState(() => lerOculto());
   const [passo3, setPasso3] = useState(() => lerPasso3());
   const [copiado, setCopiado] = useState(false);
@@ -120,6 +120,8 @@ export default function OnboardingPrimeiroUso({ config, imoveis, onIrPara }) {
                 type="button"
                 onClick={() => {
                   if (p.id === 'divulgar') return abrirEstudio();
+                  // Passo 2 abre o cadastro de imóvel direto, sem caçar o botão.
+                  if (p.id === 'imovel' && onNovoImovel) return onNovoImovel();
                   if (onIrPara) onIrPara(p.aba);
                 }}
                 className="inline-flex shrink-0 items-center gap-1 rounded-lg bg-[#10b981] px-2 py-1 text-[9px] font-black uppercase tracking-widest text-slate-950 transition hover:brightness-110"

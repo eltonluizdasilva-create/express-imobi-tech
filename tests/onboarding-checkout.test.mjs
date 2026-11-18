@@ -6,7 +6,9 @@ import {
 import {
   normalizarWhatsapp, urlCheckoutPro, mensagemCheckout, destinoCheckout, abrirDestino, WHATSAPP_PADRAO,
 } from '../src/lib/checkout.js';
-import { COMPARATIVO_PRO, planoPro, precoDoPlano, valorParaMensagem } from '../src/lib/comparativoPlanos.js';
+import {
+  DEGRAUS, ECONOMIA_ANUAL, TOTAL_ANUAL, precoMensal, detalheCiclo, rotuloEconomia, degrauPorKey,
+} from '../src/lib/planosComerciais.js';
 
 let falhas = 0;
 const ok = (n, c, e = '') => { console.log(`${c ? 'PASS' : 'FAIL'}  ${n}${e ? ' — ' + e : ''}`); if (!c) falhas += 1; };
@@ -84,31 +86,53 @@ ok('sem URL usa WhatsApp', dZap.tipo === 'whatsapp' && dZap.url.startsWith('http
 ok('link do WhatsApp decodifica com os dados', decodeURIComponent(dZap.url).includes('a@b.com') && decodeURIComponent(dZap.url).includes('U1'));
 ok('sem whatsapp configurado cai no padrão', destinoCheckout({}).url.includes(WHATSAPP_PADRAO));
 
+ok('URL mensal escolhida pelo ciclo',
+   urlCheckoutPro({ VITE_CHECKOUT_PRO_MENSAL_URL: 'https://pay.io/m', VITE_CHECKOUT_PRO_ANUAL_URL: 'https://pay.io/a' }, 'mensal') === 'https://pay.io/m');
+ok('URL anual escolhida pelo ciclo',
+   urlCheckoutPro({ VITE_CHECKOUT_PRO_MENSAL_URL: 'https://pay.io/m', VITE_CHECKOUT_PRO_ANUAL_URL: 'https://pay.io/a' }, 'anual') === 'https://pay.io/a');
+ok('ciclo sem URL própria cai na antiga', urlCheckoutPro({ VITE_CHECKOUT_PRO_URL: 'https://pay.io/old' }, 'anual') === 'https://pay.io/old');
+ok('sem nenhuma URL devolve vazio', urlCheckoutPro({}, 'mensal') === '');
 ok('abrirDestino abre', abrirDestino({ url: 'https://x' }, () => ({})) === true);
 ok('abrirDestino detecta bloqueio', abrirDestino({ url: 'https://x' }, () => null) === false);
 ok('abrirDestino sem url', abrirDestino({ url: '' }, () => ({})) === false);
 ok('abrirDestino trata exceção', abrirDestino({ url: 'https://x' }, () => { throw new Error('popup'); }) === false);
 
-/* ------------------------------- comparativo ----------------------------- */
-ok('comparativo tem linhas', COMPARATIVO_PRO.length >= 6);
-ok('comparativo tem gratuito e pro', COMPARATIVO_PRO.every((l) => 'gratis' in l && 'pro' in l));
-const planos = [
-  { key: 'gratis', nome: 'Modo Grátis', autoAtivavel: true, preco: { mensal: 0 } },
-  { key: 'profissional', nome: 'Plano Profissional', autoAtivavel: true, preco: { mensal: 99, anual: 89 } },
-];
-ok('planoPro acha o profissional', planoPro(planos)?.key === 'profissional');
-ok('preço mensal formatado', precoDoPlano(planos[1], 'mensal').includes('99'));
-ok('preço anual formatado', precoDoPlano(planos[1], 'anual').includes('89'));
-ok('valor para mensagem', valorParaMensagem(planos[1], 'anual').includes('anual'));
+/* -------------------------- 3 degraus comerciais ------------------------- */
+ok('3 degraus', DEGRAUS.length === 3);
+ok('ordem: essencial, pro, automacao', DEGRAUS.map((d) => d.key).join() === 'essencial,pro,automacao');
+ok('só o PRO é destaque', DEGRAUS.filter((d) => d.destaque).map((d) => d.key).join() === 'pro');
+ok('PRO tem selo Mais escolhido', DEGRAUS.find((d) => d.key === 'pro').selo === 'Mais escolhido');
+ok('Essencial é grátis', precoMensal(degrauPorKey('essencial'), 'mensal').replace(/\u00a0/g, ' ') === 'R$ 0,00');
+ok('PRO mensal = R$ 99,00', precoMensal(degrauPorKey('pro'), 'mensal').replace(/\u00a0/g, ' ') === 'R$ 99,00', precoMensal(degrauPorKey('pro'), 'mensal'));
+ok('PRO anual = R$ 89,00', precoMensal(degrauPorKey('pro'), 'anual').replace(/\u00a0/g, ' ') === 'R$ 89,00', precoMensal(degrauPorKey('pro'), 'anual'));
+ok('detalhe anual cita R$ 1.068,00 e economia', /1\.068,00/.test(detalheCiclo(degrauPorKey('pro'), 'anual')) && /Economize R\$ 120/.test(detalheCiclo(degrauPorKey('pro'), 'anual')));
+ok('detalhe mensal sem fidelidade', detalheCiclo(degrauPorKey('pro'), 'mensal') === 'Sem fidelidade, cancele quando quiser');
+ok('economia anual = 120', ECONOMIA_ANUAL === 120 && TOTAL_ANUAL === 1068);
+ok('selo de economia no seletor', rotuloEconomia('anual') === 'Economize R$ 120' && rotuloEconomia('mensal') === '');
+ok('automação a partir de R$ 497 + implementação',
+   degrauPorKey('automacao').detalhePreco.includes('497') && Boolean(degrauPorKey('automacao').implementacao));
+ok('automação fala da Sofia 24/7',
+   degrauPorKey('automacao').recursos.some((r) => /Sofia 24\/7/.test(r)));
+ok('PRO lista os módulos pedidos',
+   ['PTAM', 'Correspondente', 'Vistoria', 'NFS-e', 'Portais XML'].every((termo) =>
+     degrauPorKey('pro').recursos.some((r) => r.includes(termo))));
 
 /* --------------------- conferência no código da tela --------------------- */
 import { readFileSync } from 'node:fs';
 const planoJa = readFileSync(new URL('../src/components/Meuplano.jsx', import.meta.url), 'utf8');
+ok('Meuplano usa planosComerciais', planoJa.includes("from '../lib/planosComerciais'"));
+ok('Meuplano não auto-ativa plano pago', !planoJa.includes('httpsCallable') && !planoJa.includes('ativarPlano'));
 const admin = readFileSync(new URL('../src/AdminNovo.jsx', import.meta.url), 'utf8');
 ok('Meuplano usa destinoCheckout', planoJa.includes('destinoCheckout({'));
-ok('Meuplano tem o botão pedido', planoJa.includes('Assinar Plano PRO Agora'));
-ok('Meuplano tem o comparativo', planoJa.includes('COMPARATIVO_PRO.map'));
-ok('plano pago não auto-ativa', /preco\?\.\[ciclo\] \?\? 0\) > 0\) \{\s*\n\s*abrirCheckoutPro/.test(planoJa));
+ok('CTA do PRO é o texto pedido', degrauPorKey('pro').cta === 'Assinar Plano PRO Agora');
+ok('CTA da implantação é o texto pedido',
+   degrauPorKey('automacao').cta === 'Solicitar Implantação / Falar com Especialista');
+ok('Meuplano renderiza o CTA do degrau', planoJa.includes('rotuloCta(degrau)'));
+ok('Meuplano desenha os 3 degraus', planoJa.includes('DEGRAUS.map'));
+ok('Meuplano tem seletor de ciclo', planoJa.includes("setCiclo('anual')") && planoJa.includes('rotuloEconomia'));
+ok('Meuplano abre o WhatsApp na implantação', planoJa.includes('falarEspecialista'));
+ok('assinatura do PRO vai pelo checkout', planoJa.includes('assinarPro') && planoJa.includes('destinoCheckout('));
+ok('onboarding abre o modal de imóvel', admin.includes('onNovoImovel={() => setModalNovoImovel(true)}'));
 ok('AdminNovo renderiza o onboarding na Visão Geral',
    admin.includes('<OnboardingPrimeiroUso') && admin.indexOf('<OnboardingPrimeiroUso') > admin.indexOf("abaAtiva === 'dashboard_imobi'"));
 

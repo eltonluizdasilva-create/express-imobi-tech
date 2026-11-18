@@ -19,10 +19,22 @@ export function normalizarWhatsapp(numero) {
   return d;
 }
 
-export function urlCheckoutPro(env = {}) {
-  const bruto = String(env.VITE_CHECKOUT_PRO_URL || env.checkoutProUrl || '').trim();
-  if (!bruto) return '';
-  return /^https?:\/\//i.test(bruto) ? bruto : '';
+/**
+ * URL de pagamento do ciclo. Ordem: variável do ciclo (MENSAL/ANUAL) e, como
+ * compatibilidade, a antiga VITE_CHECKOUT_PRO_URL única.
+ */
+export function urlCheckoutPro(env = {}, ciclo = 'anual') {
+  const cicloKey = String(ciclo || 'anual').toUpperCase() === 'MENSAL' ? 'MENSAL' : 'ANUAL';
+  const candidatos = [
+    env[`VITE_CHECKOUT_PRO_${cicloKey}_URL`],
+    env.VITE_CHECKOUT_PRO_URL,
+    env.checkoutProUrl,
+  ];
+  for (const bruto of candidatos) {
+    const url = String(bruto || '').trim();
+    if (url && /^https?:\/\//i.test(url)) return url;
+  }
+  return '';
 }
 
 export function mensagemCheckout({ planoNome = 'Plano PRO', ciclo = 'mensal', email = '', uid = '', nomeOficina = '', valor = '' } = {}) {
