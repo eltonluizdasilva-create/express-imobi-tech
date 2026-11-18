@@ -59,7 +59,11 @@ const CRIATIVOS_PRONTOS_IMOBI = [
   },
 ];
 
+import EstudioPosts from './components/marketing/EstudioPosts';
+
 export default function AbaMarketing({ config = {}, listaImoveis = [] }) {
+  // Vista da aba: campanhas (legado) ou estúdio de posts sociais
+  const [vista, setVista] = useState('campanhas');
   // Estados do Gerador Rápido de Copies Persuasivas (Venda e Aluguel)
   const [finalidade, setFinalidade] = useState('Venda');
   const [tipoImovel, setTipoImovel] = useState('Apartamento');
@@ -169,6 +173,28 @@ export default function AbaMarketing({ config = {}, listaImoveis = [] }) {
 
   return (
     <div style={{ backgroundColor: '#020408' }} className="space-y-6 text-slate-100 font-sans">
+      {/* ═══ Seletor de vista: Campanhas | Estúdio de Posts ═══ */}
+      <div className="flex flex-wrap items-center gap-1.5 rounded-2xl border border-slate-800 bg-slate-900/70 p-1.5">
+        {[
+          { key: 'campanhas', label: 'Campanhas & Copies' },
+          { key: 'estudio', label: 'Estúdio de Posts' },
+        ].map((v) => (
+          <button
+            key={v.key}
+            type="button"
+            onClick={() => setVista(v.key)}
+            className={`rounded-xl px-3.5 py-2 text-[10px] font-black uppercase tracking-widest transition ${
+              vista === v.key ? 'bg-white text-slate-900' : 'text-slate-400 hover:text-slate-200'
+            }`}
+          >
+            {v.label}
+          </button>
+        ))}
+      </div>
+
+      {vista === 'estudio' && <EstudioPosts config={config} listaImoveis={listaImoveis} />}
+
+      <div style={{ display: vista === 'estudio' ? 'none' : undefined }} className="space-y-6">
       {/* ═══════════════════════════════════════════════════════════════════════
           1. CABEÇALHO PLG — ATRAÇÃO DE LEADS TODOS OS DIAS
          ═══════════════════════════════════════════════════════════════════════ */}
@@ -542,6 +568,7 @@ export default function AbaMarketing({ config = {}, listaImoveis = [] }) {
             );
           })}
         </div>
+      </div>
       </div>
     </div>
   );
