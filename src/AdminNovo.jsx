@@ -1854,6 +1854,9 @@ export default function Admin() {
          ═══════════════════════════════════════════════════════════════════════ */}
       <main className="max-w-[1600px] mx-auto p-4 md:p-8">
 
+        {/* ─── FAIXA CONTEXTUAL: para que serve esta aba (Dor → Ganho) ───────── */}
+        <DorESolucao abaAtiva={abaAtiva} />
+
         {/* ─── ABA 1: PAINEL EXECUTIVO (VISÃO GERAL) ─────────────────────────── */}
         {abaAtiva === 'dashboard_imobi' && (
           <RodaProspeccao
@@ -1883,7 +1886,7 @@ export default function Admin() {
                   🏠 GESTÃO & <span style={{ color: '#10b981' }}>VITRINE DE IMÓVEIS</span>
                 </h2>
                 <p className="text-sm text-slate-400 mt-1">
-                  Imóveis prontos para qualificação por padrão (Minha Casa Minha Vida, Médio e Alto Padrão), upload com compressão em canvas e sincronização instantânea com a Vitrine Digital em <strong className="text-[#10b981]">/portal</strong>.
+                  Cadastre o imóvel uma vez e ele já sai na vitrine e nos portais — sem digitar o mesmo dado duas vezes. Sua vitrine pública fica em <strong className="text-[#10b981]">/portal</strong>.
                 </p>
               </div>
               <div className="flex flex-wrap items-center gap-2.5">
@@ -2123,7 +2126,7 @@ export default function Admin() {
                   👥 FUNIL DE <span style={{ color: '#10b981' }}>VENDAS & CRM</span>
                 </h2>
                 <p className="text-xs text-slate-300 mt-1">
-                  Cadastre e acompanhe clientes em cada etapa da jornada de compra ou locação com rastreamento de origem e disparo direto para o WhatsApp.
+                  Nenhum lead esfria por falta de retorno: cada cliente tem dono, etapa e prazo — e o card mostra quem está parado há mais tempo.
                 </p>
                 <p className="text-xs text-slate-400 mt-1.5">
                   VGV no Funil: <span className="text-[#10b981] font-bold">{fmtBRL(metricas.vgvLeadsCRM)}</span> • Comissão Prevista (6%):{' '}
@@ -2273,7 +2276,7 @@ export default function Admin() {
                   📅 AGENDA DE <span style={{ color: '#10b981' }}>VISITAS & PLANTÃO</span>
                 </h2>
                 <p className="text-sm text-slate-400 mt-1">
-                  Organize horários com corretores, automatize confirmações de presença via WhatsApp e elimine furos no plantão imobiliário.
+                  Visita confirmada no WhatsApp antes do horário: menos plantão furado, mais negócio fechado.
                 </p>
               </div>
               <button
@@ -2720,7 +2723,6 @@ export default function Admin() {
           </SafeBoundary>
         )}
 
-        <DorESolucao abaAtiva={abaAtiva} />
         <RodapeLegal />
       </main>
 

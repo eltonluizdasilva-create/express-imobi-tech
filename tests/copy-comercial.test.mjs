@@ -85,9 +85,51 @@ ok('alternador dentro do if de MASTER', /\{ehMasterPlataforma \? \([\s\S]{0,1800
 ok('"Modo Completo (PRO)" aparece 1x só', (admin.match(/Modo Completo \(PRO\)/g) || []).length === 1);
 ok('badge real do plano para cliente', admin.includes("'Plano PRO Ativo' : 'Plano Gratuito'"));
 ok('botão + PRO presente', admin.includes('+ PRO'));
-ok('rodapé DorESolucao antes do copyright',
-   admin.indexOf('<DorESolucao abaAtiva={abaAtiva} />') > 0
-   && admin.indexOf('<DorESolucao abaAtiva={abaAtiva} />') < admin.indexOf('<RodapeLegal />'));
+ok('faixa DorESolucao no TOPO da aba (antes do conteúdo)',
+   admin.indexOf('<DorESolucao abaAtiva={abaAtiva} />') > admin.indexOf('<main className=') &&
+   admin.indexOf('<DorESolucao abaAtiva={abaAtiva} />') < admin.indexOf("abaAtiva === 'dashboard_imobi'"));
+ok('faixa saiu do rodapé (não fica mais junto do copyright)',
+   admin.indexOf('<DorESolucao abaAtiva={abaAtiva} />') < admin.indexOf('<RodapeLegal />'));
+ok('faixa aparece uma única vez', (admin.match(/<DorESolucao /g) || []).length === 1);
+
+// ---- espaçamento: separação vem de gap/shrink, não de margem no texto ----
+const dor = readFileSync(new URL('../src/components/ui/DorESolucao.jsx', import.meta.url), 'utf8');
+ok('chip e texto separados por gap', dor.includes('gap-2') && dor.includes('items-start gap-2'));
+ok('chip não encolhe nem quebra', dor.includes('shrink-0') && dor.includes('whitespace-nowrap'));
+ok('sem margem frágil no texto (mr-1 antigo)', !dor.includes('mr-1 '));
+ok('desktop 1 linha / mobile 2 linhas', dor.includes('md:flex-row') && dor.includes('flex-col'));
+
+// ---- cobertura: toda aba do painel tem copy própria (zero fallback) ----
+const idsApp = new Set([
+  ...[...admin.matchAll(/\{ id: '([a-z_]+)'/g)].map((m) => m[1]),
+  ...[...admin.matchAll(/abaAtiva === '([a-z_]+)'/g)].map((m) => m[1]),
+]);
+const semCopy = [...idsApp].filter((id) => !DOR_SOLUCAO[id]);
+ok(`todas as ${idsApp.size} abas do painel têm copy`, semCopy.length === 0, semCopy.join(', '));
+
+// ---- textos pedidos para o Esquadrão de IA Elite (verbatim) ----
+const ESPERADOS = {
+  administrador: ['Equipe travada, estoque encalhado ou dúvida sobre onde investir em tráfego?',
+                  'Um diretor comercial 24h analisando sua carteira e montando planos prontos para bater meta.'],
+  contador: ['Medo de errar cálculo de imposto, ganho de capital ou emissão de nota na venda?',
+             'Orientação tributária imobiliária na hora para fechar negócios sem susto com a Receita.'],
+  juridico_imobi: ['Contrato travado por cláusula duvidosa ou insegurança na documentação do imóvel?',
+                   'Análise rápida de cláusulas, distrato e matrícula para dar segurança jurídica ao fechamento.'],
+  copiloto: ['Perde tempo caçando dados no sistema ou redigindo mensagens do zero para cada cliente?',
+             'Seu copiloto operacional que executa tarefas, resume fichas e acelera seu atendimento.'],
+  secretaria: ['Lead manda mensagem fora de hora e fecha com o concorrente que respondeu primeiro?',
+               'Atendimento imediato no WhatsApp 24/7 que qualifica o cliente e agenda a visita para você.'],
+  whatsapp_hub: ['Lead manda mensagem fora de hora e fecha com o concorrente que respondeu primeiro?',
+                 'Atendimento imediato no WhatsApp 24/7 que qualifica o cliente e agenda a visita para você.'],
+};
+for (const [aba, [d, g]] of Object.entries(ESPERADOS)) {
+  ok(`texto verbatim de ${aba}`, DOR_SOLUCAO[aba]?.dor === d && DOR_SOLUCAO[aba]?.ganho === g);
+}
+
+// ---- headers inline das abas não voltam ao texto técnico ----
+ok('captação: header sem "compressão em canvas"', !admin.includes('upload com compressão em canvas'));
+ok('funil: header inline com a copy de dor', admin.includes('Nenhum lead esfria por falta de retorno: cada cliente tem dono, etapa e prazo — e o card mostra quem está parado há mais tempo.'));
+ok('agenda: header sem "automatize confirmações"', !admin.includes('automatize confirmações de presença'));
 
 const nicho = readFileSync(new URL('../src/components/imobi/CaptacaoNicho.jsx', import.meta.url), 'utf8');
 ok('novo subtítulo de Captação por Nicho',

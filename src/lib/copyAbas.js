@@ -64,8 +64,28 @@ export const DOR_SOLUCAO = {
     ganho: 'Radar mostra anúncio novo na região com preço e argumento de abordagem.',
   },
   whatsapp_hub: {
-    dor: 'Conversa espalhada entre celular pessoal e WhatsApp Web.',
-    ganho: 'Atendimento centralizado com histórico — nada se perde na troca de aparelho.',
+    dor: 'Lead manda mensagem fora de hora e fecha com o concorrente que respondeu primeiro?',
+    ganho: 'Atendimento imediato no WhatsApp 24/7 que qualifica o cliente e agenda a visita para você.',
+  },
+  secretaria: {
+    dor: 'Lead manda mensagem fora de hora e fecha com o concorrente que respondeu primeiro?',
+    ganho: 'Atendimento imediato no WhatsApp 24/7 que qualifica o cliente e agenda a visita para você.',
+  },
+  copiloto: {
+    dor: 'Perde tempo caçando dados no sistema ou redigindo mensagens do zero para cada cliente?',
+    ganho: 'Seu copiloto operacional que executa tarefas, resume fichas e acelera seu atendimento.',
+  },
+  administrador: {
+    dor: 'Equipe travada, estoque encalhado ou dúvida sobre onde investir em tráfego?',
+    ganho: 'Um diretor comercial 24h analisando sua carteira e montando planos prontos para bater meta.',
+  },
+  contador: {
+    dor: 'Medo de errar cálculo de imposto, ganho de capital ou emissão de nota na venda?',
+    ganho: 'Orientação tributária imobiliária na hora para fechar negócios sem susto com a Receita.',
+  },
+  juridico_imobi: {
+    dor: 'Contrato travado por cláusula duvidosa ou insegurança na documentação do imóvel?',
+    ganho: 'Análise rápida de cláusulas, distrato e matrícula para dar segurança jurídica ao fechamento.',
   },
   equipe: {
     dor: 'Você não sabe quem está produzindo e quem só ocupa lugar.',
@@ -78,6 +98,30 @@ export const DOR_SOLUCAO = {
   config: {
     dor: 'Dado da imobiliária espalhado e desatualizado.',
     ganho: 'Um lugar para marca, contato, CRECI e integrações — tudo que a arte e o portal usam.',
+  },
+  meuplano: {
+    dor: 'Contratou um plano e não sabe direito o que está liberado?',
+    ganho: 'Em 1 tela: o que está incluso, quanto falta do trial e o que muda no PRO — ative sem falar com ninguém.',
+  },
+  migracao: {
+    dor: 'Trocar de CRM dá medo de perder a carteira e o histórico.',
+    ganho: 'Importa backup e planilha sem perder contato: você começa a usar no mesmo dia.',
+  },
+  especialista: {
+    dor: 'Suporte que promete retorno e nunca volta?',
+    ganho: 'Atendimento humano de quem conhece o produto, direto no painel — sem fila de robô.',
+  },
+  youtube: {
+    dor: 'Vídeo longo que ninguém assiste não gera cliente.',
+    ganho: 'Transforma o vídeo em resumo e cortes prontos para publicar — conteúdo sem edição manual.',
+  },
+  burocracias: {
+    dor: 'Documento e exigência espalhados entre e-mail, pasta e memória.',
+    ganho: 'Guia de burocracia por etapa: em segundos você sabe o que pedir ao cliente.',
+  },
+  acompanhamento_cliente: {
+    dor: 'Cliente liga toda hora perguntando como está o processo.',
+    ganho: 'Link com código e senha mostra cada etapa sozinho: menos ligação, mais confiança.',
   },
 };
 
