@@ -187,7 +187,7 @@ export default function Secretaria({ oficinaId, abrirRecuperacaoFinanceira, dado
     const handleGerarMensagem = async () => {
         if (!promptTexto.trim()) return;
         try {
-            const instrucao = `Reescreva a seguinte solicitação de forma educada, profissional e persuasiva, atuando como a Secretária da Oficina ${dadosOficina?.nome || 'Express'}: "${promptTexto}"`;
+            const instrucao = `Reescreva a seguinte solicitação de forma educada, profissional e persuasiva, atuando como a Secretária da Imobiliária ${dadosOficina?.nome || 'Express'}: "${promptTexto}"`;
             const polido = await processarMensagemSecretaria(instrucao);
             setMensagemGerada(polido);
         } catch (error) {
@@ -196,13 +196,13 @@ export default function Secretaria({ oficinaId, abrirRecuperacaoFinanceira, dado
     };
 
     const enviarNPS = () => {
-        if (!nomeCliente || !veiculoCliente) return alert("Preencha o nome e o veículo para gerar o NPS.");
-        const msg = `Olá, ${nomeCliente}! 🌟\n\nO que achou do serviço realizado no seu ${veiculoCliente}? Sua opinião é muito importante para nós!\n\nPoderia nos avaliar com 5 estrelas no Google? Leva menos de 30 segundos e ajuda muito a nossa oficina:\n👉 ${googleLink || 'Link do Google'}\n\nMuito obrigado! 👊`;
+        if (!nomeCliente || !veiculoCliente) return alert("Preencha o nome e o imóvel para gerar a pesquisa.");
+        const msg = `Olá, ${nomeCliente}! 🌟\n\nO que achou do atendimento no imóvel ${veiculoCliente}? Sua opinião é muito importante para nós!\n\nPoderia nos avaliar com 5 estrelas no Google? Leva menos de 30 segundos e ajuda muito a nossa imobiliária:\n👉 ${googleLink || 'Link do Google'}\n\nMuito obrigado! 👊`;
         window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(msg)}`, '_blank');
     };
 
     const alertarEquipe = () => {
-        const texto = encodeURIComponent(`🚨 *ALERTA ESTRATÉGICO DA DIREÇÃO* 🚨\n\nPessoal, o nosso sistema detectou:\n📸 ${alertasJuridicos.semFoto} serviços finalizados sem foto.\n✍️ ${alertasJuridicos.semAssinatura} serviços sem assinatura.\n\nPor favor, atenção aos procedimentos no pátio para evitarmos problemas jurídicos!`);
+        const texto = encodeURIComponent(`🚨 *ALERTA ESTRATÉGICO DA DIREÇÃO* 🚨\n\nPessoal, o nosso sistema detectou:\n📸 ${alertasJuridicos.semFoto} atendimentos finalizados sem foto.\n✍️ ${alertasJuridicos.semAssinatura} atendimentos sem assinatura.\n\nPor favor, atenção aos procedimentos de vistoria para evitarmos problemas jurídicos!`);
         window.open(`https://wa.me/?text=${texto}`, '_blank');
     };
 
@@ -230,7 +230,7 @@ export default function Secretaria({ oficinaId, abrirRecuperacaoFinanceira, dado
     };
 
     const imprimirCartazBalcao = () => {
-        const nome = dadosOficina?.nome || 'Minha Oficina';
+        const nome = dadosOficina?.nome || 'Minha Imobiliária';
         const link = `oficinai.app/${dadosOficina?.slug || oficinaId?.slice(0, 8)}`;
         const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=400x400&data=${encodeURIComponent(`https://${link}`)}`;
 
@@ -238,7 +238,7 @@ export default function Secretaria({ oficinaId, abrirRecuperacaoFinanceira, dado
         w.document.write(`
             <html>
             <head>
-                <title>Cartaz de Balcão - ${nome}</title>
+                <title>Cartaz da Vitrine - ${nome}</title>
                 <style>
                     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&display=swap');
                     body { font-family: 'Inter', sans-serif; margin: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 100vh; text-align: center; background-color: #f9fafb; color: #111827; padding: 20px; }
@@ -257,12 +257,12 @@ export default function Secretaria({ oficinaId, abrirRecuperacaoFinanceira, dado
                 <div class="card">
                     <div class="badge">Portal Interativo</div>
                     <h1>${nome}</h1>
-                    <p>Acompanhe seu serviço em tempo real! Escaneie e veja fotos e o status do seu carro diretamente no seu celular.</p>
+                    <p>Acompanhe seu atendimento em tempo real! Escaneie e veja fotos e o andamento do seu imóvel diretamente no seu celular.</p>
                     <div class="qr-container">
                         <img src="${qrUrl}" alt="QR Code" />
                     </div>
                     <div class="url">${link}</div>
-                    <div class="footer">Gerado pela Oficina IA</div>
+                    <div class="footer">Gerado pelo Express Imobi Tech</div>
                 </div>
                 <script>
                     window.onload = () => {
@@ -279,7 +279,7 @@ export default function Secretaria({ oficinaId, abrirRecuperacaoFinanceira, dado
         if (abrirRecuperacaoFinanceira) {
             abrirRecuperacaoFinanceira();
         } else {
-            alert(`📞 Acionando Secretária Digital para recuperar R$ ${alertasSecretaria.valorPerdido.toLocaleString('pt-BR', { minimumFractionDigits: 2 })} em orçamentos não aprovados...`);
+            alert(`📞 Acionando Secretária Digital para recuperar R$ ${alertasSecretaria.valorPerdido.toLocaleString('pt-BR', { minimumFractionDigits: 2 })} em propostas não aprovadas...`);
         }
     };
 
@@ -491,7 +491,7 @@ export default function Secretaria({ oficinaId, abrirRecuperacaoFinanceira, dado
                                                     <span className="text-xl shrink-0">🧠</span>
                                                     <div>
                                                         <strong className="text-zinc-100 text-xs uppercase block mb-0.5 tracking-wide font-black">IA de Elite (Visão)</strong>
-                                                        <span className="text-zinc-400 text-[11px] leading-relaxed font-medium">Identifica peças em fotos e sugere orçamentos automáticos instantaneamente.</span>
+                                                        <span className="text-zinc-400 text-[11px] leading-relaxed font-medium">Analisa fotos do imóvel e sugere padrão construtivo e descrição do anúncio automaticamente.</span>
                                                     </div>
                                                 </li>
                                                 <li className="flex gap-3 items-start bg-zinc-900/50 p-3 rounded-xl border border-zinc-800 hover:bg-zinc-900 transition-colors">
@@ -543,7 +543,7 @@ export default function Secretaria({ oficinaId, abrirRecuperacaoFinanceira, dado
                                         </div>
 
                                         <h3 className="text-2xl font-black text-white mb-2 tracking-tight">✅ Secretária Online</h3>
-                                        <p className="text-zinc-400 text-sm mb-8 max-w-xs">Sua oficina já está sincronizada e os clientes serão atendidos automaticamente via IA.</p>
+                                        <p className="text-zinc-400 text-sm mb-8 max-w-xs">Sua imobiliária já está sincronizada e os clientes serão atendidos automaticamente via IA.</p>
                                         
                                         <button 
                                             onClick={testarEnvio}
@@ -588,7 +588,7 @@ export default function Secretaria({ oficinaId, abrirRecuperacaoFinanceira, dado
                                             <img src="https://api.dicebear.com/7.x/bottts/svg?seed=Office" alt="Secretaria IA" />
                                         </div>
                                         <div className="flex-1 min-w-0">
-                                            <h5 className="text-white text-xs font-bold truncate">Secretária {dadosOficina?.nome || 'Oficina IA'}</h5>
+                                            <h5 className="text-white text-xs font-bold truncate">Secretária {dadosOficina?.nome || 'Express Imobi Tech'}</h5>
                                             <span className="text-[10px] text-emerald-200">online</span>
                                         </div>
                                     </div>
@@ -598,7 +598,7 @@ export default function Secretaria({ oficinaId, abrirRecuperacaoFinanceira, dado
                                         
                                         {/* Balão do Cliente */}
                                         <div className="self-end max-w-[85%] bg-[#DCF8C6] p-2.5 rounded-lg rounded-tr-none shadow-sm text-[11px] text-zinc-800 relative animate-in slide-in-from-right duration-700">
-                                            Olá! Queria saber do meu carro.
+                                            Olá! Queria saber sobre o apartamento que vi no site.
                                             <span className="text-[9px] text-zinc-500 block text-right mt-1">14:20</span>
                                         </div>
 
@@ -607,8 +607,8 @@ export default function Secretaria({ oficinaId, abrirRecuperacaoFinanceira, dado
                                             <div className="flex items-center gap-2 text-purple-600 font-bold text-[9px] uppercase tracking-wider border-b border-zinc-100 pb-1">
                                                 <Sparkles size={10} /> Resposta IA
                                             </div>
-                                            <p>Olá! Sou a Secretária da <strong>{dadosOficina?.nome || 'sua oficina'}</strong>. 🚗✨</p>
-                                            <p>Seu carro está na fase: <span className="bg-amber-100 text-amber-800 px-1.5 py-0.5 rounded font-bold">Montagem de Motor</span>.</p>
+                                            <p>Olá! Sou a Secretária da <strong>{dadosOficina?.nome || 'sua imobiliária'}</strong>. 🏠✨</p>
+                                            <p>O imóvel está na fase: <span className="bg-amber-100 text-amber-800 px-1.5 py-0.5 rounded font-bold">Proposta em análise</span>.</p>
                                             <p>Acompanhe as fotos e o andamento em tempo real aqui no link: </p>
                                             <div className="bg-zinc-50 border border-zinc-200 p-2 rounded-lg text-blue-600 font-bold text-[10px] flex items-center gap-2">
                                                 <ExternalLink size={12} /> oficinai.app/portal
@@ -630,7 +630,7 @@ export default function Secretaria({ oficinaId, abrirRecuperacaoFinanceira, dado
                                 {/* Texto de Conversão Abaixo do Simulador */}
                                 <div className="text-center mt-4 px-4">
                                     <p className="text-[11px] md:text-xs text-zinc-400 font-medium leading-relaxed italic bg-zinc-900/30 p-3 rounded-xl border border-zinc-800/50">
-                                        "Sinta a liberdade de uma oficina que nunca para de atender. Após os 3 dias de teste, escolha o plano que melhor se adapta à sua produtividade."
+                                        "Sinta a liberdade de uma imobiliária que nunca para de atender. Após os 3 dias de teste, escolha o plano que melhor se adapta à sua produtividade."
                                     </p>
                                 </div>
 
@@ -642,7 +642,7 @@ export default function Secretaria({ oficinaId, abrirRecuperacaoFinanceira, dado
                         <div className="flex items-center justify-center py-6 border-t border-zinc-900/50 gap-3 text-zinc-500 text-center mt-6">
                             <AlertCircle size={16} className="text-amber-600 shrink-0" />
                             <p className="text-[11px] md:text-xs font-medium max-w-2xl">
-                                Atenção: O agendamento via IA é uma pré-reserva sujeita a confirmação de peças e box livre da oficina física.
+                                Atenção: O agendamento via IA é um pré-atendimento sujeito à confirmação de disponibilidade do imóvel e do corretor responsável.
                             </p>
                         </div>
 
@@ -681,7 +681,7 @@ export default function Secretaria({ oficinaId, abrirRecuperacaoFinanceira, dado
                         <div className="bg-pink-900/20 border border-pink-500/30 rounded-[2rem] p-6 mb-8">
                             <div className="flex items-center justify-between mb-4">
                                 <h2 className="text-pink-400 font-black uppercase text-xs tracking-widest flex items-center gap-2">
-                                    <Settings size={16} /> Link de Avaliação da Oficina (Google)
+                                    <Settings size={16} /> Link de Avaliação da Imobiliária (Google)
                                 </h2>
                                 {!isEditingLink && <button onClick={() => setIsEditingLink(true)} className="text-[10px] font-bold text-zinc-500 hover:text-white underline uppercase">Alterar Link</button>}
                             </div>
@@ -708,7 +708,7 @@ export default function Secretaria({ oficinaId, abrirRecuperacaoFinanceira, dado
                                 <div className="relative mb-6">
                                     <textarea
                                         value={promptTexto} onChange={(e) => setPromptTexto(e.target.value)}
-                                        placeholder="Ex: Avisa que o freio ficou pronto e o valor é 450..."
+                                        placeholder="Ex: Avisa que o apartamento está liberado para visita e o valor é R$ 450 mil..."
                                         className={STYLES.input + " min-h-[120px] pr-14"}
                                     />
                                     <button onClick={toggleMic} className={`absolute right-4 bottom-4 p-3 rounded-full ${isListening ? 'bg-emerald-600 animate-pulse' : 'bg-zinc-800 text-pink-500'}`}>
@@ -742,15 +742,15 @@ export default function Secretaria({ oficinaId, abrirRecuperacaoFinanceira, dado
                                 <h2 className="text-yellow-500 font-black mb-6 uppercase text-xs tracking-widest flex items-center gap-2 border-l-4 border-yellow-500 pl-4">
                                     <Heart size={16} /> Pesquisa de Satisfação
                                 </h2>
-                                <p className="text-[11px] text-zinc-500 mb-6">Gere uma mensagem automática pedindo 5 estrelas no Google para o cliente após a entrega.</p>
+                                <p className="text-[11px] text-zinc-500 mb-6">Gere uma mensagem automática pedindo 5 estrelas no Google para o cliente após a visita.</p>
                                 <div className="space-y-4 mb-8">
                                     <div>
                                         <label className="text-[10px] text-zinc-500 font-black uppercase mb-2 block px-2">Nome do Cliente</label>
                                         <input value={nomeCliente} onChange={(e) => setNomeCliente(e.target.value)} placeholder="Ex: Sr. Carlos" className={STYLES.input} />
                                     </div>
                                     <div>
-                                        <label className="text-[10px] text-zinc-500 font-black uppercase mb-2 block px-2">Veículo</label>
-                                        <input value={veiculoCliente} onChange={(e) => setVeiculoCliente(e.target.value)} placeholder="Ex: Toyota Corolla" className={STYLES.input} />
+                                        <label className="text-[10px] text-zinc-500 font-black uppercase mb-2 block px-2">Imóvel</label>
+                                        <input value={veiculoCliente} onChange={(e) => setVeiculoCliente(e.target.value)} placeholder="Ex: Apto 302 - Santa Mônica" className={STYLES.input} />
                                     </div>
                                 </div>
                                 <button onClick={enviarNPS} className="w-full py-5 bg-green-600 hover:bg-green-500 text-white font-black text-xs uppercase tracking-widest rounded-xl transition-all flex items-center justify-center gap-3 shadow-[0_0_20px_rgba(34,197,94,0.3)]">
