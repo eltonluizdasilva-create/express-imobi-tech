@@ -43,7 +43,11 @@ export default function ModuloMeuPlano({ dadosOficina }) {
     const valor = `${precoMensal(pro, ciclo)}/mês${ciclo === 'anual' ? ' (cobrado R$ 1.068,00/ano)' : ''}`;
 
     const destino = destinoCheckout({
-      checkoutUrl: urlCheckoutPro(import.meta.env || {}, ciclo),
+      checkoutUrl: urlCheckoutPro({
+        mensal: import.meta.env?.VITE_CHECKOUT_PRO_MENSAL_URL,
+        anual: import.meta.env?.VITE_CHECKOUT_PRO_ANUAL_URL,
+        unico: import.meta.env?.VITE_CHECKOUT_PRO_URL,
+      }, ciclo),
       whatsapp: import.meta.env?.VITE_SU_WPP || WHATSAPP_COMERCIAL,
       planoNome: `Completo PRO (${ciclo})`,
       ciclo,

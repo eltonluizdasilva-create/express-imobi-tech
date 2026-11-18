@@ -21,13 +21,19 @@ export function normalizarWhatsapp(numero) {
 
 /**
  * URL de pagamento do ciclo. Ordem: variável do ciclo (MENSAL/ANUAL) e, como
- * compatibilidade, a antiga VITE_CHECKOUT_PRO_URL única.
+ * compatibilidade, uma URL única.
+ *
+ * Recebe VALORES, não o objeto `import.meta.env`: passar o ambiente inteiro
+ * faz o Vite inlinar todas as VITE_* disponíveis e o bundle muda de máquina
+ * para máquina (hash de build diferente do local). Assim é reprodutível.
  */
 export function urlCheckoutPro(env = {}, ciclo = 'anual') {
   const cicloKey = String(ciclo || 'anual').toUpperCase() === 'MENSAL' ? 'MENSAL' : 'ANUAL';
   const candidatos = [
     env[`VITE_CHECKOUT_PRO_${cicloKey}_URL`],
+    env[cicloKey === 'MENSAL' ? 'mensal' : 'anual'],
     env.VITE_CHECKOUT_PRO_URL,
+    env.unico,
     env.checkoutProUrl,
   ];
   for (const bruto of candidatos) {

@@ -8,7 +8,7 @@
  */
 
 // Selo visível no rodapé: serve para conferir, em produção, qual build está carregado.
-export const VERSAO_COPY = 'v2026.11.18-b';
+export const VERSAO_COPY = 'v2026.11.18-c';
 
 export const DOR_SOLUCAO = {
   dashboard_imobi: {
