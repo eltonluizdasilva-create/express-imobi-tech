@@ -68,12 +68,12 @@ export const HERO_ABAS = {
   dashboard_imobi: {
     chip: 'PAINEL EXECUTIVO',
     titulo: 'O seu dia inteiro em uma tela.',
-    subtitulo: 'Leads, visitas, VGV e comissão atualizados conforme você opera o CRM.',
+    subtitulo: 'Em 5 segundos: quem responder, quem visitar e quanto vai receber — sem planilha paralela.',
   },
   captacao_imobi: {
     chip: 'CATÁLOGO DE IMÓVEIS',
     titulo: 'Sua carteira, pronta para vender.',
-    subtitulo: 'Cadastre, fotografe e publique os imóveis que sustentam o seu funil.',
+    subtitulo: 'Cadastre em 1 minuto e publique na vitrine e nos portais — sem digitar o mesmo dado duas vezes.',
   },
   funil_leads: {
     chip: 'CRM IMOBILIÁRIO',
@@ -83,12 +83,12 @@ export const HERO_ABAS = {
   visitas_imobi: {
     chip: 'AGENDA DE VISITAS',
     titulo: 'Visita marcada é negócio encaminhado.',
-    subtitulo: 'Organize compromissos por cliente, imóvel e corretor, com confirmação no WhatsApp.',
+    subtitulo: 'Visita confirmada no WhatsApp antes do horário: menos plantão furado, mais negócio fechado.',
   },
   financeiro: {
     chip: 'GESTÃO FINANCEIRA',
     titulo: 'Seu lucro e despesas sob controle.',
-    subtitulo: 'Comissões previstas, recebidas e custo de anúncio no mesmo lugar.',
+    subtitulo: 'Quanto entra, quanto está travado e quanto vai receber — sem fechar o mês no escuro.',
   },
   historico: {
     chip: 'ARQUIVO DIGITAL',
@@ -98,7 +98,7 @@ export const HERO_ABAS = {
   equipe: {
     chip: 'GESTÃO DE EQUIPE',
     titulo: 'Quem vende, quanto vende, com qual acesso.',
-    subtitulo: 'Permissões por corretor e meta individual acompanhadas em tempo real.',
+    subtitulo: 'Quem está produzindo e quem está parado, por corretor — escala e comissão com número na mão.',
   },
   marketing: {
     chip: 'META ADS & CRIATIVOS',

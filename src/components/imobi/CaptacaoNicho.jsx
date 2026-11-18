@@ -171,8 +171,8 @@ export default function CaptacaoNicho({ dadosOficina, setAbaAtiva }) {
           </p>
           <h3 className="mt-1 text-lg font-black text-white">Formulário Dinâmico</h3>
           <p className="mt-1 max-w-2xl text-xs text-slate-400">
-            Cada nicho carrega as exigências do seu mercado: garantia única na locação, documentação de cartório no rural,
-            faixas do MCMV, infraestrutura no loteamento e atributos de alto padrão.
+            Cadastre em 1 minuto sem esquecer nenhum detalhe: os campos se adaptam sozinhos para Minha Casa Minha Vida,
+            Rural, Loteamento, Alto Padrão ou Locação.
           </p>
         </div>
       </div>

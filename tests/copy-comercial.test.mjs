@@ -1,0 +1,89 @@
+/** Copy comercial + gate do alternador de demo. */
+import { readFileSync } from 'node:fs';
+import { DOR_SOLUCAO, DOR_PADRAO, textoDor, ABAS_COM_COPY } from '../src/lib/copyAbas.js';
+import {
+  ehMasterPlataforma, modoProEfetivo, rotuloModo, mostrarAlternadorDemo, mostrarBotaoUpgrade,
+} from '../src/lib/acesso-plano.js';
+
+let falhas = 0;
+const ok = (n, c, e = '') => { console.log(`${c ? 'PASS' : 'FAIL'}  ${n}${e ? ' — ' + e : ''}`); if (!c) falhas += 1; };
+
+const COBERTURA = [
+  ['dashboard_imobi', 'Visão Geral'],
+  ['captacao_imobi', 'Captação & Imóveis'],
+  ['funil_leads', 'Leads & Funil'],
+  ['visitas_imobi', 'Agenda'],
+  ['financeiro', 'Financeiro'],
+  ['historico', 'Propostas'],
+  ['marketing', 'Meta Ads & Criativos'],
+  ['tarefa', 'Vistoria IA'],
+  ['notafiscal', 'Repasses'],
+  ['avaliacao_imovel', 'Avaliação PTAM'],
+  ['credito', 'Correspondente/Crédito'],
+  ['agentes_ia', 'Esquadrão de IA'],
+];
+
+/* ------------------------- 1. cobertura e forma -------------------------- */
+for (const [aba, nome] of COBERTURA) {
+  ok(`cobre ${nome}`, Boolean(DOR_SOLUCAO[aba]), aba);
+}
+ok('12 abas cobertas', COBERTURA.every(([a]) => DOR_SOLUCAO[a]));
+ok('nenhuma entrada vazia', Object.values(DOR_SOLUCAO).every((v) => v.dor?.trim() && v.ganho?.trim()));
+ok('rodapé é 2 linhas no celular (dor ≤ 95)', Object.values(DOR_SOLUCAO).every((v) => v.dor.length <= 95),
+   String(Math.max(...Object.values(DOR_SOLUCAO).map((v) => v.dor.length))));
+ok('ganho ≤ 120', Object.values(DOR_SOLUCAO).every((v) => v.ganho.length <= 120),
+   String(Math.max(...Object.values(DOR_SOLUCAO).map((v) => v.ganho.length))));
+
+const JARGAO = ['NBR', 'PTAM', 'SICAQ', 'IBS', 'CBS', 'ADN', 'NFS-e', 'multitenant', 'schema', 'split'];
+const temJargao = Object.entries(DOR_SOLUCAO).flatMap(([k, v]) =>
+  JARGAO.filter((j) => `${v.dor} ${v.ganho}`.includes(j)).map((j) => `${k}:${j}`));
+ok('sem jargão técnico no rodapé', temJargao.length === 0, temJargao.join(', '));
+
+ok('fallback para aba desconhecida', textoDor('aba_inexistente') === DOR_PADRAO);
+ok('textoDor devolve a aba certa', textoDor('credito').dor === DOR_SOLUCAO.credito.dor);
+
+/* ------------------------- 2. gate do alternador ------------------------- */
+ok('MASTER por papel', ehMasterPlataforma('master', false));
+ok('MASTER por claim admin', ehMasterPlataforma('dono', true));
+ok('dono NÃO é master', !ehMasterPlataforma('dono', false));
+ok('admin do tenant NÃO é master', !ehMasterPlataforma('admin', false));
+ok('corretor NÃO é master', !ehMasterPlataforma('corretor', false));
+ok('mostrarAlternadorDemo espelha a regra', mostrarAlternadorDemo('corretor', false) === false && mostrarAlternadorDemo('master', false));
+
+ok('modo demo: master em grátis = grátis', modoProEfetivo({ master: true, isModoGratis: true, isProConta: true }) === false);
+ok('modo demo: master em PRO = PRO', modoProEfetivo({ master: true, isModoGratis: false, isProConta: true }) === true);
+ok('cliente PRO ignora localStorage "gratis"', modoProEfetivo({ master: false, isModoGratis: true, isProConta: true }) === true);
+ok('cliente gratuito ignora localStorage "completo"', modoProEfetivo({ master: false, isModoGratis: false, isProConta: false }) === false);
+
+ok('rótulo MASTER em demo', rotuloModo({ master: true, modoPro: false, isProConta: true }).includes('MODO GRÁTIS'));
+ok('rótulo cliente PRO', rotuloModo({ master: false, modoPro: true, isProConta: true }) === '✨ Plano PRO Ativo');
+ok('rótulo cliente gratuito', rotuloModo({ master: false, modoPro: false, isProConta: false }) === '⚡ Plano Gratuito');
+ok('cliente não vê "MODO" no rótulo', !/MODO (GRÁTIS|COMPLETO)/.test(rotuloModo({ master: false, modoPro: false, isProConta: false })));
+
+ok('+ PRO aparece só no gratuito', mostrarBotaoUpgrade({ master: false, isProConta: false }) && !mostrarBotaoUpgrade({ master: false, isProConta: true }));
+ok('MASTER não vê + PRO', !mostrarBotaoUpgrade({ master: true, isProConta: false }));
+
+/* ------------------- 3. conferência no código da tela -------------------- */
+const admin = readFileSync(new URL('../src/AdminNovo.jsx', import.meta.url), 'utf8');
+ok('AdminNovo usa a lib de gate', admin.includes('ehMasterPlataformaFn(papelLogado, claimAdmin)'));
+ok('AdminNovo usa modoProEfetivo', admin.includes('modoProEfetivo({'));
+ok('AdminNovo usa rotuloModo', admin.includes('rotuloModo({'));
+ok('alternador dentro do if de MASTER', /\{ehMasterPlataforma \? \([\s\S]{0,1800}?Modo Grátis/.test(admin));
+ok('"Modo Completo (PRO)" aparece 1x só', (admin.match(/Modo Completo \(PRO\)/g) || []).length === 1);
+ok('badge real do plano para cliente', admin.includes("'Plano PRO Ativo' : 'Plano Gratuito'"));
+ok('botão + PRO presente', admin.includes('+ PRO'));
+ok('rodapé DorESolucao antes do copyright',
+   admin.indexOf('<DorESolucao abaAtiva={abaAtiva} />') > 0
+   && admin.indexOf('<DorESolucao abaAtiva={abaAtiva} />') < admin.indexOf('<RodapeLegal />'));
+
+const nicho = readFileSync(new URL('../src/components/imobi/CaptacaoNicho.jsx', import.meta.url), 'utf8');
+ok('novo subtítulo de Captação por Nicho',
+   nicho.includes('Cadastre em 1 minuto sem esquecer nenhum detalhe: os campos se adaptam sozinhos para Minha Casa Minha Vida,'));
+ok('subtítulo antigo removido', !nicho.includes('Cada nicho carrega as exigências do seu mercado'));
+
+ok('descrições técnicas antigas sumiram do menu',
+   !admin.includes('Dashboard principal com resumo em tempo real do dia') &&
+   !admin.includes('Motor comparativo direto (ABNT NBR 14.653)'));
+
+console.log(`\n${falhas === 0 ? 'TODOS OS TESTES PASSARAM' : falhas + ' FALHA(S)'}`);
+process.exit(falhas === 0 ? 0 : 1);

@@ -64,6 +64,8 @@ import GerenciadorDeModulos from './components/admin/GerenciadorDeModulos';
 import ControleInteligenciaIA from './components/ControleInteligenciaIA';
 import GuiaDaAba from './components/ui/GuiaDaAba';
 import RodapeLegal from './components/ui/RodapeLegal';
+import DorESolucao from './components/ui/DorESolucao';
+import { ehMasterPlataforma as ehMasterPlataformaFn, modoProEfetivo, rotuloModo } from './lib/acesso-plano';
 import { MODULOS_MAP } from './modulosMap';
 import { setCreditoPrefill } from './lib/credito/prefill';
 import { MODULOS_SO_GESTAO, ehGestor as ehGestorDoPapel, filtrarModulos } from './lib/permissoes-menu';
@@ -117,7 +119,7 @@ const GRUPOS_MENU_IMOBI = [
         tituloLimpo: 'PAINEL EXECUTIVO — Visão Geral',
         tier: 'gratis',
         descricao:
-          'Dashboard principal com resumo em tempo real do dia (leads novos, visitas agendadas, conversões e cálculo dinâmico de VGV).',
+          'Abra e saiba o que fazer primeiro: quem chegou hoje, quem está esperando resposta e quanto você tem a receber. Menos tempo procurando informação, mais tempo vendendo.',
       },
       {
         id: 'captacao_imobi',
@@ -126,7 +128,7 @@ const GRUPOS_MENU_IMOBI = [
         tituloLimpo: 'GESTÃO & VITRINE DE IMÓVEIS',
         tier: 'gratis',
         descricao:
-          'Imóveis prontos para qualificação por padrão (Minha Casa Minha Vida, Médio e Alto Padrão), upload com compressão em canvas e sincronização instantânea com a Vitrine Digital em /portal.',
+          'Cadastre o imóvel uma vez e ele já sai na vitrine, nos portais e no seu material de venda. O formulário muda conforme o nicho, então você não esquece campo nem refaz cadastro.',
       },
       {
         id: 'funil_leads',
@@ -135,7 +137,7 @@ const GRUPOS_MENU_IMOBI = [
         tituloLimpo: 'FUNIL DE VENDAS & CRM',
         tier: 'gratis',
         descricao:
-          'Cadastre e acompanhe clientes em cada etapa da jornada de compra ou locação com rastreamento de origem e disparo direto para o WhatsApp.',
+          'Nenhum lead esfria por falta de retorno: cada cliente tem dono, etapa e prazo. O card mostra quem está parado há mais tempo e o WhatsApp sai com um clique.',
       },
       {
         id: 'visitas_imobi',
@@ -144,7 +146,7 @@ const GRUPOS_MENU_IMOBI = [
         tituloLimpo: 'AGENDA DE VISITAS & PLANTÃO',
         tier: 'gratis',
         descricao:
-          'Organize horários com corretores, automatize confirmações de presença via WhatsApp e elimine furos no plantão imobiliário.',
+          'Visita marcada é comissão encaminhada. Agenda com corretor, imóvel e confirmação automática no WhatsApp — fim do cliente que não aparece.',
       },
       {
         id: 'financeiro',
@@ -153,7 +155,7 @@ const GRUPOS_MENU_IMOBI = [
         tituloLimpo: 'GESTÃO FINANCEIRA & VGV',
         tier: 'gratis',
         descricao:
-          'Projeção de comissões, controle de fluxo de caixa da imobiliária e acompanhamento em tempo real do Volume Geral de Vendas (VGV) em carteira.',
+          'Saiba quanto já vendeu, quanto tem a receber e quanto está travado — sem planilha e sem surpresa no fechamento do mês.',
       },
       {
         id: 'historico',
@@ -162,7 +164,7 @@ const GRUPOS_MENU_IMOBI = [
         tituloLimpo: 'PROPOSTAS & FECHAMENTO',
         tier: 'gratis',
         descricao:
-          'Gerenciamento de propostas comerciais, análise de crédito (SBPE, FGTS, financiamentos) e histórico de negociações até a assinatura do contrato.',
+          'Da proposta à assinatura, com status e histórico. Quando o cliente perguntar "como está aquele negócio?", a resposta está na tela.',
       },
       {
         id: 'equipe',
@@ -180,7 +182,7 @@ const GRUPOS_MENU_IMOBI = [
         tituloLimpo: 'ADS & CAPTAÇÃO DE TRÁFEGO',
         tier: 'gratis',
         descricao:
-          'Gerador de copies persuasivas para venda e aluguel, sugestões de criativos prontos e direcionamento de tráfego direto para o WhatsApp do corretor.',
+          'Anúncio pronto em 1 minuto: arte, legenda e público no tom que o cliente responde. Pare de improvisar post no meio do plantão.',
       },
       {
         id: 'meuplano',
@@ -204,7 +206,7 @@ const GRUPOS_MENU_IMOBI = [
         tituloLimpo: 'ESQUADRÃO DE INTELIGÊNCIA ARTIFICIAL',
         tier: 'pro',
         descricao:
-          'Equipe de 7 agentes autônomos trabalhando 24h por dia na qualificação de leads, triagem, agendamento de visitas e reengajamento no WhatsApp.',
+          'Lead que chega às 22h de sábado recebe resposta na hora: os agentes qualificam, agendam e reengajam 24h. Você acorda com a conversa adiantada.',
       },
       {
         id: 'whatsapp_hub',
@@ -279,7 +281,8 @@ const GRUPOS_MENU_IMOBI = [
         tituloCard: 'VISTORIA & LAUDO FOTOGRÁFICO IA',
         tituloLimpo: 'Vistoria & Laudo Fotográfico IA',
         tier: 'pro',
-        descricao: 'Emissão de laudos fotográficos por ambiente do imóvel e controle de vistorias de entrada e saída.',
+        descricao:
+          'Laudo fotográfico por ambiente na entrada e na saída: acabou a discussão sobre o estado do imóvel e o desconto de caução no chute.',
       },
       {
         id: 'notafiscal',
@@ -287,7 +290,8 @@ const GRUPOS_MENU_IMOBI = [
         tituloCard: 'REPASSES & NFS-E UNIFICADA (ADN + IBS/CBS)',
         tituloLimpo: 'Repasses & NFS-e Unificada (ADN + IBS/CBS)',
         tier: 'pro',
-        descricao: 'Emissão automatizada de NFS-e no Padrão Nacional (ADN), split de repasse ao proprietário e cálculo IBS/CBS.',
+        descricao:
+          'Nota e repasse no mesmo lugar: você emite, divide com o proprietário e vê exatamente quanto entra na conta.',
       },
       {
         id: 'migracao',
@@ -330,7 +334,7 @@ const GRUPOS_MENU_IMOBI = [
         tituloLimpo: 'Avaliação de Imóvel (PTAM)',
         tier: 'pro',
         descricao:
-          'Motor comparativo direto (ABNT NBR 14.653): áreas, padrão, conservação e até 3 comparáveis geram valor do m², três cenários de preço, prazo médio de venda e o parecer pronto para o proprietário.',
+          'Chega de "quanto vale?" no chute: avaliação com comparáveis reais, três cenários de preço e prazo estimado de venda. Argumento pronto para o proprietário ajustar o valor.',
       },
       {
         id: 'acompanhamento_cliente',
@@ -1560,8 +1564,25 @@ export default function Admin() {
     raiz.classList.toggle('tema-claro', !isEscuro);
     return () => raiz.classList.remove('tema-claro');
   }, [isEscuro]);
+  // --- Conta MASTER da plataforma: só ela vê o alternador de demonstração ---
+  // MASTER = VITE_SU (papelLogado 'master') ou custom claim admin=true no token.
+  const [claimAdmin, setClaimAdmin] = useState(false);
+  useEffect(() => {
+    let vivo = true;
+    const conta = auth?.currentUser;
+    if (!conta?.getIdTokenResult) return undefined;
+    conta.getIdTokenResult()
+      .then((r) => { if (vivo) setClaimAdmin(r?.claims?.admin === true); })
+      .catch(() => {});
+    return () => { vivo = false; };
+  }, [auth?.currentUser]);
+
+  const ehMasterPlataforma = ehMasterPlataformaFn(papelLogado, claimAdmin);
+
   const isModoGratis = modoPainel === 'gratis' || modoPainel === 'lite';
-  const modoPro = !isModoGratis;
+  // Cliente final não tem rascunho de demo: o painel segue o plano REAL da conta.
+  // O localStorage ('modoPainel') só vale para a conta MASTER.
+  const modoPro = modoProEfetivo({ master: ehMasterPlataforma, isModoGratis, isProConta });
   const isPro = Boolean(isProConta && modoPro);
   const setModoPro = (ativo) => alternarModoPainel(ativo ? 'completo' : 'gratis');
   const infoAbaAtiva = MAPA_DETALHES_ABAS[abaAtiva] || MAPA_DETALHES_ABAS.dashboard_imobi;
@@ -1628,34 +1649,57 @@ export default function Admin() {
           <div className="flex flex-wrap items-center gap-3">
             <span className="text-xl font-bold text-emerald-400">EXPRESS IMOBI TECH</span>
             <span className="text-xs px-2.5 py-1 rounded-full bg-emerald-950 text-emerald-300 border border-emerald-800/50">
-              {modoPro ? '✨ MODO COMPLETO (PRO) ATIVO' : '⚡ MODO GRÁTIS ATIVO (Essencial)'}
+              {rotuloModo({ master: ehMasterPlataforma, modoPro, isProConta })}
             </span>
           </div>
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
-          <button
-            onClick={() => setModoPro(false)}
-            style={!modoPro ? { backgroundColor: '#10b981' } : undefined}
-            className={`px-3 py-1.5 text-xs font-medium rounded-lg transition-all cursor-pointer ${
-              !modoPro
-                ? 'bg-emerald-600 text-white shadow-lg shadow-emerald-600/20'
-                : 'bg-zinc-800 text-zinc-400 hover:text-zinc-200'
-            }`}
-          >
-            Modo Grátis
-          </button>
-          <button
-            onClick={() => setModoPro(true)}
-            style={modoPro ? { backgroundColor: '#10b981' } : undefined}
-            className={`px-3 py-1.5 text-xs font-medium rounded-lg transition-all cursor-pointer ${
-              modoPro
-                ? 'bg-emerald-600 text-white shadow-lg shadow-emerald-600/20'
-                : 'bg-zinc-800 text-zinc-400 hover:text-zinc-200'
-            }`}
-          >
-            Modo Completo (PRO)
-          </button>
+          {ehMasterPlataforma ? (
+            <>
+              <span className="hidden text-[9px] font-black uppercase tracking-widest text-zinc-500 sm:inline">
+                Demo
+              </span>
+              <button
+                onClick={() => setModoPro(false)}
+                style={!modoPro ? { backgroundColor: '#10b981' } : undefined}
+                className={`px-3 py-1.5 text-xs font-medium rounded-lg transition-all cursor-pointer ${
+                  !modoPro
+                    ? 'bg-emerald-600 text-white shadow-lg shadow-emerald-600/20'
+                    : 'bg-zinc-800 text-zinc-400 hover:text-zinc-200'
+                }`}
+              >
+                Modo Grátis
+              </button>
+              <button
+                onClick={() => setModoPro(true)}
+                style={modoPro ? { backgroundColor: '#10b981' } : undefined}
+                className={`px-3 py-1.5 text-xs font-medium rounded-lg transition-all cursor-pointer ${
+                  modoPro
+                    ? 'bg-emerald-600 text-white shadow-lg shadow-emerald-600/20'
+                    : 'bg-zinc-800 text-zinc-400 hover:text-zinc-200'
+                }`}
+              >
+                Modo Completo (PRO)
+              </button>
+            </>
+          ) : (
+            <>
+              <span className="rounded-lg border border-zinc-700/60 bg-zinc-800/60 px-2.5 py-1.5 text-[11px] font-bold text-zinc-300">
+                {isProConta ? 'Plano PRO Ativo' : 'Plano Gratuito'}
+              </span>
+              {!isProConta && (
+                <button
+                  onClick={() => setAbaAtiva('meuplano')}
+                  style={{ backgroundColor: '#10b981' }}
+                  className="cursor-pointer rounded-lg px-3 py-1.5 text-xs font-black text-slate-950 transition hover:brightness-110"
+                  title="Ver planos e liberar todos os módulos"
+                >
+                  + PRO
+                </button>
+              )}
+            </>
+          )}
 
           <button
             onClick={toggleTema}
@@ -2676,6 +2720,7 @@ export default function Admin() {
           </SafeBoundary>
         )}
 
+        <DorESolucao abaAtiva={abaAtiva} />
         <RodapeLegal />
       </main>
 
