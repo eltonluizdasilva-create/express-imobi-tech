@@ -15,6 +15,9 @@ import {
   FileBarChart,
   Shuffle,
   Clock,
+  Minus,
+  ArrowUpRight,
+  Lock,
 } from 'lucide-react';
 import { db } from '../lib/firebase';
 import { doc, setDoc, updateDoc, Timestamp } from 'firebase/firestore';
@@ -26,6 +29,8 @@ import { getApp } from 'firebase/app';
 const REGIAO_FUNCTIONS = 'southamerica-east1';
 
 import { PLANOS, WHATSAPP_COMERCIAL } from '../lib/planos';
+import { COMPARATIVO_PRO, planoPro, valorParaMensagem, precoDoPlano } from '../lib/comparativoPlanos';
+import { destinoCheckout, urlCheckoutPro, abrirDestino } from '../lib/checkout';
 
 // Mapa nome-do-icone -> componente lucide (o catalogo guarda so o nome)
 const ICONES = {
@@ -41,8 +46,13 @@ const formatarBRL = (valor) =>
 /* ------------------------------------------------------------------ */
 
 export default function ModuloMeuPlano({ dadosOficina, onModulosChange }) {
-  const [ciclo, setCiclo] = useState('mensal');
-  const [planoAtual, setPlanoAtual] = useState('gratis');
+  // Estado inicial derivado das props: sem "flash" de gratuito para quem já é PRO
+  // e sem depender de useEffect (o que também torna o componente testável em SSR).
+  const [ciclo, setCiclo] = useState(() => (dadosOficina?.tipoPlano === 'anual' ? 'anual' : 'mensal'));
+  const [planoAtual, setPlanoAtual] = useState(() => {
+    const existe = (PLANOS ?? []).some((p) => p.key === dadosOficina?.plano);
+    return existe ? dadosOficina.plano : 'gratis';
+  });
   const [salvando, setSalvando] = useState(null);
   const [mensagem, setMensagem] = useState('');
 
@@ -52,6 +62,9 @@ export default function ModuloMeuPlano({ dadosOficina, onModulosChange }) {
     setPlanoAtual(existe ? dadosOficina.plano : 'gratis');
     setCiclo(dadosOficina?.tipoPlano === 'anual' ? 'anual' : 'mensal');
   }, [dadosOficina]);
+
+  const pro = useMemo(() => planoPro(PLANOS), []);
+  const jaEhPro = Boolean(pro && planoAtual === pro.key);
 
   const planoAtualInfo = useMemo(
     () => (PLANOS ?? [])?.find(p => p.key === planoAtual) || PLANOS[0],
@@ -65,6 +78,31 @@ export default function ModuloMeuPlano({ dadosOficina, onModulosChange }) {
 
   const abrirWhatsApp = (texto) => {
     window.open(`https://wa.me/${WHATSAPP_COMERCIAL}?text=${encodeURIComponent(texto)}`, '_blank');
+  };
+
+  // Checkout real do PRO: URL de pagamento se configurada; senão WhatsApp
+  // comercial com plano, ciclo, e-mail e ID já preenchidos.
+  const abrirCheckoutPro = (plano = pro) => {
+    if (!plano) { mostrarMensagem('Plano PRO indisponível no momento.'); return; }
+    const conta = getAuth().currentUser;
+    const destino = destinoCheckout({
+      checkoutUrl: urlCheckoutPro(import.meta.env || {}),
+      whatsapp: import.meta.env?.VITE_SU_WPP || WHATSAPP_COMERCIAL,
+      planoNome: plano.nome,
+      ciclo,
+      email: conta?.email || '',
+      uid: conta?.uid || '',
+      nomeOficina: dadosOficina?.nomeOficina || '',
+      valor: valorParaMensagem(plano, ciclo),
+    });
+    const abriu = abrirDestino(destino);
+    if (!abriu) {
+      mostrarMensagem('O navegador bloqueou a janela. Libere pop-ups e tente novamente.');
+      return;
+    }
+    if (destino.tipo === 'whatsapp') {
+      mostrarMensagem('Abrimos o WhatsApp do comercial com seus dados já preenchidos.');
+    }
   };
 
   const selecionarPlano = async (plano) => {
@@ -88,6 +126,13 @@ export default function ModuloMeuPlano({ dadosOficina, onModulosChange }) {
     }
 
     if (!uid) { mostrarMensagem('Sessão expirada. Faça login novamente.'); return; }
+
+    // Plano pago só entra por checkout/WhatsApp — nunca por auto-ativação.
+    if (Number(plano?.preco?.[ciclo] ?? 0) > 0) {
+      abrirCheckoutPro(plano);
+      return;
+    }
+
     setSalvando(plano.key);
     try {
       const modulos = [...new Set(plano?.modulos ?? [])];
@@ -138,6 +183,73 @@ export default function ModuloMeuPlano({ dadosOficina, onModulosChange }) {
         </p>
         <div className="mt-5 inline-flex items-center gap-2 rounded-2xl border border-emerald-500/30 bg-emerald-500/10 px-4 py-2 text-xs font-black uppercase tracking-widest text-emerald-300">
           Plano atual: <span className="text-white">{planoAtualInfo?.nome}</span>
+        </div>
+      </section>
+
+      {/* COMPARATIVO GRATUITO × PRO + CHECKOUT */}
+      <section className="overflow-hidden rounded-[28px] border border-slate-800 bg-slate-950/70">
+        <div className="flex flex-wrap items-end justify-between gap-3 border-b border-slate-800 px-5 py-4 md:px-7">
+          <div>
+            <p className="text-[10px] font-black uppercase tracking-[0.25em] text-emerald-400">Comparativo</p>
+            <h2 className="mt-1 text-xl font-black text-white md:text-2xl">Modo Grátis × Plano PRO</h2>
+            <p className="mt-1 text-xs text-slate-400">
+              O grátis serve para operar. O PRO serve para crescer: mais módulos, mais corretores e laudo por IA.
+            </p>
+          </div>
+          {pro && (
+            <div className="text-right">
+              <p className="text-[10px] font-black uppercase tracking-widest text-slate-500">PRO {ciclo}</p>
+              <p className="text-2xl font-black text-white">
+                {precoDoPlano(pro, ciclo)}<span className="text-xs font-bold text-slate-400">/mês</span>
+              </p>
+            </div>
+          )}
+        </div>
+
+        <div className="divide-y divide-slate-800/70">
+          <div className="grid grid-cols-[1fr_auto_auto] items-center gap-3 px-5 py-2 text-[9px] font-black uppercase tracking-widest text-slate-500 md:px-7">
+            <span>Recurso</span>
+            <span className="w-16 text-center">Grátis</span>
+            <span className="w-16 text-center text-emerald-400">PRO</span>
+          </div>
+
+          {COMPARATIVO_PRO.map((linha) => (
+            <div key={linha.recurso} className="grid grid-cols-[1fr_auto_auto] items-center gap-3 px-5 py-2.5 md:px-7">
+              <span className="text-xs text-slate-300">{linha.recurso}</span>
+              <span className="w-16 text-center text-xs font-bold text-slate-400">
+                {typeof linha.gratis === 'boolean'
+                  ? (linha.gratis ? <Check size={14} className="mx-auto text-slate-400" /> : <Minus size={14} className="mx-auto text-slate-600" />)
+                  : linha.gratis}
+              </span>
+              <span className="w-16 text-center text-xs font-black text-emerald-300">
+                {typeof linha.pro === 'boolean'
+                  ? (linha.pro ? <Check size={14} className="mx-auto text-emerald-400" /> : <Minus size={14} className="mx-auto text-slate-600" />)
+                  : linha.pro}
+              </span>
+            </div>
+          ))}
+        </div>
+
+        <div className="flex flex-col gap-3 border-t border-slate-800 px-5 py-4 md:flex-row md:items-center md:justify-between md:px-7">
+          <p className="flex items-center gap-2 text-[11px] text-slate-400">
+            <Lock size={12} className="text-emerald-400" />
+            {urlCheckoutPro(import.meta.env || {})
+              ? 'Pagamento em ambiente seguro — liberação automática.'
+              : 'Atendimento direto no WhatsApp comercial. Seus dados já vão preenchidos.'}
+          </p>
+
+          <button
+            type="button"
+            onClick={() => abrirCheckoutPro()}
+            disabled={jaEhPro || !pro}
+            className={`inline-flex w-full items-center justify-center gap-2 rounded-2xl px-6 py-3.5 text-xs font-black uppercase tracking-widest transition md:w-auto ${
+              jaEhPro
+                ? 'cursor-default border border-emerald-500/40 bg-emerald-500/10 text-emerald-300'
+                : 'bg-emerald-500 text-slate-950 hover:bg-emerald-400'
+            } disabled:opacity-90`}
+          >
+            {jaEhPro ? <><Check size={15} /> Plano PRO ativo</> : <>Assinar Plano PRO Agora <ArrowUpRight size={15} /></>}
+          </button>
         </div>
       </section>
 

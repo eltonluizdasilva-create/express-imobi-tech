@@ -65,6 +65,7 @@ import ControleInteligenciaIA from './components/ControleInteligenciaIA';
 import GuiaDaAba from './components/ui/GuiaDaAba';
 import RodapeLegal from './components/ui/RodapeLegal';
 import DorESolucao from './components/ui/DorESolucao';
+import OnboardingPrimeiroUso from './components/onboarding/OnboardingPrimeiroUso';
 import { ehMasterPlataforma as ehMasterPlataformaFn, modoProEfetivo, rotuloModo } from './lib/acesso-plano';
 import { MODULOS_MAP } from './modulosMap';
 import { setCreditoPrefill } from './lib/credito/prefill';
@@ -1859,6 +1860,8 @@ export default function Admin() {
 
         {/* ─── ABA 1: PAINEL EXECUTIVO (VISÃO GERAL) ─────────────────────────── */}
         {abaAtiva === 'dashboard_imobi' && (
+          <div className="space-y-4">
+            <OnboardingPrimeiroUso config={config} imoveis={listaImoveis} onIrPara={setAbaAtiva} />
           <RodaProspeccao
             leads={listaLeads}
             visitas={listaVisitas}
@@ -1872,6 +1875,7 @@ export default function Admin() {
             comissao={(listaImoveis || []).reduce((acc, item) => acc + (Number(item?.valor) || 0), 0) * 0.06}
             onAbrirAba={setAbaAtiva}
           />
+          </div>
         )}
 
         {abaAtiva === 'captacao_imobi' && (
