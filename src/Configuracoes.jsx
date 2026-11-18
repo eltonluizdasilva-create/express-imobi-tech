@@ -16,6 +16,8 @@ const ESTADO_INICIAL = {
   pixKey: '',
 };
 
+import IntegracaoPortais from './components/IntegracaoPortais';
+
 export default function Configuracoes({ oficinaId, onSalvo }) {
   const [config, setConfig] = useState(ESTADO_INICIAL);
   const [salvando, setSalvando] = useState(false);
@@ -241,6 +243,11 @@ export default function Configuracoes({ oficinaId, onSalvo }) {
       >
         {salvando ? 'SALVANDO...' : '💾 SALVAR CONFIGURAÇÕES'}
       </button>
+
+      {/* 🔗 INTEGRAÇÃO COM PORTAIS IMOBILIÁRIOS */}
+      <div style={{ marginTop: '30px', borderTop: '1px dashed #222', paddingTop: '30px' }}>
+        <IntegracaoPortais oficinaId={oficinaId} />
+      </div>
 
       {/* 🔒 ÁREA DE PRIVACIDADE E LGPD */}
       <div style={{

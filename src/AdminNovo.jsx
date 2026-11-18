@@ -537,6 +537,7 @@ export default function Admin() {
     finalidade: 'Venda',
     padraoImovel: 'Médio Padrão',
     status: 'Ativo',
+    publicarPortais: true,
     bairro: '',
     quartos: '2',
     valor: '',
@@ -2764,6 +2765,15 @@ export default function Admin() {
                   <option value="Reservado">Reservado / Em Proposta</option>
                   <option value="Inativo">Inativo / Oculto</option>
                 </select>
+                <label className="mt-2 flex items-center gap-2 text-[10px] font-bold uppercase text-slate-400">
+                  <input
+                    type="checkbox"
+                    checked={formImovel.publicarPortais !== false}
+                    onChange={(e) => setFormImovel({ ...formImovel, publicarPortais: e.target.checked })}
+                    className="h-3.5 w-3.5 accent-[#10b981]"
+                  />
+                  Publicar nos portais (ZAP/VivaReal/OLX)
+                </label>
               </div>
             </div>
 

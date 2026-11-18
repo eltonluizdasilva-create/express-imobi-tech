@@ -326,9 +326,17 @@ service cloud.firestore {
     match /oficinas/{oid}/configuracoes/{docId} {
       // StatusOS (público) lê SOMENTE configuracoes/geral. Antes o `get: true`
       // valia para qualquer documento da subcoleção, expondo precificacao.
-      allow get: if docId == 'geral' || (authed() && membroOficina(oid));
-      allow list: if authed() && membroOficina(oid);
-      allow write: if authed() && ehGestor(oid);
+      // 'portais' guarda o token do webhook de portais e tem regra própria
+      // logo abaixo — por isso é EXCLUÍDO deste bloco (rules são OR).
+      allow get: if docId != 'portais'
+        && (docId == 'geral' || (authed() && membroOficina(oid)));
+      allow list: if docId != 'portais' && authed() && membroOficina(oid);
+      allow write: if docId != 'portais' && authed() && ehGestor(oid);
+    }
+
+    // Integração com portais: o token do webhook NUNCA é visível ao corretor.
+    match /oficinas/{oid}/configuracoes/portais {
+      allow read, write: if authed() && ehGestor(oid);
     }
     // --------- criação pública de lead (Portal): 3 caminhos reais ----------
     // PortalCliente.jsx grava nos três: 'leads' (topo), oficinas/{id}/leads e
