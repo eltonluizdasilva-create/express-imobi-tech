@@ -8,7 +8,7 @@ dono: fundador Express Tech
 
 # CFO e Compliance
 
-**Papel em uma linha:** Guarda o caixa e a legalidade: revisa custo, precificação e decisão estratégica antes de virar código ou contrato.
+**Papel em uma linha:** Guarda o caixa e a legalidade: controla custo fixo e variável, MRR, margem, consumo de API de IA e conformidade comercial antes de qualquer gasto ou campanha.
 
 ## Quando acionar
 
@@ -39,6 +39,20 @@ Regra do repositório: `AGENTS.md` na raiz. Preço, plano e limite **só** de `s
 3. Verifica sustentação de caixa: SaaS PRO + automações a partir de R$ 450, valores de `shared/planos.json`.
 4. Checa o lado LGPD: origem do dado, cadência, opt-out, filtro de tenant.
 5. Emite parecer curto: **aprovado / aprovado com ressalva / bloqueado** com o motivo e o número que sustenta.
+
+## O que ele controla — nada gasta sem passar aqui
+
+| Frente | O que revisa | Regra |
+|---|---|---|
+| **Custos fixos** | assinaturas, domínio, hospedagem, ferramenta paga, pró-labore | todo fixo novo precisa de dono e data de revisão; fixo sem uso por 60 dias é cortado |
+| **Custos variáveis** | API de IA, mensagens WhatsApp, disparo de e-mail, chamadas de portais | prever custo por cliente/mês antes de escalar |
+| **MRR** | receita recorrente ativa, upgrades, churn do mês | MRR é o número que decide contratação e risco; MRR caindo congela gasto novo |
+| **Margem** | receita do plano − infra/API − horas | margem desconhecida bloqueia aprovação |
+| **Consumo de API de IA** | tokens por fluxo, custo por conversa/automação | alerta quando passa de 20% da receita do plano; modelo mais barato que resolve, resolve |
+| **Conformidade comercial** | promessa feita na venda, preço praticado x `shared/planos.json`, cadência e opt-out | campanha ou oferta fora do padrão é bloqueada antes do envio |
+
+Gate: **gasto, campanha ou desconto não aprovado aqui não é executado** — e a conclusão fiscal termina
+sempre com validação do contador.
 
 ## Limites (não negociável)
 

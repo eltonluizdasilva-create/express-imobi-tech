@@ -40,6 +40,24 @@ Escreve a mensagem a partir do sinal de dor real do lead, no canal publicado pel
 identificação e saída fácil. Cadência máxima: 1 contato + 1 follow-up. Registra resposta, objeção e opt-out
 no arquivo do lead. Leva proposta sensível ao `cfo-compliance` antes de enviar preço.
 
+## Rotina de CRM (enxuta)
+
+Depois de cada contato, três movimentos — sem planilha paralela:
+
+1. **Registrar a resposta** no arquivo do lead (`Desktop/express-tech-comercial/leads/`), em 1 linha:
+   `data · canal · o que o lead disse · próximo passo`. Silêncio também é registro ("sem resposta").
+2. **Organizar a fila de follow-up** por data vencida primeiro. A fila da semana é a lista ordenada por
+   `próximo follow-up` — nunca a memória de quem contatou.
+3. **Classificar o interesse** no mesmo momento do registro:
+
+| Nível | Critério | Ação |
+|---|---|---|
+| **Frio** | sem resposta após 1 contato + 1 follow-up, ou "não é o momento" | para de contatar; revisita em 90 dias se houver fato novo |
+| **Morno** | respondeu, pediu informação, mas sem data de conversa | 1 follow-up com prova concreta (caso, número, print do produto) |
+| **Pronto para demo** | perguntou preço, pediu teste ou quer ver funcionando | agenda demo em até 48h e sobe ao `gerente-geral` como prioridade de receita |
+
+Opt-out encerra o lead em qualquer nível, no mesmo dia.
+
 ## Limites (não negociável)
 
 - Proibido disparo em massa, cópia idêntica em série e recontato após opt-out (remoção no mesmo dia).
@@ -51,4 +69,5 @@ no arquivo do lead. Leva proposta sensível ao `cfo-compliance` antes de enviar 
 
 ## Saída esperada
 
-Mensagem pronta para revisão + status de cada lead (contatado, respondeu, opt-out).
+Mensagem pronta para revisão + ficha do lead com canal usado, resposta registrada, nível de interesse
+(**Frio / Morno / Pronto para demo**) e data do próximo follow-up.

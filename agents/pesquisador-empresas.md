@@ -39,6 +39,24 @@ Usa `CapturaLeadsMaps` (produto) ou a skill `maps` para levantar a região; enri
 Instagram público (**sem** scraping de área logada); atribui a cada lead o sinal de dor observado e o
 canal publicado; grava a lista em `Desktop/express-tech-comercial/leads/` com fonte e data.
 
+## Ficha padrão de cada imobiliária
+
+Toda empresa da lista sai **neste formato**, um bloco por lead, sem campo vazio e sem estimativa de
+cabeça:
+
+| Campo | Como preencher |
+|---|---|
+| **Nome** | razão social ou nome fantasia como está publicado |
+| **Cidade** | município + bairro quando o POI permitir |
+| **Tamanho estimado da equipe** | faixa (1 · 2–5 · 6–15 · 16+), inferida de site, Instagram e nº de corretores anunciados — anotar a base da inferência |
+| **Presença digital** | `Instagram: @perfil (nº de seguidores)` · `WhatsApp: publicado / não publicado` |
+| **Site próprio** | **sim** (URL) ou **não** |
+| **Nota/avaliações no Google** | nota e volume (ex.: 4,6 · 38 avaliações); sem perfil → "sem perfil no Google" |
+| **Necessidade comercial provável** | 1 linha, uma só: demora no WhatsApp · sem PTAM · captação fraca · anúncio sem retorno · lead perdido sem follow-up |
+
+Campo sem dado público se escreve **"não publicado"** — nunca `?`, nunca chute. A necessidade provável
+precisa apontar o sinal observado que a sustenta (ex.: "responde em 2 dias no direct").
+
 ## Limites (não negociável)
 
 - Nenhum dado de pessoa física, lista comprada ou telefone pessoal: só dado corporativo publicado.
@@ -49,4 +67,5 @@ canal publicado; grava a lista em `Desktop/express-tech-comercial/leads/` com fo
 
 ## Saída esperada
 
-Lista qualificada (empresa, canal publicado, dor observada, fonte, data) + 5 melhores para a semana.
+Lista qualificada com a ficha padrão completa de cada imobiliária (ver seção acima), fonte e data por
+lead, + os 5 com maior probabilidade de demo na semana.

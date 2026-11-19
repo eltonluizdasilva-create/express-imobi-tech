@@ -216,13 +216,19 @@ Criados nesta rodada. Arquivo de definição em `agents/<slug>.md`; todos leem o
 
 | Agente | Arquivo | Papel | Gatilho | Status |
 |---|---|---|---|---|
-| **Gerente Geral** | `agents/gerente-geral.md` | Prioriza o dia pelo impacto no caixa, delega e exige `skill-auditoria-zero-erro`. | início do dia/semana, prioridade indefinida | Ativo |
-| **CFO e Compliance** | `agents/cfo-compliance.md` | Revisa custo, precificação e decisão estratégica com `skill-saude-financeira` + `skill-compliance-lgpd`. | preço, desconto, contrato, API paga, lista de leads | Ativo |
-| **Assistente Fiscal Interno** | `agents/assistente-fiscal-interno.md` | Saúde tributária da Express Tech: NFSe, provisão, enquadramento, LC 214/2025 (sempre com validação do contador). | fechamento do mês, impacto fiscal, NFSe, reforma | Ativo |
-| **Pesquisador de Empresas** | `agents/pesquisador-empresas.md` | Prospecção qualificada via `CapturaLeadsMaps` + `maps` + `skill-compliance-lgpd`. | "monte a lista de X em Y" | Ativo |
-| **SDR e Atração** | `agents/sdr-atracao.md` | Abordagem consultiva 1:1 via `comercial` + `resend` + `skill-compliance-lgpd` + `skill-auditoria-zero-erro`. | abordar lead, follow-up, objeção | Ativo |
-| **Editor de Conteúdo** | `agents/editor-conteudo.md` | Roteiro, corte e criativo para aprovação via `marketing` + `youtube-content` + `blotato` + `image-creator`. | post, vídeo, campanha, calendário | Ativo |
-| **Assistente Pessoal** | `agents/assistente-pessoal.md` | Rotina, follow-ups e estudos, sem competir com o foco técnico/comercial. | "organiza minha semana", caixa de entrada | Ativo |
+| **Gerente Geral** | `agents/gerente-geral.md` | Prioriza o dia pelo que aumenta receita (demo, trial, venda), barra feature fora do roadmap validado e exige `skill-auditoria-zero-erro`. | início do dia/semana, prioridade indefinida | Ativo (Operação Principal) |
+| **CFO e Compliance** | `agents/cfo-compliance.md` | Controla custo fixo/variável, MRR, margem e consumo de API de IA com `skill-saude-financeira` + `skill-compliance-lgpd` antes de qualquer gasto ou campanha. | preço, desconto, contrato, API paga, lista de leads | Ativo (Operação Principal) |
+| **Assistente Fiscal Interno** | `agents/assistente-fiscal-interno.md` | Saúde tributária da Express Tech: NFSe, provisão, enquadramento, LC 214/2025 (sempre com validação do contador). | fechamento do mês, impacto fiscal, NFSe, reforma | Em Espera (Standby) |
+| **Pesquisador de Empresas** | `agents/pesquisador-empresas.md` | Prospecção qualificada via `CapturaLeadsMaps` + `maps` + `skill-compliance-lgpd`. | "monte a lista de X em Y" | Ativo (Operação Principal) |
+| **SDR e Atração** | `agents/sdr-atracao.md` | Abordagem consultiva 1:1 via `comercial` + `resend` + `skill-compliance-lgpd` + `skill-auditoria-zero-erro`. | abordar lead, follow-up, objeção | Ativo (Operação Principal) |
+| **Editor de Conteúdo** | `agents/editor-conteudo.md` | Roteiro, corte e criativo para aprovação via `marketing` + `youtube-content` + `blotato` + `image-creator`. | post, vídeo, campanha, calendário | Em Espera (Standby) |
+| **Assistente Pessoal** | `agents/assistente-pessoal.md` | Rotina, follow-ups e estudos, sem competir com o foco técnico/comercial. | "organiza minha semana", caixa de entrada | Em Espera (Standby) |
+
+**Operação Principal** (2026-11-20) — `gerente-geral`, `cfo-compliance`, `pesquisador-empresas` e
+`sdr-atracao` puxam a rotina: priorizam receita, controlam caixa e trazem lead qualificado.
+**Em Espera (Standby)** — `assistente-fiscal-interno`, `editor-conteudo` e `assistente-pessoal` existem e
+são acionáveis, mas ficam fora da rotina diária até decisão do fundador (ou até o gatilho aparecer:
+fechamento fiscal, campanha aprovada, organização de rotina).
 
 ### Comandos de acionamento (Hermes)
 

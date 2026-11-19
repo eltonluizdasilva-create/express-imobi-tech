@@ -11,6 +11,15 @@
 
 ---
 
+## 2026-11-20 — Foco em receita na operação interna
+
+| # | Decisão | Status |
+|---|---|---|
+| D-20.19 | **4 agentes passam a Operação Principal**: `gerente-geral` (prioriza demo, trial e venda de Imobi Tech / automações R$ 450+ e **barra feature fora do roadmap validado por clientes**), `cfo-compliance` (custo fixo/variável, MRR, margem, consumo de API de IA e conformidade comercial antes de qualquer gasto ou campanha), `pesquisador-empresas` (ficha padrão: nome, cidade, tamanho da equipe, presença digital, site próprio, nota/avaliações no Google, 1 necessidade provável) e `sdr-atracao` (registro de resposta, fila de follow-up e classificação Frio / Morno / Pronto para demo). | **VERDADE ATUAL** |
+| D-20.20 | **`assistente-fiscal-interno`, `editor-conteudo` e `assistente-pessoal` ficam Em Espera (Standby)**: seguem acionáveis por gatilho explícito, mas fora da rotina diária até decisão do fundador. | **VERDADE ATUAL** |
+
+---
+
 ## 2026-11-20 — Operação interna ativada (7 agentes + 3 skills)
 
 | # | Decisão | Status |
