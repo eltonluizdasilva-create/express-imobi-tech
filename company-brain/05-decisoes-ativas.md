@@ -11,6 +11,21 @@
 
 ---
 
+## 2026-11-20 — Operação interna ativada (7 agentes + 3 skills)
+
+| # | Decisão | Status |
+|---|---|---|
+| D-20.11 | **10 skills globais arquivadas** (4 de macOS, `caveman`, `himalaya`, `xurl`, `google-workspace`, `teams-meeting-pipeline`, `sdlc-review`) movidas de `AppData/Local/hermes/skills/` para `AppData/Local/hermes/_archived_skills/` — fora do carregamento ativo, sem apagar. Reativar exige motivo novo registrado neste arquivo. | **VERDADE ATUAL** |
+| D-20.12 | **3 skills de blindagem** em `skills/express-tech/`: `skill-auditoria-zero-erro` (checklist de entrega com evidência), `skill-saude-financeira` (margem, custo de API/nuvem, caixa primeiro, gate de ROI) e `skill-compliance-lgpd` (prospecção B2B legal, opt-out, isolamento por `oficinaId`). | **VERDADE ATUAL** |
+| D-20.13 | **7 agentes núcleo da operação interna** em `agents/<slug>.md`: `gerente-geral`, `cfo-compliance`, `assistente-fiscal-interno`, `pesquisador-empresas`, `sdr-atracao`, `editor-conteudo`, `assistente-pessoal`. Todos leem o Company Brain via MCP (`brain_ler`) antes de responder. | **VERDADE ATUAL** |
+| D-20.14 | **Nenhum agente publica, dispara ou commita sozinho**: apresenta e espera aprovação explícita do fundador. Conteúdo continua caindo em `Desktop/express-tech-marketing/pendentes/`. | **VERDADE ATUAL** |
+| D-20.15 | **`skill-auditoria-zero-erro` é obrigatória em toda entrega**: "testado/comprovado" só com saída de execução real; fato de negócio só com fonte no Company Brain ou em `shared/planos.json`. | **VERDADE ATUAL** |
+| D-20.16 | **Caixa primeiro**: prioridade de esforço = fechar caixa (SaaS PRO + automações a partir de R$ 450) → reter cliente pagante → produto novo. Feature sem receita nem redução de churn é custo. Valores sempre de `shared/planos.json`. | **VERDADE ATUAL** |
+| D-20.17 | **Prospecção só com dado público de empresa**, cadência máxima de 1 contato + 1 follow-up e opt-out removido no mesmo dia. E-mail transacional (`resend`) não é canal de prospecção fria. | **VERDADE ATUAL** |
+| D-20.18 | `assistente-fiscal-interno` passa a ter arquivo próprio (`agents/assistente-fiscal-interno.md`); a regra fiscal continua em `06-governanca-lei-financeiro.md` e segue exigindo validação do contador. | **VERDADE ATUAL** |
+
+---
+
 ## 2026-11-20 — Company Brain e prospecção sem Google
 
 | # | Decisão | Status |

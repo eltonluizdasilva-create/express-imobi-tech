@@ -7,21 +7,24 @@
 
 **Legenda de status**
 - `Ativo` — em uso ou pronto para uso imediato.
+- `Arquivado` — movido para `AppData/Local/hermes/_archived_skills/` (fora do carregamento ativo).
+  Continua no disco, não é carregado por tarefa e não deve ser reativado sem motivo novo.
 - `Candidato a Arquivar` — existe, mas não serve a esta operação (SO errado, sem credencial, gíria,
-  ou fluxo que não usamos). Não foi apagado: a auditoria é somente leitura.
+  ou fluxo que não usamos). Status legado: em 2026-11-20 os 10 candidatos foram movidos.
 
 **Resumo da auditoria**
 
 | Origem | Quantidade |
 |---|---|
 | Agentes do produto (7 + 3 assistentes) | 10 |
-| Agentes internos da Express Tech | 1 |
+| Agentes internos da Express Tech | 7 |
 | Agentes de código / orquestração | 5 |
-| Skills Express Tech (Hermes) | 4 |
+| Skills Express Tech (Hermes) | 7 |
 | Skills do projeto (Opensquad) | 11 |
-| Skills globais do Hermes | 51 |
+| Skills globais do Hermes (ativas) | 41 |
 | Workflows de instrução (Opensquad) | 3 |
-| **Total mapeado** | **85** |
+| **Total ativo** | **84** |
+| Skills globais arquivadas (`_archived_skills/`) | 10 |
 
 ---
 
@@ -70,6 +73,9 @@ Estas são as skills de departamento que eu carrego por tarefa.
 | `comercial` | `AppData/Local/hermes/skills/express-tech/comercial/SKILL.md` | Monta listas de leads e abordagem consultiva B2B (nunca spam). | prospecção, lista de empresas, abordagem | Ativo |
 | `marketing` | `AppData/Local/hermes/skills/express-tech/marketing/SKILL.md` | Cria pacotes de conteúdo para aprovação humana em `Desktop/express-tech-marketing/pendentes/`. | post, campanha, copy, calendário editorial | Ativo |
 | `operacoes` | `AppData/Local/hermes/skills/express-tech/operacoes/SKILL.md` | Onboarding de cliente, rotina de suporte e checklist de implantação. | cliente novo, suporte, implantação | Ativo |
+| `skill-auditoria-zero-erro` | `AppData/Local/hermes/skills/express-tech/skill-auditoria-zero-erro/SKILL.md` | Checklist obrigatório antes de concluir: fato com fonte, zero dado inventado, zero chave exposta, alinhamento com `05-decisoes-ativas.md`. | fechar qualquer entrega, "prove que funciona" | Ativo |
+| `skill-saude-financeira` | `AppData/Local/hermes/skills/express-tech/skill-saude-financeira/SKILL.md` | Margem, custo de API/nuvem e regra de caixa (SaaS PRO + automações a partir de R$ 450) antes de codar; gate de ROI de 5 linhas. | preço, plano, custo de IA, "vale a pena construir?" | Ativo |
+| `skill-compliance-lgpd` | `AppData/Local/hermes/skills/express-tech/skill-compliance-lgpd/SKILL.md` | Prospecção B2B só com dado público de empresa, cadência 1+1, opt-out no mesmo dia e isolamento por `oficinaId` no Firestore. | coleta de lead, cadência, descadastro, query multi-tenant | Ativo |
 
 ---
 
@@ -77,7 +83,7 @@ Estas são as skills de departamento que eu carrego por tarefa.
 
 | Agente | Caminho | O que faz na prática | Gatilho | Status |
 |---|---|---|---|---|
-| `assistente-fiscal-interno` | `company-brain/06-governanca-lei-financeiro.md` | Cuida da saúde tributária da **própria Express Tech**: NFSe de SaaS e serviços, provisão de imposto sobre o caixa, enquadramento e impacto prático da LC 214/2025. Sempre exige validação do contador. | "fechamento do mês", "impacto fiscal de X", "NFSe", "reforma tributária" | Ativo (regra) |
+| `assistente-fiscal-interno` | `agents/assistente-fiscal-interno.md` (regra em `company-brain/06-governanca-lei-financeiro.md`) | Cuida da saúde tributária da **própria Express Tech**: NFSe de SaaS e serviços, provisão de imposto sobre o caixa, enquadramento e impacto prático da LC 214/2025. Sempre exige validação do contador. | "fechamento do mês", "impacto fiscal de X", "NFSe", "reforma tributária" | Ativo (regra) |
 
 > Diferença que não pode se perder: o **Assistente Fiscal do Produto** atende o cliente (aba `contador`);
 > o **`assistente-fiscal-interno`** cuida só da Express Tech. Regras completas em
@@ -121,15 +127,15 @@ Instaladas em `AppData/Local/hermes/skills/`. São ferramenta de base, não regr
 
 | Skill | Caminho | O que faz na prática | Gatilho | Status |
 |---|---|---|---|---|
-| `apple-notes` | `AppData/Local/hermes/skills/apple/apple-notes/SKILL.md` | Manage Apple Notes via memo CLI: create, search, edit | Apple Notes (macOS) | Candidato a Arquivar |
-| `apple-reminders` | `AppData/Local/hermes/skills/apple/apple-reminders/SKILL.md` | Apple Reminders via remindctl: add, list, complete | Apple Lembretes (macOS) | Candidato a Arquivar |
-| `findmy` | `AppData/Local/hermes/skills/apple/findmy/SKILL.md` | Track Apple devices/AirTags via FindMy | localizar dispositivo Apple | Candidato a Arquivar |
-| `imessage` | `AppData/Local/hermes/skills/apple/imessage/SKILL.md` | Send and receive iMessages/SMS via the imsg CLI on macOS | iMessage/SMS (macOS) | Candidato a Arquivar |
+| `apple-notes` | `AppData/Local/hermes/_archived_skills/apple/apple-notes/SKILL.md` | Manage Apple Notes via memo CLI: create, search, edit | Apple Notes (macOS) | Arquivado |
+| `apple-reminders` | `AppData/Local/hermes/_archived_skills/apple/apple-reminders/SKILL.md` | Apple Reminders via remindctl: add, list, complete | Apple Lembretes (macOS) | Arquivado |
+| `findmy` | `AppData/Local/hermes/_archived_skills/apple/findmy/SKILL.md` | Track Apple devices/AirTags via FindMy | localizar dispositivo Apple | Arquivado |
+| `imessage` | `AppData/Local/hermes/_archived_skills/apple/imessage/SKILL.md` | Send and receive iMessages/SMS via the imsg CLI on macOS | iMessage/SMS (macOS) | Arquivado |
 | `claude-code` | `AppData/Local/hermes/skills/autonomous-ai-agents/claude-code/SKILL.md` | Delegate coding to Claude Code CLI (features, PRs) | delegar feature/PR ao CLI do Claude | Ativo |
 | `codex` | `AppData/Local/hermes/skills/autonomous-ai-agents/codex/SKILL.md` | Delegate coding to OpenAI Codex CLI (features, PRs) | delegar feature/PR ao Codex | Ativo |
 | `computer-use` | `AppData/Local/hermes/skills/autonomous-ai-agents/computer-use/SKILL.md` | Drive the desktop background-first; escalate on signal | operar o desktop por screenshot | Ativo |
 | `hermes-agent` | `AppData/Local/hermes/skills/autonomous-ai-agents/hermes-agent/SKILL.md` | Use, configure, theme, extend, and orchestrate Hermes Agent | configurar ou estender o próprio Hermes (MCP, skills, tema) | Ativo |
-| `caveman` | `AppData/Local/hermes/skills/caveman/SKILL.md` | Terse caveman voice; answer first, keep every fact | quando o usuário pedir voz telegráfica | Candidato a Arquivar |
+| `caveman` | `AppData/Local/hermes/_archived_skills/caveman/SKILL.md` | Terse caveman voice; answer first, keep every fact | quando o usuário pedir voz telegráfica | Arquivado |
 | `clean-web-reader` | `AppData/Local/hermes/skills/clean-web-reader/SKILL.md` | Use when reading web pages; strip chrome, keep main text | ler qualquer página web | Ativo |
 | `codebase-memory` | `AppData/Local/hermes/skills/codebase-memory/SKILL.md` | Use the codebase knowledge graph for structural code queries | pergunta estrutural sobre o código (grafo) | Ativo |
 | `architecture-diagram` | `AppData/Local/hermes/skills/creative/architecture-diagram/SKILL.md` | Dark-themed SVG architecture/cloud/infra diagrams as HTML | diagrama de arquitetura em SVG | Ativo |
@@ -141,9 +147,9 @@ Instaladas em `AppData/Local/hermes/skills/`. São ferramenta de base, não regr
 | `p5js` | `AppData/Local/hermes/skills/creative/p5js/SKILL.md` | p5 | arte generativa p5.js | Ativo |
 | `popular-web-designs` | `AppData/Local/hermes/skills/creative/popular-web-designs/SKILL.md` | 54 real design systems (Stripe, Linear, Vercel) as HTML/CSS | referência de design system real | Ativo |
 | `songwriting-and-ai-music` | `AppData/Local/hermes/skills/creative/songwriting-and-ai-music/SKILL.md` | Songwriting craft and Suno AI music prompts | letra e prompt de música | Ativo |
-| `sdlc-review` | `AppData/Local/hermes/skills/devops/sdlc-review/SKILL.md` | Review Kanban handoffs and route verified outcomes | revisar handoff de Kanban | Candidato a Arquivar |
+| `sdlc-review` | `AppData/Local/hermes/_archived_skills/devops/sdlc-review/SKILL.md` | Review Kanban handoffs and route verified outcomes | revisar handoff de Kanban | Arquivado |
 | `email-inbox-triage` | `AppData/Local/hermes/skills/email/email-inbox-triage/SKILL.md` | Triage an inbox: prioritize threads, draft replies safely | triagem de caixa de entrada | Ativo |
-| `himalaya` | `AppData/Local/hermes/skills/email/himalaya/SKILL.md` | Himalaya CLI: IMAP/SMTP email from terminal | e-mail por IMAP/SMTP no terminal | Candidato a Arquivar |
+| `himalaya` | `AppData/Local/hermes/_archived_skills/email/himalaya/SKILL.md` | Himalaya CLI: IMAP/SMTP email from terminal | e-mail por IMAP/SMTP no terminal | Arquivado |
 | `comercial` | `AppData/Local/hermes/skills/express-tech/comercial/SKILL.md` | Comercial B2B Express Tech: listas e abordagem consultiva | uso geral | Ativo |
 | `marketing` | `AppData/Local/hermes/skills/express-tech/marketing/SKILL.md` | Marketing Express Tech: pacotes de conteúdo p/ aprovação | uso geral | Ativo |
 | `operacoes` | `AppData/Local/hermes/skills/express-tech/operacoes/SKILL.md` | Operações Express Tech: onboarding e rotina de suporte | uso geral | Ativo |
@@ -151,18 +157,18 @@ Instaladas em `AppData/Local/hermes/skills/`. São ferramenta de base, não regr
 | `youtube-content` | `AppData/Local/hermes/skills/media/youtube-content/SKILL.md` | YouTube transcripts to summaries, threads, blogs | transcrição de YouTube → resumo ou blog | Ativo |
 | `obsidian` | `AppData/Local/hermes/skills/note-taking/obsidian/SKILL.md` | Read, search, create, and edit notes in the Obsidian vault | notas do vault Obsidian | Ativo |
 | `document-to-action-items` | `AppData/Local/hermes/skills/productivity/document-to-action-items/SKILL.md` | Extract cited obligations, deadlines, tasks from documents | documento → obrigações e prazos | Ativo |
-| `google-workspace` | `AppData/Local/hermes/skills/productivity/google-workspace/SKILL.md` | Gmail, Calendar, Drive, Docs, Sheets via gws CLI or Python | Gmail, Calendar, Drive, Docs e Sheets | Candidato a Arquivar |
+| `google-workspace` | `AppData/Local/hermes/_archived_skills/productivity/google-workspace/SKILL.md` | Gmail, Calendar, Drive, Docs, Sheets via gws CLI or Python | Gmail, Calendar, Drive, Docs e Sheets | Arquivado |
 | `maps` | `AppData/Local/hermes/skills/productivity/maps/SKILL.md` | Geocode, POIs, routes, timezones via OpenStreetMap/OSRM | geocodificar, POI, rota ou fuso | Ativo |
 | `meeting-action-items` | `AppData/Local/hermes/skills/productivity/meeting-action-items/SKILL.md` | Turn meeting notes into cited decisions, owners, tickets | notas de reunião → decisões e tickets | Ativo |
 | `microsoft-office` | `AppData/Local/hermes/skills/productivity/microsoft-office/SKILL.md` | Create, read, and edit Word, PowerPoint, and Excel files | docx, pptx e xlsx | Ativo |
 | `pdf` | `AppData/Local/hermes/skills/productivity/pdf/SKILL.md` | PDF files: create, read, merge, fill, OCR, edit text | criar, ler ou preencher PDF | Ativo |
 | `product-price-monitor` | `AppData/Local/hermes/skills/productivity/product-price-monitor/SKILL.md` | Watch product, flight, or listing prices; alert on target | acompanhar preço de produto ou voo | Ativo |
-| `teams-meeting-pipeline` | `AppData/Local/hermes/skills/productivity/teams-meeting-pipeline/SKILL.md` | Teams meeting summaries, job replay, Graph subscriptions | pipeline de reunião do Teams | Candidato a Arquivar |
+| `teams-meeting-pipeline` | `AppData/Local/hermes/_archived_skills/productivity/teams-meeting-pipeline/SKILL.md` | Teams meeting summaries, job replay, Graph subscriptions | pipeline de reunião do Teams | Arquivado |
 | `weekly-review-planning` | `AppData/Local/hermes/skills/productivity/weekly-review-planning/SKILL.md` | Weekly reset: commitments, stalled work, next-week plan | reset semanal de compromissos | Ativo |
 | `arxiv` | `AppData/Local/hermes/skills/research/arxiv/SKILL.md` | Search arXiv papers by keyword, author, category, or ID | buscar paper no arXiv | Ativo |
 | `competitor-news-monitor` | `AppData/Local/hermes/skills/research/competitor-news-monitor/SKILL.md` | Watch named companies for material news; cited digests | monitorar notícia de concorrente | Ativo |
 | `grounded-citations` | `AppData/Local/hermes/skills/research/grounded-citations/SKILL.md` | Ground answers and documents in cited, verifiable sources | resposta com citação verificável | Ativo |
-| `xurl` | `AppData/Local/hermes/skills/social-media/xurl/SKILL.md` | X/Twitter via xurl CLI: raw post search, posting, DM, media | X/Twitter via CLI | Candidato a Arquivar |
+| `xurl` | `AppData/Local/hermes/_archived_skills/social-media/xurl/SKILL.md` | X/Twitter via xurl CLI: raw post search, posting, DM, media | X/Twitter via CLI | Arquivado |
 | `codebase-inspection` | `AppData/Local/hermes/skills/software-development/codebase-inspection/SKILL.md` | Inspect codebases w/ pygount: LOC, languages, ratios | contar LOC e linguagens (pygount) | Ativo |
 | `dogfood` | `AppData/Local/hermes/skills/software-development/dogfood/SKILL.md` | Exploratory QA of web apps: find bugs, evidence, reports | QA exploratório de app web | Ativo |
 | `github` | `AppData/Local/hermes/skills/software-development/github/SKILL.md` | GitHub via gh CLI: PRs, issues, reviews, repos, auth | PR, issue, review ou repo via gh | Ativo |
@@ -173,17 +179,22 @@ Instaladas em `AppData/Local/hermes/skills/`. São ferramenta de base, não regr
 | `test-driven-development` | `AppData/Local/hermes/skills/software-development/test-driven-development/SKILL.md` | TDD: enforce RED-GREEN-REFACTOR, tests before code | escrever código com teste antes | Ativo |
 | `blocked-page-recovery` | `AppData/Local/hermes/skills/web/blocked-page-recovery/SKILL.md` | Use when a fetch fails: 403/429, paywall, WAF, bot wall | fetch bloqueado (403/429/paywall) | Ativo |
 
-### Por que 10 estão como "Candidato a Arquivar"
+### Skills arquivadas em 2026-11-20 → `AppData/Local/hermes/_archived_skills/`
 
-| Skill | Motivo |
-|---|---|
-| `apple-notes`, `apple-reminders`, `findmy`, `imessage` | exigem macOS; esta máquina é Windows |
-| `caveman` | voz de gíria, sem uso na operação |
-| `himalaya`, `xurl` | sem conta/credencial configurada |
-| `google-workspace`, `teams-meeting-pipeline` | sem OAuth configurado; descrição vazia no frontmatter |
-| `sdlc-review` | fluxo de Kanban/handoff que não usamos |
+Movidas para fora do carregamento ativo. Não foram apagadas: o diretório `_archived_skills/` fica fora de
+`skills/`, preserva a categoria original e pode ser restaurado com `mv` se o motivo deixar de existir.
 
-Nada foi apagado nesta auditoria — apenas classificado.
+| Skill | Caminho arquivado | Motivo |
+|---|---|---|
+| `apple-notes`, `apple-reminders`, `findmy`, `imessage` | `_archived_skills/apple/…` | exigem macOS; esta máquina é Windows |
+| `caveman` | `_archived_skills/caveman/` | voz de gíria, sem uso na operação |
+| `himalaya` | `_archived_skills/email/himalaya/` | sem conta/credencial configurada |
+| `xurl` | `_archived_skills/social-media/xurl/` | sem conta/credencial configurada |
+| `google-workspace` | `_archived_skills/productivity/google-workspace/` | sem OAuth configurado; descrição vazia no frontmatter |
+| `teams-meeting-pipeline` | `_archived_skills/productivity/teams-meeting-pipeline/` | sem OAuth configurado; descrição vazia no frontmatter |
+| `sdlc-review` | `_archived_skills/devops/sdlc-review/` | fluxo de Kanban/handoff que não usamos |
+
+Reativar só com motivo novo registrado em `05-decisoes-ativas.md`.
 
 ---
 
@@ -198,18 +209,32 @@ Nada foi apagado nesta auditoria — apenas classificado.
 
 ---
 
-## 7. Agentes Núcleo da Operação Interna (a criar)
+## 7. Agentes Núcleo da Operação Interna (ativos desde 2026-11-20)
 
-Estes cinco **ainda não existem como agente próprio**. Enquanto não forem criados, a função é
-executada por mim + skills já mapeadas. Ao criar qualquer um, mova a linha para a seção 1 ou 2.
+Criados nesta rodada. Arquivo de definição em `agents/<slug>.md`; todos leem o Company Brain via MCP
+(`brain_ler`) antes de responder e não publicam, não disparam e não commitam sozinhos.
 
-| Agente | Papel | Como é feito hoje | Status |
-|---|---|---|---|
-| **Gerente Geral** | Prioriza o dia, cobra prazos, decide o que entra na semana. | `weekly-review-planning` + `05-decisoes-ativas.md` | A criar |
-| **Assistente Pessoal** | Agenda, e-mail, lembretes e follow-ups do fundador. | `email-inbox-triage`, `google-workspace` (sem OAuth) | A criar |
-| **Pesquisador de Empresas/Maps** | Encontra empresas por região e qualifica antes da abordagem. | `CapturaLeadsMaps` (produto) + skill `maps` + `comercial` | A criar |
-| **Atração de Clientes / SDR** | Primeira abordagem consultiva, sem spam, com contexto do lead. | skill `comercial` + lista em `Desktop/express-tech-comercial/leads/` | A criar |
-| **Editor de Vídeo / Conteúdo** | Transforma assunto em roteiro, gravação e corte para social. | `youtube-content`, `blotato`, `image-creator` | A criar |
+| Agente | Arquivo | Papel | Gatilho | Status |
+|---|---|---|---|---|
+| **Gerente Geral** | `agents/gerente-geral.md` | Prioriza o dia pelo impacto no caixa, delega e exige `skill-auditoria-zero-erro`. | início do dia/semana, prioridade indefinida | Ativo |
+| **CFO e Compliance** | `agents/cfo-compliance.md` | Revisa custo, precificação e decisão estratégica com `skill-saude-financeira` + `skill-compliance-lgpd`. | preço, desconto, contrato, API paga, lista de leads | Ativo |
+| **Assistente Fiscal Interno** | `agents/assistente-fiscal-interno.md` | Saúde tributária da Express Tech: NFSe, provisão, enquadramento, LC 214/2025 (sempre com validação do contador). | fechamento do mês, impacto fiscal, NFSe, reforma | Ativo |
+| **Pesquisador de Empresas** | `agents/pesquisador-empresas.md` | Prospecção qualificada via `CapturaLeadsMaps` + `maps` + `skill-compliance-lgpd`. | "monte a lista de X em Y" | Ativo |
+| **SDR e Atração** | `agents/sdr-atracao.md` | Abordagem consultiva 1:1 via `comercial` + `resend` + `skill-compliance-lgpd` + `skill-auditoria-zero-erro`. | abordar lead, follow-up, objeção | Ativo |
+| **Editor de Conteúdo** | `agents/editor-conteudo.md` | Roteiro, corte e criativo para aprovação via `marketing` + `youtube-content` + `blotato` + `image-creator`. | post, vídeo, campanha, calendário | Ativo |
+| **Assistente Pessoal** | `agents/assistente-pessoal.md` | Rotina, follow-ups e estudos, sem competir com o foco técnico/comercial. | "organiza minha semana", caixa de entrada | Ativo |
 
-**Regra de criação:** um agente novo só nasce se (a) não houver equivalente nas seções 1–5,
+### Comandos de acionamento (Hermes)
+
+```
+Gerente Geral            -> "Gerente geral: monte as 3 prioridades de hoje pelo impacto no caixa"
+CFO e Compliance         -> "CFO: revisar custo e margem de <decisão/oferta> antes de eu codar"
+Fiscal Interno           -> "Fiscal interno: revisar o fechamento fiscal do mês"
+Pesquisador de Empresas  -> "Pesquisador: lista de <nicho> em <cidade> para abordagem"
+SDR e Atração            -> "SDR: escreva a abordagem 1:1 para <empresa> usando os dados da lista"
+Editor de Conteúdo       -> "Editor: roteiro de <tema> para Reels + peça visual para aprovação"
+Assistente Pessoal       -> "Assistente pessoal: organiza meu dia e os follow-ups em aberto"
+```
+
+**Regra de criação:** um agente novo só nasce se (a) não houver equivalente nas seções 1–7,
 (b) tiver gatilho explícito e (c) entrar nesta tabela no mesmo commit.
