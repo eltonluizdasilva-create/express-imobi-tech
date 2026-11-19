@@ -22,15 +22,16 @@
       "tarefa",
       "notafiscal",
       "migracao",
-      "acompanhamento_cliente"
-    ],
-    "esquadrao_extra": [
+      "acompanhamento_cliente",
       "agentes_ia",
       "copiloto",
       "secretaria",
       "administrador",
-      "roleta_imobi"
-    ]
+      "roleta_imobi",
+      "avaliacao_imovel",
+      "credito"
+    ],
+    "esquadrao_extra": []
   },
   "planos": [
     {
