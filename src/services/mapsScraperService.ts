@@ -64,6 +64,8 @@ export interface BuscaPorTipo {
 
 export interface CapturaResposta {
   ok: true;
+  /** 'google' quando há chave configurada; 'openstreetmap' no modo aberto. */
+  provedor?: string;
   centro: CentroCaptura;
   raio: number;
   objetivo: ObjetivoCaptura;
@@ -204,6 +206,7 @@ export async function capturarLeads(
 
     return {
       ok: true,
+      provedor: dados.provedor,
       centro: dados.centro,
       raio: dados.raio,
       objetivo: dados.objetivo,

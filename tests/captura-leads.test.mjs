@@ -169,7 +169,6 @@ const modal = readFileSync(`${raiz}/src/components/prospeccao/ModalCapturaLeads.
 const radar = readFileSync(`${raiz}/src/components/imobi/RadarCaptacao.jsx`, 'utf8');
 
 ok('endpoint lê a chave do servidor', api.includes('process.env.GOOGLE_MAPS_API_KEY'));
-ok('endpoint não devolve a chave', !/json\([^)]*KEY[^)]*\)/.test(api.replace(/configurado: Boolean\(KEY\)/g, '')));
 ok('endpoint exige token do Firebase', api.includes('verificarIdToken(req.headers?.authorization)'));
 ok('verificador usa certificados do Google', auth.includes('securetoken@system.gserviceaccount.com'));
 ok('verificador confere audiência do projeto', auth.includes('claims.aud !== PROJETO'));
@@ -190,6 +189,163 @@ ok('modal salva no CRM', modal.includes("collection(db, 'oficinas', oficinaId, '
 ok('modal exporta CSV', modal.includes('exportarCsv'));
 ok('modal encerra por Esc e backdrop', modal.includes("e.key === 'Escape'") && modal.includes('e.target === e.currentTarget'));
 ok('botão integrado ao Radar de Captação', radar.includes('<CapturaLeadsMaps oficinaId={tenantId}'));
+
+
+/* ══════════ endpoint sem chave: OpenStreetMap (Nominatim + Overpass) ══════ */
+process.env.GOOGLE_MAPS_API_KEY = '';
+process.env.PLACES_REQUIRE_AUTH = 'false';
+
+const apiFonte = readFileSync(`${raiz}/api/places.js`, 'utf8');
+const apiBundle = buildSync({
+  stdin: { contents: apiFonte, loader: 'js', resolveDir: `${raiz}/api` },
+  bundle: true,
+  platform: 'node',
+  format: 'esm',
+  write: false,
+  target: 'es2022',
+  external: ['node:crypto'],
+}).outputFiles[0].text;
+
+const { default: handlerPlaces, montarConsultaOverpass } = await import(
+  `data:text/javascript;base64,${Buffer.from(apiBundle, 'utf8').toString('base64')}`
+);
+
+function respostaFalsa() {
+  return {
+    statusCode: 0,
+    corpo: null,
+    status(c) {
+      this.statusCode = c;
+      return this;
+    },
+    json(o) {
+      this.corpo = o;
+      return this;
+    },
+  };
+}
+
+function stubFetch(rotas) {
+  globalThis.fetch = async (entrada) => {
+    const url = String(entrada);
+    for (const [chave, valor] of Object.entries(rotas)) {
+      if (!url.includes(chave)) continue;
+      const r = typeof valor === 'function' ? valor(url) : valor;
+      const status = r.status ?? 200;
+      return {
+        ok: status >= 200 && status < 300,
+        status,
+        json: async () => r.body,
+        text: async () => JSON.stringify(r.body),
+      };
+    }
+    return { ok: false, status: 404, json: async () => ({}), text: async () => '{}' };
+  };
+}
+
+const consulta = montarConsultaOverpass(-18.9186, -48.2772, 1000, 'comercial');
+ok('Overpass QL põe o filtro espacial antes da tag', consulta.includes('nwr(around:1000,-18.918600,-48.277200)["shop"='));
+ok('Overpass QL não usa regex (índice, não varredura)', !consulta.includes('~"'));
+ok('Overpass QL tem timeout e saída JSON', consulta.startsWith('[out:json][timeout:20]'));
+
+/* (a) caminho feliz: Nominatim + Overpass */
+stubFetch({
+  'nominatim.openstreetmap.org': {
+    body: [{ lat: '-18.9186', lon: '-48.2772', display_name: 'Av. Afonso Pena, Uberlândia - MG' }],
+  },
+  'api/interpreter': {
+    body: {
+      elements: [
+        {
+          type: 'node',
+          id: 11,
+          lat: -18.9188,
+          lon: -48.2775,
+          tags: { name: 'Padaria Pão Quente', shop: 'bakery', 'addr:street': 'Rua A', 'addr:housenumber': '10', phone: '34999990000' },
+        },
+        { type: 'way', id: 22, center: { lat: -18.919, lon: -48.278 }, tags: { name: 'Mercado Bom', shop: 'supermarket', 'addr:city': 'Uberlândia' } },
+        { type: 'node', id: 33, lat: -18.92, lon: -48.28, tags: { shop: 'bakery' } },
+      ],
+    },
+  },
+});
+
+const r1 = respostaFalsa();
+await handlerPlaces({ method: 'POST', headers: {}, body: JSON.stringify({ endereco: 'Av. Afonso Pena, 1000, Uberlândia - MG', raio: 1000, objetivo: 'comercial' }) }, r1);
+
+ok('sem chave: responde 200 pelo OpenStreetMap', r1.statusCode === 200 && r1.corpo?.ok === true, `HTTP ${r1.statusCode}`);
+ok('sem chave: provedor marcado como openstreetmap', r1.corpo?.provedor === 'openstreetmap');
+ok('sem chave: Overpass é a fonte principal', r1.corpo?.fonte?.nome?.includes('Overpass') && r1.corpo?.fonte?.usouFallback === false);
+ok('sem chave: itens normalizados (padaria e mercado)', (r1.corpo?.itens || []).length === 2, String((r1.corpo?.itens || []).length));
+const padaria = (r1.corpo?.itens || []).find((i) => i.nome === 'Padaria Pão Quente');
+ok('categoria traduzida (bakery -> Padaria)', padaria?.categoria === 'Padaria');
+ok('endereço montado com rua e número', padaria?.endereco === 'Rua A, 10');
+ok('telefone do OSM preservado', padaria?.telefone === '34999990000');
+ok('id no formato osm:tipo/id', padaria?.placeId === 'osm:node/11');
+ok('sem nota no OSM (avaliacao null)', padaria?.avaliacao === null && padaria?.totalAvaliacoes === 0);
+ok('item sem nome é descartado', !(r1.corpo?.itens || []).some((i) => i.placeId === 'osm:node/33'));
+ok('aviso explica a fonte aberta', (r1.corpo?.avisos || []).some((a) => a.includes('OpenStreetMap')));
+
+/* (b) Overpass fora: cai no Photon */
+stubFetch({
+  'nominatim.openstreetmap.org': { body: [{ lat: '-18.9186', lon: '-48.2772', display_name: 'Uberlândia - MG' }] },
+  'api/interpreter': { status: 429, body: { remark: 'runtime error' } },
+  'photon.komoot.io': {
+    body: {
+      features: [
+        {
+          properties: { osm_type: 'W', osm_id: 999, osm_key: 'shop', osm_value: 'supermarket', name: 'Supermercado BH', street: 'Av. Afonso Pena', district: 'Umuarama', city: 'Uberlândia' },
+          geometry: { coordinates: [-48.2773, -18.9187] },
+        },
+        {
+          properties: { osm_type: 'N', osm_id: 1000, osm_key: 'shop', osm_value: 'supermarket', name: 'Longe Demais' },
+          geometry: { coordinates: [-48.40, -19.05] },
+        },
+      ],
+    },
+  },
+});
+
+const r2 = respostaFalsa();
+await handlerPlaces({ method: 'POST', headers: {}, body: JSON.stringify({ endereco: 'Uberlândia - MG', raio: 1000, objetivo: 'comercial' }) }, r2);
+
+ok('Overpass fora: ainda responde 200', r2.statusCode === 200 && r2.corpo?.ok === true, `HTTP ${r2.statusCode}`);
+ok('Overpass fora: usa a alternativa Photon', r2.corpo?.fonte?.usouFallback === true && r2.corpo?.fonte?.nome?.includes('Photon'));
+ok('Overpass fora: descarta POI fora do raio', (r2.corpo?.itens || []).length === 1 && r2.corpo.itens[0].nome === 'Supermercado BH');
+ok('Overpass fora: avisa que a fonte foi alternativa', (r2.corpo?.avisos || []).some((a) => a.includes('busca alternativa')));
+
+/* (c) endereço não encontrado */
+stubFetch({ 'nominatim.openstreetmap.org': { body: [] } });
+const r3 = respostaFalsa();
+await handlerPlaces({ method: 'POST', headers: {}, body: JSON.stringify({ endereco: 'Rua Que Nao Existe, 999', raio: 500, objetivo: 'comercial' }) }, r3);
+ok('endereço inexistente devolve 422 com código estável', r3.statusCode === 422 && r3.corpo?.code === 'endereco_nao_encontrado');
+
+/* (d) espelho suíço não entra na lista (devolvia 0 resultados para o Brasil) */
+ok('espelhos do Overpass são globais', !/osm\.ch/.test(apiFonte) && /kumi\.systems/.test(apiFonte));
+
+/* (e) a chave nunca aparece na resposta */
+process.env.GOOGLE_MAPS_API_KEY = 'chave-secreta-de-teste-123';
+const bundleComChave = buildSync({
+  stdin: { contents: readFileSync(`${raiz}/api/places.js`, 'utf8'), loader: 'js', resolveDir: `${raiz}/api` },
+  bundle: true,
+  platform: 'node',
+  format: 'esm',
+  write: false,
+  target: 'es2022',
+  external: ['node:crypto'],
+}).outputFiles[0].text;
+// o data: URL precisa ser único, senão o Node reaproveita o módulo já importado
+const unico = `${bundleComChave}\n/* instancia ${Date.now()} */`;
+const { default: handlerComChave } = await import(
+  `data:text/javascript;base64,${Buffer.from(unico, 'utf8').toString('base64')}`
+);
+const rDiag = respostaFalsa();
+await handlerComChave({ method: 'GET' }, rDiag);
+ok('diagnóstico reconhece a chave', rDiag.corpo?.configurado === true && rDiag.corpo?.provedor === 'google');
+ok('diagnóstico não revela a chave', !JSON.stringify(rDiag.corpo).includes('chave-secreta-de-teste-123'));
+process.env.GOOGLE_MAPS_API_KEY = '';
+
+globalThis.fetch = fetchOriginal;
 
 console.log(`\n${falhas === 0 ? 'TODOS OS TESTES PASSARAM' : falhas + ' FALHA(S)'}`);
 process.exit(falhas === 0 ? 0 : 1);

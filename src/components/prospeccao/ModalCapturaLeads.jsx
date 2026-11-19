@@ -368,6 +368,11 @@ export default function ModalCapturaLeads({ oficinaId, cor = '#10b981', onFechar
                   </span>{' '}
                   · raio {resultado.raio >= 1000 ? `${resultado.raio / 1000} km` : `${resultado.raio} m`}
                   {resultado.truncado && <span className="text-amber-400"> · lista truncada</span>}
+                  {resultado.provedor === 'openstreetmap' && (
+                    <span className="ml-2 rounded border border-slate-700 px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wider text-slate-500">
+                      OpenStreetMap
+                    </span>
+                  )}
                 </p>
                 <div className="flex items-center gap-2">
                   {salvosCount > 0 && (
