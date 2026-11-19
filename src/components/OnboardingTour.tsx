@@ -1,79 +1,89 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { doc, updateDoc } from 'firebase/firestore';
 import { db } from '../lib/firebase';
+import { textoDor } from '../lib/copyAbas.js';
 
 /**
- * OnboardingTour — apresentação guiada de 5 passos com spotlight.
+ * OnboardingTour — apresentação guiada com spotlight.
  * ============================================================================
- * Regra de exibição: abre UMA vez por conta/browser.
+ * Os passos são montados a partir das abas REALMENTE visíveis nas barras do
+ * menu (`[data-tour="tab-<id>"]`). No modo enxuto as barras PRO/IA não são
+ * renderizadas, então o tour mostra só as essenciais e o contador `1/N`
+ * recalcula sozinho — nunca sobra passo apontando para alvo inexistente.
+ *
+ * Texto de cada passo: `copyAbas.textoDor(id).ganho` (uma linha objetiva do
+ * que o corretor ganha naquela aba).
+ *
+ * Disparo único (dupla trava):
  *   • localStorage: `express_imobi_tour_done_<uid>` = 'true'
  *   • Firestore:    `oficinas/{oficinaId}.hasCompletedTour` = true
- * Só inicia quando o documento do tenant já chegou (`pronto`) e os DOIS
- * marcadores dizem "ainda não viu" — assim o tour não pisca enquanto o
- * Firestore carrega.
- *
- * Sem dependência externa (driver.js não foi instalado): overlay + recorte
- * iluminado são feitos com um único elemento e `box-shadow` gigante, o que
- * mantém o pacote leve e o posicionamento sob controle.
+ * Só inicia quando o documento do tenant já chegou (`pronto`).
  * ============================================================================
  */
-
-export type PassoTour = {
-  titulo: string;
-  texto: string;
-  /** Seletores em ordem de preferência; o primeiro que existir recebe o spotlight. */
-  alvos: string[];
-};
 
 export type Retangulo = { top: number; left: number; width: number; height: number };
 export type Viewport = { width: number; height: number };
 
-export const TOTAL_PASSOS = 5;
+export type PassoAba = {
+  id: string;
+  titulo: string;
+  texto: string;
+  seletor: string;
+};
 
-export const PASSOS_TOUR: PassoTour[] = [
-  {
-    titulo: '1. Conecte seu WhatsApp',
-    texto:
-      'Ligue seu número em segundos para os agentes de IA atenderem e qualificarem seus leads 24h por dia.',
-    alvos: ['[data-tour="whatsapp"]', '[data-tour="barra-ia"]', '[data-tour="barra-pro"]', '[data-tour="comecar"]'],
-  },
-  {
-    titulo: '2. Seus Agentes Comerciais IA',
-    texto:
-      'Acompanhe o Hermes Copiloto e o Diretor Comercial IA filtrando clientes prontos para fechar negócio.',
-    alvos: ['[data-tour="agentes"]', '[data-tour="barra-ia"]', '[data-tour="barra-pro"]', '[data-tour="comecar"]'],
-  },
-  {
-    titulo: '3. CRM e Carteira de Imóveis',
-    texto:
-      'Cadastre imóveis, organize seu funil de atendimento e nunca mais perca um retorno no WhatsApp.',
-    alvos: ['[data-tour="crm"]', '[data-tour="barra-essenciais"]', '[data-tour="comecar"]'],
-  },
-  {
-    titulo: '4. Fechamento Rápido na Visita',
-    texto:
-      'Calcule parcelas na hora com o Simulador de Financiamento e tire dúvidas jurídicas com o Assistente da Lei do Inquilinato.',
-    alvos: ['[data-tour="fechamento"]', '[data-tour="barra-pro"]', '[data-tour="barra-essenciais"]', '[data-tour="comecar"]'],
-  },
-  {
-    titulo: '5. Tudo pronto para vender mais',
-    texto:
-      'Comece cadastrando seu primeiro imóvel ou ativando o atendimento automático no WhatsApp.',
-    alvos: ['[data-tour="comecar"]', '[data-tour="barra-essenciais"]'],
-  },
-];
+/** Rótulo de emergência quando a pílula não expõe texto. */
+export function rotuloPadrao(id: string): string {
+  return String(id || 'Aba')
+    .replace(/_/g, ' ')
+    .replace(/\b\w/g, (c) => c.toUpperCase());
+}
 
-/* --------------------------- regras puras -------------------------------- */
+/** Monta os passos a partir da lista de abas visíveis (puro, testável). */
+export function montarPassosAbas(abas: Array<{ id: string; label?: string }>): PassoAba[] {
+  return (abas || [])
+    .filter((a) => a && a.id)
+    .map(({ id, label }) => ({
+      id,
+      titulo: String(label || '').trim() || rotuloPadrao(id),
+      texto: textoDor(id).ganho,
+      seletor: `[data-tour="tab-${id}"]`,
+    }));
+}
+
+/** Elemento realmente visível na tela (barra oculta não entra no tour). */
+export function elementoVisivel(el: Element | null | undefined): boolean {
+  if (!el || typeof (el as Element).getBoundingClientRect !== 'function') return false;
+  const r = el.getBoundingClientRect();
+  return Boolean(r) && r.width > 0 && r.height > 0;
+}
+
+/** Coleta as pílulas de aba na ordem em que aparecem no DOM. */
+export function coletarAbasVisiveis(
+  doc: Document | null | undefined,
+): Array<{ id: string; label: string }> {
+  if (!doc || typeof doc.querySelectorAll !== 'function') return [];
+  const nos = Array.from(doc.querySelectorAll('[data-tour^="tab-"]'));
+  const abas: Array<{ id: string; label: string }> = [];
+
+  for (const el of nos) {
+    if (!elementoVisivel(el)) continue;
+    const id = String(el.getAttribute('data-tour') || '').replace(/^tab-/, '');
+    if (!id) continue;
+    const rotulo = el.querySelector('span:last-child')?.textContent || '';
+    abas.push({ id, label: String(rotulo).trim() || rotuloPadrao(id) });
+  }
+
+  return abas;
+}
+
+/* --------------------------- persistência ------------------------------- */
 
 export function chaveTour(uid: string | null | undefined): string {
   return `express_imobi_tour_done_${uid || 'anon'}`;
 }
 
-export function lerTourConcluido(
-  uid: string | null | undefined,
-  storage?: Storage | null,
-): boolean {
+export function lerTourConcluido(uid: string | null | undefined, storage?: Storage | null): boolean {
   const s = storage ?? (typeof window !== 'undefined' ? window.localStorage : null);
   if (!s || !uid) return false;
   try {
@@ -83,23 +93,16 @@ export function lerTourConcluido(
   }
 }
 
-export function gravarTourConcluido(
-  uid: string | null | undefined,
-  storage?: Storage | null,
-): void {
+export function gravarTourConcluido(uid: string | null | undefined, storage?: Storage | null): void {
   const s = storage ?? (typeof window !== 'undefined' ? window.localStorage : null);
   if (!s || !uid) return;
   try {
     s.setItem(chaveTour(uid), 'true');
   } catch {
-    /* modo privado / storage cheio */
+    /* storage indisponível */
   }
 }
 
-/**
- * Decide se o tour deve abrir sozinho.
- * `pronto` = documento do tenant já carregado (evita abrir no meio do loading).
- */
 export function deveIniciarTour({
   uid,
   pronto,
@@ -121,19 +124,21 @@ export function deveIniciarTour({
   return true;
 }
 
-export function textoBotaoPrimario(indice: number): string {
-  return indice >= TOTAL_PASSOS - 1 ? 'Começar agora' : 'Próximo';
+/* ------------------------------ controles -------------------------------- */
+
+export function textoBotaoPrimario(indice: number, total: number): string {
+  return indice >= Math.max(0, total - 1) ? 'Começar agora' : 'Próximo';
 }
 
 export function mostrarAnterior(indice: number): boolean {
   return indice > 0;
 }
 
-export function rotuloProgresso(indice: number): string {
-  return `${Math.min(indice + 1, TOTAL_PASSOS)}/${TOTAL_PASSOS}`;
+export function rotuloProgresso(indice: number, total: number): string {
+  const t = Math.max(1, Number(total) || 1);
+  return `${Math.min(indice + 1, t)}/${t}`;
 }
 
-/** Posiciona o popover perto do alvo, virando para cima quando falta espaço. */
 export function calcularPopover({
   rect,
   largura,
@@ -178,6 +183,7 @@ export function calcularPopover({
 export function TourPopover({
   passo,
   indice,
+  total,
   rect,
   viewport,
   onAnterior,
@@ -185,8 +191,9 @@ export function TourPopover({
   onIgnorar,
   onFechar,
 }: {
-  passo: PassoTour;
+  passo: { titulo: string; texto: string };
   indice: number;
+  total: number;
   rect: Retangulo | null;
   viewport: Viewport;
   onAnterior: () => void;
@@ -202,13 +209,13 @@ export function TourPopover({
     <div
       role="dialog"
       aria-modal="true"
-      aria-label={`Tour guiado — passo ${rotuloProgresso(indice)}`}
+      aria-label={`Tour guiado — passo ${rotuloProgresso(indice, total)}`}
       className="fixed z-[10050] rounded-2xl border border-[#10b981]/40 bg-[#0b1219] p-4 text-left shadow-[0_30px_80px_-20px_rgba(0,0,0,0.85)]"
       style={{ top: pos.top, left: pos.left, width: largura }}
     >
       <div className="flex items-start justify-between gap-2">
         <p className="text-[9px] font-black uppercase tracking-[0.2em] text-[#10b981]">
-          Passo {rotuloProgresso(indice)}
+          Passo {rotuloProgresso(indice, total)}
         </p>
         <button
           type="button"
@@ -228,7 +235,7 @@ export function TourPopover({
       <div className="mt-3 h-1 w-full overflow-hidden rounded-full bg-slate-800">
         <div
           className="h-full rounded-full bg-[#10b981] transition-all"
-          style={{ width: `${((indice + 1) / TOTAL_PASSOS) * 100}%` }}
+          style={{ width: `${((indice + 1) / Math.max(1, total)) * 100}%` }}
         />
       </div>
 
@@ -256,7 +263,7 @@ export function TourPopover({
             onClick={onProximo}
             className="rounded-lg bg-[#10b981] px-3.5 py-1.5 text-[10px] font-black uppercase tracking-widest text-slate-950 transition hover:brightness-110"
           >
-            {textoBotaoPrimario(indice)}
+            {textoBotaoPrimario(indice, total)}
           </button>
         </div>
       </div>
@@ -286,9 +293,25 @@ export default function OnboardingTour({
 }) {
   const [ativo, setAtivo] = useState(false);
   const [indice, setIndice] = useState(0);
+  const [passos, setPassos] = useState<PassoAba[]>([]);
   const [rect, setRect] = useState<Retangulo | null>(null);
   const [viewport, setViewport] = useState<Viewport>({ width: 1280, height: 800 });
   const alvoRef = useRef<Element | null>(null);
+
+  /** Relê as abas visíveis e devolve a lista usada nesta sessão do tour. */
+  const montarPassos = useCallback((): PassoAba[] => {
+    if (typeof document === 'undefined') return [];
+    const lista = montarPassosAbas(coletarAbasVisiveis(document));
+    setPassos(lista);
+    return lista;
+  }, []);
+
+  const abrir = useCallback(() => {
+    const lista = montarPassos();
+    if (!lista.length) return;
+    setIndice(0);
+    setAtivo(true);
+  }, [montarPassos]);
 
   /* --- abertura automática (uma vez) --- */
   useEffect(() => {
@@ -301,31 +324,34 @@ export default function OnboardingTour({
     });
     if (!deveAbrir) return;
     abriuNestaSessao = true;
-    setIndice(0);
-    setAtivo(true);
-  }, [uid, pronto, hasCompletedTour]);
+    // pequeno atraso: garante que as barras já foram pintadas e medidas
+    const timer = window.setTimeout(abrir, 250);
+    return () => window.clearTimeout(timer);
+  }, [uid, pronto, hasCompletedTour, abrir]);
 
   /* --- abertura manual pelo botão "Refazer tour" --- */
   useEffect(() => {
     if (!abertoManualmente) return;
     abriuNestaSessao = true;
-    setIndice(0);
-    setAtivo(true);
-  }, [abertoManualmente]);
+    const timer = window.setTimeout(abrir, 120);
+    return () => window.clearTimeout(timer);
+  }, [abertoManualmente, abrir]);
 
   const medir = useCallback(() => {
     if (typeof window === 'undefined') return;
     setViewport({ width: window.innerWidth, height: window.innerHeight });
 
-    const passo = PASSOS_TOUR[indice];
-    let elemento: Element | null = null;
-    for (const seletor of passo?.alvos || []) {
-      elemento = document.querySelector(seletor);
-      if (elemento) break;
+    const passo = passos[indice];
+    if (!passo) {
+      setRect(null);
+      return;
     }
+
+    const elemento = document.querySelector(passo.seletor);
     alvoRef.current = elemento;
 
-    if (!elemento) {
+    // alvo sumiu (barra recolhida / modo trocado): centraliza sem recorte
+    if (!elemento || !elementoVisivel(elemento)) {
       setRect(null);
       return;
     }
@@ -333,7 +359,7 @@ export default function OnboardingTour({
     elemento.scrollIntoView({ behavior: 'smooth', block: 'center', inline: 'center' });
     const r = elemento.getBoundingClientRect();
     setRect({ top: r.top, left: r.left, width: r.width, height: r.height });
-  }, [indice]);
+  }, [passos, indice]);
 
   useEffect(() => {
     if (!ativo) return;
@@ -341,8 +367,6 @@ export default function OnboardingTour({
     const aoMudar = () => medir();
     window.addEventListener('resize', aoMudar);
     window.addEventListener('scroll', aoMudar, true);
-
-    // o scroll suave muda o rect por alguns frames: remedir uma vez depois
     const timer = window.setTimeout(medir, 420);
     return () => {
       window.removeEventListener('resize', aoMudar);
@@ -363,8 +387,7 @@ export default function OnboardingTour({
         try {
           await updateDoc(doc(db, 'oficinas', oficinaId), { hasCompletedTour: true });
         } catch (erro) {
-          // Corretor sem permissão de escrita na oficina: o localStorage
-          // já garante que o tour não reabre neste navegador.
+          // Sem permissão/offline: o localStorage já impede reabrir neste navegador.
           console.warn('[tour] não foi possível gravar hasCompletedTour:', motivo, erro);
         }
       }
@@ -373,12 +396,12 @@ export default function OnboardingTour({
   );
 
   const avancar = useCallback(() => {
-    if (indice >= TOTAL_PASSOS - 1) {
+    if (indice >= passos.length - 1) {
       concluir('concluido');
       return;
     }
-    setIndice((i) => Math.min(i + 1, TOTAL_PASSOS - 1));
-  }, [indice, concluir]);
+    setIndice((i) => Math.min(i + 1, Math.max(0, passos.length - 1)));
+  }, [indice, passos.length, concluir]);
 
   const voltar = useCallback(() => setIndice((i) => Math.max(0, i - 1)), []);
 
@@ -394,7 +417,7 @@ export default function OnboardingTour({
     return () => window.removeEventListener('keydown', aoTeclar);
   }, [ativo, avancar, voltar, concluir]);
 
-  const passo = PASSOS_TOUR[indice];
+  const passo = passos[indice];
 
   if (!ativo || !passo || typeof document === 'undefined') return null;
 
@@ -425,6 +448,7 @@ export default function OnboardingTour({
       <TourPopover
         passo={passo}
         indice={indice}
+        total={passos.length}
         rect={rect}
         viewport={viewport}
         onAnterior={voltar}

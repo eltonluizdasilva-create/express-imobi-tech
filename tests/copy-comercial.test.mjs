@@ -2,7 +2,7 @@
 import { readFileSync } from 'node:fs';
 import { DOR_SOLUCAO, DOR_PADRAO, textoDor, ABAS_COM_COPY, VERSAO_COPY as VERSAO_SELO } from '../src/lib/copyAbas.js';
 import {
-  ehMasterPlataforma, modoProEfetivo, rotuloModo, mostrarAlternadorDemo, mostrarBotaoUpgrade,
+  ehMasterPlataforma, modoProEfetivo, rotuloModo, rotuloVisao, mostrarAlternadorDemo, mostrarBotaoUpgrade,
 } from '../src/lib/acesso-plano.js';
 import { HERO_ABAS, heroDaAba } from '../src/lib/coresAbas.js';
 
@@ -63,15 +63,19 @@ ok('admin do tenant NÃO é master', !ehMasterPlataforma('admin', false));
 ok('corretor NÃO é master', !ehMasterPlataforma('corretor', false));
 ok('mostrarAlternadorDemo espelha a regra', mostrarAlternadorDemo('corretor', false) === false && mostrarAlternadorDemo('master', false));
 
-ok('modo demo: master em grátis = grátis', modoProEfetivo({ master: true, isModoGratis: true, isProConta: true }) === false);
-ok('modo demo: master em PRO = PRO', modoProEfetivo({ master: true, isModoGratis: false, isProConta: true }) === true);
-ok('cliente PRO ignora localStorage "gratis"', modoProEfetivo({ master: false, isModoGratis: true, isProConta: true }) === true);
-ok('cliente gratuito ignora localStorage "completo"', modoProEfetivo({ master: false, isModoGratis: false, isProConta: false }) === false);
+// A visão do menu é preferência do usuário (Enxuta × Completa) para todos —
+// o que continua travado para quem não assina é o acesso ao módulo.
+ok('visão enxuta esconde as barras PRO/IA', modoProEfetivo({ isModoGratis: true, isProConta: true, master: true }) === false);
+ok('visão completa mostra tudo', modoProEfetivo({ isModoGratis: false, isProConta: false, master: false }) === true);
+ok('cliente gratuito pode ver a visão completa', modoProEfetivo({ isModoGratis: false, isProConta: false }) === true);
+ok('cliente PRO pode escolher a enxuta', modoProEfetivo({ isModoGratis: true, isProConta: true }) === false);
 
 ok('rótulo MASTER em demo', rotuloModo({ master: true, modoPro: false, isProConta: true }).includes('MODO GRÁTIS'));
 ok('rótulo cliente PRO', rotuloModo({ master: false, modoPro: true, isProConta: true }) === '✨ Plano PRO Ativo');
 ok('rótulo cliente gratuito', rotuloModo({ master: false, modoPro: false, isProConta: false }) === '⚡ Plano Gratuito');
 ok('cliente não vê "MODO" no rótulo', !/MODO (GRÁTIS|COMPLETO)/.test(rotuloModo({ master: false, modoPro: false, isProConta: false })));
+ok('rótulo da visão completa', rotuloVisao(true) === 'Visão Completa (PRO)');
+ok('rótulo da visão enxuta', rotuloVisao(false) === 'Visão Enxuta (Grátis)');
 
 ok('+ PRO aparece só no gratuito', mostrarBotaoUpgrade({ master: false, isProConta: false }) && !mostrarBotaoUpgrade({ master: false, isProConta: true }));
 ok('MASTER não vê + PRO', !mostrarBotaoUpgrade({ master: true, isProConta: false }));
@@ -80,10 +84,13 @@ ok('MASTER não vê + PRO', !mostrarBotaoUpgrade({ master: true, isProConta: fal
 const admin = readFileSync(new URL('../src/AdminNovo.jsx', import.meta.url), 'utf8');
 ok('AdminNovo usa a lib de gate', admin.includes('ehMasterPlataformaFn(papelLogado, claimAdmin)'));
 ok('AdminNovo usa modoProEfetivo', admin.includes('modoProEfetivo({'));
-ok('AdminNovo usa rotuloModo', admin.includes('rotuloModo({'));
-ok('alternador dentro do if de MASTER', /\{ehMasterPlataforma \? \([\s\S]{0,1800}?Modo Grátis/.test(admin));
-ok('"Modo Completo (PRO)" aparece 1x só', (admin.match(/Modo Completo \(PRO\)/g) || []).length === 1);
-ok('badge real do plano para cliente', admin.includes("'Plano PRO Ativo' : 'Plano Gratuito'"));
+ok('AdminNovo usa rotuloVisao', admin.includes('rotuloVisao(modoPro)'));
+ok('alternador de visão para todos (não é mais só do MASTER)',
+   admin.includes('onClick={() => setModoPro(false)}') && admin.includes('onClick={() => setModoPro(true)}'));
+ok('alternador tem os dois rótulos', admin.includes('Enxuta') && admin.includes('Completa'));
+ok('pílula do topo mostra o plano real',
+   admin.includes("'✨ Plano PRO Ativo' : '⚡ Plano Gratuito'"));
+ok('selo MASTER preservado', /border-amber-500\/40[\s\S]{0,240}?master/.test(admin));
 ok('botão + PRO presente', admin.includes('+ PRO'));
 ok('faixa DorESolucao no TOPO da aba (antes do conteúdo)',
    admin.indexOf('<DorESolucao abaAtiva={abaAtiva} />') > admin.indexOf('<main className=') &&

@@ -68,7 +68,7 @@ import RodapeLegal from './components/ui/RodapeLegal';
 import DorESolucao from './components/ui/DorESolucao';
 import OnboardingTour from './components/OnboardingTour';
 import OnboardingPrimeiroUso from './components/onboarding/OnboardingPrimeiroUso';
-import { ehMasterPlataforma as ehMasterPlataformaFn, modoProEfetivo, rotuloModo } from './lib/acesso-plano';
+import { ehMasterPlataforma as ehMasterPlataformaFn, modoProEfetivo, rotuloVisao } from './lib/acesso-plano';
 import { MODULOS_MAP } from './modulosMap';
 import { setCreditoPrefill } from './lib/credito/prefill';
 import { MODULOS_SO_GESTAO, ehGestor as ehGestorDoPapel, filtrarModulos } from './lib/permissoes-menu';
@@ -1606,7 +1606,7 @@ export default function Admin() {
   const botoesBloco1Essencial = [
     { id: 'dashboard_imobi', icone: '📊', label: 'Visão Geral' },
     { id: 'captacao_imobi', icone: '🏠', label: 'Captação & Imóveis' },
-    { id: 'funil_leads', icone: '👥', label: 'Leads & Funil CRM', tour: 'crm' },
+    { id: 'funil_leads', icone: '👥', label: 'Leads & Funil CRM' },
     { id: 'visitas_imobi', icone: '📅', label: 'Agenda de Visitas' },
     { id: 'financeiro', icone: '💰', label: 'Financeiro & VGV' },
     { id: 'historico', icone: '📝', label: 'Propostas & Negócios' },
@@ -1616,9 +1616,9 @@ export default function Admin() {
   ];
 
   const botoesBloco2EsquadraoIA = [
-    { id: 'agentes_ia', icone: '🤖', label: '7 Agentes de IA', tour: 'agentes' },
+    { id: 'agentes_ia', icone: '🤖', label: '7 Agentes de IA' },
     { id: 'radar_captacao', icone: '📡', label: 'Radar de Captação' },
-    { id: 'whatsapp_hub', icone: '💬', label: 'Conexão WhatsApp', tour: 'whatsapp' },
+    { id: 'whatsapp_hub', icone: '💬', label: 'Conexão WhatsApp' },
     { id: 'copiloto', icone: '⚡', label: 'Hermes Copiloto' },
     { id: 'secretaria', icone: '📷', label: 'QR Code Sofia' },
     { id: 'administrador', icone: '📈', label: 'Diretor Comercial IA' },
@@ -1632,7 +1632,7 @@ export default function Admin() {
     { id: 'notafiscal', icone: '📑', label: 'Repasses & NF' },
     { id: 'migracao', icone: '🔄', label: 'Migração de CRM' },
     { id: 'avaliacao_imovel', icone: '📐', label: 'Avaliação de Imóvel' },
-    { id: 'credito', icone: '🏦', label: 'Correspondente / Crédito', tour: 'fechamento' },
+    { id: 'credito', icone: '🏦', label: 'Correspondente / Crédito' },
     { id: 'config', icone: '⚙️', label: 'Configurações' },
     { id: 'especialista', icone: '🎧', label: 'Suporte Especialista' },
   ];
@@ -1644,8 +1644,7 @@ export default function Admin() {
     >
       {/* --- SEÇÃO DO TOPO / ALTERNÂNCIA DE MODO --- */}
       <header
-        style={{ backgroundColor: '#020408' }}
-        className="sticky top-0 z-40 flex flex-wrap items-center justify-between bg-zinc-900 border-b border-zinc-800 px-6 py-3 gap-3"
+        className="sticky top-0 z-40 flex flex-wrap items-center justify-between border-b border-zinc-800 bg-[#020408] px-6 py-3 gap-3"
       >
         <div className="flex items-center gap-3">
           <div style={{ backgroundColor: '#10b981' }} className="w-9 h-9 rounded-xl flex items-center justify-center shadow-lg shadow-[#10b981]/30">
@@ -1654,57 +1653,57 @@ export default function Admin() {
           <div className="flex flex-wrap items-center gap-3">
             <span className="text-xl font-bold text-emerald-400">EXPRESS IMOBI TECH</span>
             <span className="text-xs px-2.5 py-1 rounded-full bg-emerald-950 text-emerald-300 border border-emerald-800/50">
-              {rotuloModo({ master: ehMasterPlataforma, modoPro, isProConta })}
+              {isProConta ? '✨ Plano PRO Ativo' : '⚡ Plano Gratuito'}
             </span>
           </div>
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
-          {ehMasterPlataforma ? (
-            <>
-              <span className="hidden text-[9px] font-black uppercase tracking-widest text-zinc-500 sm:inline">
-                Demo
-              </span>
-              <button
-                onClick={() => setModoPro(false)}
-                style={!modoPro ? { backgroundColor: '#10b981' } : undefined}
-                className={`px-3 py-1.5 text-xs font-medium rounded-lg transition-all cursor-pointer ${
-                  !modoPro
-                    ? 'bg-emerald-600 text-white shadow-lg shadow-emerald-600/20'
-                    : 'bg-zinc-800 text-zinc-400 hover:text-zinc-200'
-                }`}
-              >
-                Modo Grátis
-              </button>
-              <button
-                onClick={() => setModoPro(true)}
-                style={modoPro ? { backgroundColor: '#10b981' } : undefined}
-                className={`px-3 py-1.5 text-xs font-medium rounded-lg transition-all cursor-pointer ${
-                  modoPro
-                    ? 'bg-emerald-600 text-white shadow-lg shadow-emerald-600/20'
-                    : 'bg-zinc-800 text-zinc-400 hover:text-zinc-200'
-                }`}
-              >
-                Modo Completo (PRO)
-              </button>
-            </>
-          ) : (
-            <>
-              <span className="rounded-lg border border-zinc-700/60 bg-zinc-800/60 px-2.5 py-1.5 text-[11px] font-bold text-zinc-300">
-                {isProConta ? 'Plano PRO Ativo' : 'Plano Gratuito'}
-              </span>
-              {!isProConta && (
-                <button
-                  onClick={() => setAbaAtiva('meuplano')}
-                  style={{ backgroundColor: '#10b981' }}
-                  className="cursor-pointer rounded-lg px-3 py-1.5 text-xs font-black text-slate-950 transition hover:brightness-110"
-                  title="Ver planos e liberar todos os módulos"
-                >
-                  + PRO
-                </button>
-              )}
-            </>
+          {ehMasterPlataforma && (
+            <span className="rounded-md border border-amber-500/40 bg-amber-500/10 px-1.5 py-0.5 text-[9px] font-black uppercase tracking-widest text-amber-300">
+              master
+            </span>
           )}
+          {!isProConta && (
+            <button
+              onClick={() => setAbaAtiva('meuplano')}
+              style={{ backgroundColor: '#10b981' }}
+              className="cursor-pointer rounded-lg px-3 py-1.5 text-xs font-black text-slate-950 transition hover:brightness-110"
+              title="Ver planos e liberar todos os módulos"
+            >
+              + PRO
+            </button>
+          )}
+
+          {/* Alternador de visão: quantas abas aparecem no menu */}
+          <div
+            className="flex items-center gap-0.5 rounded-lg border border-zinc-700/60 bg-zinc-800/60 p-0.5"
+            role="group"
+            aria-label={rotuloVisao(modoPro)}
+          >
+            <button
+              type="button"
+              onClick={() => setModoPro(false)}
+              aria-pressed={!modoPro}
+              title="Ver só as abas essenciais (grátis)"
+              className={`cursor-pointer rounded-md px-2.5 py-1 text-[10px] font-black uppercase tracking-wider transition ${
+                !modoPro ? 'bg-[#10b981] text-slate-950' : 'text-zinc-400 hover:text-white'
+              }`}
+            >
+              <span className="hidden lg:inline">Visão </span>Enxuta
+            </button>
+            <button
+              type="button"
+              onClick={() => setModoPro(true)}
+              aria-pressed={modoPro}
+              title="Ver todas as abas (PRO + Esquadrão de IA)"
+              className={`cursor-pointer rounded-md px-2.5 py-1 text-[10px] font-black uppercase tracking-wider transition ${
+                modoPro ? 'bg-[#10b981] text-slate-950' : 'text-zinc-400 hover:text-white'
+              }`}
+            >
+              <span className="hidden lg:inline">Visão </span>Completa
+            </button>
+          </div>
 
           <button
             onClick={() => setTourManual(true)}
@@ -1733,7 +1732,7 @@ export default function Admin() {
       </header>
 
       {/* --- NAVEGAÇÃO HORIZONTAL: ESSENCIAIS → PRO → ESQUADRÃO DE IA --- */}
-      <nav style={{ backgroundColor: '#020408' }} className="relative border-b border-zinc-800/80">
+      <nav className="relative border-b border-zinc-800/80 bg-[#020408]">
         {/* Fundo com gradientes radiais profundos */}
         <div
           className="pointer-events-none absolute inset-0"
@@ -1805,6 +1804,7 @@ export default function Admin() {
             detalhes={MAPA_DETALHES_ABAS}
             linhaUnica
             dataTour="barra-essenciais"
+            temaClaro={!isEscuro}
           />
 
           {/* Barra 2 — Módulos PRO (Assinantes) */}
@@ -1817,6 +1817,7 @@ export default function Admin() {
               setAbaAtiva={setAbaAtiva}
               detalhes={MAPA_DETALHES_ABAS}
               dataTour="barra-pro"
+              temaClaro={!isEscuro}
             />
           )}
 
@@ -1831,6 +1832,7 @@ export default function Admin() {
               detalhes={MAPA_DETALHES_ABAS}
               destaque
               dataTour="barra-ia"
+              temaClaro={!isEscuro}
             />
           )}
 

@@ -25,13 +25,16 @@ export default function BarraModulos({
   destaque = false,
   linhaUnica = false,
   dataTour,
+  temaClaro = false,
 }) {
   const t = TONS[tom] || TONS.esmeralda;
 
   return (
     <div
       data-tour={dataTour}
-      className={`relative rounded-2xl border border-white/[0.06] bg-white/[0.015] px-3 py-2.5 ${
+      className={`relative rounded-2xl border px-3 py-2.5 ${
+        temaClaro ? 'border-slate-200 bg-slate-50' : 'border-white/[0.06] bg-white/[0.015]'
+      } ${
         destaque ? 'shadow-[0_0_30px_-16px_rgba(245,158,11,0.55)]' : ''
       }`}
     >
@@ -70,22 +73,26 @@ export default function BarraModulos({
               <button
                 key={btn.id}
                 type="button"
-                data-tour={btn.tour}
+                data-tour={`tab-${btn.id}`}
                 onClick={() => setAbaAtiva(btn.id)}
                 title={det ? `${det.tituloCard || det.tituloLimpo || btn.label}: ${det.descricao}` : btn.label}
                 aria-current={ativo ? 'page' : undefined}
                 className={`inline-flex shrink-0 items-center gap-1.5 rounded-full border px-2.5 py-1 text-[10.5px] font-bold transition-all duration-200 ${
                   ativo
-                    ? 'border-white bg-white text-slate-900 shadow-[0_2px_12px_rgba(255,255,255,0.18)]'
-                    : 'border-white/[0.07] bg-white/[0.02] text-slate-300 hover:-translate-y-px hover:text-white'
+                    ? (temaClaro
+                        ? 'border-slate-900 bg-slate-900 text-white shadow-[0_2px_12px_rgba(15,23,42,0.25)]'
+                        : 'border-white bg-white text-slate-900 shadow-[0_2px_12px_rgba(255,255,255,0.18)]')
+                    : (temaClaro
+                        ? 'border-slate-300 bg-white text-slate-800 hover:-translate-y-px hover:bg-slate-200 hover:text-slate-900'
+                        : 'border-white/[0.07] bg-white/[0.02] text-slate-300 hover:-translate-y-px hover:text-white')
                 }`}
                 onMouseEnter={(e) => {
-                  if (ativo) return;
+                  if (ativo || temaClaro) return;
                   e.currentTarget.style.borderColor = `rgba(${t.base},0.55)`;
                   e.currentTarget.style.boxShadow = `0 0 14px rgba(${t.base},0.30)`;
                 }}
                 onMouseLeave={(e) => {
-                  if (ativo) return;
+                  if (ativo || temaClaro) return;
                   e.currentTarget.style.borderColor = '';
                   e.currentTarget.style.boxShadow = '';
                 }}
