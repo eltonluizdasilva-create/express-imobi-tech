@@ -1,0 +1,21 @@
+#!/bin/sh
+# ─────────────────────────────────────────────────────────────────────────────
+# post-commit — Company Brain → Firestore
+# Roda apenas quando o commit toca company-brain/. Nunca bloqueia o commit.
+# ─────────────────────────────────────────────────────────────────────────────
+
+if ! git diff-tree --no-commit-id --name-only -r HEAD 2>/dev/null | grep -q '^company-brain/'; then
+  exit 0
+fi
+
+if [ ! -f scripts/sync-brain.js ]; then
+  exit 0
+fi
+
+if node scripts/sync-brain.js push >/dev/null 2>&1; then
+  echo "[brain] company_brain atualizado no Firestore"
+else
+  echo "[brain] push falhou — rode 'npm run brain:push' quando tiver rede" >&2
+fi
+
+exit 0

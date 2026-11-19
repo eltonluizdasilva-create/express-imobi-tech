@@ -15,23 +15,30 @@
 4. `company-brain/04-arquitetura-stack.md` — stack, endpoints, regra de segurança.
 5. `company-brain/05-decisoes-ativas.md` — o que vale hoje e o que virou obsoleto.
 
-## Company Brain — como manter em sincronia
+## Company Brain — sincronização automática (não precisa de comando manual)
 
 O cérebro vive em dois lugares: `company-brain/*.md` (disco, versionado no git) e a coleção
-`company_brain` no Firestore (nuvem, acesso pelo celular em `/brain`).
+`company_brain` no Firestore (nuvem, acesso pelo celular em `/brain`). A sincronização é automática:
 
-| Situação | Comando |
+| Gatilho | O que acontece sozinho |
 |---|---|
-| Começou uma sessão importante no PC | sugerir `npm run brain:pull` (traz o que foi decidido no celular) |
-| Fechou uma decisão nova | `npm run brain:push` (sobe os 6 arquivos) |
-| Conflito (nuvem mais nova que o disco) | `brain:pull` primeiro; `--force` só com intenção explícita |
+| Commit que toca `company-brain/` | o hook `.githooks/post-commit` roda o `push` (disco → nuvem) |
+| Conversa com o agente | o MCP `company-brain` lê a nuvem e grava decisões na hora (`brain_ler`, `brain_buscar`, `brain_registrar`, `brain_obsoletar`) |
+| Decisão tomada no celular (`/brain`) | entra na nuvem com `updatedBy: 'mobile'`; o próximo `git pull`/sessão traz para o disco |
 
-Regras:
+**Não é mais necessário rodar `brain:pull` / `brain:push` no dia a dia.** Os comandos continuam
+existindo como ferramenta de manutenção (`--dry-run`, `--force`, `--only`), e o hook é ativado uma
+única vez por clone com `npm run brain:hooks`.
+
+Regras que continuam valendo:
+- Regra nova ou decisão registrada pelo agente entra em `05-decisoes-ativas.md` com a data, e a regra
+  substituída é marcada **`[OBSOLETO]`** — nunca apagada.
 - `brain:pull` faz backup de cada arquivo sobrescrito em `company-brain/.backup/` (gitignored).
 - `company_brain` é **fechada**: só o admin da plataforma (claim `admin=true`), o UID master e o
   e-mail institucional leem ou escrevem. Nenhum tenant, nenhum anônimo. `delete` é proibido nas rules.
-- A credencial do script vem de `FIREBASE_SERVICE_ACCOUNT` (env) ou de
+- Credencial do script/MCP vem de `FIREBASE_SERVICE_ACCOUNT` (env) ou de
   `scripts-locais/service-account.json` — nunca no código.
+
 
 ## Regras de execução
 
