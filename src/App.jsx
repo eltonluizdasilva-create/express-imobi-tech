@@ -3,6 +3,7 @@ import { BrowserRouter as Router, Navigate, Route, Routes, useLocation } from 'r
 
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { OficinaProvider } from './components/OficinaContext';
+import { auth } from './lib/firebase';
 
 import Layout from './components/Layout';
 import CookieBanner from './components/CookieBanner';
@@ -12,6 +13,7 @@ import CookieBanner from './components/CookieBanner';
 // Reduz o bundle inicial e acelera o carregamento em 3G/4G
 // ============================================================
 const AdminNovo = lazy(() => import('./AdminNovo'));
+const Brain = lazy(() => import('./pages/Brain'));
 const Historico = lazy(() => import('./Historico'));
 const Login = lazy(() => import('./Login'));
 const LoginAdmin = lazy(() => import('./LoginAdmin'));
@@ -81,6 +83,33 @@ function PrivateRoute({ children }) {
   return logado ? children : <Navigate to="/login-admin" replace />;
 }
 
+/**
+ * AdminRoute — /brain só abre para a conta administradora da plataforma
+ * (papel 'master' ou custom claim admin=true). Cliente logado vai para /admin.
+ */
+function AdminRoute({ children }) {
+  const { logado, carregandoAuth, papelLogado } = useAuth();
+  const [souAdmin, setSouAdmin] = React.useState(null);
+
+  React.useEffect(() => {
+    let vivo = true;
+    const conta = auth?.currentUser;
+    if (!conta?.getIdTokenResult) {
+      setSouAdmin(papelLogado === 'master');
+      return undefined;
+    }
+    conta
+      .getIdTokenResult()
+      .then((r) => { if (vivo) setSouAdmin(r?.claims?.admin === true || papelLogado === 'master'); })
+      .catch(() => { if (vivo) setSouAdmin(papelLogado === 'master'); });
+    return () => { vivo = false; };
+  }, [papelLogado, logado]);
+
+  if (carregandoAuth || souAdmin === null) return <TelaCarregamento />;
+  if (!logado) return <Navigate to="/login-admin" replace />;
+  return souAdmin ? children : <Navigate to="/admin" replace />;
+}
+
 // ============================================================
 // GERENCIAMENTO DE ROTAS
 // ============================================================
@@ -92,7 +121,7 @@ function AppRoutes() {
     return <TelaCarregamento />;
   }
 
-  const rotasSemLayout = ['/', '/login', '/login-admin', '/portal', '/portal2', '/cadastro', '/servicos', '/sobre', '/acompanhar', '/termos', '/privacidade'];
+  const rotasSemLayout = ['/', '/login', '/login-admin', '/portal', '/portal2', '/cadastro', '/servicos', '/sobre', '/acompanhar', '/termos', '/privacidade', '/brain'];
   const mostrarMenuInferior =
     !rotasSemLayout.includes(location.pathname) &&
     !location.pathname.startsWith('/status/');
@@ -103,6 +132,15 @@ function AppRoutes() {
         <Route
           path="/"
           element={logado ? <Navigate to="/admin" replace /> : <Home />}
+        />
+
+        <Route
+          path="/brain"
+          element={
+            <AdminRoute>
+              <Brain />
+            </AdminRoute>
+          }
         />
 
         <Route path="/portal" element={<PortalCliente />} />

@@ -621,6 +621,33 @@ service cloud.firestore {
         && request.resource.data.tenantId == resource.data.tenantId;
       allow delete: if authed() && membroOficina(resource.data.tenantId);
     }
+    // ------------------------- company_brain --------------------------------
+    // Cérebro central da Express Tech (Control Brain híbrido).
+    // Acesso: SOMENTE o administrador da plataforma (claim admin=true), o UID
+    // master e o e-mail institucional do fundador. Nenhum tenant, nenhum anônimo.
+    // `delete` é proibido de propósito: a sincronização nunca apaga o cérebro.
+    match /company_brain/{docId} {
+      function ehDonoDoCerebro() {
+        return isAdminPlataforma()
+          || (authed() && request.auth.uid == 'R1ZPF4yTucNLDRgPRGR2skD7fXf1')
+          || (authed() && request.auth.token.get('email', '').lower() == 'elton.luizdasilva@hotmail.com');
+      }
+
+      allow read: if ehDonoDoCerebro();
+
+      allow create, update: if ehDonoDoCerebro()
+        && request.resource.data.keys().hasAll(['titulo', 'conteudo', 'updatedAt', 'updatedBy'])
+        && request.resource.data.titulo is string
+        && request.resource.data.titulo.size() > 0
+        && request.resource.data.titulo.size() <= 160
+        && request.resource.data.conteudo is string
+        && request.resource.data.conteudo.size() <= 400000
+        && request.resource.data.updatedBy in ['pc', 'mobile']
+        && request.resource.data.updatedAt is timestamp;
+
+      allow delete: if false;
+    }
+
     match /{document=**} {
       allow read, write: if false;
     }

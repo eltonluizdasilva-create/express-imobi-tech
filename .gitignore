@@ -54,3 +54,4 @@ coverage/
 !.env.example
 
 tests/.render_*.mjs
+company-brain/.backup/

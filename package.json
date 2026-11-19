@@ -4,12 +4,16 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
-    "dev": "vite",
+    "brain:hooks": "node scripts/install-hooks.mjs",
+    "brain:mcp": "node --env-file-if-exists=.env scripts/brain-mcp.js",
+    "brain:pull": "node --env-file-if-exists=.env scripts/sync-brain.js pull",
+    "brain:push": "node --env-file-if-exists=.env scripts/sync-brain.js push",
     "build": "vite build",
-    "start": "node bot.js",
-    "start:bot": "node bot.js",
+    "dev": "vite",
     "lint": "eslint .",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "start": "node bot.js",
+    "start:bot": "node bot.js"
   },
   "dependencies": {
     "@google/generative-ai": "^0.24.1",
