@@ -21,7 +21,6 @@ import {
   ResponsiveContainer,
 } from 'recharts';
 import {
-  Building2,
   Home,
   Users,
   Calendar,
@@ -66,6 +65,7 @@ import ControleInteligenciaIA from './components/ControleInteligenciaIA';
 import GuiaDaAba from './components/ui/GuiaDaAba';
 import RodapeLegal from './components/ui/RodapeLegal';
 import DorESolucao from './components/ui/DorESolucao';
+import LogoExpress from './components/ui/LogoExpress';
 import OnboardingTour from './components/OnboardingTour';
 import OnboardingPrimeiroUso from './components/onboarding/OnboardingPrimeiroUso';
 import { ehMasterPlataforma as ehMasterPlataformaFn, modoProEfetivo, rotuloVisao } from './lib/acesso-plano';
@@ -1639,23 +1639,18 @@ export default function Admin() {
 
   return (
     <div
-      style={{ minHeight: '100vh', background: isEscuro ? '#020408' : '#f1f5f9', color: t.texto, paddingBottom: '90px' }}
-      className="transition-colors duration-300 font-sans"
+      style={{ minHeight: '100vh', background: isEscuro ? '#020408' : '#f1f5f9', color: t.texto }}
+      className="pb-40 md:pb-24 transition-colors duration-300 font-sans"
     >
       {/* --- SEÇÃO DO TOPO / ALTERNÂNCIA DE MODO --- */}
       <header
         className="sticky top-0 z-40 flex flex-wrap items-center justify-between border-b border-zinc-800 bg-[#020408] px-6 py-3 gap-3"
       >
         <div className="flex items-center gap-3">
-          <div style={{ backgroundColor: '#10b981' }} className="w-9 h-9 rounded-xl flex items-center justify-center shadow-lg shadow-[#10b981]/30">
-            <Building2 size={20} className="text-white" />
-          </div>
-          <div className="flex flex-wrap items-center gap-3">
-            <span className="text-xl font-bold text-emerald-400">EXPRESS IMOBI TECH</span>
-            <span className="text-xs px-2.5 py-1 rounded-full bg-emerald-950 text-emerald-300 border border-emerald-800/50">
-              {isProConta ? '✨ Plano PRO Ativo' : '⚡ Plano Gratuito'}
-            </span>
-          </div>
+          <LogoExpress />
+          <span className="text-[10px] px-2.5 py-1 rounded-full bg-emerald-950 text-emerald-300 border border-emerald-800/50 sm:text-xs">
+            {isProConta ? '✨ Plano PRO Ativo' : '⚡ Plano Gratuito'}
+          </span>
         </div>
 
         <div className="flex flex-wrap items-center gap-2">

@@ -53,8 +53,11 @@ export default function FloatingButtons({
 
     return (
         <>
-            {/* ===== LADO ESQUERDO - Especialista Imobiliário IA ===== */}
-            <div id="botoes-flutuantes" className="fixed bottom-6 left-6 z-[50] flex flex-col gap-3">
+            {/* ===== LADO ESQUERDO — Ajuda/Manual + Especialista IA ===== */}
+            <div id="botoes-flutuantes" className="fixed bottom-4 left-4 z-[50] flex flex-col gap-2.5 md:bottom-6 md:left-6 md:gap-3">
+                {/* Manual da aba atual (menos usado: fica no lado secundário) */}
+                <AjudaFlutuante abaAtiva={abaAtiva} infoAba={infoAbaAtiva} />
+
                 <button
                     type="button"
                     onClick={() => setChatAberto(true)}
@@ -67,11 +70,8 @@ export default function FloatingButtons({
                 </button>
             </div>
 
-            {/* ===== LADO DIREITO - Ações Rápidas (Tarefas 1-Clique, Financeiro VGV, Novo Lead) ===== */}
-            <div className="fixed bottom-6 right-6 z-[50] flex flex-col gap-3">
-                {/* Botão 0: Ajuda / Manual da aba atual (acima dos demais) */}
-                <AjudaFlutuante abaAtiva={abaAtiva} infoAba={infoAbaAtiva} />
-
+            {/* ===== LADO DIREITO — Ações rápidas (3 botões, lado do polegar) ===== */}
+            <div className="fixed bottom-4 right-4 z-[50] flex flex-col gap-2.5 md:bottom-6 md:right-6 md:gap-3">
                 {/* Botão 1: Tarefas Imobiliárias Rápidas (1 Clique) */}
                 <button
                     type="button"
