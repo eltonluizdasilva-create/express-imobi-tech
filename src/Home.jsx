@@ -258,6 +258,11 @@ export default function Home() {
             <ul className="space-y-2 text-sm text-gray-500">
               <li>Araguari, MG</li>
               <li>WhatsApp: (34) 99143-9845</li>
+              <li>
+                <a href="mailto:contato@expresstech.com.br" className="hover:text-blue-400">
+                  contato@expresstech.com.br
+                </a>
+              </li>
             </ul>
           </div>
         </div>

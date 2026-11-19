@@ -90,10 +90,20 @@ export default function Privacidade() {
               <li><strong>Excluir todos os seus dados definitivamente</strong> a qualquer momento, acionando a rotina em cascata do Firestore nas configurações da sua conta.</li>
             </ul>
           </div>
+          <div>
+            <h2 style={{ color: '#00E676', fontSize: '18px', textTransform: 'uppercase', letterSpacing: '1px' }}>5. Contato e Encarregado de Dados</h2>
+            <p>
+              Para exercer qualquer um dos direitos acima, solicitar exclusão de dados ou falar com o
+              encarregado de proteção de dados (DPO), escreva para{' '}
+              <a href="mailto:contato@expresstech.com.br" style={{ color: '#00E676' }}>contato@expresstech.com.br</a>.
+            </p>
+          </div>
         </section>
 
         <footer style={{ marginTop: '60px', borderTop: '1px solid #222', paddingTop: '20px', textAlign: 'center', fontSize: '12px', color: '#555' }}>
           Ambiente Blindado & Protegido · Express Auto Tech © {new Date().getFullYear()}
+          <br />
+          Contato e DPO: <a href="mailto:contato@expresstech.com.br" style={{ color: '#888' }}>contato@expresstech.com.br</a>
         </footer>
       </div>
     </div>

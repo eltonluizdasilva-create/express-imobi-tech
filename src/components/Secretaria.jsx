@@ -10,6 +10,7 @@ import {
 import HeroAba from "./admin/HeroAba";
 import { useSecretariaIA } from "../hooks/useSecretariaIA";
 import ControleInteligenciaIA from "./ControleInteligenciaIA";
+import { hostPublico, urlPublica } from '../lib/appUrl';
 
 const STYLES = {
     card: 'bg-zinc-900/40 border border-zinc-800 rounded-[2.5rem] p-6 md:p-8 mb-8 shadow-xl',
@@ -231,7 +232,7 @@ export default function Secretaria({ oficinaId, abrirRecuperacaoFinanceira, dado
 
     const imprimirCartazBalcao = () => {
         const nome = dadosOficina?.nome || 'Minha Imobiliária';
-        const link = `oficinai.app/${dadosOficina?.slug || oficinaId?.slice(0, 8)}`;
+        const link = `${hostPublico()}/${dadosOficina?.slug || oficinaId?.slice(0, 8)}`;
         const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=400x400&data=${encodeURIComponent(`https://${link}`)}`;
 
         const w = window.open('', '_blank', 'width=800,height=900');
@@ -439,9 +440,9 @@ export default function Secretaria({ oficinaId, abrirRecuperacaoFinanceira, dado
                                             <span className="text-[10px] font-black text-purple-400 uppercase tracking-widest block mb-1">Link do Seu Aplicativo</span>
                                             <h4 className="text-white font-bold text-xl mb-2">Seu link exclusivo do portal</h4>
                                             <div className="flex gap-2 items-center bg-black/50 border border-zinc-800 p-3 rounded-xl mb-4">
-                                                <span className="text-zinc-300 font-mono text-sm truncate flex-1">oficinai.app/{dadosOficina?.slug || oficinaId?.slice(0, 8) || 'sua-oficina'}</span>
+                                                <span className="text-zinc-300 font-mono text-sm truncate flex-1">{hostPublico()}/{dadosOficina?.slug || oficinaId?.slice(0, 8) || 'sua-imobiliaria'}</span>
                                                 <button 
-                                                    onClick={() => { navigator.clipboard.writeText(`oficinai.app/${dadosOficina?.slug || oficinaId?.slice(0, 8)}`); alert("Link copiado!"); }}
+                                                    onClick={() => { navigator.clipboard.writeText(urlPublica(dadosOficina?.slug || oficinaId?.slice(0, 8))); alert("Link copiado!"); }}
                                                     className="text-zinc-500 hover:text-white transition-colors"
                                                 ><Copy size={16} /></button>
                                             </div>
@@ -611,7 +612,7 @@ export default function Secretaria({ oficinaId, abrirRecuperacaoFinanceira, dado
                                             <p>O imóvel está na fase: <span className="bg-amber-100 text-amber-800 px-1.5 py-0.5 rounded font-bold">Proposta em análise</span>.</p>
                                             <p>Acompanhe as fotos e o andamento em tempo real aqui no link: </p>
                                             <div className="bg-zinc-50 border border-zinc-200 p-2 rounded-lg text-blue-600 font-bold text-[10px] flex items-center gap-2">
-                                                <ExternalLink size={12} /> oficinai.app/portal
+                                                <ExternalLink size={12} /> {hostPublico()}/portal
                                             </div>
                                             <span className="text-[9px] text-zinc-500 block text-right">14:21</span>
                                         </div>

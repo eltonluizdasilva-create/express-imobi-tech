@@ -84,7 +84,7 @@ export default function Sobre() {
           <div className="md:w-3/5 relative z-10 space-y-6">
             <div>
               <h3 className="text-blue-500 font-bold uppercase tracking-widest text-sm mb-2">O Fundador</h3>
-              <h2 className="text-3xl md:text-4xl font-black mb-4">Elton [Seu Sobrenome]</h2>
+              <h2 className="text-3xl md:text-4xl font-black mb-4">Elton Luiz da Silva</h2>
               <p className="text-xl text-gray-300 font-medium">
                 Engenheiro de Controle e Automação & Especialista em IA
               </p>

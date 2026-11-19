@@ -264,7 +264,7 @@ no relatório de entrega desta tarefa.
 
 | # | Pendência | Detalhe |
 |---|---|---|
-| S1 | Domínio legado exibido e usado no QR | `oficinai.app/<slug>` aparece em 4 pontos (linhas 234, 442, 444, 614) e é o alvo do QR impresso. Precisa decisão de domínio real antes de imprimir cartaz |
+| S1 | Domínio legado no QR e no link copiado | **Corrigido**: `oficinai.app` saiu dos 4 pontos; agora o link do cartaz/QR e o texto da tela usam `VITE_PUBLIC_APP_URL` → origem da aba → `imobi.expresstech.com.br` (`src/lib/appUrl.js`). O QR passa a apontar para o domínio ativo, não para o legado |
 | S2 | Contadores de "Proteção Jurídica" leem `oficinas/{oid}/os` | Coleção legada do produto Auto; em conta Imobi tende a 0. Não é problema de texto, é de modelo |
 | S3 | QR Code e "TESTAR ENVIO" não executam nada real | QR é imagem estática do `api.qrserver.com`; o teste grava `triggerTestMessage` sem consumidor no repositório |
 | S4 | Texto cita "OpenCode" | Serviço externo inexistente neste repositório; aparece em dois avisos ao usuário |

@@ -11,7 +11,7 @@ import React from 'react';
 const AnaliseSistema = () => {
   // REGRAS DE OURO QUE A IA DEVE VALIDAR:
   const regrasNegocio = {
-    segurancaMaster: "Apenas eltonluizdasilva@gmail.com acessa /admin-master",
+    segurancaMaster: "Apenas a conta MASTER da plataforma acessa /admin-master",
     bloqueioTrial: "Se trialFim < hoje E plano === 'trial', travar tela total",
     limiteAbas: "Abas 'fixas' liberadas. Abas 'premium' dependem do array modulosAtivos",
     protecaoIA: "Módulo 'copiloto' bloqueado durante os 10 dias de Trial (custo API)"

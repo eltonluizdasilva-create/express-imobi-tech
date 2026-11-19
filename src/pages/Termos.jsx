@@ -71,6 +71,15 @@ export default function Termos() {
           </div>
 
           <div>
+            <h2 style={{ color: '#00E676', fontSize: '18px', textTransform: 'uppercase', letterSpacing: '1px' }}>6. Contato</h2>
+            <p>
+              Dúvidas sobre estes termos, cobrança ou cancelamento devem ser enviadas para{' '}
+              <a href="mailto:contato@expresstech.com.br" style={{ color: '#00E676' }}>contato@expresstech.com.br</a>.
+              Respondemos em horário comercial, de segunda a sexta.
+            </p>
+          </div>
+
+          <div>
             <h2 style={{ color: '#00E676', fontSize: '18px', textTransform: 'uppercase', letterSpacing: '1px' }}>5. Rescisão e Exclusão da Conta</h2>
             <p>
               Você é livre para cancelar sua assinatura ou excluir permanentemente sua conta a qualquer momento através da aba "Configurações". A exclusão de conta aciona a rotina de limpeza irreversível no Firestore, garantindo o seu direito constitucional ao esquecimento digital.
@@ -80,6 +89,8 @@ export default function Termos() {
 
         <footer style={{ marginTop: '60px', borderTop: '1px solid #222', paddingTop: '20px', textAlign: 'center', fontSize: '12px', color: '#555' }}>
           Express Auto Tech © {new Date().getFullYear()} · Todos os direitos reservados.
+          <br />
+          Contato: <a href="mailto:contato@expresstech.com.br" style={{ color: '#888' }}>contato@expresstech.com.br</a>
         </footer>
       </div>
     </div>
