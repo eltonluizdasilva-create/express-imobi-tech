@@ -34,6 +34,7 @@ import {
   Sun,
   Moon,
   LogOut,
+  HelpCircle,
   CheckCircle2,
   Clock,
   Phone,
@@ -65,6 +66,7 @@ import ControleInteligenciaIA from './components/ControleInteligenciaIA';
 import GuiaDaAba from './components/ui/GuiaDaAba';
 import RodapeLegal from './components/ui/RodapeLegal';
 import DorESolucao from './components/ui/DorESolucao';
+import OnboardingTour from './components/OnboardingTour';
 import OnboardingPrimeiroUso from './components/onboarding/OnboardingPrimeiroUso';
 import { ehMasterPlataforma as ehMasterPlataformaFn, modoProEfetivo, rotuloModo } from './lib/acesso-plano';
 import { MODULOS_MAP } from './modulosMap';
@@ -529,6 +531,8 @@ export default function Admin() {
 
   // Modais próprios de Ação Rápida Imobiliária
   const [modalNovoImovel, setModalNovoImovel] = useState(false);
+  // Tour guiado: abre sozinho 1x por conta; este estado é só o "Refazer tour".
+  const [tourManual, setTourManual] = useState(false);
   const [modalNovoLeadImobi, setModalNovoLeadImobi] = useState(false);
   const [modalNovaVisita, setModalNovaVisita] = useState(false);
   const [salvandoAcao, setSalvandoAcao] = useState(false);
@@ -1602,7 +1606,7 @@ export default function Admin() {
   const botoesBloco1Essencial = [
     { id: 'dashboard_imobi', icone: '📊', label: 'Visão Geral' },
     { id: 'captacao_imobi', icone: '🏠', label: 'Captação & Imóveis' },
-    { id: 'funil_leads', icone: '👥', label: 'Leads & Funil CRM' },
+    { id: 'funil_leads', icone: '👥', label: 'Leads & Funil CRM', tour: 'crm' },
     { id: 'visitas_imobi', icone: '📅', label: 'Agenda de Visitas' },
     { id: 'financeiro', icone: '💰', label: 'Financeiro & VGV' },
     { id: 'historico', icone: '📝', label: 'Propostas & Negócios' },
@@ -1612,9 +1616,9 @@ export default function Admin() {
   ];
 
   const botoesBloco2EsquadraoIA = [
-    { id: 'agentes_ia', icone: '🤖', label: '7 Agentes de IA' },
+    { id: 'agentes_ia', icone: '🤖', label: '7 Agentes de IA', tour: 'agentes' },
     { id: 'radar_captacao', icone: '📡', label: 'Radar de Captação' },
-    { id: 'whatsapp_hub', icone: '💬', label: 'Conexão WhatsApp' },
+    { id: 'whatsapp_hub', icone: '💬', label: 'Conexão WhatsApp', tour: 'whatsapp' },
     { id: 'copiloto', icone: '⚡', label: 'Hermes Copiloto' },
     { id: 'secretaria', icone: '📷', label: 'QR Code Sofia' },
     { id: 'administrador', icone: '📈', label: 'Diretor Comercial IA' },
@@ -1628,7 +1632,7 @@ export default function Admin() {
     { id: 'notafiscal', icone: '📑', label: 'Repasses & NF' },
     { id: 'migracao', icone: '🔄', label: 'Migração de CRM' },
     { id: 'avaliacao_imovel', icone: '📐', label: 'Avaliação de Imóvel' },
-    { id: 'credito', icone: '🏦', label: 'Correspondente / Crédito' },
+    { id: 'credito', icone: '🏦', label: 'Correspondente / Crédito', tour: 'fechamento' },
     { id: 'config', icone: '⚙️', label: 'Configurações' },
     { id: 'especialista', icone: '🎧', label: 'Suporte Especialista' },
   ];
@@ -1703,6 +1707,15 @@ export default function Admin() {
           )}
 
           <button
+            onClick={() => setTourManual(true)}
+            title="Refazer tour"
+            aria-label="Refazer tour"
+            className="p-2 rounded-lg bg-zinc-800 border border-zinc-700/60 text-zinc-300 hover:text-white transition cursor-pointer"
+          >
+            <HelpCircle size={15} />
+          </button>
+
+          <button
             onClick={toggleTema}
             className="p-2 rounded-lg bg-zinc-800 border border-zinc-700/60 text-zinc-300 hover:text-white transition cursor-pointer"
             title="Alternar tema Claro/Escuro"
@@ -1737,6 +1750,7 @@ export default function Admin() {
           <div className="flex justify-center">
             <button
               type="button"
+              data-tour="comecar"
               onClick={() => setAbaAtiva('acompanhamento_cliente')}
               title="Ir para Acompanhamento do Cliente"
               className="group relative flex w-full max-w-3xl items-center gap-3 rounded-full border px-3 py-2.5 text-left transition-all duration-300 hover:-translate-y-0.5 md:gap-4 md:px-4"
@@ -1790,6 +1804,7 @@ export default function Admin() {
             setAbaAtiva={setAbaAtiva}
             detalhes={MAPA_DETALHES_ABAS}
             linhaUnica
+            dataTour="barra-essenciais"
           />
 
           {/* Barra 2 — Módulos PRO (Assinantes) */}
@@ -1801,6 +1816,7 @@ export default function Admin() {
               abaAtiva={abaAtiva}
               setAbaAtiva={setAbaAtiva}
               detalhes={MAPA_DETALHES_ABAS}
+              dataTour="barra-pro"
             />
           )}
 
@@ -1814,6 +1830,7 @@ export default function Admin() {
               setAbaAtiva={setAbaAtiva}
               detalhes={MAPA_DETALHES_ABAS}
               destaque
+              dataTour="barra-ia"
             />
           )}
 
@@ -3267,6 +3284,15 @@ export default function Admin() {
           planosSistema={planosSistema}
         />
       </SafeBoundary>
+
+      <OnboardingTour
+        uid={currentUserId}
+        oficinaId={imobiliariaId}
+        pronto={Boolean(dadosImobiliaria)}
+        hasCompletedTour={dadosImobiliaria?.hasCompletedTour}
+        abertoManualmente={tourManual}
+        onFecharManual={() => setTourManual(false)}
+      />
 
       <SafeBoundary>
         <FloatingButtons

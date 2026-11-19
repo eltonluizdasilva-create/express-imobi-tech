@@ -24,11 +24,13 @@ export default function BarraModulos({
   detalhes = {},
   destaque = false,
   linhaUnica = false,
+  dataTour,
 }) {
   const t = TONS[tom] || TONS.esmeralda;
 
   return (
     <div
+      data-tour={dataTour}
       className={`relative rounded-2xl border border-white/[0.06] bg-white/[0.015] px-3 py-2.5 ${
         destaque ? 'shadow-[0_0_30px_-16px_rgba(245,158,11,0.55)]' : ''
       }`}
@@ -68,6 +70,7 @@ export default function BarraModulos({
               <button
                 key={btn.id}
                 type="button"
+                data-tour={btn.tour}
                 onClick={() => setAbaAtiva(btn.id)}
                 title={det ? `${det.tituloCard || det.tituloLimpo || btn.label}: ${det.descricao}` : btn.label}
                 aria-current={ativo ? 'page' : undefined}
