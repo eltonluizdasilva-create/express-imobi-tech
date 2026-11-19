@@ -6,6 +6,7 @@ import {
 import HeroAba from '../admin/HeroAba';
 import GuiaDaAba from '../ui/GuiaDaAba';
 import SeletorUF from '../ui/SeletorUF';
+import CapturaLeadsMaps from '../prospeccao/CapturaLeadsMaps';
 import { corDaAba } from '../../lib/coresAbas';
 import { db } from '../../lib/firebase';
 import { collection, onSnapshot } from 'firebase/firestore';
@@ -87,6 +88,13 @@ export default function RadarCaptacao({ dadosOficina }) {
       />
 
       <SeletorUF onChange={(p) => setUf(p.ufPadrao)} />
+
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <p className="text-[11px] text-slate-500">
+          Prospecção por região: busca estabelecimentos no raio e manda direto para o CRM.
+        </p>
+        <CapturaLeadsMaps oficinaId={tenantId} cor={corAba} />
+      </div>
 
       <GuiaDaAba
         titulo="Radar de Captação"

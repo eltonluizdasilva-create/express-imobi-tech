@@ -105,37 +105,43 @@ function devApiAi() {
     name: 'dev-api-ai',
     apply: 'serve',
     configureServer(server) {
-      server.middlewares.use('/api/ai', async (req, res) => {
-        const responderErro = (codigo, mensagem) => {
-          res.statusCode = codigo
-          res.setHeader('Content-Type', 'application/json; charset=utf-8')
-          res.end(JSON.stringify({ error: mensagem, dev: true }))
-        }
-
-        try {
-          const partes = []
-          for await (const bloco of req) partes.push(bloco)
-          const bruto = Buffer.concat(partes).toString('utf8')
-
-          req.body = bruto ? JSON.parse(bruto) : {}
-          const url = new URL(req.url || '/', 'http://localhost')
-          req.query = Object.fromEntries(url.searchParams)
-          req.socket = req.socket || {}
-
-          res.status = (c) => { res.statusCode = c; return res }
-          res.json = (obj) => {
+      // Adaptador que dá ao handler serverless o mesmo req/res da Vercel.
+      const montar = (rota, carregar) => {
+        server.middlewares.use(rota, async (req, res) => {
+          const responderErro = (codigo, mensagem) => {
+            res.statusCode = codigo
             res.setHeader('Content-Type', 'application/json; charset=utf-8')
-            res.end(JSON.stringify(obj))
-            return res
+            res.end(JSON.stringify({ error: mensagem, dev: true }))
           }
 
-          const { default: handler } = await import('./api/ai.js')
-          await handler(req, res)
-        } catch (erro) {
-          server.config.logger.error(`[dev /api/ai] ${erro?.message || erro}`)
-          if (!res.writableEnded) responderErro(500, String(erro?.message || erro))
-        }
-      })
+          try {
+            const partes = []
+            for await (const bloco of req) partes.push(bloco)
+            const bruto = Buffer.concat(partes).toString('utf8')
+
+            req.body = bruto ? JSON.parse(bruto) : {}
+            const url = new URL(req.url || '/', 'http://localhost')
+            req.query = Object.fromEntries(url.searchParams)
+            req.socket = req.socket || {}
+
+            res.status = (c) => { res.statusCode = c; return res }
+            res.json = (obj) => {
+              res.setHeader('Content-Type', 'application/json; charset=utf-8')
+              res.end(JSON.stringify(obj))
+              return res
+            }
+
+            const { default: handler } = await carregar()
+            await handler(req, res)
+          } catch (erro) {
+            server.config.logger.error(`[dev ${rota}] ${erro?.message || erro}`)
+            if (!res.writableEnded) responderErro(500, String(erro?.message || erro))
+          }
+        })
+      }
+
+      montar('/api/ai', () => import('./api/ai.js'))
+      montar('/api/places', () => import('./api/places.js'))
     },
   }
 }

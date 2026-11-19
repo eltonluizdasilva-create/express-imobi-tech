@@ -52,3 +52,5 @@ coverage/
 
 # Exemplo de variaveis pode ser versionado
 !.env.example
+
+tests/.render_*.mjs
