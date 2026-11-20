@@ -61,7 +61,11 @@ export default function AdministradorIA({
     const [copiado, setCopiado] = useState(false);
     const [isAnalyzing, setIsAnalyzing] = useState(false);
 
-    const temAcesso = papelLogado === 'master' || papelLogado === 'dono' || dadosOficina?.plano === 'pago' || dadosOficina?.plano === 'trial' || dadosOficina?.plano === 'MASTER' || dadosOficina?.plano === 'premium';
+    // Lote 4 — PLANO PAGO destrava o Diretor Comercial IA. Antes só `papelLogado`
+    // e `dadosOficina.plano` decidiam, então conta PRO cujo `plano` não estivesse
+    // escrito exatamente como 'pago'/'trial'/'premium' caía em "MÓDULO PREMIUM".
+    // `isPro` já vem derivado do documento da organização (AuthContext).
+    const temAcesso = isPro === true || papelLogado === 'master' || papelLogado === 'dono' || dadosOficina?.plano === 'pago' || dadosOficina?.plano === 'trial' || dadosOficina?.plano === 'MASTER' || dadosOficina?.plano === 'premium';
 
     // Cálculos de contexto para a IA
     const financeiro = useMemo(() => {

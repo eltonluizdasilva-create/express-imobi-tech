@@ -17,6 +17,7 @@ import {
   FRANQUIA_BASE_CREDITOS_IA,
 } from '../contexts/AuthContext';
 import BloqueioPremium from './BloqueioPremium';
+import AnelEscuro from './admin/AnelEscuro';
 
 const OPCOES_INTELIGENCIA = [
   {
@@ -119,13 +120,12 @@ export default function ControleInteligenciaIA({
       : creditosDisponiveis;
 
   return (
-    <section
-      style={{ backgroundColor: '#020408' }}
-      className={`border border-slate-800 rounded-2xl ${
-        compacto ? 'p-4' : 'p-5 md:p-6'
-      } shadow-xl space-y-5`}
-    >
+    <AnelEscuro className={`rounded-2xl ${compacto ? 'p-4' : 'p-5 md:p-6'} shadow-xl`}>
+      {/* Lote 4 — o cabeçalho vive em `AnelEscuro` (shadow root) porque no tema
+          claro o fundo `#020408` virava branco enquanto os títulos `text-white`
+          eram escurecidos pelo CSS do tema. */}
       {/* CABEÇALHO + MOSTRADOR DE CRÉDITOS DE IA (BADGE + PROGRESS BAR) */}
+      <div className="space-y-5">
       <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 pb-4 border-b border-slate-800/90">
         <div className="space-y-1">
           <div className="flex flex-wrap items-center gap-2">
@@ -310,6 +310,7 @@ export default function ControleInteligenciaIA({
         onFechar={() => setMostrarBloqueioPro(false)}
         setAbaAtiva={setAbaAtiva}
       />
-    </section>
+      </div>
+    </AnelEscuro>
   );
 }

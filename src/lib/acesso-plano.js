@@ -17,8 +17,15 @@ export function ehMasterPlataforma(papelLogado, claimAdmin) {
  * A visão do menu é uma preferência do usuário (Enxuta × Completa), igual para
  * todo mundo — inclusive para cliente que ainda não assina. O que continua
  * travado para quem não é PRO é o ACESSO ao módulo, não a lista de abas.
+ *
+ * Lote 4: plano pago SEMPRE abre a visão completa. Antes a função só olhava o
+ * rascunho do nada (`isModoGratis`) e ignorava `isProConta`, então uma conta
+ * PRO com `modoPainel = 'gratis'` no localStorage ficava com `modoPro = false`
+ * — a pílula do topo dizia "Plano PRO Ativo" e os módulos PRO apareciam como
+ * "MÓDULO PREMIUM" (Diretor Comercial IA).
  */
-export function modoProEfetivo({ isModoGratis }) {
+export function modoProEfetivo({ isModoGratis, isProConta }) {
+  if (isProConta) return true;
   return !isModoGratis;
 }
 

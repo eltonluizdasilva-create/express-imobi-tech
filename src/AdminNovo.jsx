@@ -58,7 +58,9 @@ import ModuloBloqueado from './components/admin/ModuloBloqueado';
 import BarraModulos from './components/admin/BarraModulos';
 import SofiaWhatsAppTab from './components/admin/SofiaWhatsAppTab';
 import ModuloComAbas from './components/admin/ModuloComAbas';
+import AnelEscuro from './components/admin/AnelEscuro';
 import HeroAba from './components/admin/HeroAba';
+import HeroAbaEscura from './components/admin/HeroAbaEscura';
 import CaptacaoNicho from './components/imobi/CaptacaoNicho';
 import { corDaAba, textoSobreCor, comAlpha } from './lib/coresAbas';
 import ModaisExtras from './components/admin/ModaisExtras';
@@ -396,9 +398,12 @@ const MAPA_DETALHES_ABAS = (GRUPOS_MENU_IMOBI || [])
 const AGENTES_INICIAIS = [
   {
     id: 'sofia_triagem',
-    nome: 'Sofia — Triagem Inicial Multi-Nicho',
+    nome: 'Sofia — Atendimento & Triagem 24h',
     cargo: 'Recepção 24h no WhatsApp',
     ativo: true,
+    // Lote 4 — a Sofia é a demonstração do atendimento no degrau Grátis.
+    // O WhatsApp oficial com QR Code é o degrau Automação (R$ 450+).
+    demonstracao: true,
     atendimentos: 128,
     prompt: 'Recepciona o lead em 3 segundos e identifica se busca Imóvel Urbano, Loteamento/Condomínio, Fazenda/Rural ou Locação.',
   },
@@ -1621,6 +1626,14 @@ export default function Admin() {
   const modoPro = modoProEfetivo({ master: ehMasterPlataforma, isModoGratis, isProConta });
   const isPro = Boolean(isProConta && modoPro);
   const setModoPro = (ativo) => alternarModoPainel(ativo ? 'completo' : 'gratis');
+
+  // Lote 4 — o rascunho 'gratis' gravado no navegador não pode sobreviver a um
+  // plano pago: se a conta é PRO e o registro local diz o contrário, corrige.
+  // É isto que destravava o "MÓDULO PREMIUM" com "Plano PRO Ativo" no topo.
+  useEffect(() => {
+    if (!isProConta || !isModoGratis) return;
+    alternarModoPainel('completo');
+  }, [isProConta, isModoGratis, alternarModoPainel]);
   const infoAbaAtiva = MAPA_DETALHES_ABAS[abaAtiva] || MAPA_DETALHES_ABAS.dashboard_imobi;
 
   // Abas próprias novas vs abas geridas pelo GerenciadorDeModulos
@@ -1660,7 +1673,9 @@ export default function Admin() {
 
   const botoesBloco2EsquadraoIA = [
     { id: 'radar_captacao', icone: '📡', label: 'Radar de Captação' },
-    { id: 'sofia_whatsapp', icone: '📲', label: 'Sofia WhatsApp & QR Code' },
+    // Lote 4 — a Sofia no WhatsApp oficial é o degrau Automação (R$ 450+),
+    // não o PRO de R$ 99. O badge evita confundir o assinante PRO.
+    { id: 'sofia_whatsapp', icone: '📲', label: 'Sofia WhatsApp & QR Code', badge: 'Automação · R$ 450+' },
     { id: 'administrador', icone: '📈', label: 'Diretor Comercial IA' },
     { id: 'contador', icone: '🏛️', label: 'Assistente Fiscal' },
     { id: 'juridico_imobi', icone: '⚖️', label: 'Assistente Jurídico' },
@@ -1686,9 +1701,9 @@ export default function Admin() {
   // Lote 2 — a tela "Conexão WhatsApp" é reutilizada pela aba unificada
   // `sofia_whatsapp`, então fica em uma variável em vez de JSX solto.
   const painelConexaoWhatsApp = (
-    <div className="bg-slate-900 border border-slate-800 rounded-3xl p-6 md:p-8 space-y-6">
+    <AnelEscuro className="p-6 md:p-8 space-y-6">
       <div>
-        <HeroAba
+        <HeroAbaEscura
           icone={MessageCircle}
           titulo="Central de Conexão"
           destaque="WhatsApp & Typebot"
@@ -1717,7 +1732,7 @@ export default function Admin() {
           <p className="text-xs text-slate-400">Leitura rápida de QR Code no celular do corretor para ativar os 10 dias de teste acompanhado.</p>
         </div>
       </div>
-    </div>
+    </AnelEscuro>
   );
 
   // Lote 2 — telas internas da aba unificada `sofia_whatsapp`. As três rotas
@@ -2770,14 +2785,16 @@ export default function Admin() {
 
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
             <div className="lg:col-span-7 space-y-4">
-              <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6">
-                <h2 className="text-2xl font-black text-white uppercase tracking-tight">
+              {/* Lote 4 — cabeçalho de IA: fundo escuro fixo (não vira branco
+                  no tema claro) e título branco explícito. */}
+              <AnelEscuro className="p-6">
+                <h2 className="anel-titulo" style={{ fontSize: '1.5rem' }}>
                   🤖 ESQUADRÃO DE <span style={{ color: '#10b981' }}>INTELIGÊNCIA ARTIFICIAL</span>
                 </h2>
-                <p className="text-sm text-slate-400 mt-1">
+                <p className="anel-subtitulo">
                   Equipe de 7 agentes autônomos trabalhando 24h por dia na qualificação de leads, triagem, agendamento de visitas e reengajamento no WhatsApp.
                 </p>
-              </div>
+              </AnelEscuro>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
                 {(agentesIA || [])?.map((ag) => (
@@ -2799,7 +2816,17 @@ export default function Admin() {
                           {ag.ativo ? 'ATIVO' : 'PAUSADO'}
                         </button>
                       </div>
-                      <h3 className="font-bold text-white text-sm">{ag.nome}</h3>
+                      <div className="flex flex-wrap items-center gap-1.5">
+                        <h3 className="font-bold text-white text-sm">{ag.nome}</h3>
+                        {/* Lote 4 — no degrau Grátis o esquadrão é vitrine:
+                            Sofia aparece como DEMONSTRAÇÃO do atendimento,
+                            sem prometer o WhatsApp oficial do degrau R$ 450+. */}
+                        {ag.demonstracao && (
+                          <span className="rounded-full border border-amber-400/50 bg-amber-500/15 px-1.5 py-0.5 text-[9px] font-black uppercase tracking-[0.10em] text-amber-300">
+                            Demonstração
+                          </span>
+                        )}
+                      </div>
                       <p className="text-xs text-slate-400 mt-1">{ag.prompt}</p>
                     </div>
                     <p style={{ color: '#10b981' }} className="text-[11px] font-bold text-[#10b981] mt-3 pt-2 border-t border-slate-800">

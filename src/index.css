@@ -64,6 +64,15 @@ html.tema-claro #root {
 .tema-claro [class*="text-white"]:not([class*="bg-emerald"]):not([class*="bg-[#10b981]"]):not([class*="bg-amber"]):not([class*="bg-violet"]):not([class*="bg-teal"]):not([class*="bg-sky"]):not([class*="bg-blue"]):not([class*="bg-red"]):not([class*="bg-rose"]):not([class*="bg-gradient-to-r"]) {
   color: #0f172a !important;
 }
+
+/* Superfície que continua escura nos dois temas. O tema claro força branco em
+   `bg-slate-900`/`bg-zinc-950`, então esta classe pinta a cor fora do `bg-*`.
+   Usada como moldura do `AnelEscuro` (cabeçalhos de IA). */
+.anel-escuro {
+  background-color: #0b1220 !important;
+  background-image: none !important;
+  border-color: rgba(148, 163, 184, 0.22) !important;
+}
 .tema-claro [class*="text-zinc-1"],
 .tema-claro [class*="text-zinc-2"],
 .tema-claro [class*="text-zinc-3"],

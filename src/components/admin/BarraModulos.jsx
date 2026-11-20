@@ -99,6 +99,19 @@ export default function BarraModulos({
               >
                 <span className="text-[12px] leading-none">{btn.icone}</span>
                 <span className="whitespace-nowrap">{btn.label}</span>
+                {/* Lote 4 — badge de degrau comercial: separa o que é PRO (R$ 99)
+                    do que só existe na Automação WhatsApp (R$ 450+). */}
+                {btn.badge && (
+                  <span
+                    className={`whitespace-nowrap rounded-full px-1.5 py-0.5 text-[8.5px] font-black uppercase tracking-[0.10em] ${
+                      ativo
+                        ? 'bg-emerald-500 text-slate-950'
+                        : 'border border-emerald-500/50 bg-emerald-500/15 text-emerald-300'
+                    }`}
+                  >
+                    {btn.badge}
+                  </span>
+                )}
               </button>
             );
           })}
