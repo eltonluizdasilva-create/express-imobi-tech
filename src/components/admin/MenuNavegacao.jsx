@@ -109,7 +109,7 @@ export default function MenuNavegacao({
           <div className="flex flex-col gap-1.5 pt-2 border-t border-zinc-900">
             <div className="flex items-center gap-1.5 text-[9px] font-black tracking-widest uppercase text-purple-400">
               <span className="w-1.5 h-1.5 rounded-full bg-purple-500" />
-              INTELIGÊNCIA ARTIFICIAL (ELITE)
+              INTELIGÊNCIA ARTIFICIAL (PRO)
             </div>
             <div className="flex items-center gap-1.5 overflow-x-auto pb-1 scrollbar-thin">
               {modulosIA.map((item) => renderItem(item, '#a855f7'))}

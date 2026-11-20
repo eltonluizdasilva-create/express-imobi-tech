@@ -107,12 +107,15 @@ export default function OSModulo({
     const ehMaster = dadosOficina?.papel === 'master' || dadosOficina?.plano === 'master';
     if (ehMaster || dadosOficina?.modulosPermitidos === 'ALL') return SETORES;
 
-    const modulos = (modulosOperacionais || []) || (dadosOficina?.modulosOperacionais || []);
+    // Prop vazia cai para os módulos salvos na oficina (null/undefined/[] não são "contratados")
+    const modulosDaProp = Array.isArray(modulosOperacionais) ? modulosOperacionais : [];
+    const modulos = modulosDaProp.length > 0 ? modulosDaProp : (dadosOficina?.modulosOperacionais || []);
     const modulosNormalizados = new Set(
       (modulos || []).filter(Boolean).map((m) => String(m).trim().toLowerCase())
     );
 
-    if (modulosNormalizados.size === 0) return SETORES.filter(s => s.key === 'mecanica');
+    // Sem módulo reconhecido → setores padrão (nunca tela sem setor)
+    if (modulosNormalizados.size === 0) return SETORES;
 
     const MAPA = {
       mecanica: ['mecanica', 'MECÂNICA', 'MECANICA'],
@@ -133,10 +136,15 @@ export default function OSModulo({
       estetica: ['estetica', 'ESTÉTICA', 'ESTETICA'],
     };
 
-    return SETORES.filter((setor) => {
+    const encontrados = SETORES.filter((setor) => {
       const nomesModulo = MAPA[setor.key] || [setor.key];
       return nomesModulo.some((nome) => modulosNormalizados.has(nome.toLowerCase()));
     });
+
+    // Nenhum setor reconhecido bateu com o que está salvo → setores padrão
+    if (encontrados.length === 0) return SETORES;
+
+    return encontrados;
   }, [dadosOficina, isTrial, modulosOperacionais]);
 
   // Garante que o setor ativo seja válido

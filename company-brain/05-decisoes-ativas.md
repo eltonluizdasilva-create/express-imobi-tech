@@ -17,6 +17,8 @@
 |---|---|---|
 | D-20.19 | **4 agentes passam a Operação Principal**: `gerente-geral` (prioriza demo, trial e venda de Imobi Tech / automações R$ 450+ e **barra feature fora do roadmap validado por clientes**), `cfo-compliance` (custo fixo/variável, MRR, margem, consumo de API de IA e conformidade comercial antes de qualquer gasto ou campanha), `pesquisador-empresas` (ficha padrão: nome, cidade, tamanho da equipe, presença digital, site próprio, nota/avaliações no Google, 1 necessidade provável) e `sdr-atracao` (registro de resposta, fila de follow-up e classificação Frio / Morno / Pronto para demo). | **VERDADE ATUAL** |
 | D-20.20 | **`assistente-fiscal-interno`, `editor-conteudo` e `assistente-pessoal` ficam Em Espera (Standby)**: seguem acionáveis por gatilho explícito, mas fora da rotina diária até decisão do fundador. | **VERDADE ATUAL** |
+| D-20.21 | **Rótulo "Elite" removido da UI**: a 3ª barra de navegação do painel passa de `Esquadrão de IA · Elite` para `Inteligência Artificial · PRO` (`src/AdminNovo.jsx`, `BarraModulos`) e o cabeçalho lateral de `INTELIGÊNCIA ARTIFICIAL (ELITE)` para `INTELIGÊNCIA ARTIFICIAL (PRO)` (`src/components/admin/MenuNavegacao.jsx`). Motivo: alinhar o painel ao Plano **PRO (R$ 99/mês)**, que desde D-19.1 já entrega os 7 módulos de IA via `profissional_extra` — o nome "Elite" sugeria um degrau de módulos exclusivos que não existe mais. D-19.2 (o 3º degrau é equipe/usuários extras/instância dedicada) segue vigente; o que caiu foi apenas o **rótulo** "Elite", não o degrau. Preço e composição do plano inalterados — fonte continua `shared/planos.json`. | **VERDADE ATUAL** |
+| D-20.22 | **P-03 encerrada sem alteração de dados**: o backfill `modulosOperacionais` **não foi aplicado** a nenhuma conta. Dry-run apontou 4 contas PRO elegíveis (`Oficina di Zé Ruela`/pro, `Oficina do Ricardo`/pago ×2, `Oficina da Maria`/profissional) — todas são **contas de OFICINA (Auto Tech)**, e o script grava a tabela de módulos do **Imobi Tech**. Gravar ali apagaria os setores do fluxo de O.S.; a correção de fallback em `OS.jsx` (setores padrão quando nenhum módulo é reconhecido) protege essas contas, mas é proteção de UI, não dado correto. Banco mantido intacto. O script passou a filtrar por segmento (`ehContaImobiliaria` / `--incluir-oficina` para forçar) e agora reporta `a atualizar: 0`. Reabrir P-03 só quando existir conta Imobi Tech PRO real precisando de migração. | **VERDADE ATUAL** |
 
 ---
 
@@ -122,7 +124,7 @@
 |---|---|---|---|
 | P-01 | Localizar o projeto **English Core 200** (não está neste disco) | inventário incompleto | fundador |
 | P-02 | `firebase deploy --only functions` bloqueado (refresh token revogado; precisa `firebase login`) | backend com cópia antiga de `planos.json` | fundador + Hermes |
-| P-03 | Backfill de `modulosOperacionais` das contas PRO já ativas | coerência entre plano e módulos | fundador |
+| P-03 | Backfill de `modulosOperacionais` das contas PRO já ativas — **[ENCERRADA em 2026-11-20, D-20.22]** sem alteração de dados: as únicas contas PRO elegíveis são de oficina (Auto Tech) e o script grava módulos do Imobi Tech. Reabrir só com conta Imobi PRO real para migrar. | coerência entre plano e módulos | fundador |
 | P-04 | `os.get` público e `configuracoes/geral` com `pixKey` exposta nas rules | privacidade | Hermes |
 | P-05 | `storage.rules` não publicado (Storage desabilitado) | uploads | fundador |
 | P-06 | Chaves antigas do repo `oficina-ia/main` ainda válidas | rotação de credencial | fundador |

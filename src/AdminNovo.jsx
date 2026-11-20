@@ -1819,7 +1819,7 @@ export default function Admin() {
           {/* Barra 3 — Esquadrão de IA (Elite) */}
           {modoPro && (
             <BarraModulos
-              titulo="Esquadrão de IA · Elite"
+              titulo="Inteligência Artificial · PRO"
               tom="ambar"
               itens={filtrarPorPapel(botoesBloco2EsquadraoIA)}
               abaAtiva={abaAtiva}
