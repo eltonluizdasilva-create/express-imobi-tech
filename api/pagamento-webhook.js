@@ -17,6 +17,24 @@ const db = getFirestore();
 const ALIAS_GRATIS = new Set(['', 'gratis', 'grátis', 'gratuito', 'free', 'trial']);
 const norm = (v) => String(v ?? '').trim().toLowerCase();
 
+// Documentos criados por testes/seed antigos. Não podem vencer um cadastro real
+// quando o mesmo e-mail existe em mais de um documento de `oficinas`.
+const ID_LEGADO = /^oficina_teste(_|$)|^oficina_ia_teste(_|$)/i;
+const CAMPOS_LEGADO = new Set(['senha']);
+
+function ehDocumentoLegado(id, dados) {
+  if (ID_LEGADO.test(String(id))) return true;
+  return Object.keys(CAMPOS_LEGADO).some((campo) => Object.prototype.hasOwnProperty.call(dados || {}, campo));
+}
+
+function msDoTimestamp(valor) {
+  if (!valor) return 0;
+  if (typeof valor.toDate === 'function') return valor.toDate().getTime();
+  if (typeof valor._seconds === 'number') return valor._seconds * 1000;
+  const t = new Date(valor).getTime();
+  return Number.isFinite(t) ? t : 0;
+}
+
 function isPlanoPro(plano) {
   const chave = norm(plano);
   if (ALIAS_GRATIS.has(chave)) return false;
@@ -45,15 +63,61 @@ function modulosDoPlano(planoKey) {
 async function resolverOficinaPorEmail(email) {
   const alvo = norm(email);
   if (!alvo) return null;
-  const porDono = await db.collection('oficinas').where('email', '==', alvo).limit(1).get();
-  if (!porDono.empty) return porDono.docs[0].id;
-  const porUsuario = await db.collection('usuarios').where('email', '==', alvo).limit(1).get();
-  if (!porUsuario.empty) {
-    const d = porUsuario.docs[0].data() || {};
-    return d.oficinaId || porUsuario.docs[0].id;
+
+  const [porDono, porUsuario] = await Promise.all([
+    db.collection('oficinas').where('email', '==', alvo).get(),
+    db.collection('usuarios').where('email', '==', alvo).get(),
+  ]);
+
+  // Vínculo canônico: usuarios.oficinaId (ou o próprio id do documento de usuário).
+  const vinculados = new Set();
+  let oficinaDoUsuario = null;
+  for (const doc of porUsuario.docs) {
+    const d = doc.data() || {};
+    const destino = String(d.oficinaId || doc.id || '').trim();
+    if (!destino) continue;
+    vinculados.add(destino);
+    if (!oficinaDoUsuario) oficinaDoUsuario = destino;
   }
-  return null;
+
+  const candidatos = porDono.docs.map((doc) => {
+    const dados = doc.data() || {};
+    return {
+      id: doc.id,
+      vinculado: vinculados.has(doc.id),
+      legado: ehDocumentoLegado(doc.id, dados),
+      criadoEm: msDoTimestamp(dados.criadoEm) || msDoTimestamp(dados.data_cadastro) || msDoTimestamp(doc.createTime),
+    };
+  });
+
+  if (!candidatos.length) return oficinaDoUsuario;
+
+  // Prioridade: vinculado em usuarios.oficinaId → cadastro real (não legado)
+  // → mais recente → id ascendente (desempate estável).
+  candidatos.sort(
+    (a, b) =>
+      Number(b.vinculado) - Number(a.vinculado) ||
+      Number(a.legado) - Number(b.legado) ||
+      b.criadoEm - a.criadoEm ||
+      a.id.localeCompare(b.id)
+  );
+  const escolhido = candidatos[0];
+
+  if (candidatos.length > 1) {
+    console.warn(
+      'pagamento-webhook: múltiplas oficinas para o mesmo e-mail',
+      JSON.stringify({
+        email: alvo,
+        escolhido: { id: escolhido.id, vinculado: escolhido.vinculado, legado: escolhido.legado },
+        ignorados: candidatos.slice(1).map((c) => ({ id: c.id, vinculado: c.vinculado, legado: c.legado })),
+      })
+    );
+  }
+
+  return escolhido.id;
 }
+
+export { resolverOficinaPorEmail };
 
 async function aplicarPlano({ oficinaId, planoKey, ciclo, origem }) {
   const pro = isPlanoPro(planoKey);
