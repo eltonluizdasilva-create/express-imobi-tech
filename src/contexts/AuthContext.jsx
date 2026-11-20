@@ -1,5 +1,6 @@
-import React, { createContext, useContext, useState, useEffect, useMemo, useCallback } from 'react';
+import React, { createContext, useContext, useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import {
+  createUserWithEmailAndPassword,
   getAuth,
   GoogleAuthProvider,
   onAuthStateChanged,
@@ -8,7 +9,7 @@ import {
   signOut
 } from 'firebase/auth';
 import { db } from '../lib/firebase';
-import { collection, doc, getDoc, setDoc, onSnapshot } from 'firebase/firestore';
+import { collection, doc, getDoc, onSnapshot, setDoc, writeBatch } from 'firebase/firestore';
 import { isPlanoPro } from '../lib/planos';
 
 const AuthContext = createContext(null);
@@ -112,6 +113,32 @@ export function AuthProvider({ children }) {
   const [emailInput, setEmailInput] = useState('');
   const [senhaInput, setSenhaInput] = useState('');
   const [erroLogin, setErroLogin] = useState('');
+  const cadastroEmAndamento = useRef(null);
+
+  const cadastrarConta = useCallback(async ({ email, senha, oficina, usuario }) => {
+    let concluirCadastro;
+    const cadastroConcluido = new Promise((resolve) => {
+      concluirCadastro = resolve;
+    });
+    cadastroEmAndamento.current = cadastroConcluido;
+
+    try {
+      const cred = await createUserWithEmailAndPassword(getAuth(), email, senha);
+      const uid = cred.user.uid;
+      const batch = writeBatch(db);
+
+      batch.set(doc(db, COLECAO_ORGANIZACAO, uid), { ...oficina, uid });
+      batch.set(doc(db, 'usuarios', uid), { ...usuario, uid, oficinaId: uid });
+      await batch.commit();
+
+      return cred;
+    } finally {
+      concluirCadastro();
+      if (cadastroEmAndamento.current === cadastroConcluido) {
+        cadastroEmAndamento.current = null;
+      }
+    }
+  }, []);
 
   useEffect(() => {
     const auth = getAuth();
@@ -170,6 +197,11 @@ export function AuthProvider({ children }) {
       setLogado(true);
 
       try {
+        if (cadastroEmAndamento.current) {
+          // Wait for the signup batch before bootstrapping missing documents.
+          await cadastroEmAndamento.current;
+        }
+
         const isMaster = user.email === import.meta.env.VITE_SU;
         setIsMasterConta(isMaster);
 
@@ -395,6 +427,7 @@ export function AuthProvider({ children }) {
     fazerLogin,
     fazerLoginGoogle,
     fazerLogout,
+    cadastrarConta,
   }), [
     logado,
     carregandoAuth,
@@ -421,6 +454,7 @@ export function AuthProvider({ children }) {
     fazerLogin,
     fazerLoginGoogle,
     fazerLogout,
+    cadastrarConta,
   ]);
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

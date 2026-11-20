@@ -1,11 +1,10 @@
 import { useState } from 'react';
-import { getAuth, createUserWithEmailAndPassword } from 'firebase/auth';
-import { db } from './lib/firebase';
-import { doc, setDoc } from 'firebase/firestore';
+import { useAuth } from './contexts/AuthContext';
 
 const SEU_WHATSAPP = '5534991439845';
 
 export default function Cadastro() {
+  const { cadastrarConta } = useAuth();
   const [etapa, setEtapa] = useState(1);
   const [loading, setLoading] = useState(false);
   const [erro, setErro] = useState('');
@@ -34,53 +33,45 @@ export default function Cadastro() {
 
     setLoading(true);
     try {
-      const auth = getAuth();
-
-      // Cria o usuário no Firebase Auth
-      const cred = await createUserWithEmailAndPassword(auth, form.email, form.senha);
-      const uid = cred.user.uid;
-
       // Data de trial — 10 dias a partir de hoje
       const agora = new Date();
       const fimTrial = new Date(agora);
       fimTrial.setDate(fimTrial.getDate() + 10);
 
-      // Salva a organização (fonte única de plano/faturamento/IA).
-      // `creditosIA` e `limiteUsuarios` NÃO são gravados pelo frontend: são provisionados pelo backend (n8n).
-      await setDoc(doc(db, 'oficinas', uid), {
-        uid,
-        nomeOficina: form.nomeOficina,
-        cidade: form.cidade,
-        telefone: form.telefone.replace(/\D/g, ''),
+      await cadastrarConta({
         email: form.email,
-        plano: 'GRATUITO',
-        nivelInteligencia: 'padrao',
-        trialInicio: agora,
-        trialFim: fimTrial,
-        ativo: true,
-        criadoEm: agora,
-        modulosAtivos: ['os', 'oleo', 'alinhamento'] // Libera tudo no Trial para encantar o cliente
-      });
-
-      // Documento pessoal: apenas identidade, vínculo e permissões (sem plano/créditos/nível de IA)
-      await setDoc(doc(db, 'usuarios', uid), {
-        uid,
-        oficinaId: uid,
-        nome: form.nomeOficina,
-        email: form.email,
-        papel: 'dono',
-        permissoes: {
-          dashboard: true,
-          os: true,
-          oleo: true,
-          alinhamento: true,
-          retorno: true,
-          estoque: true,
-          financeiro: true,
-          equipe: true,
-          oficina: true,
-          leads: true,
-          config: true
+        senha: form.senha,
+        oficina: {
+          nomeOficina: form.nomeOficina,
+          cidade: form.cidade,
+          telefone: form.telefone.replace(/\D/g, ''),
+          email: form.email,
+          plano: 'gratis',
+          isPro: false,
+          nivelInteligencia: 'padrao',
+          trialInicio: agora,
+          trialFim: fimTrial,
+          ativo: true,
+          criadoEm: agora,
+          modulosAtivos: ['os', 'oleo', 'alinhamento']
+        },
+        usuario: {
+          nome: form.nomeOficina,
+          email: form.email,
+          papel: 'dono',
+          permissoes: {
+            dashboard: true,
+            os: true,
+            oleo: true,
+            alinhamento: true,
+            retorno: true,
+            estoque: true,
+            financeiro: true,
+            equipe: true,
+            oficina: true,
+            leads: true,
+            config: true
+          }
         }
       });
 

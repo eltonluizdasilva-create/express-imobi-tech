@@ -495,7 +495,15 @@ describe('3. oficinas/{oid}', () => {
     await negar(setDoc(doc(db(uid), 'oficinas', uid), ofertaDeOficina(uid, { limiteUsuarios: 9999 })));
   });
 
-  it('recusa isPro e planoAssinante', async () => {
+  it('aceita perfil grátis próprio com isPro false e plano gratis', async () => {
+    const uid = 'uidFreeIsProFalse';
+    await permitir(setDoc(doc(db(uid), 'oficinas', uid), ofertaDeOficina(uid, {
+      plano: 'gratis',
+      isPro: false,
+    })));
+  });
+
+  it('recusa isPro true e planoAssinante', async () => {
     const uid = 'uidPro';
     await negar(setDoc(doc(db(uid), 'oficinas', uid), ofertaDeOficina(uid, { isPro: true })));
     await negar(setDoc(doc(db(uid), 'oficinas', uid), ofertaDeOficina(uid, { planoAssinante: 'master' })));

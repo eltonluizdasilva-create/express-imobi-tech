@@ -45,6 +45,9 @@ Cloud Functions (southamerica-east1, projeto express-ai-automation)
 **Casca do painel:** `src/AdminNovo.jsx` (abas em `BarraModulos`), `src/components/ui/` (LogoExpress,
 DorESolucao, GuiaDaAba, RodapeLegal), `src/components/prospeccao/` (captura de leads por região).
 
+O cadastro inicial é orquestrado por `AuthContext`: Auth + `oficinas/{uid}` + `usuarios/{uid}` são
+criados em um único batch; o listener de autenticação aguarda o batch antes do bootstrap genérico.
+
 ---
 
 ## 3. Backend e banco
@@ -56,7 +59,8 @@ DorESolucao, GuiaDaAba, RodapeLegal), `src/components/prospeccao/` (captura de l
 - Inventário completo: `docs/INVENTARIO-FIRESTORE.md` (240 acessos, 47 caminhos, 35 subcoleções).
 - `firestore.rules`: **628 linhas**, publicadas em produção via REST API com service account.
   Contém `ehGestor()` (claims/papel), allowlist `subcolecaoOperacional`, bloqueio de flags em
-  `oficinas.update` e `configuracoes/portais` restrito ao gestor.
+  `oficinas.update`, criação inicial de `oficinas/{uid}` restrita ao próprio usuário em plano
+  grátis (`isPro` ausente ou `false`) e `configuracoes/portais` restrito ao gestor.
 - `storage.rules`: **61 linhas**, versionado e **não publicado** (Storage ainda não habilitado).
 
 ### 3.2 Cloud Functions

@@ -251,17 +251,19 @@ service cloud.firestore {
       // Whitelist = payload real de Cadastro.jsx:52-63 (12 campos) unido ao
       // bootstrap de AuthContext.jsx:68-79 (`nome`, plano 'grátis'), que roda
       // quando o usuário ainda não tem documento de organização.
-      // Bloqueados por construção: creditosIA, limiteUsuarios, isPro,
-      // planoAssinante, tipoPlano, modulosPermitidos e qualquer campo novo.
+      // isPro só pode nascer como false. Bloqueados: creditosIA, limiteUsuarios,
+      // isPro true, planoAssinante, tipoPlano, modulosPermitidos e campos novos.
       allow create: if authed()
         && request.auth.uid == oid
         && request.resource.data.keys().hasOnly([
-          'uid', 'nomeOficina', 'nome', 'cidade', 'telefone', 'email', 'plano',
+          'uid', 'nomeOficina', 'nome', 'cidade', 'telefone', 'email', 'plano', 'isPro',
           'nivelInteligencia', 'trialInicio', 'trialFim', 'ativo', 'criadoEm',
           'modulosAtivos'
         ])
         && request.resource.data.uid == oid
         && request.resource.data.plano in ['GRATUITO', 'gratis', 'gratuito', 'grátis']
+        && (!request.resource.data.keys().hasAny(['isPro'])
+          || request.resource.data.isPro == false)
         // nível de IA só nasce no padrão; upgrade é update (M4) ou Cloud Function
         && request.resource.data.get('nivelInteligencia', 'padrao') == 'padrao'
         && (!request.resource.data.keys().hasAny(['ativo'])
