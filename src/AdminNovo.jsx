@@ -263,7 +263,7 @@ const GRUPOS_MENU_IMOBI = [
       },
       {
         id: 'contador',
-        label: '🧾 Assistente Fiscal',
+        label: '🧾 Simulador de Custos',
         tituloCard: 'ASSISTÊNCIA LEGAL & TRIBUTÁRIA',
         tituloLimpo: 'ASSISTÊNCIA LEGAL & TRIBUTÁRIA (FISCAL)',
         tier: 'pro',
@@ -272,7 +272,7 @@ const GRUPOS_MENU_IMOBI = [
       },
       {
         id: 'juridico_imobi',
-        label: '⚖️ Assistente Jurídico (Lei do Inquilinato)',
+        label: '⚖️ Minutas & Checklist (Lei do Inquilinato)',
         tituloCard: 'ASSISTÊNCIA LEGAL & TRIBUTÁRIA',
         tituloLimpo: 'ASSISTÊNCIA LEGAL & TRIBUTÁRIA (LEI DO INQUILINATO)',
         tier: 'pro',
@@ -1677,8 +1677,8 @@ export default function Admin() {
     // não o PRO de R$ 99. O badge evita confundir o assinante PRO.
     { id: 'sofia_whatsapp', icone: '📲', label: 'Sofia WhatsApp & QR Code', badge: 'Automação · R$ 450+' },
     { id: 'administrador', icone: '📈', label: 'Diretor Comercial IA' },
-    { id: 'contador', icone: '🏛️', label: 'Assistente Fiscal' },
-    { id: 'juridico_imobi', icone: '⚖️', label: 'Assistente Jurídico' },
+    { id: 'contador', icone: '🏛️', label: 'Simulador de Custos' },
+    { id: 'juridico_imobi', icone: '⚖️', label: 'Minutas & Checklist' },
   ];
 
   const botoesBloco3Gestao = [
@@ -1934,7 +1934,7 @@ export default function Admin() {
   ];
 
   const ABAS_ASSISTENTE_FISCAL = [
-    { key: 'contador', label: 'Assistente Fiscal', icone: Calculator, descricao: 'Impostos, regime e obrigações' },
+    { key: 'contador', label: 'Simulador de Custos', icone: Calculator, descricao: 'Estimativa de custo, tributo e comissão' },
     { key: 'notafiscal', label: 'Repasses & NF', icone: Receipt, descricao: 'Notas, repasses e comissões' },
   ];
 
@@ -1973,7 +1973,7 @@ export default function Admin() {
           <SafeBoundary
             fallback={
               <div className="rounded-2xl border border-white/[0.06] bg-white/[0.015] p-8 text-center text-xs text-slate-500">
-                Assistente Fiscal indisponível no momento.
+                Simulador de Custos indisponível no momento.
               </div>
             }
           >
@@ -2749,13 +2749,13 @@ export default function Admin() {
           />
         )}
 
-        {/* ─── ASSISTENTE FISCAL (aba interna: Repasses & NF) ─────────────────
+        {/* ─── SIMULADOR DE CUSTOS (aba interna: Repasses & NF) ───────────────
             Lote 3 — `Repasses & NF` deixou de ser botão solto na barra PRO e
-            virou aba interna do Assistente Fiscal. A rota `notafiscal`
+            virou aba interna do Simulador de Custos. A rota `notafiscal`
             continua válida para links diretos. */}
         {(abaAtiva === 'contador' || abaAtiva === 'notafiscal') && (
           <ModuloComAbas
-            titulo="Assistente Fiscal"
+            titulo="Simulador de Custos"
             abaInicial={abaAtiva === 'notafiscal' ? 'notafiscal' : 'contador'}
             abas={ABAS_ASSISTENTE_FISCAL}
             childrenMap={childrenAssistenteFiscal}

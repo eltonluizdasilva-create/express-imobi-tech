@@ -521,7 +521,7 @@ export default function Admin() {
     pneus: 'Pneus', desmanche: 'Desmanche', escapamento: 'Escapamento',
     lavajato: 'Lava Jato', estetica: 'Estética',
     copiloto: 'Copiloto IA', secretaria: 'Secretária IA', administrador: 'Administrador IA',
-    contador: 'Assistente Fiscal IA', fechamento_caixa: 'Fechamento de Caixa', pagamentos_equipe: 'Gestão de Equipe/Pagamentos',
+    contador: 'Simulador de Custos IA', fechamento_caixa: 'Fechamento de Caixa', pagamentos_equipe: 'Gestão de Equipe/Pagamentos',
   };
 
   const dispararLembreteOleo = (os) => {

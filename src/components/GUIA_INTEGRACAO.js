@@ -197,7 +197,7 @@ function QuickTips({ contexto }) {
         ],
         financeiro: [
             "Como aumentar minha margem?",
-            "Qual é o Assistente Fiscal?",
+            "Qual é o Simulador de Custos?",
         ],
         estoque: [
             "Quais peças estão paradas?",

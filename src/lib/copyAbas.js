@@ -81,11 +81,11 @@ export const DOR_SOLUCAO = {
   },
   contador: {
     dor: 'Medo de errar cálculo de imposto, ganho de capital ou emissão de nota na venda?',
-    ganho: 'Orientação tributária imobiliária na hora para fechar negócios sem susto com a Receita.',
+    ganho: 'Estimativa referencial de custo e tributo na hora, com premissas claras — para conferir com o contador antes de emitir qualquer guia.',
   },
   juridico_imobi: {
     dor: 'Contrato travado por cláusula duvidosa ou insegurança na documentação do imóvel?',
-    ganho: 'Análise rápida de cláusulas, distrato e matrícula para dar segurança jurídica ao fechamento.',
+    ganho: 'Rascunho de cláusula, notificação e checklist com a lei citada — para o advogado revisar mais rápido.',
   },
   equipe: {
     dor: 'Você não sabe quem está produzindo e quem só ocupa lugar.',

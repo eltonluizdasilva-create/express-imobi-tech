@@ -34,7 +34,7 @@ export const LABELS_ABAS_MODAL = {
     copiloto: 'Hermes Copiloto IA',
     secretaria: 'Sofia Secretária IA',
     administrador: 'Diretor Comercial IA',
-    contador: 'Assistente Fiscal IA',
+    contador: 'Simulador de Custos IA',
 };
 
 export const LABELS_ABAS = {

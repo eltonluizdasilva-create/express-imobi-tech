@@ -488,8 +488,8 @@ export default function Home() {
           </div>
 
           <p className="mt-6 text-[12px] text-slate-500">
-            No plano PRO você também conta com os assistentes de gestão: Diretor Comercial IA, Assistente Fiscal e
-            Assistente Jurídico (Lei do Inquilinato) para apoiar as decisões do dia a dia.
+            No plano PRO você também conta com os assistentes de gestão: Diretor Comercial IA, Simulador de Custos e
+            Minutas & Checklist (Lei do Inquilinato) — rascunho operacional, com revisão obrigatória de contador (CRC) e advogado (OAB).
           </p>
         </div>
       </section>

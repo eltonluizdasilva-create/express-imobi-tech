@@ -102,6 +102,66 @@ service cloud.firestore {
         && resource.data.plano.lower() in ['pro', 'profissional', 'esquadrao_ia', 'premium', 'pago', 'master', 'prime', 'planoprimeia'];
     }
 
+    // --------------------- cadastro self-service -----------------------------
+    // MOTIVO (2026-11-20): o cadastro gravava `trialInicio`/`trialFim` com o
+    // relógio do CLIENTE e a regra exigia `trialFim <= request.time + 252h`.
+    // Medido no Emulator: PC adiantado +13h → permission-denied; PC atrasado
+    // 11 dias → permission-denied. O usuário via "Missing or insufficient
+    // permissions" num cadastro legítimo.
+    // A âncora agora é o próprio `trialInicio` (tolerância de ±72h para relógio)
+    // e o teto continua 10 dias + 12h, contados a partir dele. Quem tentar
+    // esticar o trial além disso é negado.
+    function trialInicioTolerado() {
+      return !request.resource.data.keys().hasAny(['trialInicio'])
+        || (
+          request.resource.data.trialInicio is timestamp
+          && request.resource.data.trialInicio > request.time - duration.value(480, 'h')
+          && request.resource.data.trialInicio < request.time + duration.value(72, 'h')
+        );
+    }
+
+    function trialFimTolerado() {
+      return !request.resource.data.keys().hasAny(['trialFim'])
+        || (
+          request.resource.data.trialFim is timestamp
+          && request.resource.data.trialFim
+            > request.resource.data.get('trialInicio', request.time)
+          && request.resource.data.trialFim
+            <= request.resource.data.get('trialInicio', request.time) + duration.value(252, 'h')
+          // Teto absoluto no relógio do servidor: nem com relógio adiantado o
+          // trial passa de 14 dias corridos a partir de agora.
+          && request.resource.data.trialFim <= request.time + duration.value(336, 'h')
+        );
+    }
+
+    // Plano de nascimento: só as grafias do degrau Gratuito. Nenhum plano pago
+    // entra por aqui — 'pro', 'profissional', 'essencial_plus' e 'esquadrao_ia'
+    // ficam de fora e continuam exigindo Cloud Function.
+    function planoGratuitoValido() {
+      return request.resource.data.plano is string
+        && request.resource.data.plano.lower() in ['gratuito', 'gratis', 'grátis', 'free'];
+    }
+
+    // Módulos iniciais: aceita o trio do Auto Tech (OS/óleo/alinhamento), o
+    // conjunto do Imobi Tech e a lista vazia de quem só abre o painel.
+    function modulosIniciaisValidos() {
+      return !request.resource.data.keys().hasAny(['modulosAtivos'])
+        || (
+          request.resource.data.modulosAtivos is list
+          && request.resource.data.modulosAtivos.size() <= 30
+          && request.resource.data.modulosAtivos.hasOnly([
+            'os', 'oleo', 'alinhamento', 'retorno', 'estoque', 'financeiro',
+            'equipe', 'oficina', 'leads', 'config', 'dashboard_imobi',
+            'captacao_imobi', 'funil_leads', 'visitas_imobi', 'agentes_ia',
+            'whatsapp_hub', 'meuplano', 'ajuda', 'historico', 'marketing',
+            'clientes', 'tarefa', 'notafiscal', 'migracao',
+            'acompanhamento_cliente', 'copiloto', 'secretaria', 'administrador',
+            'roleta_imobi', 'avaliacao_imovel', 'credito', 'radar_captacao',
+            'contador', 'juridico_imobi'
+          ])
+        );
+    }
+
     // ---------- whitelists do portal público (fluxos separados) ----------
     // Lead imobiliário — payload exato de PortalCliente.jsx:124-135.
     // Nenhum campo fora desta lista entra, e nenhum campo do fluxo genérico
@@ -196,13 +256,17 @@ service cloud.firestore {
       // AuthContext.jsx realmente enviam — nada fora desta lista é aceito.
       allow create: if authed() && request.auth.uid == uid
         && request.resource.data.keys()
-          .hasOnly(['uid', 'oficinaId', 'nome', 'email', 'papel', 'permissoes', 'criadoEm'])
+          .hasOnly(['uid', 'oficinaId', 'nome', 'email', 'papel', 'permissoes', 'criadoEm', 'telefone', 'onboardingFeito'])
         && request.resource.data.uid == uid
         && request.resource.data.oficinaId == uid
         && request.resource.data.email is string
         && request.resource.data.email.size() <= 120
         && (!request.resource.data.keys().hasAny(['nome'])
           || (request.resource.data.nome is string && request.resource.data.nome.size() <= 120))
+        && (!request.resource.data.keys().hasAny(['telefone'])
+          || (request.resource.data.telefone is string && request.resource.data.telefone.size() <= 20))
+        && (!request.resource.data.keys().hasAny(['onboardingFeito'])
+          || request.resource.data.onboardingFeito is bool)
         && (
           request.resource.data.get('papel', 'dono') == 'dono'
           || (request.resource.data.get('papel', '') == 'master' && isAdminPlataforma())
@@ -258,10 +322,10 @@ service cloud.firestore {
         && request.resource.data.keys().hasOnly([
           'uid', 'nomeOficina', 'nome', 'cidade', 'telefone', 'email', 'plano', 'isPro',
           'nivelInteligencia', 'trialInicio', 'trialFim', 'ativo', 'criadoEm',
-          'modulosAtivos'
+          'modulosAtivos', 'segmento'
         ])
         && request.resource.data.uid == oid
-        && request.resource.data.plano in ['GRATUITO', 'gratis', 'gratuito', 'grátis']
+        && planoGratuitoValido()
         && (!request.resource.data.keys().hasAny(['isPro'])
           || request.resource.data.isPro == false)
         // nível de IA só nasce no padrão; upgrade é update (M4) ou Cloud Function
@@ -284,25 +348,18 @@ service cloud.firestore {
         && (!request.resource.data.keys().hasAny(['email'])
           || (request.resource.data.email is string
               && request.resource.data.email.size() <= 160))
-        // Trial: 10 dias + 12h de folga (252h) para relógio do cliente.
-        && (!request.resource.data.keys().hasAny(['trialInicio'])
-          || request.resource.data.trialInicio is timestamp)
+        && (!request.resource.data.keys().hasAny(['segmento'])
+          || (request.resource.data.segmento is string
+              && request.resource.data.segmento.size() <= 40))
+        // Trial de 10 dias: a regra confere o QUE O CLIENTE ESCREVEU entre si
+        // (fim - início <= 252h) com ±72h de tolerância no início, para não
+        // negar cadastro por relógio de máquina adiantado/atrasado.
+        && trialInicioTolerado()
         && (!request.resource.data.keys().hasAny(['criadoEm'])
           || request.resource.data.criadoEm is timestamp)
-        && (!request.resource.data.keys().hasAny(['trialFim'])
-          || (
-            request.resource.data.trialFim is timestamp
-            && request.resource.data.trialFim > request.time
-            && request.resource.data.trialFim <= request.time + duration.value(252, 'h')
-          ))
-        // Módulos do cadastro: exatamente o trio Auto Tech do trial.
-        && (!request.resource.data.keys().hasAny(['modulosAtivos'])
-          || (
-            request.resource.data.modulosAtivos is list
-            && request.resource.data.modulosAtivos.size() > 0
-            && request.resource.data.modulosAtivos.size() <= 3
-            && request.resource.data.modulosAtivos.hasOnly(['os', 'oleo', 'alinhamento'])
-          ));
+        && trialFimTolerado()
+        // Módulos iniciais: trio do Auto Tech, conjunto do Imobi ou lista vazia.
+        && modulosIniciaisValidos();
 
       // Qualquer alteracao de nivelInteligencia exige plano PRO, mesmo quando
       // combinada com outros campos (hasOnly(['nivelInteligencia']) permitia

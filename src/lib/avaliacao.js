@@ -286,20 +286,77 @@ export function gerarResumoComercial(dados = {}, av = {}) {
 
 /* --------------------- documento oficial (PTAM) --------------------- */
 
+/**
+ * Identidade do documento conforme QUEM ASSINA.
+ *
+ * PTAM é prerrogativa de corretor inscrito no CRECI (Lei 6.530/78 e Resolução
+ * COFECI nº 1.066/2007). Sem nome + CRECI preenchidos pelo próprio corretor, o
+ * que sai do sistema NÃO é PTAM nem laudo: é "Estudo Estimativo de Valor de
+ * Mercado", com ressalva explícita de que não há responsável técnico.
+ *
+ * Regra de ouro: nenhum PDF/tela pode se chamar laudo ou PTAM sem esses dados.
+ */
+export function identidadeDocumento(dados = {}) {
+  const creci = String(dados.creci || '').trim();
+  const nome = String(dados.corretorNome || '').trim();
+  const cnai = formatarCnai(dados.cnai);
+  const temResponsavel = Boolean(creci && nome);
+
+  if (temResponsavel) {
+    return {
+      temResponsavel: true,
+      titulo: 'PARECER TÉCNICO DE AVALIAÇÃO MERCADOLÓGICA — PTAM',
+      subtitulo: 'Resolução COFECI nº 1.066/2007 · ABNT NBR 14.653-2',
+      assinatura: [
+        '_______________________________________',
+        nome,
+        `CRECI ${creci}${cnai ? ` · ${cnai}` : ''}`,
+      ],
+      ressalvas: [
+        'Este parecer é mercadológico, emitido por corretor de imóveis regular no CRECI, no exercício da prerrogativa da Lei 6.530/78 e da Resolução COFECI 1.066/2007.',
+        'Não substitui laudo de avaliação de engenharia, que exige ART (CREA) ou RRT (CAU), nem vistoria estrutural.',
+      ],
+      rodape:
+        'Documento gerado pelo Express Imobi Tech · PTAM conforme Resolução COFECI 1.066/2007 · ABNT NBR 14.653',
+    };
+  }
+
+  return {
+    temResponsavel: false,
+    titulo: 'ESTUDO ESTIMATIVO DE VALOR DE MERCADO',
+    subtitulo:
+      'Estimativa referencial de valor — NÃO é PTAM, NÃO é laudo de avaliação e NÃO serve para garantia, financiamento ou decisão judicial.',
+    assinatura: [
+      '_______________________________________',
+      'Documento sem responsável técnico identificado',
+      'Nome e CRECI do corretor não informados',
+    ],
+    ressalvas: [
+      'ESTE DOCUMENTO NÃO É PTAM E NÃO É LAUDO. É estudo estimativo gerado por método comparativo, sem responsável técnico identificado.',
+      'Para virar PTAM, o corretor inscrito no CRECI precisa preencher nome e nº do CRECI (e CNAI, quando houver) na aba Avaliação de Imóvel e reemitir o documento.',
+      'Não substitui laudo de engenharia (ART/CREA ou RRT/CAU), vistoria estrutural, nem avaliação de instituição financeira.',
+    ],
+    rodape:
+      'Documento gerado pelo Express Imobi Tech · ESTUDO ESTIMATIVO DE VALOR DE MERCADO · não é PTAM nem laudo',
+  };
+}
+
 export function gerarPTAM(dados = {}, av = {}) {
   const hoje = new Date().toLocaleDateString('pt-BR');
   const finalidade = (FINALIDADES_PTAM.find((f) => f.key === dados.finalidade) || FINALIDADES_PTAM[0]).label;
   const amostras = av.homogeneizacao?.itens || [];
+  const doc = identidadeDocumento(dados);
 
   return [
-    'PARECER TÉCNICO DE AVALIAÇÃO MERCADOLÓGICA — PTAM',
-    'Resolução COFECI nº 1.066/2007 · ABNT NBR 14.653-2',
+    doc.titulo,
+    doc.subtitulo,
     '',
     '1. IDENTIFICAÇÃO DAS PARTES',
     `Avaliador: ${dados.corretorNome || '—'}`,
     `CRECI: ${dados.creci || '—'}${formatarCnai(dados.cnai) ? ` · ${formatarCnai(dados.cnai)}` : ''}`,
     `Solicitante / Proprietário: ${dados.solicitante || '—'}`,
     `Finalidade da avaliação: ${finalidade}`,
+    ...(doc.temResponsavel ? [] : ['', 'ATENÇÃO: documento SEM responsável técnico identificado — ver ressalvas no item 7.']),
     '',
     '2. CARACTERIZAÇÃO DO IMÓVEL',
     `Tipo: ${av.tipologia?.label} · Cidade: ${av.cidade} · Bairro: ${av.bairro} · UF: ${av.uf}`,
@@ -338,32 +395,32 @@ export function gerarPTAM(dados = {}, av = {}) {
     `Prazo estimado de venda: ${av.prazoMedioDias} dias`,
     '',
     '7. RESSALVAS',
-    'Este parecer é mercadológico, emitido por corretor de imóveis regular no CRECI, no exercício da prerrogativa da Lei 6.530/78 e da Resolução COFECI 1.066/2007.',
-    'Não substitui laudo de avaliação de engenharia, que exige ART (CREA) ou RRT (CAU), nem vistoria estrutural.',
+    ...doc.ressalvas,
     ...(av.alertas || []).map((a) => `• ${a}`),
     '',
     `${dados.cidade || av.cidade}, ${hoje}.`,
     '',
-    '_______________________________________',
-    `${dados.corretorNome || 'Corretor de Imóveis'}`,
-    `CRECI ${dados.creci || '—'}${formatarCnai(dados.cnai) ? ` · ${formatarCnai(dados.cnai)}` : ''}`,
+    ...doc.assinatura,
   ].filter((l) => l !== null).join('\n');
 }
 
 /** HTML limpo do documento (para imprimir/PDF). */
 export function gerarDocumentoHtmlPTAM(dados = {}, av = {}) {
   const texto = gerarPTAM(dados, av);
+  const doc = identidadeDocumento(dados);
   const esc = (s) => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;');
   return `<!DOCTYPE html>
-<html lang="pt-BR"><head><meta charset="utf-8"><title>PTAM — ${esc(dados.solicitante || 'Imóvel')}</title>
+<html lang="pt-BR"><head><meta charset="utf-8"><title>${esc(doc.titulo)} — ${esc(dados.solicitante || 'Imóvel')}</title>
 <style>
   @page { size: A4; margin: 22mm 18mm; }
   body { font-family: Georgia, 'Times New Roman', serif; color: #111; line-height: 1.55; font-size: 12pt; }
   pre { white-space: pre-wrap; font-family: inherit; margin: 0; }
   .rodape { margin-top: 18px; font-size: 9pt; color: #555; border-top: 1px solid #ccc; padding-top: 6px; }
+  .alerta { margin-bottom: 14px; border: 1px solid #b45309; background: #fef3c7; color: #7c2d12;
+            padding: 8px 10px; font-size: 9pt; font-family: Arial, sans-serif; }
 </style></head>
-<body><pre>${esc(texto)}</pre>
-<div class="rodape">Documento gerado pelo Express Imobi Tech · PTAM conforme Resolução COFECI 1.066/2007 · ABNT NBR 14.653</div>
+<body>${doc.temResponsavel ? '' : '<div class="alerta"><strong>ESTUDO ESTIMATIVO DE VALOR DE MERCADO.</strong> Documento sem responsável técnico identificado: não é PTAM, não é laudo de avaliação e não serve para garantia, financiamento ou decisão judicial.</div>'}<pre>${esc(texto)}</pre>
+<div class="rodape">${esc(doc.rodape)}</div>
 </body></html>`;
 }
 

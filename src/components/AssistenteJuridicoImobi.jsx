@@ -3,6 +3,8 @@ import React, { useState, useMemo } from 'react';
 import HeroAba from './admin/HeroAba';
 import SeletorUF from './ui/SeletorUF';
 import SucessaoPatrimonial from './imobi/SucessaoPatrimonial';
+import AceiteLegalGate from './admin/AceiteLegalGate';
+import { AVISO_JURIDICO } from '../lib/assistidos-legais';
 import {
   Scale,
   Search,
@@ -124,7 +126,7 @@ const BASE_CONHECIMENTO_JURIDICO = [
   },
 ];
 
-export default function AssistenteJuridicoImobi() {
+export default function AssistenteJuridicoImobi({ oficinaId }) {
   const [busca, setBusca] = useState('');
   const [perguntaIA, setPerguntaIA] = useState('');
   const [topicoSelecionado, setTopicoSelecionado] = useState(BASE_CONHECIMENTO_JURIDICO[0]);
@@ -190,6 +192,7 @@ export default function AssistenteJuridicoImobi() {
   const itemAtivo = respostaPersonalizada?.itemBase || topicoSelecionado || BASE_CONHECIMENTO_JURIDICO[0];
 
   return (
+    <AceiteLegalGate chave="juridico_imobi" oficinaId={oficinaId}>
     <div style={{ backgroundColor: '#020408' }} className="space-y-6 text-slate-100 font-sans">
       <SeletorUF />
 
@@ -202,9 +205,9 @@ export default function AssistenteJuridicoImobi() {
             <HeroAba
               flat
               icone={Scale}
-              chip="Assistente Fiscal & Jurídico · Lei nº 8.245/91"
-              titulo="Assistência Legal & Tributária"
-              subtitulo="Consultoria instantânea baseada na Lei do Inquilinato (Lei nº 8.245/91) e orientações fiscais automatizadas para transações imobiliárias seguras."
+              chip="Minutas & Checklist · Lei nº 8.245/91"
+              titulo="Minuta rápida, com a lei citada e o checklist do que falta"
+              subtitulo="Modelos de cláusula, notificação e checklist operacional com o dispositivo legal citado. É rascunho de trabalho: a revisão por advogado inscrito na OAB é obrigatória antes de usar com cliente."
               cor="#f43f5e"
             />
           </div>
@@ -226,7 +229,7 @@ export default function AssistenteJuridicoImobi() {
             <input
               value={perguntaIA}
               onChange={(e) => setPerguntaIA(e.target.value)}
-              placeholder="Digite sua dúvida jurídica (ex: Inquilino quer sair antes de 12 meses, qual a multa? / Infiltração no teto quem paga? / Venda de fazenda...)"
+              placeholder="Descreva a situação (ex: Inquilino quer sair antes de 12 meses — preciso da cláusula de multa / Infiltração no teto: quem responde / Venda de fazenda: documentos)"
               className="w-full bg-[#020408] border border-[#10b981]/50 focus:border-[#10b981] rounded-2xl pl-11 pr-4 py-3.5 text-sm text-white outline-none"
             />
           </div>
@@ -235,7 +238,7 @@ export default function AssistenteJuridicoImobi() {
             style={{ backgroundColor: '#10b981' }}
             className="px-6 py-3.5 rounded-2xl text-white font-black text-xs uppercase tracking-wider flex items-center justify-center gap-2 hover:opacity-90 transition cursor-pointer shadow-lg shadow-[#10b981]/25"
           >
-            <Sparkles size={16} /> Consultar Base Legal
+            <Sparkles size={16} /> Buscar minuta e checklist
           </button>
         </form>
       </div>
@@ -320,7 +323,7 @@ export default function AssistenteJuridicoImobi() {
             {/* Base Legal Explicada */}
             <div className="bg-[#020408] border border-slate-800 rounded-2xl p-4 space-y-2">
               <span className="text-xs font-extrabold uppercase text-[#10b981] block">
-                1. O que diz a Lei (Fundamentação Jurídica)
+                1. O que a lei diz (referência do rascunho)
               </span>
               <p className="text-xs text-slate-200 leading-relaxed">{itemAtivo.resumoRegra}</p>
             </div>
@@ -339,7 +342,7 @@ export default function AssistenteJuridicoImobi() {
             <div className="bg-[#020408] border border-[#10b981]/40 rounded-2xl p-4 space-y-3">
               <div className="flex flex-wrap items-center justify-between gap-2">
                 <span className="text-xs font-extrabold uppercase text-[#10b981]">
-                  3. Cláusula / Comunicado Pronto para Contrato ou WhatsApp
+                  3. Rascunho de cláusula / comunicado (revisão do advogado antes de usar)
                 </span>
                 <div className="flex items-center gap-2">
                   <button
@@ -356,7 +359,7 @@ export default function AssistenteJuridicoImobi() {
                     onClick={() =>
                       window.open(
                         `https://api.whatsapp.com/send?text=${encodeURIComponent(
-                          `⚖️ *ORIENTAÇÃO JURÍDICA IMOBILIÁRIA (${itemAtivo.baseLegal})*\n\n${itemAtivo.clausulaMinuta}`
+                          `📝 *RASCUNHO OPERACIONAL — REVISÃO OBRIGATÓRIA POR ADVOGADO (OAB)*\nReferência: ${itemAtivo.baseLegal}\n\n${itemAtivo.clausulaMinuta}\n\n⚠️ ${AVISO_JURIDICO}`
                         )}`,
                         '_blank'
                       )
@@ -378,11 +381,14 @@ export default function AssistenteJuridicoImobi() {
           <div className="bg-[#020408] border border-amber-500/40 rounded-2xl p-3.5 flex items-start gap-2.5 text-[11px] text-slate-300">
             <ShieldAlert size={16} className="text-amber-400 shrink-0 mt-0.5" />
             <span>
-              <strong className="text-amber-400">Aviso Legal:</strong> As orientações e minutas geradas por este assistente têm caráter de apoio operacional ao corretor com base na Lei nº 8.245/91 e no Código Civil, devendo ser validadas pelo departamento jurídico ou advogado habilitado em casos litigiosos.
+              <strong className="text-amber-400">Aviso obrigatório:</strong> {AVISO_JURIDICO} O texto
+              abaixo é modelo, não parecer: não afirma nulidade, não decide litígio e não substitui
+              advogado inscrito na OAB.
             </span>
           </div>
         </div>
       </div>
     </div>
+    </AceiteLegalGate>
   );
 }

@@ -4,6 +4,7 @@ import {
   Wallet, Camera, Home, AlertTriangle, Loader2, Award,
 } from 'lucide-react';
 import { classificarScore, PESOS_AGENTES } from '../../hooks/useLaudoImobi.js';
+import { identidadeDocumento } from '../../lib/avaliacao.js';
 import { CATEGORIAS_ENTORNO } from '../../services/vizinhancaService.js';
 
 const card = 'bg-[#020408] border border-slate-800 rounded-3xl';
@@ -45,8 +46,11 @@ function BarraDias({ rotulo, dias, maximo, cor }) {
 
 export default function LaudoExecutivo({
   laudo, meta, vizinhanca, analiseFotos, avaliacao, valorPedido, dados,
-  carregando, fase, erro,
+  carregando, fase, erro, identidade,
 }) {
+  // Rótulo do documento: PTAM só com nome + CRECI do corretor; caso contrário,
+  // estudo estimativo (ver lib/avaliacao.js → identidadeDocumento).
+  const doc = identidade || identidadeDocumento(dados || {});
   const [copiado, setCopiado] = useState('');
 
   const score = Number(laudo?.scoreImobi) || 0;
@@ -80,7 +84,7 @@ export default function LaudoExecutivo({
       <h3>${titulo} <span class="peso">peso ${Math.round(peso * 100)}% · nota ${nota}/100</span></h3>
       <p>${texto || '—'}</p>`;
     janela.document.write(`<!DOCTYPE html><html lang="pt-BR"><head><meta charset="utf-8">
-      <title>Laudo Executivo — ${dados?.cidade || ''}</title>
+      <title>${doc.titulo} — ${dados?.cidade || ''}</title>
       <style>
         *{box-sizing:border-box} body{font-family:Segoe UI,Arial,sans-serif;color:#111;margin:32px;font-size:12px;line-height:1.5}
         h1{font-size:20px;margin:0 0 4px} h2{font-size:14px;margin:22px 0 8px;border-bottom:2px solid #10b981;padding-bottom:4px}
@@ -96,19 +100,21 @@ export default function LaudoExecutivo({
       </style></head><body>
       <div class="topo">
         <div>
-          <h1>Laudo Executivo — Avaliação Imobiliária</h1>
-          <div class="mini">Express Imobi Tech · PTAM ABNT NBR 14.653 · ${dados?.cidade || '—'}/${dados?.uf || '—'} · ${dados?.bairro || '—'}</div>
+          <h1>{doc.temResponsavel ? 'Laudo Executivo — PTAM' : 'Estudo Estimativo de Valor de Mercado'}</h1>
+          <div class="mini">Express Imobi Tech · {doc.temResponsavel ? 'PTAM ABNT NBR 14.653' : 'estudo estimativo — NÃO é PTAM nem laudo'} · {dados?.cidade || '—'}/{dados?.uf || '—'} · {dados?.bairro || '—'}</div>
           <div class="mini">Gerado em ${new Date().toLocaleString('pt-BR')} · modelo ${meta?.modelo || '—'}</div>
         </div>
         <div style="text-align:right"><div class="score">${score}<span style="font-size:13px">/100</span></div><div class="mini">${classe.rotulo}</div></div>
       </div>
+
+      ${doc.temResponsavel ? '' : '<div style="margin-top:10px;border:1px solid #b45309;background:#fef3c7;color:#7c2d12;padding:8px 10px;border-radius:6px;font-size:11px"><strong>ESTUDO ESTIMATIVO DE VALOR DE MERCADO.</strong> Sem nome e CRECI do corretor: não é PTAM, não é laudo e não serve para garantia, financiamento ou decisão judicial.</div>'}
 
       <h2>1. Resumo executivo</h2>
       <p>${laudo?.resumoExecutivo || '—'}</p>
 
       <div class="grid">
         <div class="box"><strong>Valor pedido</strong><br>${brl(valorPedido)}</div>
-        <div class="box"><strong>Valor justo (PTAM)</strong><br>${brl(a1.valorJustoRecomendado || avaliacao?.valorJusto)}</div>
+        <div class="box"><strong>Valor justo ${doc.temResponsavel ? '(PTAM)' : '(estimado)'}</strong><br>${brl(a1.valorJustoRecomendado || avaliacao?.valorJusto)}</div>
         <div class="box"><strong>Faixa de mercado</strong><br>${brl(a1.faixaMinima)} a ${brl(a1.faixaMaxima)}</div>
         <div class="box"><strong>Diferença do pedido</strong><br>${pct(a1.diferencaPercentualPedido)}</div>
         <div class="box"><strong>Aluguel estimado</strong><br>${brl(a2.aluguelMensal)}/mês</div>
@@ -118,7 +124,7 @@ export default function LaudoExecutivo({
       </div>
 
       <h2>2. Parecer dos 5 agentes</h2>
-      ${bloco('Agente 1 — Comparáveis & PTAM', PESOS_AGENTES.comparaveis, a1.nota, a1.analise)}
+      ${bloco('Agente 1 — Comparáveis & valor de referência', PESOS_AGENTES.comparaveis, a1.nota, a1.analise)}
       ${bloco('Agente 2 — Investimento & Renda', PESOS_AGENTES.investimento, a2.nota, a2.comparativo)}
       ${bloco('Agente 3 — Bairro & Infraestrutura', PESOS_AGENTES.bairro, a3.nota, a3.analise)}
       ${bloco('Agente 4 — Liquidez & Tempo de Venda', PESOS_AGENTES.liquidez, a4.nota, a4.analise)}

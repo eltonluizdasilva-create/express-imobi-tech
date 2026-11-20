@@ -52,7 +52,7 @@ export default function MenuNavegacao({
     // `sofia_whatsapp`; as rotas antigas continuam válidas para links diretos.
     { id: 'sofia_whatsapp', label: 'SOFIA WHATSAPP', icon: PhoneCall },
     { id: 'administrador', label: 'ADMINISTRADOR', icon: UserX },
-    { id: 'contador', label: 'ASSIST. FISCAL', icon: Calculator },
+    { id: 'contador', label: 'SIMULADOR CUSTOS', icon: Calculator },
     { id: 'retorno', label: 'RETORNO', icon: RotateCcw },
     { id: 'estrategia', label: 'ESTRATÉGIA', icon: Award },
     { id: 'youtube', label: 'YOUTUBE AGENT', icon: Youtube },

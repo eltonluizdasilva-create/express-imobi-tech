@@ -1,10 +1,12 @@
 /* eslint-disable react/prop-types */
 import React, { useState } from "react";
 import HeroAba from './admin/HeroAba';
+import AceiteLegalGate from './admin/AceiteLegalGate';
+import { AVISO_FISCAL } from '../lib/assistidos-legais';
 import {
     Calculator, Receipt, TrendingUp, TrendingDown,
     Trash2, Send, Copy, CheckCircle, ScanLine,
-    Landmark, PiggyBank, Sparkles, FileText, DollarSign
+    Landmark, PiggyBank, Sparkles, FileText, DollarSign, ShieldAlert
 } from "lucide-react";
 
 const STYLES = {
@@ -60,16 +62,17 @@ export default function Contador({ oficinaId }) {
         const valorNum = parseFloat(recValor.replace(',', '.')).toFixed(2);
         const dataAtual = new Date().toLocaleDateString('pt-BR');
 
-        const recibo = `🧾 *RECIBO DE COMISSÃO / SINAL IMOBILIÁRIO*\n\nRecebemos de *${recCliente}* a quantia de *R$ ${valorNum}* referente a:\n🏢 ${recServico}\n\nData: ${dataAtual}\n\nExpress Imobi Tech — Gestão Imobiliária & VGV! 📱`;
+        const recibo = `🧾 *RECIBO DE COMISSÃO / SINAL IMOBILIÁRIO*\n\nRecebemos de *${recCliente}* a quantia de *R$ ${valorNum}* referente a:\n🏢 ${recServico}\n\nData: ${dataAtual}\n\nExpress Imobi Tech — Gestão Imobiliária & VGV! 📱\n\n⚠️ ${AVISO_FISCAL}`;
         setReciboGerado(recibo);
     };
 
     return (
+        <AceiteLegalGate chave="contador" oficinaId={oficinaId}>
         <div className="bg-black min-h-screen text-zinc-100 p-4 md:p-8 pb-40">
             <div className="max-w-7xl mx-auto">
 
-                {/* HEADER DO CONTADOR */}
-                <div className="bg-gradient-to-r from-amber-600 to-orange-500 rounded-[2rem] p-8 mb-10 shadow-[0_0_40px_rgba(245,158,11,0.2)] flex flex-col md:flex-row items-center justify-between gap-6">
+                {/* CABEÇALHO DO SIMULADOR DE CUSTOS */}
+                <div className="bg-gradient-to-r from-amber-600 to-orange-500 rounded-[2rem] p-8 mb-6 shadow-[0_0_40px_rgba(245,158,11,0.2)] flex flex-col md:flex-row items-center justify-between gap-6">
                     <div className="flex items-center gap-6">
                         <div className="p-5 bg-black/20 rounded-2xl backdrop-blur-sm">
                             <Calculator className="text-white" size={48} />
@@ -78,13 +81,21 @@ export default function Contador({ oficinaId }) {
                             <HeroAba
                                 flat
                                 icone={Calculator}
-                                chip="Assistência Fiscal & Tributária"
-                                titulo="Impostos e obrigações do corretor, sem susto."
-                                subtitulo="Apuração de IR, carnê-leão, DARF e organização fiscal das comissões — com o cálculo explicado passo a passo."
+                                chip="Simulador de Custos · comissão, tributo e caixa"
+                                titulo="Simule o custo antes de fechar o negócio."
+                                subtitulo="Estimativa referencial de comissão, caixa e tributos, com memória de cálculo. Não é parecer contábil: a conferência por contador inscrito no CRC é obrigatória antes de emitir guia ou recibo fiscal."
                                 cor="#f97316"
                             />
                         </div>
                     </div>
+                </div>
+
+                {/* Tarja de escopo — visível sem precisar expandir nada */}
+                <div className="mb-8 flex items-start gap-2.5 rounded-2xl border border-amber-500/40 bg-amber-500/[0.06] p-4 text-[11px] text-zinc-300">
+                    <ShieldAlert size={16} className="mt-0.5 shrink-0 text-amber-400" />
+                    <span>
+                        <strong className="text-amber-400">Estimativa referencial:</strong> {AVISO_FISCAL}
+                    </span>
                 </div>
 
                 {/* 💰 DASHBOARD RÁPIDO DO CAIXA */}
@@ -222,5 +233,6 @@ export default function Contador({ oficinaId }) {
 
             </div>
         </div>
+        </AceiteLegalGate>
     );
 }

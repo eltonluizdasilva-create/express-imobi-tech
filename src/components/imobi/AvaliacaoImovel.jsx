@@ -13,7 +13,7 @@ import LaudoExecutivo from './LaudoExecutivo';
 import useLaudoImobi, { comprimirImagem, CDI_PADRAO, FII_TIJOLO_PADRAO } from '../../hooks/useLaudoImobi.js';
 import { raioXDaVizinhanca } from '../../services/vizinhancaService.js';
 import {
-  avaliarImovel, gerarPTAM, gerarResumoComercial, gerarDocumentoHtmlPTAM,
+  avaliarImovel, gerarPTAM, gerarResumoComercial, gerarDocumentoHtmlPTAM, identidadeDocumento,
   TIPOLOGIAS, PADROES, ESTADOS_CONSERVACAO, TOPOGRAFIAS, CONDICOES_TESTADA, FINALIDADES_PTAM,
 } from '../../lib/avaliacao';
 
@@ -79,6 +79,7 @@ export default function AvaliacaoImovel() {
 
   const resumo = useMemo(() => gerarResumoComercial(dadosEmissao, avaliacao), [dadosEmissao, avaliacao]);
   const documento = useMemo(() => gerarPTAM(dadosEmissao, avaliacao), [dadosEmissao, avaliacao]);
+  const identidade = useMemo(() => identidadeDocumento(dadosEmissao), [dadosEmissao]);
   const temArea = (Number(areaTotal) || 0) + (Number(areaConstruida) || 0) > 0;
 
   function alternarCondicao(key) {
@@ -103,7 +104,7 @@ export default function AvaliacaoImovel() {
   function imprimir() {
     const janela = window.open('', '_blank');
     if (!janela) {
-      alert('Permita pop-ups para gerar o PDF do parecer.');
+      alert('Permita pop-ups para gerar o PDF do documento.');
       return;
     }
     janela.document.write(gerarDocumentoHtmlPTAM(dadosEmissao, avaliacao));
@@ -167,8 +168,8 @@ export default function AvaliacaoImovel() {
         icone={Ruler}
         titulo="Avaliação de"
         destaque="Imóvel"
-        chip="PTAM · COFECI 1.066/2007 + ABNT NBR 14.653"
-        subtitulo="Comparativo direto com fatores de topografia e testada, três cenários de preço e parecer no padrão oficial para o proprietário."
+        chip={identidade.temResponsavel ? 'PTAM · COFECI 1.066/2007 + ABNT NBR 14.653' : 'Estudo Estimativo de Valor de Mercado'}
+        subtitulo="Comparativo direto com fatores de topografia e testada e três cenários de preço. Sem nome e CRECI do corretor preenchidos, a saída é Estudo Estimativo de Valor de Mercado — não é PTAM nem laudo."
         cor={corAba}
       />
 
@@ -179,15 +180,17 @@ export default function AvaliacaoImovel() {
         <Info size={15} className="mt-0.5 shrink-0 text-slate-500" />
         <p className="text-[11px] leading-relaxed text-slate-400">
           <strong className="text-slate-300">Base legal (Lei 6.530/78 e Resolução COFECI 1.066/2007):</strong>{' '}
-          todo corretor de imóveis regular no CRECI tem prerrogativa legal para emitir o PTAM
-          (Parecer Técnico de Avaliação Mercadológica). Laudos estruturais de engenharia exigem
-          ART/RRT (CREA/CAU).
+          o PTAM (Parecer Técnico de Avaliação Mercadológica) é prerrogativa do corretor inscrito no
+          CRECI e só sai com <strong className="text-slate-300">nome e CRECI preenchidos pelo próprio corretor</strong>.
+          Enquanto esses campos estiverem vazios, o documento sai como
+          <strong className="text-slate-300"> Estudo Estimativo de Valor de Mercado</strong>, sem valor de laudo.
+          Laudos estruturais de engenharia exigem ART/RRT (CREA/CAU).
         </p>
       </div>
 
       <GuiaDaAba
         titulo="Avaliação de Imóvel"
-        descricao="Preencha os dados do imóvel, a topografia e as condições da testada, e informe até 3 comparáveis. O motor homogeneíza (desconto de oferta 10% + peso por distância), aplica os fatores físicos e devolve três cenários, prazo e dois textos: resumo para WhatsApp e o PTAM oficial para imprimir."
+        descricao="Preencha os dados do imóvel, a topografia e as condições da testada, e informe até 3 comparáveis. O motor homogeneíza (desconto de oferta 10% + peso por distância), aplica os fatores físicos e devolve três cenários, prazo e dois textos: resumo para WhatsApp e o documento para imprimir — que é Estudo Estimativo de Valor de Mercado, e só vira PTAM quando o corretor preenche nome e CRECI."
       />
 
       <div className="grid gap-6 lg:grid-cols-5">
@@ -479,6 +482,7 @@ export default function AvaliacaoImovel() {
         vizinhanca={vizinhanca}
         analiseFotos={analiseFotos}
         avaliacao={avaliacao}
+        identidade={identidade}
         valorPedido={Number(valorPedido) || 0}
         dados={{ cidade, bairro, uf, padrao, estado }}
         carregando={gerandoLaudo || vizCarregando}
@@ -500,7 +504,7 @@ export default function AvaliacaoImovel() {
               onClick={() => setAbaSaida('ptam')}
               className={`flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-[10px] font-black uppercase tracking-widest transition ${abaSaida === 'ptam' ? 'bg-white text-slate-900' : 'text-slate-400 hover:text-slate-200'}`}
             >
-              <FileText size={12} /> Documento PTAM
+              <FileText size={12} /> {identidade.temResponsavel ? 'Documento PTAM' : 'Estudo de valor'}
             </button>
           </div>
 
@@ -521,14 +525,16 @@ export default function AvaliacaoImovel() {
         </div>
 
         <pre className="max-h-[420px] overflow-auto whitespace-pre-wrap rounded-2xl border border-slate-800 bg-slate-950/60 p-4 text-[11px] leading-relaxed text-slate-300">
-          {temArea ? (abaSaida === 'resumo' ? resumo : documento) : 'Informe a área do imóvel para gerar o parecer.'}
+          {temArea ? (abaSaida === 'resumo' ? resumo : documento) : 'Informe a área do imóvel para gerar o documento.'}
         </pre>
 
         <p className="mt-2 flex items-center gap-1.5 text-[10px] text-slate-500">
           <Sparkles size={11} />
           {abaSaida === 'resumo'
             ? 'Resumo curto para convencer na conversa — cita topografia, poste, bueiro e arrimo quando marcados.'
-            : 'Documento completo no padrão COFECI 1.066/2007, com partes, metodologia, fatores, amostras e bloco de assinatura.'}
+            : identidade.temResponsavel
+              ? 'PTAM no padrão COFECI 1.066/2007, com partes, metodologia, fatores, amostras e bloco de assinatura.'
+              : 'Estudo Estimativo de Valor de Mercado: mesmo cálculo, sem alegação de laudo. Preencha nome e CRECI para emitir PTAM.'}
         </p>
       </div>
     </div>

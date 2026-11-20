@@ -21,7 +21,7 @@ const NOMES_PLANOS = {
 };
 
 const IA_IDS = [
-  { id: 'contador', label: 'Assistente Fiscal' },
+  { id: 'contador', label: 'Simulador de Custos' },
   { id: 'copiloto', label: 'Copiloto IA' },
   { id: 'secretaria', label: 'Secretária IA' },
   { id: 'administrador', label: 'Administrador IA' },
@@ -101,7 +101,7 @@ export default function MasterPanel({ setPlanosGlobais }) {
     { key: 'copiloto', label: '🤖 Copiloto IA', grupo: 'Inteligência' },
     { key: 'secretaria', label: '👩‍💼 Secretária IA', grupo: 'Inteligência' },
     { key: 'administrador', label: '👔 Administrador IA', grupo: 'Inteligência' },
-    { key: 'contador', label: '🧾 Assistente Fiscal', grupo: 'Gestão' },
+    { key: 'contador', label: '🧾 Simulador de Custos', grupo: 'Gestão' },
     { key: 'financeiro', label: '💰 Financeiro', grupo: 'Gestão' },
     { key: 'clientes', label: '👥 Clientes/Leads', grupo: 'Gestão' },
     { key: 'marketing', label: '📣 Marketing', grupo: 'Gestão' },

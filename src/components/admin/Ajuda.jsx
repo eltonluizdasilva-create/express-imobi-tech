@@ -678,9 +678,9 @@ export default function BibliotecaTreinamento() {
 
         <div className="item-biblioteca">
           <div className="icone-box"><Calculator size={20} color="#00b894" /></div>
-          <div className="label-nome">📋 Assistente Fiscal</div>
+          <div className="label-nome">📋 Simulador de Custos</div>
           {renderBotaoVideo(links.assistente_fiscal)}
-          <div className="box-resumo">Suporte fiscal e organização. Apoio ao seu contador profissional.</div>
+          <div className="box-resumo">Estimativa de custo e tributo para a conversa comercial. Conferência do contador (CRC) é obrigatória.</div>
         </div>
 
         <div className="item-biblioteca">

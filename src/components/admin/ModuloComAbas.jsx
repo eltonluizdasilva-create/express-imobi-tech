@@ -7,7 +7,7 @@ import { ChevronRight } from 'lucide-react';
  * MOTIVO (Lote 3, 2026-11-20): a barra `PRO · ASSINANTES` tinha botões soltos
  * para telas que são, na prática, sub-telas de um mesmo assunto:
  *   • `Roleta de Leads`  → pertence ao Diretor Comercial IA (`administrador`)
- *   • `Repasses & NF`    → pertence ao Assistente Fiscal (`contador`)
+ *   • `Repasses & NF`    → pertence ao Simulador de Custos (`contador`)
  *
  * Este componente reúne as telas por dentro de um módulo, sem remover rota:
  *   • As chaves recebidas em `abas` renderizam aqui.
