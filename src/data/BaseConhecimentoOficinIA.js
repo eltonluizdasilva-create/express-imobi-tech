@@ -188,7 +188,7 @@ export const CONHECIMENTO_OFICINA_IA = {
         },
 
         NOTA_FISCAL: {
-            nome: "Recibos de Comissão & Assistente Fiscal",
+            nome: "Recibos de Comissão & Simulador de Custos",
             icone: "📄",
             descricao:
                 "Emissão de recibos de corretagem, controle de repasses e orientação tributária para corretores autônomos (CPF/ Carnê-Leão) e imobiliárias (CNPJ / Simples Nacional).",
@@ -198,7 +198,7 @@ export const CONHECIMENTO_OFICINA_IA = {
                 "Simulação de carga tributária (Pessoa Física vs. PJ Imobiliária)",
             ],
             assistente_fiscal: {
-                nome: "Assistente Fiscal Imobiliário",
+                nome: "Simulador de Custos Imobiliário",
                 descricao:
                     "Apoio informativo para organização contábil de comissões, DIMOB e redução legal de impostos.",
                 funcionalidades: [
