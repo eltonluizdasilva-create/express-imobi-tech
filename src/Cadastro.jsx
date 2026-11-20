@@ -119,7 +119,7 @@ export default function Cadastro() {
             CADASTRO REALIZADO!
           </h1>
           <p style={{ color: '#888', marginBottom: '30px', lineHeight: '1.6' }}>
-            Sua oficina tem <strong style={{ color: 'white' }}>15 dias grátis</strong> com acesso completo a todos os módulos de Inteligência Artificial.
+            Sua oficina tem <strong style={{ color: 'white' }}>10 dias grátis</strong> com acesso completo a todos os módulos de Inteligência Artificial.
           </p>
           <div style={{ background: '#111', padding: '20px', borderRadius: '10px', marginBottom: '30px', border: '1px solid #333' }}>
             <p style={{ color: '#888', fontSize: '12px', margin: '0 0 5px 0' }}>ACESSE COM</p>

@@ -20,18 +20,25 @@ export const WHATSAPP_COMERCIAL = dados.whatsappComercial;
 /* ------------------------------------------------------------------ */
 
 export const MODULOS_GRATIS = Object.freeze([...dados.modulos.gratis]);
+export const MODULOS_ESSENCIAL_PLUS = Object.freeze([
+  ...dados.modulos.gratis,
+  ...(dados.modulos.essencial_plus_extra || []),
+]);
 export const MODULOS_PROFISSIONAL = Object.freeze([
   ...dados.modulos.gratis,
+  ...(dados.modulos.essencial_plus_extra || []),
   ...dados.modulos.profissional_extra,
 ]);
 export const MODULOS_ESQUADRAO = Object.freeze([
   ...dados.modulos.gratis,
+  ...(dados.modulos.essencial_plus_extra || []),
   ...dados.modulos.profissional_extra,
   ...dados.modulos.esquadrao_extra,
 ]);
 
 const MODULOS_POR_PLANO = {
   gratis: MODULOS_GRATIS,
+  essencial_plus: MODULOS_ESSENCIAL_PLUS,
   profissional: MODULOS_PROFISSIONAL,
   esquadrao_ia: MODULOS_ESQUADRAO,
 };

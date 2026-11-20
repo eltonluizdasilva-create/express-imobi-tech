@@ -12,7 +12,8 @@
 | Item | Valor | Observação |
 |---|---|---|
 | Implantação / agentes de IA sob medida | **a partir de R$ 450** | piso comercial para filtrar lead e validar demanda B2B |
-| Implantação de operação WhatsApp dedicada (equipe 2–20+ corretores) | **a partir de R$ 497/mês** + taxa única de implantação | venda consultiva, fechamento com especialista |
+| Automação Sofia WhatsApp (atendente IA 24h, equipe 2–20+ corretores) | **a partir de R$ 450/mês** + taxa única de implantação | venda consultiva, fechamento com especialista |
+| Presença Digital & Tráfego | **setup R$ 690** + **gestão opcional R$ 490/mês** | Vitrine/Portal + Google Meu Negócio no setup; verba de anúncios à parte |
 
 O ticket de R$ 450 existe para **qualificar**, não para competir por preço. Abaixo disso, o custo de
 atendimento consome a margem.
@@ -21,9 +22,11 @@ atendimento consome a margem.
 
 | Plano | Preço | O que entrega |
 |---|---|---|
-| **Gratuito** | **R$ 0** para sempre | vitrine digital + portal público, CRM e funil, agenda, financeiro, estúdio de artes, 1 usuário |
-| **PRO** | **R$ 99/mês** (anual: **R$ 89/mês** — R$ 1.068/ano, economia de R$ 120) | tudo do gratuito + 7 agentes de IA, roleta de leads, vistoria IA, correspondente/crédito, portais XML, NFS-e, até 3 usuários |
-| **Operação completa** | sob proposta | equipe, usuários extras, instância dedicada, implantação assistida |
+| **Gratuito** | **R$ 0** para sempre | vitrine digital + portal público, CRM e funil, agenda, financeiro, estúdio de artes, **7 Agentes de IA (vitrine interativa — sem teto de uso implementado, ver D-20.24)**, 1 usuário |
+| **Essencial Plus** | **R$ 39,90/mês** | tudo do gratuito + **Propostas & Negócios** + **Meta Ads & Criativos**, até 2 usuários |
+| **PRO** | **R$ 99/mês** (anual: **R$ 89/mês** — R$ 1.068/ano, economia de R$ 120) | tudo do Essencial Plus + 7 agentes de IA, roleta de leads, vistoria IA, correspondente/crédito, portais XML, NFS-e, até 3 usuários |
+| **Automação Sofia WhatsApp** | **a partir de R$ 450/mês** + taxa única de implantação | atendente IA 24h conectada no WhatsApp oficial |
+| **Presença Digital & Tráfego** | **setup R$ 690** + **gestão de tráfego opcional R$ 490/mês** | Vitrine/Portal sincronizado + Google Meu Negócio (no setup); verba de anúncios paga à parte |
 
 Fonte única de verdade técnica: `shared/planos.json` (copiado para `functions/planos.json` por
 `scripts/sync-planos.cjs`). **Nunca** digitar preço em componente.

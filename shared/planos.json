@@ -8,9 +8,8 @@
       "funil_leads",
       "visitas_imobi",
       "financeiro",
-      "historico",
       "equipe",
-      "marketing",
+      "agentes_ia",
       "whatsapp_hub",
       "config",
       "ajuda",
@@ -23,13 +22,16 @@
       "notafiscal",
       "migracao",
       "acompanhamento_cliente",
-      "agentes_ia",
       "copiloto",
       "secretaria",
       "administrador",
       "roleta_imobi",
       "avaliacao_imovel",
       "credito"
+    ],
+    "essencial_plus_extra": [
+      "historico",
+      "marketing"
     ],
     "esquadrao_extra": []
   },
@@ -57,11 +59,11 @@
         },
         {
           "icone": "CalendarDays",
-          "texto": "Agenda de visitas, propostas e financeiro essencial"
+          "texto": "Agenda de visitas e financeiro essencial"
         },
         {
-          "icone": "Sparkles",
-          "texto": "Meta Ads & Criativos (gerador de copies e link direto p/ WhatsApp)"
+          "icone": "Bot",
+          "texto": "7 Agentes de IA (vitrine interativa gratuita)"
         },
         {
           "icone": "ShieldCheck",
@@ -69,6 +71,35 @@
         }
       ],
       "cta": "Usar Modo Grátis",
+      "autoAtivavel": true
+    },
+    {
+      "key": "essencial_plus",
+      "nome": "Essencial Plus",
+      "subtitulo": "Para quem já organiza os leads e quer fechar mais negócio",
+      "icone": "Zap",
+      "preco": {
+        "mensal": 39.9,
+        "anual": 39.9
+      },
+      "precoLabel": null,
+      "periodo": "/mês",
+      "destaque": false,
+      "recursos": [
+        {
+          "icone": "Check",
+          "texto": "Tudo do Modo Grátis"
+        },
+        {
+          "icone": "FileBarChart",
+          "texto": "Propostas & Negócios (histórico e follow-up)"
+        },
+        {
+          "icone": "Sparkles",
+          "texto": "Meta Ads & Criativos (copies e link direto p/ WhatsApp)"
+        }
+      ],
+      "cta": "Assinar Essencial Plus",
       "autoAtivavel": true
     },
     {
@@ -86,7 +117,7 @@
       "recursos": [
         {
           "icone": "Check",
-          "texto": "Tudo do Modo Grátis"
+          "texto": "Tudo do Essencial Plus"
         },
         {
           "icone": "FileBarChart",
@@ -97,8 +128,8 @@
           "texto": "Vistorias fotográficas com laudo por IA"
         },
         {
-          "icone": "FileBarChart",
-          "texto": "Relatórios completos para corretores e clientes"
+          "icone": "Bot",
+          "texto": "Demais módulos operacionais e de IA do painel"
         },
         {
           "icone": "Users",
@@ -110,18 +141,18 @@
     },
     {
       "key": "esquadrao_ia",
-      "nome": "Esquadrão de IA & Automação WhatsApp",
-      "subtitulo": "Atendimento automatizado 24h para imobiliárias",
+      "nome": "Automação Sofia WhatsApp",
+      "subtitulo": "Atendente IA 24h conectada no WhatsApp oficial",
       "icone": "Bot",
       "preco": null,
-      "precoLabel": "R$ 1.000 a R$ 1.500",
+      "precoLabel": "A partir de R$ 450",
       "periodo": "/mês",
-      "setup": "Setup único de R$ 1.000,00",
+      "setup": "Taxa única de implantação",
       "destaque": false,
       "recursos": [
         {
           "icone": "Check",
-          "texto": "Tudo do Plano Profissional"
+          "texto": "Tudo do Plano PRO"
         },
         {
           "icone": "Clock",
@@ -129,7 +160,7 @@
         },
         {
           "icone": "Bot",
-          "texto": "Agentes de IA: Sofia (Secretária) e Hermes Copiloto"
+          "texto": "Agente Sofia (Secretária) + Hermes Copiloto"
         },
         {
           "icone": "Shuffle",
@@ -137,10 +168,41 @@
         },
         {
           "icone": "MessageCircle",
-          "texto": "Implementação e acompanhamento dedicados"
+          "texto": "Implantação e acompanhamento dedicados"
         }
       ],
       "cta": "Solicitar Proposta",
+      "autoAtivavel": false
+    },
+    {
+      "key": "presenca_digital",
+      "nome": "Presença Digital & Tráfego",
+      "subtitulo": "Vitrine própria no ar e tráfego sob gestão, com a verba de anúncios à parte",
+      "icone": "Globe",
+      "preco": null,
+      "precoLabel": "Setup R$ 690 + Gestão R$ 490/mês",
+      "periodo": "",
+      "setup": "Setup R$ 690 (Vitrine/Portal sincronizado + Google Meu Negócio) + Gestão de Tráfego opcional R$ 490/mês · verba de anúncios à parte",
+      "destaque": false,
+      "recursos": [
+        {
+          "icone": "Globe",
+          "texto": "Vitrine/Portal próprio sincronizado — setup R$ 690"
+        },
+        {
+          "icone": "MapPin",
+          "texto": "Google Meu Negócio configurado e otimizado (incluso no setup)"
+        },
+        {
+          "icone": "TrendingUp",
+          "texto": "Gestão de Tráfego opcional — R$ 490/mês"
+        },
+        {
+          "icone": "Wallet",
+          "texto": "Verba de anúncios paga à parte (direto nas plataformas)"
+        }
+      ],
+      "cta": "Falar com Especialista",
       "autoAtivavel": false
     }
   ],
@@ -154,6 +216,12 @@
     "profissional": {
       "funcionarios": 3,
       "abas": 5,
+      "osMes": null,
+      "descricao": "O.S. ilimitadas"
+    },
+    "essencial_plus": {
+      "funcionarios": 2,
+      "abas": 4,
       "osMes": null,
       "descricao": "O.S. ilimitadas"
     },
@@ -192,6 +260,7 @@
     "pro",
     "profissional",
     "esquadrao_ia",
+    "essencial_plus",
     "premium",
     "pago",
     "master",

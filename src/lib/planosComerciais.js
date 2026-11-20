@@ -1,6 +1,15 @@
 /**
- * planosComerciais.js — os 3 degraus de venda da tela Meu Plano.
+ * planosComerciais.js — os 5 degraus de venda da tela Meu Plano.
  * Fonte única da copy comercial: o componente só desenha, o teste confere.
+ *
+ * ESCADA (2026-11-20):
+ *   1. Grátis            — R$ 0        abas operacionais + 7 Agentes de IA (vitrine)
+ *   2. Essencial Plus    — R$ 39,90    Propostas & Negócios + Meta Ads & Criativos
+ *   3. PRO               — R$ 99,00    demais módulos operacionais e de IA
+ *   4. Automação Sofia   — R$ 450+     atendente IA 24h no WhatsApp oficial
+ *   5. Presença Digital  — consultivo  site/portal, Google e tráfego pago
+ *
+ * Preço de verdade do SaaS continua em `shared/planos.json`; aqui está só a copy.
  */
 
 export const ECONOMIA_ANUAL = 120;
@@ -9,20 +18,34 @@ export const TOTAL_ANUAL = 1068;
 export const DEGRAUS = Object.freeze([
   {
     key: 'essencial',
-    nome: 'Essencial',
+    nome: 'Grátis',
     tag: 'Grátis',
     tipo: 'gratis',
     resumo: 'Para começar a vender hoje, sem cartão de crédito.',
     detalhePreco: 'R$ 0',
     periodo: '/mês',
     recursos: [
-      'Vitrine Digital em /portal',
-      'CRM básico de leads e funil',
-      'Agenda de visitas',
-      'Financeiro essencial',
-      'Estúdio de Criativos',
+      'Visão Geral e CRM de leads em Kanban',
+      'Captação e catálogo de imóveis',
+      'Agenda de visitas e financeiro essencial',
+      'Conexão WhatsApp padrão',
+      '7 Agentes de IA (vitrine interativa gratuita)',
     ],
     cta: 'Plano atual',
+  },
+  {
+    key: 'essencial_plus',
+    nome: 'Essencial Plus',
+    tag: 'Essencial Plus',
+    tipo: 'checkout',
+    resumo: 'Para quem já organiza os leads e quer fechar mais negócio.',
+    precos: { mensal: 39.9, anual: 39.9 },
+    recursos: [
+      'Tudo do Grátis',
+      'Propostas & Negócios (histórico e follow-up)',
+      'Meta Ads & Criativos (copies e link p/ WhatsApp)',
+    ],
+    cta: 'Assinar Essencial Plus',
   },
   {
     key: 'pro',
@@ -34,6 +57,7 @@ export const DEGRAUS = Object.freeze([
     resumo: 'O corretor que opera sozinho e quer fechar mais rápido.',
     precos: { mensal: 99, anual: 89 },
     recursos: [
+      'Tudo do Essencial Plus',
       'Avaliação PTAM com comparáveis',
       'Correspondente / Crédito completo',
       'Vistoria & Laudo IA',
@@ -45,22 +69,40 @@ export const DEGRAUS = Object.freeze([
   },
   {
     key: 'automacao',
-    nome: 'Imobiliárias & Automação WhatsApp 24/7',
+    nome: 'Automação Sofia WhatsApp',
     tag: 'Consultivo',
     tipo: 'consultivo',
-    resumo: 'Para equipes de 2 a 20+ corretores que querem atendimento sem parar.',
-    detalhePreco: 'A partir de R$ 497',
+    resumo: 'Atendente IA 24h conectada no WhatsApp oficial da imobiliária.',
+    detalhePreco: 'A partir de R$ 450',
     periodo: '/mês',
-    implementacao: 'Taxa única de implementação',
+    implementacao: 'Taxa única de implantação',
     recursos: [
       'Tudo do PRO para a equipe',
-      'Agente Sofia 24/7 no WhatsApp',
+      'Agente Sofia 24/7 no WhatsApp oficial',
       'Qualificação automática de leads',
       'Consulta de estoque e agendamento',
       'Distribuição na Roleta de Leads',
       'Implantação e acompanhamento dedicados',
     ],
     cta: 'Solicitar Implantação / Falar com Especialista',
+  },
+  {
+    key: 'presenca_digital',
+    nome: 'Presença Digital & Tráfego',
+    tag: 'Sob consulta',
+    tipo: 'consultivo',
+    resumo: 'Vitrine própria no ar e tráfego sob gestão, com a verba de anúncios à parte.',
+    detalhePreco: 'Setup R$ 690',
+    periodo: '',
+    implementacao: '(Vitrine/Portal sincronizado + Google Meu Negócio) + Gestão de Tráfego opcional R$ 490/mês',
+    verba: 'Verba de anúncios à parte (paga direto às plataformas)',
+    recursos: [
+      'Vitrine/Portal próprio sincronizado — setup R$ 690',
+      'Google Meu Negócio configurado e otimizado (incluso no setup)',
+      'Gestão de Tráfego opcional — R$ 490/mês',
+      'Verba de anúncios paga à parte (direto nas plataformas)',
+    ],
+    cta: 'Falar com Especialista',
   },
 ]);
 

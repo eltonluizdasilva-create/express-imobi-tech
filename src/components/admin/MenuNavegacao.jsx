@@ -22,12 +22,16 @@ export default function MenuNavegacao({
     { id: 'tarefa', label: 'TAREFA', icon: CheckSquare },
     { id: 'patrimonio', label: 'PATRIMÔNIO', icon: Building },
     { id: 'fornecedores', label: 'FORNECEDORES', icon: Users },
-    { id: 'historico', label: 'HISTÓRICO', icon: History },
-    { id: 'meuplano', label: 'MEU PLANO', icon: ShieldCheck },
+    { id: 'meuplano', label: 'MEU PLANO (10 DIAS GRÁTIS)', icon: ShieldCheck },
     { id: 'config', label: 'AJUSTES', icon: Settings },
     { id: 'equipe', label: 'EQUIPE', icon: UserCheck },
-    { id: 'marketing', label: 'MARKETING', icon: Megaphone },
     { id: 'especialista', label: 'ESPECIALISTA', icon: Wrench },
+  ];
+
+  // Degrau 2 — Essencial Plus (R$ 39,90)
+  const modulosEssencialPlus = [
+    { id: 'historico', label: 'PROPOSTAS & NEGÓCIOS', icon: History },
+    { id: 'marketing', label: 'META ADS & CRIATIVOS', icon: Megaphone },
   ];
 
   const modulosAssinantes = [
@@ -94,6 +98,17 @@ export default function MenuNavegacao({
       {/* 2 E 3. MÓDULOS EXTRAS (SÓ APARECEM NO MODO COMPLETO) */}
       {modoPainel === 'completo' && (
         <>
+          {/* ESSENCIAL PLUS */}
+          <div className="flex flex-col gap-1.5 pt-2 border-t border-zinc-900">
+            <div className="flex items-center gap-1.5 text-[9px] font-black tracking-widest uppercase text-teal-300">
+              <span className="w-1.5 h-1.5 rounded-full bg-teal-400" />
+              ESSENCIAL PLUS · R$ 39,90
+            </div>
+            <div className="flex items-center gap-1.5 overflow-x-auto pb-1 scrollbar-thin">
+              {modulosEssencialPlus.map((item) => renderItem(item, '#2dd4bf'))}
+            </div>
+          </div>
+
           {/* MÓDULOS ASSINANTES */}
           <div className="flex flex-col gap-1.5 pt-2 border-t border-zinc-900">
             <div className="flex items-center gap-1.5 text-[9px] font-black tracking-widest uppercase text-emerald-500">

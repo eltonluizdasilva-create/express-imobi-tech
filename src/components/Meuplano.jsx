@@ -1,17 +1,24 @@
 import React, { useMemo, useState } from 'react';
 import {
   Check, Sparkles, Crown, Bot, MessageCircle, ShieldCheck, Users, Home,
-  ArrowUpRight, Lock,
+  ArrowUpRight, Lock, Zap, Globe,
 } from 'lucide-react';
 import { getAuth } from 'firebase/auth';
 import { PLANOS_PRO, WHATSAPP_COMERCIAL } from '../lib/planos';
 import { DEGRAUS, precoMensal, detalheCiclo, rotuloEconomia } from '../lib/planosComerciais';
 import { destinoCheckout, urlCheckoutPro, abrirDestino } from '../lib/checkout';
 
-const ICONE_DEGRAU = { essencial: Home, pro: Crown, automacao: Bot };
+const ICONE_DEGRAU = {
+  essencial: Home,
+  essencial_plus: Zap,
+  pro: Crown,
+  automacao: Bot,
+  presenca_digital: Globe,
+};
 
 /**
- * Meu Plano — 3 degraus comerciais (Essencial, Completo PRO, Imobiliárias 24/7).
+ * Meu Plano — 5 degraus comerciais (Grátis, Essencial Plus, PRO,
+ * Automação Sofia WhatsApp, Presença Digital & Tráfego).
  * O ciclo é escolhido no topo e muda preço e destino do checkout.
  */
 export default function ModuloMeuPlano({ dadosOficina }) {
@@ -70,15 +77,18 @@ export default function ModuloMeuPlano({ dadosOficina }) {
   };
 
   /** Card 3 — implantação consultiva. */
-  const falarEspecialista = () => {
+  const falarEspecialista = (nomeDegrau = 'Automação Sofia WhatsApp') => {
     const { email, uid, nomeOficina } = dadosConta();
+    const ehAutomacao = nomeDegrau === 'Automação Sofia WhatsApp';
     const texto = [
-      'Olá! Quero implantar o Express Imobi Tech com Automação WhatsApp 24/7 (Sofia).',
+      `Olá! Quero falar sobre o ${nomeDegrau} do Express Imobi Tech.`,
       nomeOficina ? `Imobiliária: ${nomeOficina}.` : '',
-      'Equipe de corretores: ___ (quantos corretores hoje).',
+      ehAutomacao ? 'Equipe de corretores: ___ (quantos corretores hoje).' : '',
       email ? `E-mail da conta: ${email}.` : '',
       uid ? `ID da conta: ${uid}.` : '',
-      'Podemos falar sobre a taxa de implementação e o valor a partir de R$ 497/mês?',
+      ehAutomacao
+        ? 'Podemos falar sobre a taxa de implantação e o valor a partir de R$ 450/mês?'
+        : 'Podemos falar sobre o escopo e o setup do projeto?',
     ].filter(Boolean).join('\n');
 
     const zap = (import.meta.env?.VITE_SU_WPP || WHATSAPP_COMERCIAL).replace(/\D/g, '');
@@ -101,6 +111,7 @@ export default function ModuloMeuPlano({ dadosOficina }) {
   const rotuloCta = (degrau) => {
     if (degrau.key === 'pro') return ehPro ? 'Plano PRO ativo' : degrau.cta;
     if (degrau.key === 'essencial') return ehPro ? 'Falar sobre downgrade' : 'Plano atual';
+    if (degrau.key === 'essencial_plus' && ehPro) return 'Assinar Essencial Plus';
     return degrau.cta;
   };
 
@@ -109,8 +120,9 @@ export default function ModuloMeuPlano({ dadosOficina }) {
 
   const acaoCta = (degrau) => {
     if (degrau.key === 'pro') return assinarPro();
+    if (degrau.key === 'essencial_plus') return falarEspecialista('Essencial Plus');
     if (degrau.key === 'essencial') return falarSobreDowngrade();
-    return falarEspecialista();
+    return falarEspecialista(degrau.nome);
   };
 
   return (
@@ -125,11 +137,11 @@ export default function ModuloMeuPlano({ dadosOficina }) {
           Escolha o nível do seu jogo
         </h1>
         <p className="mx-auto mt-3 max-w-2xl text-sm leading-6 text-slate-300 md:text-base">
-          Comece grátis, suba para o PRO quando quiser fechar mais rápido, ou automatize
-          o atendimento da imobiliária inteira com a Sofia no WhatsApp.
+          Comece grátis com os 7 Agentes de IA em vitrine, suba para o Essencial Plus
+          quando quiser propostas e anúncios, ou vá de PRO para a operação completa.
         </p>
         <div className="mt-5 inline-flex items-center gap-2 rounded-2xl border border-emerald-500/30 bg-emerald-500/10 px-4 py-2 text-xs font-black uppercase tracking-widest text-emerald-300">
-          Plano atual: <span className="text-white">{ehPro ? 'Completo PRO' : 'Essencial (Grátis)'}</span>
+          Plano atual: <span className="text-white">{ehPro ? 'Completo PRO' : 'Grátis'}</span>
         </div>
       </section>
 
@@ -173,8 +185,8 @@ export default function ModuloMeuPlano({ dadosOficina }) {
         </div>
       )}
 
-      {/* 3 DEGRAUS */}
-      <section className="grid items-start gap-6 lg:grid-cols-3">
+      {/* 5 DEGRAUS */}
+      <section className="grid items-start gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
         {DEGRAUS.map((degrau) => {
           const Icone = ICONE_DEGRAU[degrau.key] || Check;
           const preco = degrau.precos ? precoMensal(degrau, ciclo) : degrau.detalhePreco;
@@ -184,7 +196,7 @@ export default function ModuloMeuPlano({ dadosOficina }) {
           return (
             <div
               key={degrau.key}
-              className={`relative flex h-full flex-col rounded-[28px] border p-6 transition-all ${
+              className={`relative flex h-full flex-col rounded-[28px] border p-5 transition-all ${
                 degrau.destaque
                   ? 'border-emerald-500 bg-emerald-500/5 shadow-[0_20px_80px_-30px_rgba(16,185,129,0.6)]'
                   : 'border-slate-800 bg-slate-950/80'
@@ -214,7 +226,12 @@ export default function ModuloMeuPlano({ dadosOficina }) {
               </div>
               {detalhe && <p className="text-[11px] font-bold text-emerald-400">{detalhe}</p>}
               {degrau.implementacao && (
-                <p className="text-[11px] font-bold text-emerald-400">+ {degrau.implementacao}</p>
+                <p className="text-[11px] font-bold text-emerald-400">
+                  {degrau.key === 'presenca_digital' ? degrau.implementacao : `+ ${degrau.implementacao}`}
+                </p>
+              )}
+              {degrau.verba && (
+                <p className="text-[10px] text-slate-500">{degrau.verba}</p>
               )}
 
               <ul className="my-6 flex-1 space-y-2.5">

@@ -189,12 +189,12 @@ const GRUPOS_MENU_IMOBI = [
       },
       {
         id: 'meuplano',
-        label: '⭐ Meu Plano (14 Dias Grátis)',
+        label: '⭐ Meu Plano (10 Dias Grátis)',
         tituloCard: 'MEU PLANO (14 DIAS GRÁTIS)',
-        tituloLimpo: 'Meu Plano (14 Dias Grátis) & Assinatura',
+        tituloLimpo: 'Meu Plano (10 Dias Grátis) & Assinatura',
         tier: 'gratis',
         descricao:
-          'Acompanhe o status do seu período de testes de 14 dias grátis, compare os recursos do Modo Grátis vs Modo PRO e faça upgrade quando desejar.',
+          'Acompanhe o status do seu período de testes de 10 dias grátis, compare os recursos do Modo Grátis vs Modo PRO e faça upgrade quando desejar.',
       },
     ],
   },
@@ -306,12 +306,12 @@ const GRUPOS_MENU_IMOBI = [
       },
       {
         id: 'meuplano',
-        label: '⭐ Meu Plano (14 Dias Grátis)',
+        label: '⭐ Meu Plano (10 Dias Grátis)',
         tituloCard: 'MEU PLANO (14 DIAS GRÁTIS)',
-        tituloLimpo: 'Meu Plano (14 Dias Grátis) & Assinatura',
+        tituloLimpo: 'Meu Plano (10 Dias Grátis) & Assinatura',
         tier: 'gratis',
         descricao:
-          'Acompanhe o status do seu período de testes de 14 dias grátis, compare os recursos do Modo Grátis vs Modo PRO e faça upgrade quando desejar.',
+          'Acompanhe o status do seu período de testes de 10 dias grátis, compare os recursos do Modo Grátis vs Modo PRO e faça upgrade quando desejar.',
       },
       {
         id: 'config',
@@ -366,9 +366,9 @@ const MODULOS_GRATIS_PLG = new Set([
   'funil_leads',
   'visitas_imobi',
   'financeiro',
-  'historico',
   'equipe',
-  'marketing',
+  'agentes_ia',
+  'whatsapp_hub',
   'meuplano',
 ]);
 
@@ -1609,16 +1609,20 @@ export default function Admin() {
     { id: 'funil_leads', icone: '👥', label: 'Leads & Funil CRM' },
     { id: 'visitas_imobi', icone: '📅', label: 'Agenda de Visitas' },
     { id: 'financeiro', icone: '💰', label: 'Financeiro & VGV' },
-    { id: 'historico', icone: '📝', label: 'Propostas & Negócios' },
     { id: 'equipe', icone: '🧑‍💼', label: 'Corretores & Equipe' },
+    { id: 'whatsapp_hub', icone: '💬', label: 'Conexão WhatsApp' },
+    { id: 'meuplano', icone: '⭐', label: 'Meu Plano (10 Dias Grátis)', destaquePlano: true },
+  ];
+
+  // Degrau 2 — Essencial Plus (R$ 39,90): propostas e anúncios
+  const botoesBlocoEssencialPlus = [
+    { id: 'historico', icone: '📝', label: 'Propostas & Negócios' },
     { id: 'marketing', icone: '🎯', label: 'Meta Ads & Criativos' },
-    { id: 'meuplano', icone: '⭐', label: 'Meu Plano (14 Dias Grátis)', destaquePlano: true },
   ];
 
   const botoesBloco2EsquadraoIA = [
     { id: 'agentes_ia', icone: '🤖', label: '7 Agentes de IA' },
     { id: 'radar_captacao', icone: '📡', label: 'Radar de Captação' },
-    { id: 'whatsapp_hub', icone: '💬', label: 'Conexão WhatsApp' },
     { id: 'copiloto', icone: '⚡', label: 'Hermes Copiloto' },
     { id: 'secretaria', icone: '📷', label: 'QR Code Sofia' },
     { id: 'administrador', icone: '📈', label: 'Diretor Comercial IA' },
@@ -1802,7 +1806,19 @@ export default function Admin() {
             temaClaro={!isEscuro}
           />
 
-          {/* Barra 2 — Módulos PRO (Assinantes) */}
+          {/* Barra 2 — Essencial Plus (R$ 39,90) */}
+          <BarraModulos
+            titulo="Essencial Plus · R$ 39,90"
+            tom="teal"
+            itens={filtrarPorPapel(botoesBlocoEssencialPlus)}
+            abaAtiva={abaAtiva}
+            setAbaAtiva={setAbaAtiva}
+            detalhes={MAPA_DETALHES_ABAS}
+            dataTour="barra-essencial-plus"
+            temaClaro={!isEscuro}
+          />
+
+          {/* Barra 3 — Módulos PRO (Assinantes) */}
           {modoPro && (
             <BarraModulos
               titulo="PRO · Assinantes"
@@ -1816,7 +1832,7 @@ export default function Admin() {
             />
           )}
 
-          {/* Barra 3 — Esquadrão de IA (Elite) */}
+          {/* Barra 4 — Inteligência Artificial (PRO) */}
           {modoPro && (
             <BarraModulos
               titulo="Inteligência Artificial · PRO"
@@ -1850,7 +1866,7 @@ export default function Admin() {
                   onClick={() => setAbaAtiva('meuplano')}
                   className="rounded-full border border-amber-500/40 bg-amber-500/10 px-3 py-1.5 text-[11px] font-bold text-amber-200 transition-colors hover:border-amber-300 hover:text-white"
                 >
-                  ⭐ Meu Plano (14 Dias Grátis)
+                  ⭐ Meu Plano (10 Dias Grátis)
                 </button>
                 <button
                   onClick={() => setModoPro(true)}
@@ -2687,7 +2703,7 @@ export default function Admin() {
               <div className="bg-[#020408] border border-slate-800 rounded-2xl p-5 space-y-2">
                 <span style={{ color: '#10b981' }} className="text-xs font-bold text-[#10b981]">PASSO 3 • QR CODE WHATSAPP</span>
                 <h3 className="font-bold text-white">Gateway WhatsApp</h3>
-                <p className="text-xs text-slate-400">Leitura rápida de QR Code no celular do corretor para ativar os 14 dias de teste acompanhado.</p>
+                <p className="text-xs text-slate-400">Leitura rápida de QR Code no celular do corretor para ativar os 10 dias de teste acompanhado.</p>
               </div>
             </div>
           </div>
