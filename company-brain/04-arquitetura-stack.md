@@ -73,8 +73,12 @@ DorESolucao, GuiaDaAba, RodapeLegal), `src/components/prospeccao/` (captura de l
 | `xml-portais.js` | gera feed XML por tenant |
 | `webhook-portais.js` | recebe lead de portal e grava no CRM |
 | `telegram-webhook.js` | notificação |
-| `_firestoreAdmin.js` | JWT de service account + REST (usado pelos endpoints acima) |
+| `pagamento-webhook.js` | confirma pagamento e atualiza assinatura/plano via `firebase-admin` |
+| `_firestoreAdmin.js` | JWT de service account + REST (usado pelos endpoints que dependem do helper) |
 | `_authToken.js` | valida ID token do Firebase nos endpoints sensíveis |
+
+O endpoint `pagamento-webhook.js` usa a dependência `firebase-admin` instalada na raiz e a variável
+`FIREBASE_SERVICE_ACCOUNT`; os demais endpoints que usam `_firestoreAdmin.js` continuam via REST.
 
 ---
 

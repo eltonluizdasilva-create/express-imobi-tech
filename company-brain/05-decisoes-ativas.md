@@ -14,6 +14,7 @@
 ## 2026-11-20 — Decisão registrada
 
 | D-20.25 | **Cabecalhos de IA ficam fora do alcance do tema claro** (`AnelEscuro`): o tema claro converte `bg-slate-900`/`bg-zinc-950` em branco E escurece `text-white` com regra `!important` de 22 classes de especificidade, o que tornava os titulos ilegiveis (medido 1.05:1). Nenhum seletor de descendente vence aquela regra — testado e reprovado: `.anel-escuro h1`, `.tema-claro .escopo *` e variante com `:is()`. Solucao vigente: conteudo dos cabecalhos renderizado em **shadow root** via `createPortal` (`src/components/admin/AnelEscuro.jsx`), com CSS proprio em `anel-escuro.css` importado com `?inline` e `HeroAbaEscura.jsx` (o `HeroAba` normal nao funciona dentro do shadow root — Tailwind do documento nao atravessa). Contraste validado no navegador, tema claro: 7.3:1 a 18.7:1. **Regra:** cabecalho/banner de IA sobre fundo escuro fixo usa `AnelEscuro` + `HeroAbaEscura`; `HeroAba` continua nos demais casos. | **VERDADE ATUAL** |
+| D-20.26 | **Webhook de pagamento também disponível em Vercel** (`api/pagamento-webhook.js`), usando `firebase-admin` instalado na raiz e credencial do servidor em `FIREBASE_SERVICE_ACCOUNT`. O handler segue ESM com imports modulares do Admin SDK; o webhook existente em Cloud Functions (`functions/index.js`) permanece independente. | **VERDADE ATUAL** |
 
 ---
 

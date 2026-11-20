@@ -1,14 +1,14 @@
 /* eslint-disable */
 /**
- * Cloud Functions — Express Tech
+- Cloud Functions — Express Tech
  *
- * ativarPlano      (onCall)    → ativa/troca plano pelo backend, nunca pelo cliente
- * pagamentoWebhook (onRequest) → confirma pagamento e libera o plano Pro
+- ativarPlano      (onCall)    → ativa/troca plano pelo backend, nunca pelo cliente
+- pagamentoWebhook (onRequest) → confirma pagamento e libera o plano Pro
  *
- * Regras de negócio:
- *  - o cliente autenticado só pode trocar de plano pelo ativarPlano;
- *  - plano pago exige assinatura com status "ativa" (gravada pelo webhook de pagamento);
- *  - claim `admin: true` (definida via scripts-locais/set-admin-claim.js) pode forçar ativação.
+- Regras de negócio:
+-  - o cliente autenticado só pode trocar de plano pelo ativarPlano;
+-  - plano pago exige assinatura com status "ativa" (gravada pelo webhook de pagamento);
+-  - claim `admin: true` (definida via scripts-locais/set-admin-claim.js) pode forçar ativação.
  */
 
 const { onCall, onRequest, HttpsError } = require('firebase-functions/v2/https');
@@ -34,14 +34,25 @@ function isPlanoPro(plano) {
 }
 
 function modulosDoPlano(planoKey) {
-  const base = [...dados.modulos.gratis];
-  if (planoKey === 'profissional') {
-    return [...base, ...dados.modulos.profissional_extra];
+  const chave = norm(planoKey);
+  const gratis = dados.modulos.gratis || [];
+  const essencialPlus = dados.modulos.essencial_plus_extra || [];
+  const profissional = dados.modulos.profissional_extra || [];
+  const esquadrao = dados.modulos.esquadrao_extra || [];
+
+  if (chave === 'essencial_plus') {
+    return [...new Set([...gratis, ...essencialPlus])];
   }
-  if (planoKey === 'esquadrao_ia') {
-    return [...base, ...dados.modulos.profissional_extra, ...dados.modulos.esquadrao_extra];
+
+  if (chave === 'profissional' || chave === 'pro') {
+    return [...new Set([...gratis, ...essencialPlus, ...profissional])];
   }
-  return base;
+
+  if (chave === 'esquadrao_ia' || chave === 'presenca_digital') {
+    return [...new Set([...gratis, ...essencialPlus, ...profissional, ...esquadrao])];
+  }
+
+  return [...gratis];
 }
 
 async function resolverOficinaPorUid(uid) {
