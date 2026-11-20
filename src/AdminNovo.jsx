@@ -46,6 +46,8 @@ import {
   Sparkles,
   ChevronRight,
   MessageCircle,
+  Calculator,
+  Receipt,
 } from 'lucide-react';
 
 // Componentes existentes do ecossistema
@@ -55,6 +57,7 @@ import { TelaTrialExpirou, TelaBloqueado, TelaLogin } from './components/admin/T
 import ModuloBloqueado from './components/admin/ModuloBloqueado';
 import BarraModulos from './components/admin/BarraModulos';
 import SofiaWhatsAppTab from './components/admin/SofiaWhatsAppTab';
+import ModuloComAbas from './components/admin/ModuloComAbas';
 import HeroAba from './components/admin/HeroAba';
 import CaptacaoNicho from './components/imobi/CaptacaoNicho';
 import { corDaAba, textoSobreCor, comAlpha } from './lib/coresAbas';
@@ -1631,6 +1634,11 @@ export default function Admin() {
     'whatsapp_hub',
     'secretaria',
     'sofia_whatsapp',
+    // Lote 3 — renderizadas por dentro de `ModuloComAbas`, nunca pelo
+    // GerenciadorDeModulos (senão a tela aparece duas vezes).
+    'administrador',
+    'contador',
+    'notafiscal',
   ];
 
   const botoesBloco1Essencial = [
@@ -1724,6 +1732,256 @@ export default function Admin() {
             fallback={
               <div className="rounded-2xl border border-white/[0.06] bg-white/[0.015] p-8 text-center text-xs text-slate-500">
                 QR Code Sofia indisponível no momento.
+              </div>
+            }
+          >
+            <Comp
+              isPro={isPro}
+              abaAtiva={abaAtiva}
+              setAbaAtiva={setAbaAtiva}
+              oficinaId={oficinaAtualId}
+              dadosOficina={dadosImobiliaria}
+              dadosImobiliaria={dadosImobiliaria}
+            />
+          </SafeBoundary>
+        );
+      })()
+    ) : null,
+  };
+
+  // Lote 3 — Roleta de Leads vira aba interna do Diretor Comercial IA.
+  const painelRoletaLeads = (
+        <div className="space-y-6">
+          <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 flex flex-wrap items-center justify-between gap-4">
+            <div>
+              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#10b981]/15 border border-[#10b981]/30 text-[#10b981] text-[10px] font-extrabold uppercase tracking-wider mb-2">
+                🔀 Módulo de Assinantes • Controlo de Gestão
+              </div>
+              <h2 className="text-2xl font-black text-white">Roleta de Leads & Distribuição Justa</h2>
+              <p className="text-sm text-slate-400">
+                Distribui novos leads de forma rotativa e equilibrada entre os corretores ativos da equipa e calcula o VGV e comissões (6%) por corretor.
+              </p>
+            </div>
+            <div className="flex flex-wrap items-center gap-3">
+              <label className="text-xs text-slate-300 font-bold">
+                Prazo p/ Aceite (min):
+                <input
+                  type="number"
+                  value={tempoRepasseMin}
+                  onChange={(e) => setTempoRepasseMin(Number(e.target.value) || 5)}
+                  className="ml-2 w-16 bg-[#020408] border border-slate-700 rounded-lg px-2 py-1 text-[#10b981] font-bold"
+                />
+              </label>
+              <button
+                onClick={redistribuirLeadsEquilibrado}
+                className="px-4 py-2 rounded-xl bg-[#020408] border border-slate-700 hover:border-[#10b981] text-slate-200 hover:text-[#10b981] text-xs font-bold cursor-pointer transition"
+              >
+                🔀 Redistribuir Leads do CRM (Giro Justo)
+              </button>
+              <button
+                onClick={() => setRoletaAtiva((v) => !v)}
+                style={roletaAtiva ? { backgroundColor: '#10b981' } : undefined}
+                className={`px-4 py-2 rounded-xl text-xs font-bold cursor-pointer ${
+                  roletaAtiva ? 'text-white' : 'bg-slate-800 text-slate-400'
+                }`}
+              >
+                {roletaAtiva ? '✅ Roleta Ativa' : '⏸️ Roleta Pausada'}
+              </button>
+            </div>
+          </div>
+
+          {statusRoletaMsg && (
+            <div className="bg-[#020408] border border-[#10b981] rounded-xl px-4 py-3 text-xs font-bold text-[#10b981] flex items-center justify-between">
+              <span>{statusRoletaMsg}</span>
+              <button onClick={() => setStatusRoletaMsg('')} className="text-slate-400 hover:text-white cursor-pointer">✕</button>
+            </div>
+          )}
+
+          {/* Painel de Controlo da Fila Rotativa + Adição Rápida de Corretor */}
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
+            <div className="lg:col-span-5 bg-slate-900 border border-slate-800 rounded-2xl p-5 flex flex-col justify-between">
+              <div>
+                <span className="text-[10px] font-extrabold uppercase tracking-wider text-slate-400">Próximo Corretor da Vez</span>
+                <h3 style={{ color: '#10b981' }} className="text-xl font-black text-[#10b981] mt-1">
+                  {roletaAtiva ? (proximoCorretorDaVez?.nome || 'Nenhum corretor ativo') : 'Roleta Pausada (Plantão Geral)'}
+                </h3>
+                <p className="text-xs text-slate-400 mt-1">
+                  Critério: menor carga ativa de leads no CRM + desempate por giro rotativo (Round-Robin).
+                </p>
+              </div>
+              <div className="mt-4 pt-3 border-t border-slate-800 flex items-center justify-between text-xs">
+                <span className="text-slate-400">Corretores no plantão: <strong className="text-white">{corretoresAtivos.length}</strong></span>
+                <button
+                  onClick={() => setModalNovoLeadImobi(true)}
+                  style={{ backgroundColor: '#10b981' }}
+                  className="px-3 py-1.5 rounded-lg text-white font-bold cursor-pointer hover:opacity-90"
+                >
+                  + Testar Novo Lead na Roleta
+                </button>
+              </div>
+            </div>
+
+            <form
+              onSubmit={adicionarCorretorRoleta}
+              className="lg:col-span-7 bg-slate-900 border border-slate-800 rounded-2xl p-5 flex flex-col justify-between gap-3"
+            >
+              <div>
+                <span className="text-[10px] font-extrabold uppercase tracking-wider text-slate-400">Adicionar Corretor à Equipa / Roleta</span>
+                <p className="text-xs text-slate-400 mt-0.5">Inclua corretores para participarem imediatamente na distribuição rotativa.</p>
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+                <input
+                  placeholder="Nome (ex: Corretor Lucas)"
+                  value={novoCorretorNome}
+                  onChange={(e) => setNovoCorretorNome(e.target.value)}
+                  className="bg-[#020408] border border-slate-700 rounded-xl px-3 py-2 text-xs text-white"
+                />
+                <input
+                  placeholder="WhatsApp (ex: 11988887777)"
+                  value={novoCorretorZap}
+                  onChange={(e) => setNovoCorretorZap(e.target.value)}
+                  className="bg-[#020408] border border-slate-700 rounded-xl px-3 py-2 text-xs text-white"
+                />
+                <button
+                  type="submit"
+                  style={{ backgroundColor: '#10b981' }}
+                  className="px-4 py-2 rounded-xl text-white text-xs font-bold cursor-pointer hover:opacity-90"
+                >
+                  + Incluir na Roleta
+                </button>
+              </div>
+            </form>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            {(corretoresComMetricas || [])?.map((corretor) => {
+              const ehProximo = roletaAtiva && proximoCorretorDaVez?.id === corretor.id;
+              return (
+                <div
+                  key={corretor.id}
+                  className={`bg-slate-900 border rounded-2xl p-5 flex flex-col justify-between gap-4 ${
+                    ehProximo ? 'border-[#10b981]' : 'border-slate-800'
+                  }`}
+                >
+                  <div className="flex items-start justify-between gap-2">
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <h3 className="font-bold text-white">{corretor.nome}</h3>
+                        {ehProximo && (
+                          <span className="px-2 py-0.5 rounded-full bg-[#10b981]/15 text-[#10b981] text-[10px] font-extrabold uppercase">
+                            Da Vez
+                          </span>
+                        )}
+                      </div>
+                      <p className="text-xs text-slate-400 mt-0.5">📱 {corretor.whatsapp}</p>
+                    </div>
+                    <button
+                      onClick={() =>
+                        setCorretoresRoleta((prev) =>
+                          (Array.isArray(prev) ? prev : [])?.map((c) => (c.id === corretor.id ? { ...c, ativo: !c.ativo } : c))
+                        )
+                      }
+                      style={corretor.ativo ? { backgroundColor: '#10b981' } : undefined}
+                      className={`px-3 py-1.5 rounded-lg text-xs font-bold cursor-pointer ${
+                        corretor.ativo ? 'text-white' : 'bg-slate-800 text-slate-400'
+                      }`}
+                    >
+                      {corretor.ativo ? 'No Plantão' : 'Ausente'}
+                    </button>
+                  </div>
+
+                  <div className="bg-[#020408] border border-slate-800 rounded-xl p-3 space-y-1.5 text-xs">
+                    <div className="flex items-center justify-between">
+                      <span className="text-slate-400">Leads atribuídos no CRM:</span>
+                      <span style={{ color: '#10b981' }} className="font-black text-[#10b981]">{corretor.leadsRecebidos}</span>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span className="text-slate-400">VGV sob gestão:</span>
+                      <span className="font-bold text-white">{fmtBRL(corretor.vgvAtribuido)}</span>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span className="text-slate-400">Comissão prevista (6%):</span>
+                      <span style={{ color: '#10b981' }} className="font-bold text-[#10b981]">{fmtBRL(corretor.comissaoCorretor)}</span>
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+  );
+
+  // Lote 3 — agrupamentos internos. As rotas antigas (`roleta_imobi`,
+  // `notafiscal`) continuam renderizando o mesmo conteúdo por dentro.
+  const ABAS_DIRETOR_COMERCIAL = [
+    { key: 'administrador', label: 'Diretor Comercial IA', icone: Bot, descricao: 'Estratégia, metas e comando comercial' },
+    { key: 'roleta_imobi', label: 'Roleta de Leads', icone: Shuffle, descricao: 'Distribuição justa entre corretores' },
+  ];
+
+  const ABAS_ASSISTENTE_FISCAL = [
+    { key: 'contador', label: 'Assistente Fiscal', icone: Calculator, descricao: 'Impostos, regime e obrigações' },
+    { key: 'notafiscal', label: 'Repasses & NF', icone: Receipt, descricao: 'Notas, repasses e comissões' },
+  ];
+
+  const childrenDiretorComercial = {
+    administrador: modulosMapa?.administrador ? (
+      (() => {
+        const Comp = modulosMapa.administrador;
+        return (
+          <SafeBoundary
+            fallback={
+              <div className="rounded-2xl border border-white/[0.06] bg-white/[0.015] p-8 text-center text-xs text-slate-500">
+                Diretor Comercial IA indisponível no momento.
+              </div>
+            }
+          >
+            <Comp
+              isPro={isPro}
+              abaAtiva={abaAtiva}
+              setAbaAtiva={setAbaAtiva}
+              oficinaId={oficinaAtualId}
+              dadosOficina={dadosImobiliaria}
+              dadosImobiliaria={dadosImobiliaria}
+            />
+          </SafeBoundary>
+        );
+      })()
+    ) : null,
+    roleta_imobi: painelRoletaLeads,
+  };
+
+  const childrenAssistenteFiscal = {
+    contador: modulosMapa?.contador ? (
+      (() => {
+        const Comp = modulosMapa.contador;
+        return (
+          <SafeBoundary
+            fallback={
+              <div className="rounded-2xl border border-white/[0.06] bg-white/[0.015] p-8 text-center text-xs text-slate-500">
+                Assistente Fiscal indisponível no momento.
+              </div>
+            }
+          >
+            <Comp
+              isPro={isPro}
+              abaAtiva={abaAtiva}
+              setAbaAtiva={setAbaAtiva}
+              oficinaId={oficinaAtualId}
+              dadosOficina={dadosImobiliaria}
+              dadosImobiliaria={dadosImobiliaria}
+            />
+          </SafeBoundary>
+        );
+      })()
+    ) : null,
+    notafiscal: modulosMapa?.notafiscal ? (
+      (() => {
+        const Comp = modulosMapa.notafiscal;
+        return (
+          <SafeBoundary
+            fallback={
+              <div className="rounded-2xl border border-white/[0.06] bg-white/[0.015] p-8 text-center text-xs text-slate-500">
+                Repasses & NF indisponível no momento.
               </div>
             }
           >
@@ -2463,166 +2721,32 @@ export default function Admin() {
         )}
 
         {/* ─── ABA 5: ROLETA DE DISTRIBUIÇÃO DE LEADS (MÓDULO DE ASSINANTES) ──── */}
-        {abaAtiva === 'roleta_imobi' && (
-          <div className="space-y-6">
-            <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 flex flex-wrap items-center justify-between gap-4">
-              <div>
-                <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#10b981]/15 border border-[#10b981]/30 text-[#10b981] text-[10px] font-extrabold uppercase tracking-wider mb-2">
-                  🔀 Módulo de Assinantes • Controlo de Gestão
-                </div>
-                <h2 className="text-2xl font-black text-white">Roleta de Leads & Distribuição Justa</h2>
-                <p className="text-sm text-slate-400">
-                  Distribui novos leads de forma rotativa e equilibrada entre os corretores ativos da equipa e calcula o VGV e comissões (6%) por corretor.
-                </p>
-              </div>
-              <div className="flex flex-wrap items-center gap-3">
-                <label className="text-xs text-slate-300 font-bold">
-                  Prazo p/ Aceite (min):
-                  <input
-                    type="number"
-                    value={tempoRepasseMin}
-                    onChange={(e) => setTempoRepasseMin(Number(e.target.value) || 5)}
-                    className="ml-2 w-16 bg-[#020408] border border-slate-700 rounded-lg px-2 py-1 text-[#10b981] font-bold"
-                  />
-                </label>
-                <button
-                  onClick={redistribuirLeadsEquilibrado}
-                  className="px-4 py-2 rounded-xl bg-[#020408] border border-slate-700 hover:border-[#10b981] text-slate-200 hover:text-[#10b981] text-xs font-bold cursor-pointer transition"
-                >
-                  🔀 Redistribuir Leads do CRM (Giro Justo)
-                </button>
-                <button
-                  onClick={() => setRoletaAtiva((v) => !v)}
-                  style={roletaAtiva ? { backgroundColor: '#10b981' } : undefined}
-                  className={`px-4 py-2 rounded-xl text-xs font-bold cursor-pointer ${
-                    roletaAtiva ? 'text-white' : 'bg-slate-800 text-slate-400'
-                  }`}
-                >
-                  {roletaAtiva ? '✅ Roleta Ativa' : '⏸️ Roleta Pausada'}
-                </button>
-              </div>
-            </div>
-
-            {statusRoletaMsg && (
-              <div className="bg-[#020408] border border-[#10b981] rounded-xl px-4 py-3 text-xs font-bold text-[#10b981] flex items-center justify-between">
-                <span>{statusRoletaMsg}</span>
-                <button onClick={() => setStatusRoletaMsg('')} className="text-slate-400 hover:text-white cursor-pointer">✕</button>
-              </div>
-            )}
-
-            {/* Painel de Controlo da Fila Rotativa + Adição Rápida de Corretor */}
-            <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
-              <div className="lg:col-span-5 bg-slate-900 border border-slate-800 rounded-2xl p-5 flex flex-col justify-between">
-                <div>
-                  <span className="text-[10px] font-extrabold uppercase tracking-wider text-slate-400">Próximo Corretor da Vez</span>
-                  <h3 style={{ color: '#10b981' }} className="text-xl font-black text-[#10b981] mt-1">
-                    {roletaAtiva ? (proximoCorretorDaVez?.nome || 'Nenhum corretor ativo') : 'Roleta Pausada (Plantão Geral)'}
-                  </h3>
-                  <p className="text-xs text-slate-400 mt-1">
-                    Critério: menor carga ativa de leads no CRM + desempate por giro rotativo (Round-Robin).
-                  </p>
-                </div>
-                <div className="mt-4 pt-3 border-t border-slate-800 flex items-center justify-between text-xs">
-                  <span className="text-slate-400">Corretores no plantão: <strong className="text-white">{corretoresAtivos.length}</strong></span>
-                  <button
-                    onClick={() => setModalNovoLeadImobi(true)}
-                    style={{ backgroundColor: '#10b981' }}
-                    className="px-3 py-1.5 rounded-lg text-white font-bold cursor-pointer hover:opacity-90"
-                  >
-                    + Testar Novo Lead na Roleta
-                  </button>
-                </div>
-              </div>
-
-              <form
-                onSubmit={adicionarCorretorRoleta}
-                className="lg:col-span-7 bg-slate-900 border border-slate-800 rounded-2xl p-5 flex flex-col justify-between gap-3"
-              >
-                <div>
-                  <span className="text-[10px] font-extrabold uppercase tracking-wider text-slate-400">Adicionar Corretor à Equipa / Roleta</span>
-                  <p className="text-xs text-slate-400 mt-0.5">Inclua corretores para participarem imediatamente na distribuição rotativa.</p>
-                </div>
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
-                  <input
-                    placeholder="Nome (ex: Corretor Lucas)"
-                    value={novoCorretorNome}
-                    onChange={(e) => setNovoCorretorNome(e.target.value)}
-                    className="bg-[#020408] border border-slate-700 rounded-xl px-3 py-2 text-xs text-white"
-                  />
-                  <input
-                    placeholder="WhatsApp (ex: 11988887777)"
-                    value={novoCorretorZap}
-                    onChange={(e) => setNovoCorretorZap(e.target.value)}
-                    className="bg-[#020408] border border-slate-700 rounded-xl px-3 py-2 text-xs text-white"
-                  />
-                  <button
-                    type="submit"
-                    style={{ backgroundColor: '#10b981' }}
-                    className="px-4 py-2 rounded-xl text-white text-xs font-bold cursor-pointer hover:opacity-90"
-                  >
-                    + Incluir na Roleta
-                  </button>
-                </div>
-              </form>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              {(corretoresComMetricas || [])?.map((corretor) => {
-                const ehProximo = roletaAtiva && proximoCorretorDaVez?.id === corretor.id;
-                return (
-                  <div
-                    key={corretor.id}
-                    className={`bg-slate-900 border rounded-2xl p-5 flex flex-col justify-between gap-4 ${
-                      ehProximo ? 'border-[#10b981]' : 'border-slate-800'
-                    }`}
-                  >
-                    <div className="flex items-start justify-between gap-2">
-                      <div>
-                        <div className="flex items-center gap-2">
-                          <h3 className="font-bold text-white">{corretor.nome}</h3>
-                          {ehProximo && (
-                            <span className="px-2 py-0.5 rounded-full bg-[#10b981]/15 text-[#10b981] text-[10px] font-extrabold uppercase">
-                              Da Vez
-                            </span>
-                          )}
-                        </div>
-                        <p className="text-xs text-slate-400 mt-0.5">📱 {corretor.whatsapp}</p>
-                      </div>
-                      <button
-                        onClick={() =>
-                          setCorretoresRoleta((prev) =>
-                            (Array.isArray(prev) ? prev : [])?.map((c) => (c.id === corretor.id ? { ...c, ativo: !c.ativo } : c))
-                          )
-                        }
-                        style={corretor.ativo ? { backgroundColor: '#10b981' } : undefined}
-                        className={`px-3 py-1.5 rounded-lg text-xs font-bold cursor-pointer ${
-                          corretor.ativo ? 'text-white' : 'bg-slate-800 text-slate-400'
-                        }`}
-                      >
-                        {corretor.ativo ? 'No Plantão' : 'Ausente'}
-                      </button>
-                    </div>
-
-                    <div className="bg-[#020408] border border-slate-800 rounded-xl p-3 space-y-1.5 text-xs">
-                      <div className="flex items-center justify-between">
-                        <span className="text-slate-400">Leads atribuídos no CRM:</span>
-                        <span style={{ color: '#10b981' }} className="font-black text-[#10b981]">{corretor.leadsRecebidos}</span>
-                      </div>
-                      <div className="flex items-center justify-between">
-                        <span className="text-slate-400">VGV sob gestão:</span>
-                        <span className="font-bold text-white">{fmtBRL(corretor.vgvAtribuido)}</span>
-                      </div>
-                      <div className="flex items-center justify-between">
-                        <span className="text-slate-400">Comissão prevista (6%):</span>
-                        <span style={{ color: '#10b981' }} className="font-bold text-[#10b981]">{fmtBRL(corretor.comissaoCorretor)}</span>
-                      </div>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
+        {/* ─── ABA 5: ROLETA DE DISTRIBUIÇÃO DE LEADS ───────────────────────
+            Lote 3 — deixou de ser botão solto na barra PRO: virou aba interna
+            do Diretor Comercial IA (`administrador`). A rota `roleta_imobi`
+            continua válida para links diretos e abre direto na sub-aba. */}
+        {(abaAtiva === 'administrador' || abaAtiva === 'roleta_imobi') && (
+          <ModuloComAbas
+            titulo="Diretor Comercial IA"
+            abaInicial={abaAtiva === 'roleta_imobi' ? 'roleta_imobi' : 'administrador'}
+            abas={ABAS_DIRETOR_COMERCIAL}
+            childrenMap={childrenDiretorComercial}
+          />
         )}
+
+        {/* ─── ASSISTENTE FISCAL (aba interna: Repasses & NF) ─────────────────
+            Lote 3 — `Repasses & NF` deixou de ser botão solto na barra PRO e
+            virou aba interna do Assistente Fiscal. A rota `notafiscal`
+            continua válida para links diretos. */}
+        {(abaAtiva === 'contador' || abaAtiva === 'notafiscal') && (
+          <ModuloComAbas
+            titulo="Assistente Fiscal"
+            abaInicial={abaAtiva === 'notafiscal' ? 'notafiscal' : 'contador'}
+            abas={ABAS_ASSISTENTE_FISCAL}
+            childrenMap={childrenAssistenteFiscal}
+          />
+        )}
+
 
         {/* ─── ABA 6: CENTRAL DOS 7 AGENTES DE IA + SIMULADOR AO VIVO ────────── */}
         {abaAtiva === 'agentes_ia' && (
