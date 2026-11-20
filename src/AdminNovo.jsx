@@ -54,6 +54,7 @@ import { TEMAS } from './DashboardTab';
 import { TelaTrialExpirou, TelaBloqueado, TelaLogin } from './components/admin/TelasDeAcesso';
 import ModuloBloqueado from './components/admin/ModuloBloqueado';
 import BarraModulos from './components/admin/BarraModulos';
+import SofiaWhatsAppTab from './components/admin/SofiaWhatsAppTab';
 import HeroAba from './components/admin/HeroAba';
 import CaptacaoNicho from './components/imobi/CaptacaoNicho';
 import { corDaAba, textoSobreCor, comAlpha } from './lib/coresAbas';
@@ -238,6 +239,15 @@ const GRUPOS_MENU_IMOBI = [
           'Central prática de conexão via QR Code e ativação da secretária virtual Sofia para triagem 24h de leads no WhatsApp.',
       },
       {
+        id: 'sofia_whatsapp',
+        label: '📲 Sofia WhatsApp & QR Code',
+        tituloCard: 'SOFIA WHATSAPP & QR CODE',
+        tituloLimpo: 'Sofia WhatsApp & QR Code',
+        tier: 'pro',
+        descricao:
+          'Uma tela só: conexão do WhatsApp da imobiliária e ativação da Sofia por QR Code, sem alternar entre abas.',
+      },
+      {
         id: 'administrador',
         label: '📈 Diretor Comercial IA',
         tituloCard: 'DIRETOR COMERCIAL PREDITIVO',
@@ -369,6 +379,7 @@ const MODULOS_GRATIS_PLG = new Set([
   'equipe',
   'agentes_ia',
   'whatsapp_hub',
+  'sofia_whatsapp',
   'meuplano',
 ]);
 
@@ -496,7 +507,16 @@ export default function Admin() {
     setPedidoNovoProcesso((n) => n + 1);
   }, []);
   const consumirPedidoNovoProcesso = useCallback(() => setPedidoNovoProcesso(0), []);
-  const [tema, setTema] = useState('escuro');
+  // Tema do painel: padrão CLARO. A escolha do usuário é persistida em
+  // `localStorage['temaPainel']` e sobrevive ao recarregamento.
+  const [tema, setTema] = useState(() => {
+    try {
+      const salvo = localStorage.getItem('temaPainel');
+      return salvo === 'escuro' || salvo === 'claro' ? salvo : 'claro';
+    } catch {
+      return 'claro';
+    }
+  });
   const [modoPainel, setModoPainel] = useState(() => {
     try {
       return localStorage.getItem('modoPainel') || 'completo';
@@ -638,7 +658,15 @@ export default function Admin() {
   }, []);
 
   const toggleTema = useCallback(() => {
-    setTema((prev) => (prev === 'escuro' ? 'claro' : 'escuro'));
+    setTema((prev) => {
+      const novo = prev === 'escuro' ? 'claro' : 'escuro';
+      try {
+        localStorage.setItem('temaPainel', novo);
+      } catch {
+        /* modo privado / storage bloqueado: tema segue só na sessão */
+      }
+      return novo;
+    });
   }, []);
 
   const imobiliariaId = useMemo(() => {
@@ -1601,6 +1629,8 @@ export default function Admin() {
     'roleta_imobi',
     'agentes_ia',
     'whatsapp_hub',
+    'secretaria',
+    'sofia_whatsapp',
   ];
 
   const botoesBloco1Essencial = [
@@ -1610,7 +1640,7 @@ export default function Admin() {
     { id: 'visitas_imobi', icone: '📅', label: 'Agenda de Visitas' },
     { id: 'financeiro', icone: '💰', label: 'Financeiro & VGV' },
     { id: 'equipe', icone: '🧑‍💼', label: 'Corretores & Equipe' },
-    { id: 'whatsapp_hub', icone: '💬', label: 'Conexão WhatsApp' },
+    { id: 'agentes_ia', icone: '🤖', label: '7 Agentes de IA' },
     { id: 'meuplano', icone: '⭐', label: 'Meu Plano (10 Dias Grátis)', destaquePlano: true },
   ];
 
@@ -1621,25 +1651,95 @@ export default function Admin() {
   ];
 
   const botoesBloco2EsquadraoIA = [
-    { id: 'agentes_ia', icone: '🤖', label: '7 Agentes de IA' },
     { id: 'radar_captacao', icone: '📡', label: 'Radar de Captação' },
-    { id: 'copiloto', icone: '⚡', label: 'Hermes Copiloto' },
-    { id: 'secretaria', icone: '📷', label: 'QR Code Sofia' },
+    { id: 'sofia_whatsapp', icone: '📲', label: 'Sofia WhatsApp & QR Code' },
     { id: 'administrador', icone: '📈', label: 'Diretor Comercial IA' },
     { id: 'contador', icone: '🏛️', label: 'Assistente Fiscal' },
     { id: 'juridico_imobi', icone: '⚖️', label: 'Assistente Jurídico' },
   ];
 
   const botoesBloco3Gestao = [
-    { id: 'roleta_imobi', icone: '🎯', label: 'Roleta de Leads' },
+    // Lote 3 — `roleta_imobi` e `notafiscal` deixaram de ser botões soltos:
+    // viraram abas internas de `administrador` e `contador` respectivamente.
+    // As rotas continuam válidas para links diretos.
     { id: 'tarefa', icone: '📋', label: 'Vistoria & Laudo IA' },
-    { id: 'notafiscal', icone: '📑', label: 'Repasses & NF' },
     { id: 'migracao', icone: '🔄', label: 'Migração de CRM' },
     { id: 'avaliacao_imovel', icone: '📐', label: 'Avaliação de Imóvel' },
     { id: 'credito', icone: '🏦', label: 'Correspondente / Crédito' },
     { id: 'config', icone: '⚙️', label: 'Configurações' },
     { id: 'especialista', icone: '🎧', label: 'Suporte Especialista' },
   ];
+
+  // Lote 2 — mapa de módulos e id da oficina, usados pela aba unificada Sofia
+  const modulosMapa = MODULOS_MAP;
+  const oficinaAtualId =
+    dadosImobiliaria?.oficinaId || dadosImobiliaria?.id || dadosImobiliaria?.uid || null;
+
+  // Lote 2 — a tela "Conexão WhatsApp" é reutilizada pela aba unificada
+  // `sofia_whatsapp`, então fica em uma variável em vez de JSX solto.
+  const painelConexaoWhatsApp = (
+    <div className="bg-slate-900 border border-slate-800 rounded-3xl p-6 md:p-8 space-y-6">
+      <div>
+        <HeroAba
+          icone={MessageCircle}
+          titulo="Central de Conexão"
+          destaque="WhatsApp & Typebot"
+          chip="Atendimento automático 24h sem servidor Docker"
+          subtitulo="Ligue o fluxo visual na nuvem direto à chave gratuita do Gemini Flash."
+          cor="#22c55e"
+        />
+      </div>
+
+      <ControleInteligenciaIA isPro={isPro} setAbaAtiva={setAbaAtiva} />
+
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="bg-[#020408] border border-slate-800 rounded-2xl p-5 space-y-2">
+          <span style={{ color: '#10b981' }} className="text-xs font-bold text-[#10b981]">PASSO 1 • CÉREBRO GRATUITO</span>
+          <h3 className="font-bold text-white">Chave Gemini AI Studio</h3>
+          <p className="text-xs text-slate-400">Motor `gemini-2.5-flash` pronto para responder dúvidas de imóveis e qualificar leads 24h.</p>
+        </div>
+        <div className="bg-[#020408] border border-slate-800 rounded-2xl p-5 space-y-2">
+          <span style={{ color: '#10b981' }} className="text-xs font-bold text-[#10b981]">PASSO 2 • FLUXO VISUAL</span>
+          <h3 className="font-bold text-white">Typebot Cloud</h3>
+          <p className="text-xs text-slate-400">Triagem de Compra/Locação + Coleta de Bairro/Orçamento enviando Webhook para o painel.</p>
+        </div>
+        <div className="bg-[#020408] border border-slate-800 rounded-2xl p-5 space-y-2">
+          <span style={{ color: '#10b981' }} className="text-xs font-bold text-[#10b981]">PASSO 3 • QR CODE WHATSAPP</span>
+          <h3 className="font-bold text-white">Gateway WhatsApp</h3>
+          <p className="text-xs text-slate-400">Leitura rápida de QR Code no celular do corretor para ativar os 10 dias de teste acompanhado.</p>
+        </div>
+      </div>
+    </div>
+  );
+
+  // Lote 2 — telas internas da aba unificada `sofia_whatsapp`. As três rotas
+  // (`sofia_whatsapp`, `whatsapp_hub`, `secretaria`) usam este mesmo mapa.
+  const childrenSofiaWhatsApp = {
+    whatsapp_hub: painelConexaoWhatsApp,
+    secretaria: modulosMapa?.secretaria ? (
+      (() => {
+        const Comp = modulosMapa.secretaria;
+        return (
+          <SafeBoundary
+            fallback={
+              <div className="rounded-2xl border border-white/[0.06] bg-white/[0.015] p-8 text-center text-xs text-slate-500">
+                QR Code Sofia indisponível no momento.
+              </div>
+            }
+          >
+            <Comp
+              isPro={isPro}
+              abaAtiva={abaAtiva}
+              setAbaAtiva={setAbaAtiva}
+              oficinaId={oficinaAtualId}
+              dadosOficina={dadosImobiliaria}
+              dadosImobiliaria={dadosImobiliaria}
+            />
+          </SafeBoundary>
+        );
+      })()
+    ) : null,
+  };
 
   return (
     <div
@@ -2670,44 +2770,23 @@ export default function Admin() {
           </div>
         )}
 
-        {/* ─── ABA 7: HUB DE CONEXÃO WHATSAPP + TYPEBOT + GEMINI ─────────────── */}
-        {abaAtiva === 'whatsapp_hub' && (
-          <div className="bg-slate-900 border border-slate-800 rounded-3xl p-6 md:p-8 space-y-6">
-            <div>
-              <HeroAba
-                icone={MessageCircle}
-                titulo="Central de Conexão"
-                destaque="WhatsApp & Typebot"
-                chip="Atendimento automático 24h sem servidor Docker"
-                subtitulo="Ligue o fluxo visual na nuvem direto à chave gratuita do Gemini Flash."
-                cor="#22c55e"
-              />
-            </div>
-
-            <ControleInteligenciaIA
-              isPro={isPro}
-              setAbaAtiva={setAbaAtiva}
-            />
-
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div className="bg-[#020408] border border-slate-800 rounded-2xl p-5 space-y-2">
-                <span style={{ color: '#10b981' }} className="text-xs font-bold text-[#10b981]">PASSO 1 • CÉREBRO GRATUITO</span>
-                <h3 className="font-bold text-white">Chave Gemini AI Studio</h3>
-                <p className="text-xs text-slate-400">Motor `gemini-2.5-flash` pronto para responder dúvidas de imóveis e qualificar leads 24h.</p>
-              </div>
-              <div className="bg-[#020408] border border-slate-800 rounded-2xl p-5 space-y-2">
-                <span style={{ color: '#10b981' }} className="text-xs font-bold text-[#10b981]">PASSO 2 • FLUXO VISUAL</span>
-                <h3 className="font-bold text-white">Typebot Cloud</h3>
-                <p className="text-xs text-slate-400">Triagem de Compra/Locação + Coleta de Bairro/Orçamento enviando Webhook para o painel.</p>
-              </div>
-              <div className="bg-[#020408] border border-slate-800 rounded-2xl p-5 space-y-2">
-                <span style={{ color: '#10b981' }} className="text-xs font-bold text-[#10b981]">PASSO 3 • QR CODE WHATSAPP</span>
-                <h3 className="font-bold text-white">Gateway WhatsApp</h3>
-                <p className="text-xs text-slate-400">Leitura rápida de QR Code no celular do corretor para ativar os 10 dias de teste acompanhado.</p>
-              </div>
-            </div>
-          </div>
+        {/* ─── ABA UNIFICADA: SOFIA WHATSAPP & QR CODE ────────────────────────
+            Uma entrada de menu, duas telas originais preservadas por dentro.
+            As três rotas renderizam a MESMA tela; muda só a sub-aba inicial:
+              • `sofia_whatsapp` → Conexão WhatsApp (entrada do menu)
+              • `whatsapp_hub`   → Conexão WhatsApp (link direto antigo)
+              • `secretaria`     → QR Code Sofia    (link direto antigo)
+            Nenhuma rota foi removida. */}
+        {(abaAtiva === 'sofia_whatsapp' ||
+          abaAtiva === 'whatsapp_hub' ||
+          abaAtiva === 'secretaria') && (
+          <SofiaWhatsAppTab
+            abaInicial={abaAtiva === 'secretaria' ? 'secretaria' : 'whatsapp_hub'}
+            onAbrirCopiloto={() => setAbaAtiva('copiloto')}
+            childrenMap={childrenSofiaWhatsApp}
+          />
         )}
+
 
         {/* ─── MÓDULOS EXISTENTES DO PROJETO (FINANCEIRO, HERMES, EQUIPE...) ─── */}
         {!ABAS_NATIVAS_IMOBI.includes(abaAtiva) && (

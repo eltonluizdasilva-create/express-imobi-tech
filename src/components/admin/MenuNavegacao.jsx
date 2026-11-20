@@ -46,8 +46,11 @@ export default function MenuNavegacao({
   ];
 
   const modulosIA = [
-    { id: 'copiloto', label: 'COPILOTO', icon: Bot },
-    { id: 'secretaria', label: 'SECRETÁRIA', icon: PhoneCall },
+    // Lote 2 — `copiloto` (Hermes) saiu da barra lateral: o acesso segue pela
+    // aba `administrador` (Diretor Comercial IA) e pelo atalho interno da tela
+    // Sofia WhatsApp & QR Code. `secretaria` e `whatsapp_hub` foram reunidas em
+    // `sofia_whatsapp`; as rotas antigas continuam válidas para links diretos.
+    { id: 'sofia_whatsapp', label: 'SOFIA WHATSAPP', icon: PhoneCall },
     { id: 'administrador', label: 'ADMINISTRADOR', icon: UserX },
     { id: 'contador', label: 'ASSIST. FISCAL', icon: Calculator },
     { id: 'retorno', label: 'RETORNO', icon: RotateCcw },
