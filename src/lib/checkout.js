@@ -43,6 +43,45 @@ export function urlCheckoutPro(env = {}, ciclo = 'anual') {
   return '';
 }
 
+/**
+ * Link de pagamento (Asaas) do degrau escolhido.
+ *   VITE_ASAAS_LINK_ESSENCIAL → Essencial Plus (R$ 39,90)
+ *   VITE_ASAAS_LINK_PRO       → PRO / Profissional (R$ 99,00)
+ *   VITE_ASAAS_LINK_PRO_ANUAL → opcional, só para o ciclo anual do PRO
+ *
+ * Recebe VALORES (nunca `import.meta.env` inteiro) pelo mesmo motivo de
+ * `urlCheckoutPro`: o bundle não pode variar de máquina para máquina.
+ */
+export function urlAsaasLink({ essencial = '', pro = '', proAnual = '' } = {}, plano = 'pro', ciclo = 'mensal') {
+  const chave = String(plano || '').toLowerCase() === 'essencial_plus' ? 'essencial_plus' : 'pro';
+  const anual = String(ciclo || '').toLowerCase() === 'anual';
+  const bruto = chave === 'essencial_plus' ? essencial : anual ? proAnual || pro : pro;
+  const url = String(bruto || '').trim();
+  return /^https?:\/\//i.test(url) ? url : '';
+}
+
+/**
+ * Anexa os dados da conta ao link de pagamento: `email` e
+ * `externalReference=<oficinaId>` (o campo que o webhook do Asaas lê).
+ * Parâmetro já presente na URL é preservado — o link configurado no painel manda.
+ */
+export function comDadosDaConta(url, { email = '', oficinaId = '' } = {}) {
+  const alvo = String(url || '').trim();
+  if (!alvo) return '';
+  try {
+    const destino = new URL(alvo);
+    const mail = String(email || '').trim();
+    const oficina = String(oficinaId || '').trim();
+    if (mail && !destino.searchParams.has('email')) destino.searchParams.set('email', mail);
+    if (oficina && !destino.searchParams.has('externalReference')) {
+      destino.searchParams.set('externalReference', oficina);
+    }
+    return destino.toString();
+  } catch {
+    return alvo;
+  }
+}
+
 export function mensagemCheckout({ planoNome = 'Plano PRO', ciclo = 'mensal', email = '', uid = '', nomeOficina = '', valor = '' } = {}) {
   const valorTxt = valor ? ` (${valor})` : '';
   return [

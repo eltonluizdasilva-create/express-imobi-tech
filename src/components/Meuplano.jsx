@@ -6,7 +6,7 @@ import {
 import { getAuth } from 'firebase/auth';
 import { PLANOS_PRO, WHATSAPP_COMERCIAL } from '../lib/planos';
 import { DEGRAUS, precoMensal, detalheCiclo, rotuloEconomia } from '../lib/planosComerciais';
-import { destinoCheckout, urlCheckoutPro, abrirDestino } from '../lib/checkout';
+import { destinoCheckout, urlCheckoutPro, urlAsaasLink, comDadosDaConta, abrirDestino } from '../lib/checkout';
 
 const ICONE_DEGRAU = {
   essencial: Home,
@@ -39,22 +39,75 @@ export default function ModuloMeuPlano({ dadosOficina }) {
     return {
       email: conta?.email || '',
       uid: conta?.uid || '',
+      // oficinaId é o id do documento em `oficinas` (multi-tenant); o uid do
+      // usuário pode ser de um corretor da equipe, então não serve como tenant.
+      oficinaId: dadosOficina?.id || localStorage.getItem('oficinaId') || '',
       nomeOficina: dadosOficina?.nomeOficina || '',
     };
   };
 
-  /** Card 2 — checkout do PRO no ciclo escolhido. */
+  /**
+   * Link de pagamento (Asaas) do degrau, já com e-mail e oficinaId na URL.
+   * Vazio quando a variável do plano não está configurada.
+   */
+  const linkDoPlano = (planoKey, conta) =>
+    comDadosDaConta(
+      urlAsaasLink(
+        {
+          essencial: import.meta.env?.VITE_ASAAS_LINK_ESSENCIAL,
+          pro: import.meta.env?.VITE_ASAAS_LINK_PRO,
+          proAnual: import.meta.env?.VITE_ASAAS_LINK_PRO_ANUAL,
+        },
+        planoKey,
+        ciclo,
+      ),
+      { email: conta.email, oficinaId: conta.oficinaId },
+    );
+
+  /** Card 2 — Essencial Plus (R$ 39,90): link do Asaas ou WhatsApp comercial. */
+  const assinarEssencialPlus = () => {
+    const essencialPlus = DEGRAUS.find((d) => d.key === 'essencial_plus');
+    const conta = dadosConta();
+    const valor = `${precoMensal(essencialPlus, ciclo)}/mês`;
+
+    const destino = destinoCheckout({
+      checkoutUrl: linkDoPlano('essencial_plus', conta),
+      whatsapp: import.meta.env?.VITE_SU_WPP || WHATSAPP_COMERCIAL,
+      planoNome: 'Essencial Plus',
+      ciclo,
+      email: conta.email,
+      uid: conta.uid,
+      nomeOficina: conta.nomeOficina,
+      valor,
+    });
+
+    const abriu = abrirDestino(destino);
+    if (!abriu) {
+      mostrarMensagem('O navegador bloqueou a janela. Libere pop-ups e tente novamente.');
+      return;
+    }
+    mostrarMensagem(
+      destino.tipo === 'checkout'
+        ? 'Abrimos o pagamento do Essencial Plus em outra aba.'
+        : 'Abrimos o WhatsApp comercial com o Essencial Plus, seu e-mail e ID já preenchidos.',
+    );
+  };
+
+  /** Card 3 — checkout do PRO no ciclo escolhido. */
   const assinarPro = () => {
     const pro = DEGRAUS.find((d) => d.key === 'pro');
-    const { email, uid, nomeOficina } = dadosConta();
+    const conta = dadosConta();
+    const { email, uid, nomeOficina } = conta;
     const valor = `${precoMensal(pro, ciclo)}/mês${ciclo === 'anual' ? ' (cobrado R$ 1.068,00/ano)' : ''}`;
 
     const destino = destinoCheckout({
-      checkoutUrl: urlCheckoutPro({
-        mensal: import.meta.env?.VITE_CHECKOUT_PRO_MENSAL_URL,
-        anual: import.meta.env?.VITE_CHECKOUT_PRO_ANUAL_URL,
-        unico: import.meta.env?.VITE_CHECKOUT_PRO_URL,
-      }, ciclo),
+      checkoutUrl:
+        linkDoPlano('pro', conta) ||
+        urlCheckoutPro({
+          mensal: import.meta.env?.VITE_CHECKOUT_PRO_MENSAL_URL,
+          anual: import.meta.env?.VITE_CHECKOUT_PRO_ANUAL_URL,
+          unico: import.meta.env?.VITE_CHECKOUT_PRO_URL,
+        }, ciclo),
       whatsapp: import.meta.env?.VITE_SU_WPP || WHATSAPP_COMERCIAL,
       planoNome: `Completo PRO (${ciclo})`,
       ciclo,
@@ -71,7 +124,7 @@ export default function ModuloMeuPlano({ dadosOficina }) {
     }
     mostrarMensagem(
       destino.tipo === 'checkout'
-        ? 'Abrimos o checkout do PRO em outra aba.'
+        ? 'Abrimos o pagamento do PRO em outra aba.'
         : 'Abrimos o WhatsApp comercial com seu plano, e-mail e ID já preenchidos.',
     );
   };
@@ -120,7 +173,7 @@ export default function ModuloMeuPlano({ dadosOficina }) {
 
   const acaoCta = (degrau) => {
     if (degrau.key === 'pro') return assinarPro();
-    if (degrau.key === 'essencial_plus') return falarEspecialista('Essencial Plus');
+    if (degrau.key === 'essencial_plus') return assinarEssencialPlus();
     if (degrau.key === 'essencial') return falarSobreDowngrade();
     return falarEspecialista(degrau.nome);
   };
