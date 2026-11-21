@@ -18,12 +18,12 @@
 |---|---|
 | Agentes do produto (7 + 3 assistentes) | 10 |
 | Agentes internos da Express Tech | 7 |
-| Agentes de código / orquestração | 5 |
+| Agentes de código / orquestração | 7 |
 | Skills Express Tech (Hermes) | 7 |
 | Skills do projeto (Opensquad) | 11 |
 | Skills globais do Hermes (ativas) | 41 |
 | Workflows de instrução (Opensquad) | 3 |
-| **Total ativo** | **84** |
+| **Total ativo** | **86** |
 | Skills globais arquivadas (`_archived_skills/`) | 10 |
 
 ---
@@ -35,7 +35,7 @@ landing e no painel.
 
 | Agente | Caminho | O que faz na prática | Gatilho | Status |
 |---|---|---|---|---|
-| Sofia | `src/AdminNovo.jsx` · `AGENTES_INICIAIS[0]` | Recebe o lead no WhatsApp em segundos e classifica o interesse (urbano, loteamento, rural, locação). | mensagem recebida no WhatsApp do tenant | Ativo |
+| Sofia | `src/AdminNovo.jsx` · `AGENTES_INICIAIS[0]` · prompt em `src/agent/sofiaPrompt.js` | Recebe o lead no WhatsApp em segundos e classifica o interesse (urbano, loteamento, rural, locação). | mensagem recebida no WhatsApp do tenant | Ativo |
 | Iago | `src/AdminNovo.jsx` · `AGENTES_INICIAIS[1]` | Filtra orçamento, metragem, hectares e garantias antes de ocupar o corretor. | Sofia conclui a triagem | Ativo |
 | Téo | `src/AdminNovo.jsx` · `AGENTES_INICIAIS[2]` | Cruza a agenda do corretor e agenda a visita com lembrete. | lead qualificado pelo Iago | Ativo |
 | Lara | `src/AdminNovo.jsx` · `AGENTES_INICIAIS[3]` | Estrutura condições, sinal e permuta e devolve o resumo para aprovação. | pedido de proposta no atendimento | Ativo |
@@ -60,6 +60,8 @@ landing e no painel.
 | Router Hermes | `src/agent/hermesRouter.js` | Decide qual agente responde a cada mensagem (regra por palavra-chave). | toda mensagem que entra no copiloto | Ativo |
 | Cliente Hermes | `src/agent/hermesClient.js` | Chama o endpoint `/api/ai` com o prompt do agente e devolve o texto. | chamada interna dos agentes acima | Ativo |
 | Prompt Imobi | `src/agent/imobiPrompt.js` | Persona e regras do copiloto no contexto imobiliário. | carregado pelo router | Ativo |
+| Prompt Sofia | `src/agent/sofiaPrompt.js` | Persona, travas (escopo, zero alucinação, LGPD), catálogo real formatado, triagem por nicho e handoff `CHAMAR_IAGO`/`CHAMAR_CORRETOR` da Sofia. Monta o payload do `/api/ai` sem nenhuma chave (D-21.06). | atendimento de lead no WhatsApp / modo suporte ou simulação | Ativo |
+| Proxy de IA | `api/ai.js` + `api/_authToken.js` + `api/_gatilho.js` | Fala com DeepSeek/Groq/Gemini/Zhipu/SiliconFlow com chave no servidor, exige ID token, aplica teto de payload, mídia (imagem/áudio/PDF no Gemini) e remove o bloco `[GATILHO_HERMES]` antes de devolver o texto (D-21.07). | qualquer chamada de IA do painel | Ativo |
 
 ---
 

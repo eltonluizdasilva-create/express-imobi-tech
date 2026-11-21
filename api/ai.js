@@ -6,12 +6,32 @@
  *
  * CONTRATO
  *   POST /api/ai  { provider, prompt?, messages?, systemPrompt?, temperature?,
- *                   maxTokens?, model?, images? }  →  200 { text, provider, model }
- *                   images: array de data URLs (data:image/jpeg;base64,...),
- *                   até 3, usadas como inline_data no Gemini. Em provedores
- *                   OpenAI-compatíveis são ignoradas (campo `avisos`).
- *   GET  /api/ai?provider=deepseek          →  diagnóstico (não gasta tokens
- *                                              além de 1 chamada mínima)
+ *                   maxTokens?, model?, images?, arquivos? }
+ *                   -> 200 { text, provider, model, gatilho?, avisos? }
+ *   Authorization: Bearer <Firebase ID token>           (obrigatorio por padrao)
+ *
+ *   O texto devolvido em `text` JA VEM SEM o bloco `[GATILHO_HERMES: {...}]`.
+ *   Quando o agente escreveu esse bloco, o objeto parseado volta em `gatilho`
+ *   ({ acao, motivo }) e NAO vai para o cliente. Ver api/_gatilho.js.
+ *
+ *   images:   array de data URLs (image/*;base64,...), ate 3.
+ *   arquivos: array de data URLs OU { mimeType, data } aceitando imagem,
+ *             audio (mp3/wav/ogg/opus/flac/aac/aiff/webm) e application/pdf.
+ *             Somente o provedor `gemini` recebe o conteudo; nos outros o
+ *             arquivo e descartado com `aviso` (nunca erro silencioso).
+ *   GET  /api/ai?provider=deepseek          -> diagnostico (tambem exige auth;
+ *                                              gasta 1 chamada minima)
+ *
+ * LIMITES (validados antes de qualquer token gasto)
+ *   - 40 mensagens, 20.000 caracteres por mensagem;
+ *   - 40.000 caracteres no TOTAL da requisicao (413 `payload_grande`);
+ *   - maxTokens padrão 800, teto 4096;
+ *   - 30 requisicoes por janela de 60 s, por uid autenticado (ou IP).
+ *
+ * AUTENTICACAO
+ *   `AI_REQUIRE_AUTH=false` desliga a exigencia (apenas para harness local).
+ *   O padrao e exigir, igual a api/places.js.
+
  *
  * ERROS (sempre com o motivo real, não mascarado)
  *   { error, provider, status, model, detail, hint, tentativas }
@@ -21,6 +41,9 @@
  *   SILICONFLOW_API_KEY
  * ============================================================================
  */
+
+import { verificarIdToken } from './_authToken.js';
+import { separarGatilho } from './_gatilho.js';
 
 const PROVEDORES = {
   deepseek: {
@@ -65,8 +88,14 @@ const PROVEDORES = {
 
 const LIMITE_PROMPT = 20000;
 const LIMITE_MENSAGENS = 40;
+const LIMITE_TOTAL_CARACTERES = 40000;
+const MAX_TOKENS_PADRAO = 800;
+const MAX_TOKENS_TETO = 4096;
 const TIMEOUT_MS = 30000;
 const MAX_TENTATIVAS = 3;
+
+/** Igual a api/places.js: exigir token e o padrao; `false` so em harness. */
+const EXIGIR_AUTH = String(process.env.AI_REQUIRE_AUTH ?? 'true') !== 'false';
 
 /* ---------------------------- rate limit best-effort --------------------- */
 const janelas = new Map();
@@ -96,25 +125,85 @@ function lerChave(nomeEnv) {
   return { presente: valor.length > 0, valor };
 }
 
-const LIMITE_IMAGENS = 3;
-const MAX_BASE64_POR_IMAGEM = 3 * 1024 * 1024; // ~3 MB de base64 (~2,2 MB de imagem)
+const LIMITE_ARQUIVOS = 3;
+const MAX_BASE64_POR_ARQUIVO = 3 * 1024 * 1024; // ~3 MB de base64 (~2,2 MB do arquivo)
+const MAX_BASE64_TOTAL = 8 * 1024 * 1024;
+
+const MIME_IMAGEM = /^image\/(jpeg|jpg|png|webp|gif|heic|heif)$/i;
+const MIME_AUDIO = /^audio\/(mpeg|mp3|wav|x-wav|ogg|opus|flac|aac|aiff|webm)$/i;
+const MIME_PDF = /^application\/pdf$/i;
+
+const RE_DATA_URL = /^data:([a-zA-Z0-9.+-]+\/[a-zA-Z0-9.+-]+);base64,([A-Za-z0-9+/=\s]+)$/;
+
+function tipoDeMidia(mimeType) {
+  if (MIME_IMAGEM.test(mimeType)) return 'imagem';
+  if (MIME_AUDIO.test(mimeType)) return 'audio';
+  if (MIME_PDF.test(mimeType)) return 'pdf';
+  return null;
+}
+
+/** Aceita "data:mime;base64,..." ou { mimeType, data }. */
+function lerArquivo(item) {
+  if (typeof item === 'string') {
+    const casou = item.trim().match(RE_DATA_URL);
+    if (!casou) return null;
+    return { mimeType: casou[1].toLowerCase(), data: casou[2].replace(/\s+/g, '') };
+  }
+  if (!item || typeof item !== 'object') return null;
+
+  let mimeType = String(item.mimeType || item.mime_type || item.type || '').toLowerCase();
+  let data = String(item.data || item.base64 || '').trim();
+
+  const casou = data.match(RE_DATA_URL);
+  if (casou) {
+    if (!mimeType) mimeType = casou[1].toLowerCase();
+    data = casou[2].replace(/\s+/g, '');
+  }
+
+  if (!mimeType || !data) return null;
+  return { mimeType, data };
+}
 
 /**
- * Converte ["data:image/jpeg;base64,AAAA"] em [{ mimeType, data }].
- * Entradas inválidas ou grandes demais são descartadas silenciosamente.
+ * Normaliza `images` + `arquivos` (e sinônimos) em [{ mimeType, data, tipo }].
+ * Entradas inválidas/grandes são descartadas e a razão volta em `aviso`.
  */
-function normalizarImagens(bruto) {
-  if (!Array.isArray(bruto)) return [];
-  const saida = [];
-  for (const item of bruto.slice(0, LIMITE_IMAGENS)) {
-    const texto = String(item || '');
-    const casou = texto.match(/^data:(image\/[a-zA-Z0-9.+-]+);base64,([A-Za-z0-9+/=\s]+)$/);
-    if (!casou) continue;
-    const dados = casou[2].replace(/\s+/g, '');
-    if (!dados.length || dados.length > MAX_BASE64_POR_IMAGEM) continue;
-    saida.push({ mimeType: casou[1].toLowerCase(), data: dados });
+function normalizarArquivos(brutos) {
+  const lista = (Array.isArray(brutos) ? brutos : []).flatMap((b) => (Array.isArray(b) ? b : [b]));
+  const arquivos = [];
+  const avisos = [];
+  let totalBase64 = 0;
+  let invalidos = 0;
+  let grandes = 0;
+  let tipoInvalido = 0;
+
+  for (const bruto of lista) {
+    if (arquivos.length >= LIMITE_ARQUIVOS) {
+      avisos.push(`Máximo de ${LIMITE_ARQUIVOS} arquivos por requisição — os excedentes foram ignorados.`);
+      break;
+    }
+    const lido = lerArquivo(bruto);
+    if (!lido) { invalidos += 1; continue; }
+
+    const tipo = tipoDeMidia(lido.mimeType);
+    if (!tipo) { tipoInvalido += 1; continue; }
+    if (lido.data.length > MAX_BASE64_POR_ARQUIVO) { grandes += 1; continue; }
+    if (totalBase64 + lido.data.length > MAX_BASE64_TOTAL) {
+      avisos.push('Limite total de anexos (8 MB) atingido — arquivos seguintes ignorados.');
+      break;
+    }
+
+    totalBase64 += lido.data.length;
+    arquivos.push({ mimeType: lido.mimeType, data: lido.data, tipo });
   }
-  return saida;
+
+  if (invalidos) avisos.push(`${invalidos} anexo(s) sem data URL base64 válida foram ignorados.`);
+  if (grandes) avisos.push(`${grandes} anexo(s) acima de 3 MB (base64) foram ignorados.`);
+  if (tipoInvalido) {
+    avisos.push(`${tipoInvalido} anexo(s) de tipo não suportado (aceitos: imagem, áudio e PDF).`);
+  }
+
+  return { arquivos, avisos };
 }
 
 function normalizarMensagens(corpo) {
@@ -139,26 +228,46 @@ function normalizarMensagens(corpo) {
   return lista;
 }
 
-function montarRequisicao(nome, provedor, modelo, mensagens, temperatura, maxTokens, chave, imagens = []) {
+/**
+ * Tamanho REAL da entrada, antes de qualquer corte por mensagem:
+ * uma mensagem de 41k precisa virar 413, não ser truncada em silêncio.
+ */
+function medirEntrada(corpo) {
+  let total = 0;
+  if (typeof corpo.systemPrompt === 'string') total += corpo.systemPrompt.length;
+  if (typeof corpo.prompt === 'string') total += corpo.prompt.length;
+  if (Array.isArray(corpo.messages)) {
+    for (const mensagem of corpo.messages) {
+      if (mensagem && typeof mensagem.content === 'string') total += mensagem.content.length;
+    }
+  }
+  return total;
+}
+
+function montarRequisicao(nome, provedor, modelo, mensagens, temperatura, maxTokens, chave, arquivos = []) {
   if (provedor.tipo === 'gemini') {
     const sistema = mensagens.filter((m) => m.role === 'system').map((m) => m.content).join('\n');
     const conversa = mensagens
       .filter((m) => m.role !== 'system')
       .map((m) => ({ role: m.role === 'assistant' ? 'model' : 'user', parts: [{ text: m.content }] }));
 
-    // Multimodal: as imagens entram no ÚLTIMO turno do usuário, no formato
-    // inline_data do Gemini (v1beta aceita inline_data/inlineData).
-    if (imagens.length && conversa.length) {
+    // Multimodal: imagem, áudio e PDF entram no ÚLTIMO turno do usuário, no
+    // formato inline_data do Gemini (v1beta aceita inline_data e inlineData).
+    if (arquivos.length) {
       let alvo = -1;
       for (let i = conversa.length - 1; i >= 0; i -= 1) {
         if (conversa[i].role === 'user') { alvo = i; break; }
       }
-      if (alvo >= 0) {
-        for (const img of imagens) {
-          conversa[alvo].parts.push({
-            inline_data: { mime_type: img.mimeType, data: img.data },
-          });
-        }
+      // Gemini exige ao menos um turno `user`: sem texto do usuário, cria um
+      // turno neutro só para carregar o anexo (o systemInstruction manda no resto).
+      if (alvo < 0) {
+        conversa.push({ role: 'user', parts: [{ text: 'Segue o anexo.' }] });
+        alvo = conversa.length - 1;
+      }
+      for (const arquivo of arquivos) {
+        conversa[alvo].parts.push({
+          inline_data: { mime_type: arquivo.mimeType, data: arquivo.data },
+        });
       }
     }
 
@@ -320,10 +429,43 @@ async function diagnostico(req, res) {
   }
 }
 
+/* -------------------------------- auth ---------------------------------- */
+
+/**
+ * Exige Firebase ID token (padrão de api/places.js). `AI_REQUIRE_AUTH=false`
+ * existe só para harness local — produção roda com a exigência ligada.
+ * @returns {Promise<{ok: true, uid: string|null} | {ok: false}>}
+ */
+async function autorizar(req, res) {
+  if (!EXIGIR_AUTH) return { ok: true, uid: null };
+
+  const bruto = req.headers?.authorization || req.headers?.Authorization || '';
+  let resultado;
+  try {
+    resultado = await verificarIdToken(bruto);
+  } catch (erro) {
+    resultado = { ok: false, motivo: String(erro?.message || erro).slice(0, 160) };
+  }
+
+  if (!resultado.ok) {
+    res.status(401).json({
+      error: 'Não autorizado',
+      codigo: 'nao_autorizado',
+      motivo: resultado.motivo,
+      hint: 'Envie Authorization: Bearer <ID token do Firebase Auth>.',
+    });
+    return { ok: false };
+  }
+  return { ok: true, uid: resultado.uid };
+}
+
 /* --------------------------------- handler ------------------------------- */
 
 export default async function handler(req, res) {
   res.setHeader('Cache-Control', 'no-store');
+
+  const sessao = await autorizar(req, res);
+  if (!sessao.ok) return;
 
   if (req.method === 'GET') return diagnostico(req, res);
 
@@ -333,7 +475,7 @@ export default async function handler(req, res) {
   }
 
   const ip = ipDaRequisicao(req);
-  if (excedeuLimite(ip)) {
+  if (excedeuLimite(sessao.uid || ip)) {
     return res.status(429).json({ error: 'Muitas requisições. Tente em instantes.' });
   }
 
@@ -362,22 +504,37 @@ export default async function handler(req, res) {
     return res.status(400).json({ error: 'Envie prompt ou messages' });
   }
 
-  const imagens = normalizarImagens(corpo.images);
-  const avisos = [];
-  if (Array.isArray(corpo.images) && corpo.images.length && !imagens.length) {
-    avisos.push('Nenhuma imagem válida: envie data URLs image/*;base64 de até 3 MB.');
+  const totalCaracteres = medirEntrada(corpo);
+  if (totalCaracteres > LIMITE_TOTAL_CARACTERES) {
+    return res.status(413).json({
+      error: 'Requisição grande demais',
+      codigo: 'payload_grande',
+      totalCaracteres,
+      limite: LIMITE_TOTAL_CARACTERES,
+      hint: 'Corte o histórico ou o catálogo antes de chamar /api/ai.',
+    });
   }
-  if (imagens.length && provedor.tipo !== 'gemini') {
-    avisos.push(`Provedor ${nome} não aceita imagem nesta API — use gemini para análise visual.`);
+
+  const { arquivos, avisos: avisosArquivos } = normalizarArquivos([
+    corpo.images,
+    corpo.arquivos,
+    corpo.midias,
+    corpo.media,
+  ]);
+  const avisos = [...avisosArquivos];
+  const arquivosEnviaveis = provedor.tipo === 'gemini' ? arquivos : [];
+  if (arquivos.length && provedor.tipo !== 'gemini') {
+    avisos.push(`Provedor ${nome} não aceita imagem/áudio/PDF nesta API — use gemini para análise de mídia.`);
   }
 
   const temperatura = Number.isFinite(corpo.temperature)
     ? Math.min(Math.max(corpo.temperature, 0), 2)
     : 0.7;
 
+  // Padrão seguro: sem maxTokens o provedor pode devolver respostas longas e caras.
   const maxTokens = Number.isFinite(corpo.maxTokens)
-    ? Math.min(Math.max(Math.trunc(corpo.maxTokens), 1), 4096)
-    : undefined;
+    ? Math.min(Math.max(Math.trunc(corpo.maxTokens), 1), MAX_TOKENS_TETO)
+    : MAX_TOKENS_PADRAO;
 
   // Cadeia de tentativa: modelo pedido (se válido) + os seguintes da lista.
   const pedido = typeof corpo.model === 'string' ? corpo.model : '';
@@ -394,20 +551,22 @@ export default async function handler(req, res) {
     try {
       const { url, init } = montarRequisicao(
         nome, provedor, modelo, mensagens, temperatura, maxTokens, chave.valor,
-        provedor.tipo === 'gemini' ? imagens : [],
+        arquivosEnviaveis,
       );
       const resposta = await fetch(url, { ...init, signal: controle.signal });
       const bruto = await resposta.text();
 
       if (resposta.ok) {
-        const texto = extrairTexto(provedor.tipo, bruto);
-        if (!texto) {
+        const textoCru = extrairTexto(provedor.tipo, bruto);
+        if (!textoCru) {
           ultimo = { status: 502, modelo, mensagem: 'Resposta sem texto', bruto };
           continue;
         }
+        const { texto, gatilho } = separarGatilho(textoCru);
         return res.status(200).json({
           text: texto, provider: nome, model: modelo,
-          ...(imagens.length && provedor.tipo === 'gemini' ? { imagensEnviadas: imagens.length } : {}),
+          ...(gatilho ? { gatilho } : {}),
+          ...(arquivosEnviaveis.length ? { arquivosEnviados: arquivosEnviaveis.length } : {}),
           ...(avisos.length ? { avisos } : {}),
         });
       }

@@ -2,10 +2,12 @@
  * Cliente do Agente Hermes (agent) — usa o proxy /api/ai.
  * Chamada generica reutilizavel por qualquer agente.
  */
+import { cabecalhosIA } from '../lib/aiAuth';
+
 export async function executarAgenteHermes(promptSistema, historicoMensagens) {
   const resposta = await fetch('/api/ai', {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: await cabecalhosIA(),
     body: JSON.stringify({
       provider: 'deepseek',
       model: 'deepseek-chat',

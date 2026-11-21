@@ -1,5 +1,6 @@
 import { useState } from 'react';
 
+import { cabecalhosIA } from '../lib/aiAuth';
 /**
  * AGENTES_CONFIG
  * Definições rígidas de Personas e System Prompts para o hub de Inteligência Artificial.
@@ -71,7 +72,7 @@ export function useAgentesIA() {
 
             const response = await fetch('/api/ai', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: await cabecalhosIA(),
                 body: JSON.stringify({
                     provider: 'groq',
                     model: MODELO,

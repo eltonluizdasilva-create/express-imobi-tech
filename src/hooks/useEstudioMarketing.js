@@ -9,6 +9,7 @@
 import { useCallback, useState } from 'react';
 import { interpretarEstudio, montarPromptEstudio, sanitizarEntradaEstudio } from '../lib/marketing/estudio.js';
 
+import { cabecalhosIA } from '../lib/aiAuth';
 const PROVEDOR = 'gemini';
 const SYSTEM = 'Você é redator publicitário imobiliário. Responde exclusivamente com JSON válido, sem markdown.';
 
@@ -28,7 +29,7 @@ export default function useEstudioMarketing() {
       const chamar = async (texto) => {
         const r = await fetch('/api/ai', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: await cabecalhosIA(),
           body: JSON.stringify({
             provider: PROVEDOR,
             systemPrompt: SYSTEM,

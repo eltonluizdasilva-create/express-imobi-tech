@@ -2,11 +2,13 @@
  * Cliente do Agente Hermes — usa o proxy /api/ai.
  * Nenhuma chave de IA no navegador: o servidor le process.env.DEEPSEEK_API_KEY.
  */
+import { cabecalhosIA } from '../lib/aiAuth';
+
 export async function executarAgenteHermes(promptSistema, historicoMensagens) {
   try {
     const resposta = await fetch('/api/ai', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: await cabecalhosIA(),
       body: JSON.stringify({
         provider: 'deepseek',
         model: 'deepseek-chat',

@@ -11,6 +11,7 @@
 import { useCallback, useState } from 'react';
 import { doc, increment, serverTimestamp, updateDoc } from 'firebase/firestore';
 import { db } from '../lib/firebase';
+import { cabecalhosIA } from '../lib/aiAuth';
 import {
   CREDITOS_POR_PARECER, montarPromptParecer, interpretarParecer, sanitizarEntrada,
 } from '../lib/credito/parecer';
@@ -32,7 +33,7 @@ export default function useParecer(oficinaId) {
 
       const resposta = await fetch('/api/ai', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: await cabecalhosIA(),
         body: JSON.stringify({
           provider: 'gemini',
           systemPrompt: 'Você é analista de crédito imobiliário. Responda exclusivamente JSON válido, sem markdown.',

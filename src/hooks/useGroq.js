@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { doc, getDoc } from 'firebase/firestore';
 import { db } from '../lib/firebase';
 
+import { cabecalhosIA } from '../lib/aiAuth';
 /**
  * useGroq — camada fina de IA do painel.
  *
@@ -71,7 +72,7 @@ export function useGroq(oficinaId) {
   const chamarAPI = async (config, prompt) => {
     const resposta = await fetch('/api/ai', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: await cabecalhosIA(),
       body: JSON.stringify({
         provider: config.provider,
         model: config.model,

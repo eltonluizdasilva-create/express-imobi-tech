@@ -11,6 +11,7 @@
 import { useCallback, useState } from 'react';
 import { resumirParaIA } from '../services/vizinhancaService.js';
 
+import { cabecalhosIA } from '../lib/aiAuth';
 export const PESOS_AGENTES = {
   comparaveis: 0.25,
   investimento: 0.25,
@@ -81,7 +82,7 @@ async function chamarIA(corpo, timeoutMs = 60000) {
   try {
     const r = await fetch('/api/ai', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: await cabecalhosIA(),
       body: JSON.stringify(corpo),
       signal: controle.signal,
     });
