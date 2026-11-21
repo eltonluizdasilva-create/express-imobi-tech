@@ -10,23 +10,10 @@ import {
   onSnapshot,
   serverTimestamp,
 } from 'firebase/firestore';
+import { parseMoedaBR } from '../lib/moedaBR.js';
 
-export function parseMoedaBR(valorInput) {
-  if (typeof valorInput === 'number') return Number.isFinite(valorInput) ? valorInput : 0;
-  const str = String(valorInput || '').trim();
-  if (!str) return 0;
-  // Se tiver vírgula como separador decimal (ex: "1.500,50" ou "450.000,00")
-  if (str.includes(',')) {
-    const limpo = str.replace(/[^\d,-]/g, '').replace(/\./g, '').replace(',', '.');
-    return Math.abs(parseFloat(limpo)) || 0;
-  }
-  // Se tiver pontos de milhar sem vírgula (ex: "450.000" -> 450000)
-  const partesPonto = str.replace(/[^\d.]/g, '').split('.');
-  if (partesPonto.length > 1 && partesPonto[partesPonto.length - 1].length === 3) {
-    return Math.abs(parseFloat(partesPonto.join(''))) || 0;
-  }
-  return Math.abs(parseFloat(str.replace(/[^\d.]/g, ''))) || 0;
-}
+// Fonte única em src/lib/moedaBR.js; reexportado para os chamadores históricos.
+export { parseMoedaBR };
 
 export default function useQuickActions({
   imobiliariaId,

@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import {
   AlertTriangle, Check, Landmark, MapPin, ShieldCheck, Home, KeyRound,
-  LoaderCircle, Save, Trash2, X,
+  HelpCircle, LoaderCircle, Save, Trash2, X,
 } from 'lucide-react';
 import { db } from '../../lib/firebase';
 import { collection, deleteDoc, doc, onSnapshot, serverTimestamp, setDoc } from 'firebase/firestore';
@@ -12,6 +12,9 @@ import {
 } from '../../lib/travas-legais';
 import { validarCib, formatarCib } from '../../lib/fiscal';
 import SeletorUF from '../ui/SeletorUF';
+import MicButton from '../ui/MicButton';
+import CampoMoeda from '../ui/CampoMoeda';
+import { parseMoedaBR } from '../../lib/moedaBR';
 import { lerPreferencias } from '../../lib/preferencias';
 import { tetoMcMvPorPorte } from '../../lib/regrasEstaduais';
 
@@ -39,6 +42,8 @@ export default function CaptacaoNicho({ dadosOficina, setAbaAtiva }) {
   const [cidade, setCidade] = useState('');
   const [valor, setValor] = useState('');
   const [cib, setCib] = useState('');
+  const [observacoes, setObservacoes] = useState('');
+  const [dicaCibAberta, setDicaCibAberta] = useState(false);
 
   // locação
   const [garantia, setGarantia] = useState(null);
@@ -78,10 +83,10 @@ export default function CaptacaoNicho({ dadosOficina, setAbaAtiva }) {
 
   const mcmv = useMemo(
     () => elegibilidadeMcMv({
-      rendaFamiliar: Number(rendaFamiliar),
+      rendaFamiliar: parseMoedaBR(rendaFamiliar),
       possuiOutroImovel: outroImovel,
       usaFgts,
-      valorImovel: Number(valor),
+      valorImovel: parseMoedaBR(valor),
       porte: prefs.porteMunicipioPadrao,
     }),
     [rendaFamiliar, outroImovel, usaFgts, valor, prefs.porteMunicipioPadrao],
@@ -92,7 +97,7 @@ export default function CaptacaoNicho({ dadosOficina, setAbaAtiva }) {
   const rural = useMemo(() => validarChecklistRural(checklist), [checklist]);
 
   const garantiaValidacao = useMemo(
-    () => validarGarantiaLocacao(garantia, { caucaoValor: Number(caucaoValor), valorAluguel: Number(valorAluguel), fiadorNome }),
+    () => validarGarantiaLocacao(garantia, { caucaoValor: parseMoedaBR(caucaoValor), valorAluguel: parseMoedaBR(valorAluguel), fiadorNome }),
     [garantia, caucaoValor, valorAluguel, fiadorNome],
   );
 
@@ -104,13 +109,19 @@ export default function CaptacaoNicho({ dadosOficina, setAbaAtiva }) {
   }
 
   function montarRegistro() {
-    const base = { nicho, referencia, cidade, valor: Number(valor) || 0, cib: cib.replace(/\D/g, ''), criadoEm: serverTimestamp() };
+    const base = {
+      nicho, referencia, cidade,
+      valor: parseMoedaBR(valor),
+      cib: cib.replace(/\D/g, ''),
+      observacoes: observacoes.trim(),
+      criadoEm: serverTimestamp(),
+    };
     if (nicho === 'locacao') {
       return {
         ...base,
         garantia,
-        valorAluguel: Number(valorAluguel) || 0,
-        caucaoValor: Number(caucaoValor) || 0,
+        valorAluguel: parseMoedaBR(valorAluguel),
+        caucaoValor: parseMoedaBR(caucaoValor),
         fiadorNome,
       };
     }
@@ -121,9 +132,9 @@ export default function CaptacaoNicho({ dadosOficina, setAbaAtiva }) {
       return { ...base, quadra, lote, areaM2: Number(areaM2) || 0, infraestrutura: Object.keys(infra).filter((k) => infra[k]) };
     }
     if (nicho === 'mcmv') {
-      return { ...base, rendaFamiliar: Number(rendaFamiliar) || 0, usaFgts, possuiOutroImovel: outroImovel, faixa: mcmv.faixa?.key || null };
+      return { ...base, rendaFamiliar: parseMoedaBR(rendaFamiliar), usaFgts, possuiOutroImovel: outroImovel, faixa: mcmv.faixa?.key || null };
     }
-    return { ...base, areaConstruida: Number(areaConstruida) || 0, condominio: Number(condominio) || 0 };
+    return { ...base, areaConstruida: Number(areaConstruida) || 0, condominio: parseMoedaBR(condominio) };
   }
 
   async function salvar() {
@@ -134,7 +145,7 @@ export default function CaptacaoNicho({ dadosOficina, setAbaAtiva }) {
 
     if (nicho === 'locacao' && !garantiaValidacao.ok) { setErro(garantiaValidacao.erro); return; }
     if (nicho === 'rural' && !rural.ok) { setErro(rural.erro); return; }
-    if (nicho === 'mcmv' && Number(rendaFamiliar) > 0 && !mcmv.elegivel) {
+    if (nicho === 'mcmv' && parseMoedaBR(rendaFamiliar) > 0 && !mcmv.elegivel) {
       setErro(`Fora das regras do MCMV: ${mcmv.impedimentos.join(' ')}`);
       return;
     }
@@ -148,6 +159,7 @@ export default function CaptacaoNicho({ dadosOficina, setAbaAtiva }) {
       setQuadra(''); setLote(''); setAreaM2(''); setAreaHa(''); setRendaFamiliar('');
       setAreaConstruida(''); setCondominio('');
       setCib('');
+      setObservacoes('');
     } catch (e) {
       setErro(`Não foi possível salvar: ${e?.message || 'erro desconhecido'}`);
     } finally {
@@ -200,25 +212,83 @@ export default function CaptacaoNicho({ dadosOficina, setAbaAtiva }) {
       <div className="grid gap-4 md:grid-cols-3">
         <div>
           <label className={labelCls}>Referência do imóvel</label>
-          <input className={inputCls} value={referencia} onChange={(e) => setReferencia(e.target.value)} placeholder="Ex: CASA-JD-12" />
+          <div className="relative">
+            <input
+              className={`${inputCls} pr-11`}
+              value={referencia}
+              onChange={(e) => setReferencia(e.target.value)}
+              placeholder="Ex: CASA-JD-12"
+            />
+            <MicButton
+              className="absolute right-1.5 top-1/2 -translate-y-1/2"
+              onTexto={(texto) => setReferencia((v) => (v ? `${v} ${texto}` : texto))}
+            />
+          </div>
         </div>
         <div>
           <label className={labelCls}>Cidade / bairro</label>
-          <input className={inputCls} value={cidade} onChange={(e) => setCidade(e.target.value)} placeholder="Uberlândia - MG" />
+          <div className="relative">
+            <input
+              className={`${inputCls} pr-11`}
+              value={cidade}
+              onChange={(e) => setCidade(e.target.value)}
+              placeholder="Uberlândia - MG"
+            />
+            <MicButton
+              className="absolute right-1.5 top-1/2 -translate-y-1/2"
+              onTexto={(texto) => setCidade((v) => (v ? `${v} ${texto}` : texto))}
+            />
+          </div>
         </div>
         <div>
           <label className={labelCls}>Valor do imóvel (R$)</label>
-          <input className={inputCls} value={valor} onChange={(e) => setValor(e.target.value)} placeholder="350000" inputMode="decimal" />
+          <CampoMoeda className={inputCls} valor={valor} onChange={setValor} />
         </div>
         <div>
-          <label className={labelCls}>CIB (Cadastro Imobiliário Brasileiro)</label>
+          <div className="mb-1.5 flex items-center gap-1.5">
+            <label className={`${labelCls} mb-0`}>CIB (Cadastro Imobiliário Brasileiro) — Opcional</label>
+            <button
+              type="button"
+              onClick={() => setDicaCibAberta((v) => !v)}
+              aria-expanded={dicaCibAberta}
+              aria-label="O que é o CIB?"
+              title="O que é o CIB?"
+              className="inline-flex h-4 w-4 shrink-0 items-center justify-center rounded-full border border-slate-600 text-slate-400 transition hover:border-[#10b981] hover:text-[#10b981]"
+            >
+              <HelpCircle size={11} />
+            </button>
+          </div>
           <input className={inputCls} value={cib} onChange={(e) => setCib(e.target.value)} placeholder="20 dígitos" />
+          {dicaCibAberta ? (
+            <p className="mt-1 rounded-lg border border-slate-800 bg-slate-950 px-2 py-1.5 text-[10px] leading-snug text-slate-400">
+              É o &quot;CPF do imóvel&quot; na Receita Federal. Se você não tiver o número agora, deixe em branco.
+            </p>
+          ) : null}
           {cib ? (
             <p className={`mt-1 text-[10px] font-bold ${validarCib(cib).ok ? 'text-[#10b981]' : 'text-rose-400'}`}>
               {validarCib(cib).ok ? `válido · ${formatarCib(cib)}` : validarCib(cib).erro}
             </p>
           ) : null}
         </div>
+      </div>
+
+      <div className="mt-4">
+        <label className={labelCls}>Descrição / observações</label>
+        <div className="relative">
+          <textarea
+            className={`${inputCls} resize-y pr-12`}
+            rows={3}
+            maxLength={600}
+            value={observacoes}
+            onChange={(e) => setObservacoes(e.target.value)}
+            placeholder="Ex: casa reformada, quintal nos fundos, aceita permuta por apartamento."
+          />
+          <MicButton
+            className="absolute right-2 top-2"
+            onTexto={(texto) => setObservacoes((v) => (v ? `${v} ${texto}` : texto))}
+          />
+        </div>
+        <p className="mt-1 text-right text-[10px] text-slate-600">{observacoes.length}/600</p>
       </div>
 
       {/* ─── LOCAÇÃO ─── */}
@@ -255,14 +325,14 @@ export default function CaptacaoNicho({ dadosOficina, setAbaAtiva }) {
           <div className="grid gap-4 md:grid-cols-3">
             <div>
               <label className={labelCls}>Aluguel mensal (R$)</label>
-              <input className={inputCls} value={valorAluguel} onChange={(e) => setValorAluguel(e.target.value)} inputMode="decimal" />
+              <CampoMoeda className={inputCls} valor={valorAluguel} onChange={setValorAluguel} />
             </div>
             {garantia === 'caucao' && (
               <div>
                 <label className={labelCls}>Caução (máx. 3 aluguéis)</label>
-                <input className={inputCls} value={caucaoValor} onChange={(e) => setCaucaoValor(e.target.value)} inputMode="decimal" />
-                {Number(valorAluguel) > 0 && (
-                  <p className="mt-1 text-[10px] text-slate-500">Limite legal: {fmtBRL(Number(valorAluguel) * 3)}</p>
+                <CampoMoeda className={inputCls} valor={caucaoValor} onChange={setCaucaoValor} />
+                {parseMoedaBR(valorAluguel) > 0 && (
+                  <p className="mt-1 text-[10px] text-slate-500">Limite legal: {fmtBRL(parseMoedaBR(valorAluguel) * 3)}</p>
                 )}
               </div>
             )}
@@ -371,7 +441,7 @@ export default function CaptacaoNicho({ dadosOficina, setAbaAtiva }) {
           <div className="grid gap-4 md:grid-cols-2">
             <div>
               <label className={labelCls}>Renda familiar mensal (R$)</label>
-              <input className={inputCls} value={rendaFamiliar} onChange={(e) => setRendaFamiliar(e.target.value)} inputMode="decimal" />
+              <CampoMoeda className={inputCls} valor={rendaFamiliar} onChange={setRendaFamiliar} />
             </div>
             <div className="flex flex-col justify-end gap-2">
               <label className="flex cursor-pointer items-center gap-2 text-xs text-slate-300">
@@ -425,7 +495,7 @@ export default function CaptacaoNicho({ dadosOficina, setAbaAtiva }) {
           </div>
           <div>
             <label className={labelCls}>Condomínio mensal (R$)</label>
-            <input className={inputCls} value={condominio} onChange={(e) => setCondominio(e.target.value)} inputMode="decimal" />
+            <CampoMoeda className={inputCls} valor={condominio} onChange={setCondominio} />
           </div>
         </div>
       )}

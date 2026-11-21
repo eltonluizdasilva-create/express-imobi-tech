@@ -72,6 +72,8 @@ import GuiaDaAba from './components/ui/GuiaDaAba';
 import RodapeLegal from './components/ui/RodapeLegal';
 import DorESolucao from './components/ui/DorESolucao';
 import LogoExpress from './components/ui/LogoExpress';
+import MicButton from './components/ui/MicButton';
+import CampoMoeda from './components/ui/CampoMoeda';
 import OnboardingTour from './components/OnboardingTour';
 import OnboardingPrimeiroUso from './components/onboarding/OnboardingPrimeiroUso';
 import { ehMasterPlataforma as ehMasterPlataformaFn, modoProEfetivo, rotuloVisao } from './lib/acesso-plano';
@@ -2756,14 +2758,21 @@ export default function Admin() {
               )}
 
               <form onSubmit={simularRespostaAgente} className="mt-3 pt-3 border-t border-slate-800 flex gap-2">
-                <input
-                  type="text"
-                  value={msgTesteIA}
-                  onChange={(e) => setMsgTesteIA(e.target.value)}
-                  disabled={enviandoSimIA}
-                  placeholder="Ex: Procuro um apto de 2 quartos no Tibery até 350 mil"
-                  className="flex-1 bg-[#020408] border border-slate-700 rounded-xl px-3 py-2 text-xs text-white disabled:opacity-60"
-                />
+                <div className="relative flex-1">
+                  <input
+                    type="text"
+                    value={msgTesteIA}
+                    onChange={(e) => setMsgTesteIA(e.target.value)}
+                    disabled={enviandoSimIA}
+                    placeholder="Ex: Procuro um apto de 2 quartos no Tibery até 350 mil"
+                    className="w-full bg-[#020408] border border-slate-700 rounded-xl pl-3 pr-10 py-2 text-xs text-white disabled:opacity-60"
+                  />
+                  <MicButton
+                    className="absolute right-1 top-1/2 -translate-y-1/2 !p-1.5"
+                    tamanho={13}
+                    onTexto={(texto) => setMsgTesteIA((v) => (v ? `${v} ${texto}` : texto))}
+                  />
+                </div>
                 <button
                   type="submit"
                   disabled={enviandoSimIA}
@@ -2957,10 +2966,10 @@ export default function Admin() {
                 onChange={(e) => setFormImovel({ ...formImovel, bairro: e.target.value })}
                 className="bg-[#020408] border border-slate-700 rounded-xl px-3.5 py-2.5 text-sm text-white"
               />
-              <input
-                placeholder="Valor de Venda ou Aluguel (R$)"
-                value={formImovel.valor}
-                onChange={(e) => setFormImovel({ ...formImovel, valor: e.target.value })}
+              <CampoMoeda
+                valor={formImovel.valor}
+                onChange={(valorMascarado) => setFormImovel({ ...formImovel, valor: valorMascarado })}
+                placeholder="R$ 0,00"
                 className="bg-[#020408] border border-[#10b981]/60 rounded-xl px-3.5 py-2.5 text-sm text-white font-bold"
               />
             </div>
