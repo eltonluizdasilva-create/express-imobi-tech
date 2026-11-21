@@ -42,8 +42,13 @@ ok('3 degraus na tela',
 ok('selo Mais escolhido no PRO', plano.includes('Mais escolhido'));
 ok('seletor Mensal | Anual', plano.includes('Mensal') && plano.includes('Anual'));
 ok('selo de economia no seletor', plano.includes('Economize R$ 120'));
-ok('anual é o padrão (R$ 89,00)', /R\$ ?89,00/.test(semNbsp));
-ok('detalhe do anual com R$ 1.068,00', /1\.068,00/.test(semNbsp));
+ok('mensal é o padrão (R$ 99,00 no PRO)', /R\$ ?99,00/.test(semNbsp));
+ok('padrão mensal não cobra o pacote anual na tela', !/1\.068,00/.test(semNbsp));
+ok('aviso de e-mail para ativação automática no Asaas',
+   plano.includes('Importante: use no pagamento o mesmo e-mail cadastrado aqui para ativação automática imediata.'));
+ok('aviso discreto fica entre o seletor e os cards',
+   plano.indexOf('mesmo e-mail cadastrado aqui') > plano.indexOf('Cobrança mensal') &&
+   plano.indexOf('mesmo e-mail cadastrado aqui') < plano.indexOf('Mais escolhido'));
 ok('CTA do PRO', plano.includes('Assinar Plano PRO Agora'));
 ok('card 3 com a partir de R$ 497', /A partir de R\$ ?497/.test(semNbsp));
 ok('card 3 com taxa de implementação', plano.includes('Taxa única de implementação'));

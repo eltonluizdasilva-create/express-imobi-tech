@@ -130,6 +130,11 @@ ok('CTA da implantação é o texto pedido',
 ok('Meuplano renderiza o CTA do degrau', planoJa.includes('rotuloCta(degrau)'));
 ok('Meuplano desenha os 3 degraus', planoJa.includes('DEGRAUS.map'));
 ok('Meuplano tem seletor de ciclo', planoJa.includes("setCiclo('anual')") && planoJa.includes('rotuloEconomia'));
+ok('Meuplano abre no ciclo mensal (links do Asaas são mensais)', planoJa.includes("useState('mensal')"));
+ok('Meuplano avisa que o e-mail do Asaas tem de ser o do cadastro',
+   planoJa.includes('Importante: use no pagamento o mesmo e-mail cadastrado aqui para ativação automática imediata.'));
+ok('aviso fica acima dos degraus de assinatura',
+   planoJa.indexOf('mesmo e-mail cadastrado aqui') < planoJa.indexOf('DEGRAUS.map'));
 ok('Meuplano abre o WhatsApp na implantação', planoJa.includes('falarEspecialista'));
 ok('assinatura do PRO vai pelo checkout', planoJa.includes('assinarPro') && planoJa.includes('destinoCheckout('));
 ok('onboarding abre o modal de imóvel', admin.includes('onNovoImovel={() => setModalNovoImovel(true)}'));

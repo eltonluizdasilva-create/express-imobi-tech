@@ -1,7 +1,7 @@
 import React, { useMemo, useState } from 'react';
 import {
   Check, Sparkles, Crown, Bot, MessageCircle, ShieldCheck, Users, Home,
-  ArrowUpRight, Lock, Zap, Globe,
+  ArrowUpRight, Lock, Zap, Globe, Info,
 } from 'lucide-react';
 import { getAuth } from 'firebase/auth';
 import { PLANOS_PRO, WHATSAPP_COMERCIAL } from '../lib/planos';
@@ -22,8 +22,10 @@ const ICONE_DEGRAU = {
  * O ciclo é escolhido no topo e muda preço e destino do checkout.
  */
 export default function ModuloMeuPlano({ dadosOficina }) {
-  // Anual é o padrão de venda: aparece com o selo de economia.
-  const [ciclo, setCiclo] = useState('anual');
+  // Ciclo inicial = mensal: é o que os links de pagamento ativos no Asaas
+  // cobram hoje (R$ 39,90 e R$ 99,00/mês). O anual continua no seletor, mas
+  // só cobra o preço certo quando existir VITE_ASAAS_LINK_PRO_ANUAL.
+  const [ciclo, setCiclo] = useState('mensal');
   const [mensagem, setMensagem] = useState('');
 
   const planoAtual = String(dadosOficina?.plano || 'gratis');
@@ -232,6 +234,15 @@ export default function ModuloMeuPlano({ dadosOficina }) {
           {ciclo === 'anual' ? 'Cobrança anual — melhor preço por mês' : 'Cobrança mensal — sem fidelidade'}
         </p>
       </div>
+
+      {/* Aviso de ativação automática: o webhook casa o pagamento pelo
+          externalReference/e-mail que o Asaas levar na cobrança. */}
+      <p className="mx-auto flex max-w-2xl items-start justify-center gap-2 rounded-2xl border border-slate-800 bg-slate-950/60 px-4 py-2.5 text-[11px] leading-5 text-slate-400">
+        <Info size={13} className="mt-0.5 shrink-0 text-emerald-400" aria-hidden="true" />
+        <span>
+          Importante: use no pagamento o mesmo e-mail cadastrado aqui para ativação automática imediata.
+        </span>
+      </p>
 
       {mensagem && (
         <div className="mx-auto max-w-xl rounded-2xl border border-emerald-500/30 bg-emerald-500/10 px-4 py-3 text-center text-sm font-bold text-emerald-300">
