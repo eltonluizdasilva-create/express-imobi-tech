@@ -58,9 +58,7 @@ import ModuloBloqueado from './components/admin/ModuloBloqueado';
 import BarraModulos from './components/admin/BarraModulos';
 import SofiaWhatsAppTab from './components/admin/SofiaWhatsAppTab';
 import ModuloComAbas from './components/admin/ModuloComAbas';
-import AnelEscuro from './components/admin/AnelEscuro';
 import HeroAba from './components/admin/HeroAba';
-import HeroAbaEscura from './components/admin/HeroAbaEscura';
 import CaptacaoNicho from './components/imobi/CaptacaoNicho';
 import { corDaAba, textoSobreCor, comAlpha } from './lib/coresAbas';
 import ModaisExtras from './components/admin/ModaisExtras';
@@ -1389,7 +1387,7 @@ export default function Admin() {
 
   if (carregandoAuth || (logado && !dadosImobiliaria)) {
     return (
-      <div style={{ backgroundColor: '#020408' }} className="min-h-screen text-[#10b981] flex flex-col items-center justify-center gap-4 font-bold">
+      <div className="min-h-screen bg-[#020408] text-[#10b981] flex flex-col items-center justify-center gap-4 font-bold">
         <div className="w-11 h-11 border-4 border-[#10b981] border-t-transparent rounded-full animate-spin" />
         <p className="tracking-widest text-sm uppercase">Carregando Express Imobi Tech...</p>
       </div>
@@ -1521,9 +1519,9 @@ export default function Admin() {
   // Lote 2 — a tela "Conexão WhatsApp" é reutilizada pela aba unificada
   // `sofia_whatsapp`, então fica em uma variável em vez de JSX solto.
   const painelConexaoWhatsApp = (
-    <AnelEscuro className="p-6 md:p-8 space-y-6">
+    <div className="space-y-6">
       <div>
-        <HeroAbaEscura
+        <HeroAba
           icone={MessageCircle}
           titulo="Central de Conexão"
           destaque="WhatsApp & Typebot"
@@ -1536,23 +1534,23 @@ export default function Admin() {
       <ControleInteligenciaIA isPro={isPro} setAbaAtiva={setAbaAtiva} />
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <div className="bg-[#020408] border border-slate-800 rounded-2xl p-5 space-y-2">
+        <div className="bg-slate-900 border border-slate-800 rounded-2xl p-5 space-y-2">
           <span style={{ color: '#10b981' }} className="text-xs font-bold text-[#10b981]">PASSO 1 • CÉREBRO GRATUITO</span>
           <h3 className="font-bold text-white">Chave Gemini AI Studio</h3>
-          <p className="text-xs text-slate-400">Motor `gemini-2.5-flash` pronto para responder dúvidas de imóveis e qualificar leads 24h.</p>
+          <p className="text-xs text-slate-400">Motor Gemini Flash pronto para atendimento 24h — responde dúvidas de imóveis e qualifica leads.</p>
         </div>
-        <div className="bg-[#020408] border border-slate-800 rounded-2xl p-5 space-y-2">
+        <div className="bg-slate-900 border border-slate-800 rounded-2xl p-5 space-y-2">
           <span style={{ color: '#10b981' }} className="text-xs font-bold text-[#10b981]">PASSO 2 • FLUXO VISUAL</span>
           <h3 className="font-bold text-white">Typebot Cloud</h3>
           <p className="text-xs text-slate-400">Triagem de Compra/Locação + Coleta de Bairro/Orçamento enviando Webhook para o painel.</p>
         </div>
-        <div className="bg-[#020408] border border-slate-800 rounded-2xl p-5 space-y-2">
+        <div className="bg-slate-900 border border-slate-800 rounded-2xl p-5 space-y-2">
           <span style={{ color: '#10b981' }} className="text-xs font-bold text-[#10b981]">PASSO 3 • QR CODE WHATSAPP</span>
           <h3 className="font-bold text-white">Gateway WhatsApp</h3>
           <p className="text-xs text-slate-400">Leitura rápida de QR Code no celular do corretor para ativar os 10 dias de teste acompanhado.</p>
         </div>
       </div>
-    </AnelEscuro>
+    </div>
   );
 
   // Lote 2 — telas internas da aba unificada `sofia_whatsapp`. As três rotas
@@ -2605,16 +2603,16 @@ export default function Admin() {
 
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
             <div className="lg:col-span-7 space-y-4">
-              {/* Lote 4 — cabeçalho de IA: fundo escuro fixo (não vira branco
-                  no tema claro) e título branco explícito. */}
-              <AnelEscuro className="p-6">
-                <h2 className="anel-titulo" style={{ fontSize: '1.5rem' }}>
+              {/* Tema: cabeçalho em classes normais do painel (sem shadow root),
+                  para que a camada `tema-claro` de src/index.css acompanhe. */}
+              <div className="rounded-2xl border border-slate-800 bg-slate-900 p-6">
+                <h2 className="text-xl md:text-2xl font-black uppercase tracking-tight text-white">
                   🤖 ESQUADRÃO DE <span style={{ color: '#10b981' }}>INTELIGÊNCIA ARTIFICIAL</span>
                 </h2>
-                <p className="anel-subtitulo">
+                <p className="mt-2 text-xs md:text-sm text-slate-400">
                   Equipe de 7 agentes autônomos trabalhando 24h por dia na qualificação de leads, triagem, agendamento de visitas e reengajamento no WhatsApp.
                 </p>
-              </AnelEscuro>
+              </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
                 {(agentesIA || [])?.map((ag) => (
@@ -2710,11 +2708,10 @@ export default function Admin() {
                 {(historicoTesteIA || [])?.map((m, idx) => (
                   <div
                     key={idx}
-                    style={m.autor === 'cliente' ? { backgroundColor: '#10b981' } : { backgroundColor: '#020408' }}
                     className={`p-3 rounded-2xl text-xs max-w-[88%] whitespace-pre-line ${
                       m.autor === 'cliente'
-                        ? 'ml-auto text-white'
-                        : 'border border-slate-800 text-slate-200'
+                        ? 'ml-auto bg-[#10b981] text-white'
+                        : 'border border-slate-800 bg-[#020408] text-slate-200'
                     }`}
                   >
                     {m.autor === 'ia' && m.agente && (
@@ -2727,8 +2724,7 @@ export default function Admin() {
                 ))}
                 {enviandoSimIA && (
                   <div
-                    style={{ backgroundColor: '#020408' }}
-                    className="p-3 rounded-2xl text-xs max-w-[88%] border border-slate-800 text-slate-400"
+                    className="p-3 rounded-2xl text-xs max-w-[88%] border border-slate-800 bg-[#020408] text-slate-400"
                   >
                     Sofia está digitando…
                   </div>

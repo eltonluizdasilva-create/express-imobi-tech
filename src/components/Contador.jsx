@@ -68,7 +68,7 @@ export default function Contador({ oficinaId }) {
 
     return (
         <AceiteLegalGate chave="contador" oficinaId={oficinaId}>
-        <div className="bg-black min-h-screen text-zinc-100 p-4 md:p-8 pb-40">
+        <div className="bg-[#020408] min-h-screen text-zinc-100 p-4 md:p-8 pb-40">
             <div className="max-w-7xl mx-auto">
 
                 {/* CABEÇALHO DO SIMULADOR DE CUSTOS */}
@@ -91,7 +91,7 @@ export default function Contador({ oficinaId }) {
                 </div>
 
                 {/* Tarja de escopo — visível sem precisar expandir nada */}
-                <div className="mb-8 flex items-start gap-2.5 rounded-2xl border border-amber-500/40 bg-amber-500/[0.06] p-4 text-[11px] text-zinc-300">
+                <div className="tarja-aviso mb-8 flex items-start gap-2.5 rounded-2xl border border-amber-500/40 bg-amber-500/[0.06] p-4 text-[11px] text-zinc-300">
                     <ShieldAlert size={16} className="mt-0.5 shrink-0 text-amber-400" />
                     <span>
                         <strong className="text-amber-400">Estimativa referencial:</strong> {AVISO_FISCAL}

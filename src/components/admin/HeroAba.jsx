@@ -70,8 +70,8 @@ export default function HeroAba({
       {stats.map((s) => (
         <div
           key={s.label}
-          className="min-w-[112px] rounded-2xl border px-3.5 py-2.5"
-          style={{ borderColor: comAlpha(cor, 0.25), background: 'rgba(255,255,255,0.025)' }}
+          className="hero-aba-stat min-w-[112px] rounded-2xl border px-3.5 py-2.5"
+          style={{ borderColor: comAlpha(cor, 0.25) }}
         >
           <p className="text-[9px] font-black uppercase tracking-[0.18em] text-slate-400">{s.label}</p>
           <p className="mt-0.5 text-base font-black leading-none text-white">{s.valor}</p>
@@ -92,12 +92,10 @@ export default function HeroAba({
 
   return (
     <section
-      className="relative mb-6 overflow-hidden rounded-[2rem] border p-5 shadow-2xl md:p-7"
+      className="hero-aba relative mb-6 overflow-hidden rounded-[2rem] border p-5 shadow-2xl md:p-7"
       style={{
         borderColor: comAlpha(cor, 0.40),
-        background:
-          `radial-gradient(720px 220px at 12% -40%, ${comAlpha(cor, 0.16)}, transparent 60%),` +
-          'linear-gradient(135deg, #0b1220 0%, #020408 70%)',
+        '--hero-cor': comAlpha(cor, 0.16),
       }}
     >
       {inner}

@@ -118,7 +118,7 @@ const CopilotoIA = ({ papelLogado, dadosOficina, setAbaAtiva, listaCarros }) => 
     );
 
     return (
-        <div className="bg-black min-h-screen text-zinc-100 p-4 md:p-8 pb-40">
+        <div className="bg-[#020408] min-h-screen text-zinc-100 p-4 md:p-8 pb-40">
             <div className="max-w-6xl mx-auto">
 
                 {/* HEADER PREMIUM (ESTILO SECRETÁRIA) */}

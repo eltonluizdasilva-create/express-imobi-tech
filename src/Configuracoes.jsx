@@ -16,6 +16,13 @@ const ESTADO_INICIAL = {
   pixKey: '',
 };
 
+/* Classes do painel: o tema claro (src/index.css) converte bg-[#020408],
+   bg-slate-950 e text-white, então esta tela acompanha o temaClaro sem
+   precisar de cor inline. */
+const labelCls = 'mb-1.5 block text-[11px] font-bold text-slate-400';
+const inputCls =
+  'w-full rounded-[10px] border border-slate-800 bg-slate-950 p-[15px] text-sm text-white placeholder-slate-500 focus:border-[#10b981] focus:outline-none';
+
 import IntegracaoPortais from './components/IntegracaoPortais';
 
 export default function Configuracoes({ oficinaId, onSalvo }) {
@@ -140,16 +147,16 @@ export default function Configuracoes({ oficinaId, onSalvo }) {
   };
 
   return (
-    <div style={{ background: '#020408', border: '1px solid #1a1a1a', borderRadius: '18px', padding: '22px' }}>
-      <div style={{ marginBottom: '16px' }}>
+    <div className="rounded-[18px] border border-slate-800 bg-[#020408] p-[22px]">
+      <div className="mb-4">
         <SeletorUF />
-        <p style={{ margin: '8px 0 0 0', color: '#64748b', fontSize: '11px' }}>
+        <p className="mt-2 text-[11px] text-slate-500">
           UF e porte do município padrão da imobiliária. Ficam salvos neste navegador e valem para as abas Fiscal,
           Jurídico, Captação e Acompanhamento — o seletor rápido de cada aba serve para negociar imóvel de outro estado.
         </p>
       </div>
 
-      <div style={{ marginBottom: '20px' }}>
+      <div className="mb-5">
         <HeroAba
           flat
           icone={Settings}
@@ -161,77 +168,77 @@ export default function Configuracoes({ oficinaId, onSalvo }) {
         />
       </div>
 
-      <div style={{ display: 'grid', gap: '16px' }}>
+      <div className="grid gap-4">
         <div>
-          <label style={{ color: '#94a3b8', fontSize: '11px', display: 'block', marginBottom: '6px', fontWeight: 'bold' }}>NOME DA IMOBILIÁRIA / CORRETOR</label>
+          <label className={labelCls}>NOME DA IMOBILIÁRIA / CORRETOR</label>
           <input
             type="text"
             value={config.nome}
             onChange={(e) => atualizarCampo('nome', e.target.value)}
             placeholder="Ex: Imobiliária Prime ou João Silva Corretor"
-            style={{ width: '100%', padding: '15px', background: '#0a0f18', border: '1px solid #1e293b', color: '#fff', borderRadius: '10px' }}
+            className={inputCls}
           />
         </div>
 
         <div>
-          <label style={{ color: '#94a3b8', fontSize: '11px', display: 'block', marginBottom: '6px', fontWeight: 'bold' }}>CRECI</label>
+          <label className={labelCls}>CRECI</label>
           <input
             type="text"
             value={config.creci || ''}
             onChange={(e) => atualizarCampo('creci', e.target.value)}
             placeholder="Ex: CRECI-SP 123456-F ou J-12345"
-            style={{ width: '100%', padding: '15px', background: '#0a0f18', border: '1px solid #1e293b', color: '#fff', borderRadius: '10px' }}
+            className={inputCls}
           />
         </div>
 
         <div>
-          <label style={{ color: '#94a3b8', fontSize: '11px', display: 'block', marginBottom: '6px', fontWeight: 'bold' }}>ENDEREÇO</label>
+          <label className={labelCls}>ENDEREÇO</label>
           <input
             type="text"
             value={config.endereco}
             onChange={(e) => atualizarCampo('endereco', e.target.value)}
             placeholder="Ex: Av. Paulista, 1000 - Sala 402, São Paulo/SP"
-            style={{ width: '100%', padding: '15px', background: '#0a0f18', border: '1px solid #1e293b', color: '#fff', borderRadius: '10px' }}
+            className={inputCls}
           />
         </div>
 
         <div>
-          <label style={{ color: '#94a3b8', fontSize: '11px', display: 'block', marginBottom: '6px', fontWeight: 'bold' }}>TELEFONE / WHATSAPP</label>
+          <label className={labelCls}>TELEFONE / WHATSAPP</label>
           <input
             type="text"
             value={config.telefone}
             onChange={(e) => atualizarCampo('telefone', e.target.value)}
             placeholder="Ex: (11) 99999-9999"
-            style={{ width: '100%', padding: '15px', background: '#0a0f18', border: '1px solid #1e293b', color: '#fff', borderRadius: '10px' }}
+            className={inputCls}
           />
         </div>
 
         <div>
-          <label style={{ color: '#94a3b8', fontSize: '11px', display: 'block', marginBottom: '6px', fontWeight: 'bold' }}>URL DA LOGOMARCA</label>
+          <label className={labelCls}>URL DA LOGOMARCA</label>
           <input
             type="text"
             value={config.logoUrl}
             onChange={(e) => atualizarCampo('logoUrl', e.target.value)}
             placeholder="https://..."
-            style={{ width: '100%', padding: '15px', background: '#0a0f18', border: '1px solid #1e293b', color: '#fff', borderRadius: '10px' }}
+            className={inputCls}
           />
         </div>
 
         {config.logoUrl && (
-          <div style={{ background: '#0a0f18', border: '1px solid #1e293b', borderRadius: '12px', padding: '16px', textAlign: 'center' }}>
-            <p style={{ margin: '0 0 10px 0', color: '#94a3b8', fontSize: '11px', fontWeight: 'bold' }}>PRÉVIA DA LOGOMARCA</p>
-            <img src={config.logoUrl} alt="Logomarca da imobiliária" style={{ maxWidth: '100%', maxHeight: '120px', objectFit: 'contain' }} />
+          <div className="rounded-xl border border-slate-800 bg-slate-950 p-4 text-center">
+            <p className="mb-2.5 text-[11px] font-bold text-slate-400">PRÉVIA DA LOGOMARCA</p>
+            <img src={config.logoUrl} alt="Logomarca da imobiliária" className="mx-auto max-h-[120px] max-w-full object-contain" />
           </div>
         )}
 
         <div>
-          <label style={{ color: '#94a3b8', fontSize: '11px', display: 'block', marginBottom: '6px', fontWeight: 'bold' }}>CHAVE PIX / DADOS DE COMISSÃO</label>
+          <label className={labelCls}>CHAVE PIX / DADOS DE COMISSÃO</label>
           <input
             type="text"
             value={config.pixKey}
             onChange={(e) => atualizarCampo('pixKey', e.target.value)}
             placeholder="Ex: CNPJ, CPF, e-mail, telefone ou dados bancários para repasse de comissão"
-            style={{ width: '100%', padding: '15px', background: '#0a0f18', border: '1px solid #1e293b', color: '#fff', borderRadius: '10px' }}
+            className={inputCls}
           />
         </div>
       </div>
@@ -239,28 +246,25 @@ export default function Configuracoes({ oficinaId, onSalvo }) {
       <button
         onClick={salvar}
         disabled={salvando}
-        style={{ width: '100%', marginTop: '22px', padding: '16px', background: '#10b981', color: '#020408', border: 'none', borderRadius: '12px', fontWeight: '900', cursor: 'pointer', letterSpacing: '0.5px' }}
+        style={{ background: '#10b981', color: '#020408' }}
+        className="mt-[22px] w-full rounded-xl p-4 font-black tracking-[0.5px] disabled:opacity-60"
       >
         {salvando ? 'SALVANDO...' : '💾 SALVAR CONFIGURAÇÕES'}
       </button>
 
       {/* 🔗 INTEGRAÇÃO COM PORTAIS IMOBILIÁRIOS */}
-      <div style={{ marginTop: '30px', borderTop: '1px dashed #222', paddingTop: '30px' }}>
+      <div className="mt-[30px] border-t border-dashed border-slate-800 pt-[30px]">
         <IntegracaoPortais oficinaId={oficinaId} />
       </div>
 
       {/* 🔒 ÁREA DE PRIVACIDADE E LGPD */}
-      <div style={{
-        marginTop: '30px',
-        borderTop: '1px dashed #222',
-        paddingTop: '30px'
-      }}>
-        <div style={{ marginBottom: '16px' }}>
-          <h3 style={{ margin: '0 0 6px 0', color: '#fff', fontSize: '15px', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '8px' }}>
+      <div className="mt-[30px] border-t border-dashed border-slate-800 pt-[30px]">
+        <div className="mb-4">
+          <h3 className="mb-1.5 flex items-center gap-2 text-[15px] font-bold text-white">
             <span style={{ color: '#00E676' }}>🔒</span> Segurança e Privacidade (LGPD)
           </h3>
-          <p style={{ margin: 0, color: '#666', fontSize: '12px', lineHeight: 1.5 }}>
-            Como titular dos dados, você possui o <strong>Direito ao Esquecimento</strong> digital. Você pode solicitar a eliminação permanente e definitiva de todas as suas informações dos nossos servidores a qualquer momento.
+          <p className="text-xs leading-relaxed text-slate-400">
+            Como titular dos dados, você possui o <strong className="text-slate-200">Direito ao Esquecimento</strong> digital. Você pode solicitar a eliminação permanente e definitiva de todas as suas informações dos nossos servidores a qualquer momento.
           </p>
         </div>
 

@@ -287,7 +287,7 @@ export default function RevisaoPremium() {
     }
 
     return (
-        <div id="revisao-area" className="bg-black min-h-screen text-zinc-100 p-4 md:p-8 pb-40 relative">
+        <div id="revisao-area" className="bg-[#020408] min-h-screen text-zinc-100 p-4 md:p-8 pb-40 relative">
 
             {/* HERO SECTION - REVISÃO PREMIUM */}
             <section className="mb-12 overflow-hidden rounded-[28px] border border-purple-500/20 bg-[radial-gradient(circle_at_top_left,_rgba(147,51,234,0.15),_transparent_32%),radial-gradient(circle_at_bottom_right,_rgba(147,51,234,0.1),_transparent_28%),linear-gradient(135deg,_rgba(15,23,42,0.98),_rgba(3,7,18,0.96))] p-6 shadow-[0_30px_120px_-40px_rgba(147,51,234,0.35)]">

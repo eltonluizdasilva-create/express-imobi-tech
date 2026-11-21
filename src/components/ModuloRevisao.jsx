@@ -140,7 +140,7 @@ export default function RevisaoModulo({ oficinaId, osParaEditar, onCancelar, onS
     };
 
   return (
-    <div id="revisao-area" className="bg-black min-h-screen text-zinc-100 p-4 md:p-8 pb-40 relative">
+    <div id="revisao-area" className="bg-[#020408] min-h-screen text-zinc-100 p-4 md:p-8 pb-40 relative">
 
             {/* 🛑 MODAL DE BLOQUEIO (VAI DIRETO PARA O.S.) */}
             {showBlocker && (

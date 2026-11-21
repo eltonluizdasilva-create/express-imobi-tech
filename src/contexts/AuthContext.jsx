@@ -23,10 +23,15 @@ const AuthContext = createContext(null);
 export const COLECAO_ORGANIZACAO = 'oficinas';
 
 export const DEFAULT_NIVEL_INTELIGENCIA = 'padrao';
-/** Fallback exibido quando o backend ainda não provisionou `creditosIA` (somente leitura). */
-export const CREDITOS_IA_FALLBACK = 0;
-/** Franquia de referência usada apenas para escala visual da barra de progresso. */
+/** Franquia inicial de créditos de IA (uso gratuito) e escala da barra de progresso. */
 export const FRANQUIA_BASE_CREDITOS_IA = 1000;
+/**
+ * Fallback usado quando o backend ainda NÃO gravou `creditosIA` no documento da
+ * organização. Campo ausente = "franquia inicial ainda não provisionada", NÃO
+ * "saldo zerado" — por isso o fallback é a franquia base. Saldo realmente
+ * zerado chega como número 0 pelo snapshot e continua sendo exibido como 0.
+ */
+export const CREDITOS_IA_FALLBACK = FRANQUIA_BASE_CREDITOS_IA;
 export const DEFAULT_LIMITE_USUARIOS = 1;
 
 
@@ -102,6 +107,8 @@ export function AuthProvider({ children }) {
   const [nivelInteligencia, setNivelInteligencia] = useState(DEFAULT_NIVEL_INTELIGENCIA);
   // Saldo de IA: somente leitura (atualizado apenas pelo onSnapshot do documento da organização)
   const [creditosIA, setCreditosIASomenteSnapshot] = useState(CREDITOS_IA_FALLBACK);
+  // Distingue "campo gravado pelo backend" (true) de "ainda não provisionado" (false).
+  const [creditosIAProvisionado, setCreditosIAProvisionado] = useState(false);
   const [limiteUsuarios, setLimiteUsuarios] = useState(DEFAULT_LIMITE_USUARIOS);
   const [membrosEquipe, setMembrosEquipe] = useState([]);
   const [bloqueado, setBloqueado] = useState(null);
@@ -152,6 +159,9 @@ export function AuthProvider({ children }) {
 
       setNivelInteligencia(nivelSinc);
       setCreditosIASomenteSnapshot(creditosSinc);
+      setCreditosIAProvisionado(
+        typeof data.creditosIA === 'number' && !Number.isNaN(data.creditosIA)
+      );
       setLimiteUsuarios(limiteSinc);
       setDadosOficina((prev) => ({
         ...(prev || {}),
@@ -185,6 +195,7 @@ export function AuthProvider({ children }) {
         setDadosOficina(null);
         setNivelInteligencia(DEFAULT_NIVEL_INTELIGENCIA);
         setCreditosIASomenteSnapshot(CREDITOS_IA_FALLBACK);
+        setCreditosIAProvisionado(false);
         setLimiteUsuarios(DEFAULT_LIMITE_USUARIOS);
         setMembrosEquipe([]);
         setMostrarOnboarding(false);
@@ -400,6 +411,7 @@ export function AuthProvider({ children }) {
     dadosImobiliaria: dadosOficina,
     nivelInteligencia,
     creditosIA, // somente leitura — sem setter exposto
+    creditosIAProvisionado, // false = backend ainda não gravou o campo
     limiteUsuarios,
     membrosEquipe,
     setMembrosEquipe,
@@ -438,6 +450,7 @@ export function AuthProvider({ children }) {
     dadosOficina,
     nivelInteligencia,
     creditosIA,
+    creditosIAProvisionado,
     limiteUsuarios,
     membrosEquipe,
     quantidadeAtualCorretores,

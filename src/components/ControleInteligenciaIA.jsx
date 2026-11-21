@@ -17,7 +17,6 @@ import {
   FRANQUIA_BASE_CREDITOS_IA,
 } from '../contexts/AuthContext';
 import BloqueioPremium from './BloqueioPremium';
-import AnelEscuro from './admin/AnelEscuro';
 
 const OPCOES_INTELIGENCIA = [
   {
@@ -70,10 +69,24 @@ export default function ControleInteligenciaIA({
   const creditosDisponiveis =
     typeof auth.creditosIA === 'number' ? auth.creditosIA : CREDITOS_IA_FALLBACK;
 
+  // Backend ainda não gravou `creditosIA` neste tenant (ex.: conta recém-criada no
+  // Plano Gratuito). Nesse caso o saldo exibido é a FRANQUIA INICIAL, com rótulo
+  // explícito — nunca "0 créditos", que daria a entender que a franquia acabou.
+  // Em conta PRO sem provisionamento não inventamos saldo: mostramos "pendente".
+  const saldoNaoProvisionado = auth.creditosIAProvisionado === false;
+  const usaFranquiaGratuita = saldoNaoProvisionado && !isPro;
+  const saldoPendente = saldoNaoProvisionado && isPro;
+
+  const creditosExibidos = saldoPendente ? 0 : creditosDisponiveis;
+
+  const rotuloSaldo = saldoPendente
+    ? 'Saldo pendente'
+    : `⚡ ${creditosExibidos.toLocaleString('pt-BR')} créditos`;
+
   const metaBaseCreditos = FRANQUIA_BASE_CREDITOS_IA; // referência visual da barra
   const percentualCreditos = Math.max(
     0,
-    Math.min(100, Math.round((creditosDisponiveis / metaBaseCreditos) * 100))
+    Math.min(100, Math.round((creditosExibidos / metaBaseCreditos) * 100))
   );
 
   const [salvandoNivel, setSalvandoNivel] = useState(false);
@@ -114,16 +127,21 @@ export default function ControleInteligenciaIA({
     }
   };
 
-  const respostasEstimadas =
-    nivelSelecionado === 'avancado'
-      ? Math.floor(creditosDisponiveis / 5)
-      : creditosDisponiveis;
+  const respostasEstimadas = saldoPendente
+    ? 0
+    : nivelSelecionado === 'avancado'
+      ? Math.floor(creditosExibidos / 5)
+      : creditosExibidos;
 
   return (
-    <AnelEscuro className={`rounded-2xl ${compacto ? 'p-4' : 'p-5 md:p-6'} shadow-xl`}>
-      {/* Lote 4 — o cabeçalho vive em `AnelEscuro` (shadow root) porque no tema
-          claro o fundo `#020408` virava branco enquanto os títulos `text-white`
-          eram escurecidos pelo CSS do tema. */}
+    <div
+      className={`rounded-2xl border border-slate-800 bg-[#020408] ${
+        compacto ? 'p-4' : 'p-5 md:p-6'
+      } shadow-xl`}
+    >
+      {/* Tema: superfícies/textos usam as classes normais do painel (sem shadow
+          root), então a camada `tema-claro` de src/index.css converte tudo —
+          mesmo padrão do Formulário Dinâmico. */}
       {/* CABEÇALHO + MOSTRADOR DE CRÉDITOS DE IA (BADGE + PROGRESS BAR) */}
       <div className="space-y-5">
       <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 pb-4 border-b border-slate-800/90">
@@ -147,21 +165,29 @@ export default function ControleInteligenciaIA({
         </div>
 
         {/* Mostrador Visual Elegante de Créditos IA (Badge + Progress Bar) */}
-        <div className="w-full lg:w-80 bg-slate-900/90 border border-[#10b981]/30 rounded-2xl p-3.5 space-y-2 shrink-0">
+        <div className="w-full lg:w-80 bg-slate-900 border border-[#10b981]/30 rounded-2xl p-3.5 space-y-2 shrink-0">
           <div className="flex items-center justify-between gap-2">
             <span className="text-[11px] font-extrabold uppercase tracking-wider text-slate-300 flex items-center gap-1.5">
               <Sparkles size={13} className="text-[#10b981]" /> Saldo de Créditos IA
             </span>
             <span
               style={{ backgroundColor: 'rgba(16, 185, 129, 0.15)' }}
-              className="px-2.5 py-0.5 rounded-full border border-[#10b981]/50 text-[#10b981] text-xs font-black"
+              className="px-2.5 py-0.5 rounded-full border border-[#10b981]/50 text-[#10b981] text-xs font-black shrink-0"
             >
-              ⚡ {creditosDisponiveis.toLocaleString('pt-BR')} créditos
+              {rotuloSaldo}
             </span>
           </div>
 
+          {saldoNaoProvisionado && (
+            <p className="text-[10px] font-bold text-[#10b981] leading-snug">
+              {usaFranquiaGratuita
+                ? 'Uso gratuito limitado — exibindo a franquia inicial de 1.000 créd. até o backend provisionar o saldo.'
+                : 'O saldo ainda não foi provisionado pelo backend.'}
+            </p>
+          )}
+
           {/* Barra de Progresso */}
-          <div className="w-full h-2.5 bg-[#020408] rounded-full overflow-hidden border border-slate-800">
+          <div className="w-full h-2.5 bg-slate-800 rounded-full overflow-hidden border border-slate-800">
             <div
               style={{
                 width: `${percentualCreditos}%`,
@@ -174,7 +200,8 @@ export default function ControleInteligenciaIA({
           <div className="flex items-center justify-between text-[10px] text-slate-400 font-semibold">
             <span>Franquia base: {metaBaseCreditos.toLocaleString('pt-BR')} créd.</span>
             <span className="text-[#10b981] font-bold">
-              ~{respostasEstimadas.toLocaleString('pt-BR')} respostas restantes
+              ~{respostasEstimadas.toLocaleString('pt-BR')}{' '}
+              {usaFranquiaGratuita ? 'respostas gratuitas' : 'respostas restantes'}
             </span>
           </div>
         </div>
@@ -311,6 +338,6 @@ export default function ControleInteligenciaIA({
         setAbaAtiva={setAbaAtiva}
       />
       </div>
-    </AnelEscuro>
+    </div>
   );
 }

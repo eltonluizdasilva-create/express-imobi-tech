@@ -35,6 +35,9 @@ html.tema-claro #root {
 
 /* Superfícies */
 .tema-claro [style*="#020408"] { background-color: #ffffff !important; }
+/* O React serializa `backgroundColor: '#020408'` como `rgb(2, 4, 8)`, então o
+   seletor de hex acima não casa em style inline — esta linha cobre os dois. */
+.tema-claro [style*="rgb(2, 4, 8)"] { background-color: #ffffff !important; }
 .tema-claro [class*="bg-[#020408]"] { background-color: #f8fafc !important; }
 .tema-claro [class*="bg-zinc-950"],
 .tema-claro [class*="bg-zinc-900"],
@@ -58,6 +61,34 @@ html.tema-claro #root {
 /* Marca — no claro o degradê precisa de paradas mais escuras para ler */
 .tema-claro .logo-accent {
   background-image: linear-gradient(90deg, #047857 0%, #0f766e 55%, #0369a1 100%) !important;
+}
+
+/* ===== HeroAba — cabeçalho de aba com fundo temático =========================
+   O degradê escuro vive na classe (não inline) para o modo claro trocar só as
+   paradas de cor. A tonalidade da aba continua entrando por `--hero-cor`,
+   injetada pelo componente. */
+.hero-aba {
+  background:
+    radial-gradient(720px 220px at 12% -40%, var(--hero-cor, rgba(16, 185, 129, 0.16)), transparent 60%),
+    linear-gradient(135deg, var(--hero-fundo-1, #0b1220) 0%, var(--hero-fundo-2, #020408) 70%);
+}
+html.tema-claro {
+  --hero-fundo-1: #ffffff;
+  --hero-fundo-2: #f1f5f9;
+}
+.hero-aba-stat {
+  background: var(--hero-stat-fundo, rgba(255, 255, 255, 0.025));
+}
+html.tema-claro .hero-aba-stat {
+  --hero-stat-fundo: rgba(15, 23, 42, 0.035);
+}
+
+/* Tarja de aviso (Simulador de Custos): mesma estrutura nos dois temas,
+   só a superfície e o texto mudam. */
+html.tema-claro .tarja-aviso {
+  background-color: #fffbeb !important;
+  border-color: #fcd34d !important;
+  color: #78350f !important;
 }
 
 /* Texto — preserva botões/pílulas coloridas */
