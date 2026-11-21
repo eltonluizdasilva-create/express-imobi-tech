@@ -44,20 +44,41 @@ export function urlCheckoutPro(env = {}, ciclo = 'anual') {
 }
 
 /**
+ * Links de pagamento públicos do Asaas — usados quando a variável de ambiente
+ * do plano está vazia. São os mesmos links divulgados no site; existem para o
+ * botão de upgrade nunca cair no WhatsApp por falta de configuração.
+ */
+export const LINK_ASAAS_PADRAO = Object.freeze({
+  essencial_plus: 'https://www.asaas.com/000/c/62w4zie9tigrfj5w', // Essencial Plus — R$ 39,90/mês
+  pro: 'https://www.asaas.com/000/c/xioo567rm50hn601', // PRO — R$ 99,00/mês
+});
+
+/**
  * Link de pagamento (Asaas) do degrau escolhido.
  *   VITE_ASAAS_LINK_ESSENCIAL → Essencial Plus (R$ 39,90)
  *   VITE_ASAAS_LINK_PRO       → PRO / Profissional (R$ 99,00)
  *   VITE_ASAAS_LINK_PRO_ANUAL → opcional, só para o ciclo anual do PRO
  *
+ * Variável ausente ou inválida → `LINK_ASAAS_PADRAO` do plano. Só devolve
+ * string vazia para planos sem link público (Automação Sofia, Presença
+ * Digital), que continuam indo pelo WhatsApp comercial.
+ *
  * Recebe VALORES (nunca `import.meta.env` inteiro) pelo mesmo motivo de
  * `urlCheckoutPro`: o bundle não pode variar de máquina para máquina.
  */
 export function urlAsaasLink({ essencial = '', pro = '', proAnual = '' } = {}, plano = 'pro', ciclo = 'mensal') {
-  const chave = String(plano || '').toLowerCase() === 'essencial_plus' ? 'essencial_plus' : 'pro';
+  const alvo = String(plano || '').toLowerCase();
+  const chave = alvo === 'essencial_plus' ? 'essencial_plus' : alvo === 'pro' || alvo === 'profissional' ? 'pro' : null;
+  if (!chave) return ''; // Automação Sofia e Presença Digital são consultivas (WhatsApp).
   const anual = String(ciclo || '').toLowerCase() === 'anual';
-  const bruto = chave === 'essencial_plus' ? essencial : anual ? proAnual || pro : pro;
-  const url = String(bruto || '').trim();
-  return /^https?:\/\//i.test(url) ? url : '';
+  const candidatos =
+    chave === 'essencial_plus' ? [essencial] : anual ? [proAnual, pro] : [pro];
+
+  for (const bruto of candidatos) {
+    const url = String(bruto || '').trim();
+    if (/^https?:\/\//i.test(url)) return url;
+  }
+  return LINK_ASAAS_PADRAO[chave] || '';
 }
 
 /**

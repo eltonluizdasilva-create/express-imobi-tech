@@ -48,7 +48,8 @@ export default function ModuloMeuPlano({ dadosOficina }) {
 
   /**
    * Link de pagamento (Asaas) do degrau, já com e-mail e oficinaId na URL.
-   * Vazio quando a variável do plano não está configurada.
+   * Variável de ambiente do plano quando existe; sem ela, o link público do
+   * Asaas (LINK_ASAAS_PADRAO). Só volta vazio para planos sem checkout.
    */
   const linkDoPlano = (planoKey, conta) =>
     comDadosDaConta(

@@ -6,7 +6,7 @@ import {
   valorEmReais, planoPorValor, planoPorTexto, lerPlanoDoEvento, ehPayloadAsaas,
   eventoAtivaPlano, extrairEmail, extrairOficinaId, EVENTOS_ASAAS_QUE_ATIVAM,
 } from '../api/_asaas.js';
-import { urlAsaasLink, comDadosDaConta, destinoCheckout, urlCheckoutPro } from '../src/lib/checkout.js';
+import { urlAsaasLink, comDadosDaConta, destinoCheckout, urlCheckoutPro, LINK_ASAAS_PADRAO } from '../src/lib/checkout.js';
 
 let falhas = 0;
 const ok = (n, c, e = '') => { console.log(`${c ? 'PASS' : 'FAIL'}  ${n}${e ? ' — ' + e : ''}`); if (!c) falhas += 1; };
@@ -90,8 +90,23 @@ ok('PRO anual usa link próprio quando existe',
   urlAsaasLink({ pro: 'https://x/i/pro', proAnual: 'https://x/i/pro-anual' }, 'pro', 'anual') === 'https://x/i/pro-anual');
 ok('PRO anual cai no link mensal quando não há anual',
   urlAsaasLink({ pro: 'https://x/i/pro' }, 'pro', 'anual') === 'https://x/i/pro');
-ok('variável vazia devolve vazio', urlAsaasLink({}, 'pro', 'mensal') === '');
-ok('link sem protocolo é descartado', urlAsaasLink({ pro: 'asaas.com/i/pro' }, 'pro', 'mensal') === '');
+
+ok('os dois links públicos do Asaas estão publicados no código',
+  LINK_ASAAS_PADRAO.essencial_plus === 'https://www.asaas.com/000/c/62w4zie9tigrfj5w' &&
+  LINK_ASAAS_PADRAO.pro === 'https://www.asaas.com/000/c/xioo567rm50hn601',
+  JSON.stringify(LINK_ASAAS_PADRAO));
+ok('sem variável do Essencial usa o link público',
+  urlAsaasLink({}, 'essencial_plus', 'mensal') === LINK_ASAAS_PADRAO.essencial_plus);
+ok('sem variável do PRO usa o link público',
+  urlAsaasLink({}, 'pro', 'mensal') === LINK_ASAAS_PADRAO.pro);
+ok('PRO anual sem nenhuma variável também usa o link público',
+  urlAsaasLink({}, 'pro', 'anual') === LINK_ASAAS_PADRAO.pro);
+ok('variável sem protocolo cai no link público',
+  urlAsaasLink({ pro: 'asaas.com/i/pro' }, 'pro', 'mensal') === LINK_ASAAS_PADRAO.pro);
+ok('variável em branco cai no link público',
+  urlAsaasLink({ essencial: '   ', pro: '   ', proAnual: '   ' }, 'essencial_plus', 'anual') === LINK_ASAAS_PADRAO.essencial_plus);
+ok('plano sem link público devolve vazio',
+  urlAsaasLink({}, 'automacao', 'mensal') === '' && urlAsaasLink({}, 'presenca_digital', 'mensal') === '');
 
 const comDados = new URL(comDadosDaConta('https://www.asaas.com/i/pro', { email: 'a@b.com', oficinaId: 'OFI123' }));
 ok('e-mail anexado ao link', comDados.searchParams.get('email') === 'a@b.com');
@@ -108,8 +123,16 @@ const comLink = destinoCheckout({
   whatsapp: '5534991439845',
 });
 ok('clique com link do Asaas abre o pagamento', comLink.tipo === 'checkout' && comLink.url.includes('asaas.com/i/pro'));
-ok('sem link do Asaas cai no WhatsApp',
-  destinoCheckout({ checkoutUrl: urlAsaasLink({}, 'pro'), whatsapp: '5534991439845', email: 'a@b.com' }).tipo === 'whatsapp');
+ok('sem link nenhum cai no WhatsApp', 
+  destinoCheckout({ checkoutUrl: '', whatsapp: '5534991439845', email: 'a@b.com' }).tipo === 'whatsapp');
+ok('clique do PRO e do Essencial nunca fica sem destino',
+  destinoCheckout({ checkoutUrl: urlAsaasLink({}, 'pro'), whatsapp: '5534991439845' }).url.startsWith('https://www.asaas.com/') &&
+  destinoCheckout({ checkoutUrl: urlAsaasLink({}, 'essencial_plus'), whatsapp: '5534991439845' }).url.startsWith('https://www.asaas.com/'));
+ok('link público do Essencial sai com e-mail e oficinaId',
+  (() => {
+    const u = new URL(comDadosDaConta(urlAsaasLink({}, 'essencial_plus', 'mensal'), { email: 'a@b.com', oficinaId: 'OFI123' }));
+    return u.searchParams.get('email') === 'a@b.com' && u.searchParams.get('externalReference') === 'OFI123';
+  })());
 ok('variáveis antigas do checkout seguem funcionando',
   urlCheckoutPro({ VITE_CHECKOUT_PRO_URL: 'https://pay.io/old' }, 'mensal') === 'https://pay.io/old');
 

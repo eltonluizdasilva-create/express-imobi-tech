@@ -77,12 +77,14 @@ criados em um único batch; o listener de autenticação aguarda o batch antes d
 | `xml-portais.js` | gera feed XML por tenant |
 | `webhook-portais.js` | recebe lead de portal e grava no CRM |
 | `telegram-webhook.js` | notificação |
-| `pagamento-webhook.js` | confirma pagamento e atualiza assinatura/plano via `firebase-admin` |
+| `pagamento-webhook.js` | confirma pagamento e atualiza assinatura/plano via `firebase-admin`; aceita o payload nativo do Asaas (`PAYMENT_CONFIRMED`/`PAYMENT_RECEIVED`, cabeçalho `asaas-access-token`) e o JSON direto (`x-webhook-secret`) |
 | `_firestoreAdmin.js` | JWT de service account + REST (usado pelos endpoints que dependem do helper) |
 | `_authToken.js` | valida ID token do Firebase nos endpoints sensíveis |
 
 O endpoint `pagamento-webhook.js` usa a dependência `firebase-admin` instalada na raiz e a variável
 `FIREBASE_SERVICE_ACCOUNT`; os demais endpoints que usam `_firestoreAdmin.js` continuam via REST.
+
+Webhook do Asaas: o token do cabeçalho `asaas-access-token` é comparado com `WEBHOOK_SECRET` (mesmo segredo do JSON direto). Plano vem do valor pago (mapa derivado de `shared/planos.json`) ou de `externalReference`/`description`; a leitura pura vive em `api/_asaas.js`. Links de upgrade: `src/lib/checkout.js` (`urlAsaasLink`, `LINK_ASAAS_PADRAO`), sem link configurado o botão do Essencial Plus/PRO usa o link público do Asaas.
 
 ---
 
