@@ -84,6 +84,14 @@ import useCarregamentoInicial from './hooks/useCarregamentoInicial.jsx';
 import { registrarEventoLead, TIPOS_EVENTO } from './services/girardEngine';
 import RodaProspeccao from './components/RodaProspeccao';
 import useQuickActions, { parseMoedaBR } from './hooks/useQuickActions';
+import { cabecalhosIA } from './lib/aiAuth';
+import {
+  AVISO_CATALOGO_VAZIO,
+  AVISO_SEM_DISPONIVEIS,
+  descreverHandoff,
+  filtrarCatalogoDisponivel,
+  responderSofiaSimulacao,
+} from './lib/simuladorSofia';
 
 // ─── Proteção Isolada para Modais Legados ──────────────────────────────────────
 
@@ -115,6 +123,14 @@ const MASTER_GOLD = '#f59e0b';
 
 const fmtBRL = (v) =>
   Number(v || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+
+/** Saudação fixa do simulador: é a única frase que não vem da IA. */
+const SAUDACAO_SOFIA_SIMULACAO =
+  'Olá! Sou a Sofia, a mesma agente que atende no WhatsApp. Escreva como se você fosse o cliente (bairro, tipo de imóvel, faixa de valor) — eu respondo com os imóveis reais do seu catálogo, sem inventar preço, taxa ou parcela.';
+
+const historicoInicialSimulador = () => [
+  { autor: 'ia', agente: 'Sofia • modo simulação', texto: SAUDACAO_SOFIA_SIMULACAO },
+];
 
 const GRUPOS_MENU_IMOBI = [
   {
@@ -609,26 +625,17 @@ export default function Admin() {
     corretor: 'Corretor Plantão 01',
   });
 
-  // Simulador rápido de IA na aba de Agentes (com Memória de Contexto e Máquina de Estados)
+  // Simulador da Sofia REAL (aba de Agentes) — a resposta vem do /api/ai com o
+  // catálogo do tenant; nada de roteiro fixo, taxa inventada ou ficha fictícia.
   const [msgTesteIA, setMsgTesteIA] = useState('');
-  const [contextoSimuladorIA, setContextoSimuladorIA] = useState({
-    etapa: 'inicio',
-    agenteAtual: 'Sofia (Triagem 24h)',
-    modalidade: null,
-    tipoImovel: null,
-    quartos: null,
-    bairro: null,
-    orcamento: null,
-    fichasEnviadas: false,
-    horarioVisita: null,
-  });
-  const [historicoTesteIA, setHistoricoTesteIA] = useState([
-    {
-      autor: 'ia',
-      agente: 'Sofia • Triagem 24h',
-      texto: 'Olá! Sou a Sofia, agente de triagem do Express Imobi Tech. Digite uma mensagem como se fosse um cliente procurando imóvel (ex: bairro, faixa de valor ou tipo de imóvel) para testar!',
-    },
-  ]);
+  const [enviandoSimIA, setEnviandoSimIA] = useState(false);
+  const [erroSimIA, setErroSimIA] = useState('');
+  const [gatilhoSimIA, setGatilhoSimIA] = useState(null);
+  const [historicoTesteIA, setHistoricoTesteIA] = useState(historicoInicialSimulador);
+
+  // O que a Sofia pode oferecer: imóveis vendidos/alugados/inativos ficam
+  // fora do catálogo enviado ao /api/ai (e da contagem mostrada na tela).
+  const imoveisDisponiveisSimIA = useMemo(() => filtrarCatalogoDisponivel(listaImoveis), [listaImoveis]);
 
   // Controle de planos e Trial
   const [trialExpirou, setTrialExpirou] = useState(false);
@@ -1243,245 +1250,56 @@ export default function Admin() {
   };
 
   const reiniciarSimuladorIA = useCallback(() => {
-    setContextoSimuladorIA({
-      etapa: 'inicio',
-      agenteAtual: 'Sofia (Triagem 24h)',
-      modalidade: null,
-      tipoImovel: null,
-      quartos: null,
-      bairro: null,
-      orcamento: null,
-      fichasEnviadas: false,
-      horarioVisita: null,
-    });
-    setHistoricoTesteIA([
-      {
-        autor: 'ia',
-        agente: 'Sofia • Triagem 24h',
-        texto:
-          'Olá! Sou a Sofia, agente de triagem do Express Imobi Tech. Digite uma mensagem como se fosse um cliente procurando imóvel (ex: bairro, faixa de valor ou tipo de imóvel) para testar!',
-      },
-    ]);
+    setMsgTesteIA('');
+    setErroSimIA('');
+    setGatilhoSimIA(null);
+    setHistoricoTesteIA(historicoInicialSimulador());
   }, []);
 
-  const simularRespostaAgente = (e) => {
+  // Simulador REAL: montaCorpoSofia() em modo 'simulacao' com os imóveis do
+  // tenant, chama /api/ai com o Bearer (cabecalhosIA) e mostra APENAS o `text`
+  // limpo devolvido pelo proxy. Se houver handoff, a badge acima registra —
+  // o cliente final nunca vê essa tag (D-21.06 / D-21.07).
+  const simularRespostaAgente = async (e) => {
     e.preventDefault();
-    if (!msgTesteIA.trim()) return;
-    const texto = msgTesteIA.trim();
-    const textoLower = texto.toLowerCase();
+    const mensagem = msgTesteIA.trim();
+    if (!mensagem || enviandoSimIA) return;
+
     setMsgTesteIA('');
-
-    const ctx = { ...contextoSimuladorIA };
-
-    // 1. Extração de Modalidade (Compra vs Locação)
-    if (/alug|loca/i.test(textoLower)) {
-      ctx.modalidade = 'Locação';
-    } else if (/compr|financ|fgts|invest|aquisi/i.test(textoLower)) {
-      ctx.modalidade = 'Compra';
-    }
-
-    // 2. Extração de Tipo de Imóvel (Urbano, Loteamentos/Condomínios, Fazendas/Rurais) e Quartos/Hectares
-    if (/fazenda|haras|s[ií]tio|ch[aá]cara|rural|agr[ií]cola|pecu[aá]ria|lavoura|hectare|alqueire/i.test(textoLower)) {
-      ctx.tipoImovel = 'Fazenda / Imóvel Rural';
-    } else if (/loteamento|quadra|lote\b|terreno|condom[ií]nio fechado/i.test(textoLower)) {
-      ctx.tipoImovel = 'Loteamento / Condomínio';
-    } else if (/apto|apartamento|studio|kitnet/i.test(textoLower)) {
-      ctx.tipoImovel = 'Apartamento';
-    } else if (/casa|sobrado/i.test(textoLower)) {
-      ctx.tipoImovel = 'Casa';
-    } else if (/cobertura/i.test(textoLower)) {
-      ctx.tipoImovel = 'Cobertura';
-    } else if (/comercial|sala|galp[aã]o|loja/i.test(textoLower)) {
-      ctx.tipoImovel = 'Imóvel Comercial';
-    }
-
-    const matchHectares = textoLower.match(/(\d+)\s*(hectare|ha\b|alqueire)/i);
-    if (matchHectares) {
-      ctx.quartos = `${matchHectares[1]} ${matchHectares[2]}`;
-    }
-
-    const matchMetragemLote = textoLower.match(/(\d+)\s*(m2|m²|metros)/i);
-    if (matchMetragemLote) {
-      ctx.quartos = `${matchMetragemLote[1]} m²`;
-    }
-
-    const matchQuartos = textoLower.match(/(\d+)\s*(quarto|dorm|su[ií]te|qto)/i);
-    if (matchQuartos) {
-      ctx.quartos = `${matchQuartos[1]} quartos`;
-    }
-
-    // 3. Extração Inteligente de Orçamento / Faixa de Preço (nunca mais pergunta o preço após capturar!)
-    const matchValorExplicito = textoLower.match(
-      /(?:r\$\s*)?(\d{1,3}(?:[.,]\d{3})+|\d+)\s*(mil|milh[aã]o|milh[oõ]es|k|reais)?/i
-    );
-    const temPalavraPreco = /mil|milh|reais|r\$|valor|faixa|or[cç]amento|at[eé]\s*\d|entrada|parcela|fgts/i.test(textoLower);
-    const apenasNumeroLimpo = /^\s*(?:r\$\s*)?\d+(?:[.,]\d+)?\s*(?:mil|k|reais)?\s*$/i.test(textoLower);
-
-    if (
-      matchValorExplicito &&
-      !matchQuartos &&
-      !/^\d{1,2}\s*h/i.test(textoLower) &&
-      (temPalavraPreco || apenasNumeroLimpo || ctx.etapa === 'aguardando_orcamento')
-    ) {
-      const numBruto = matchValorExplicito[1];
-      const sufixo = (matchValorExplicito[2] || '').toLowerCase();
-      if (sufixo.startsWith('milh')) {
-        ctx.orcamento = `R$ ${numBruto} ${sufixo}`;
-      } else if (sufixo === 'mil' || sufixo === 'k') {
-        ctx.orcamento = `R$ ${numBruto} mil`;
-      } else {
-        const valorNum = Number(String(numBruto).replace(/\./g, '').replace(',', '.'));
-        if (valorNum >= 100 && valorNum < 1000 && ctx.modalidade !== 'Locação') {
-          ctx.orcamento = `R$ ${valorNum} mil`;
-        } else if (valorNum >= 1000) {
-          ctx.orcamento = fmtBRL(valorNum);
-        }
-      }
-    }
-
-    // 4. Detecção de Confirmação ("sim", "pode", "quero", "ok", "manda") e Escolha de Horário
-    const isConfirmacao =
-      /^(sim|s|pode|claro|quero|manda|envia|ok|beleza|com certeza|por favor|bora|vamos|pode sim|quero sim|isso)\b/i.test(
-        textoLower
-      ) || /pode mandar|pode enviar|quero ver|me envia|manda as fichas|quero visitar|agendar/i.test(textoLower);
-
-    const matchHorario = textoLower.match(
-      /(10\s*h|15\s*h|14\s*h|16\s*h|09\s*h|9\s*h|11\s*h|manh[aã]|tarde|amanh[aã]|s[aá]bado|hoje|\b10\b|\b15\b)/i
-    );
-
-    // 5. Extração Inteligente de Bairro / Região
-    const bairrosConhecidos = textoLower.match(
-      /\b(bosque|jardins|centro|zona sul|zona norte|zona leste|zona oeste|vila nova|morumbi|santa m[oô]nica|umuarama|granada|patrim[oô]nio|kara[ií]ba|altamira|copacabana|barra| Lourdes|savassi|alphaville|campolim|cambu[ií])\b/i
-    );
-    const matchBairroFrase = texto.match(/(?:bairro|regi[aã]o|no|na|em|pro\s+lado\s+do)\s+([A-Za-zÀ-ú0-9\s]{3,25})/i);
-
-    if (bairrosConhecidos) {
-      const nomeBairro = bairrosConhecidos[1];
-      ctx.bairro = nomeBairro.charAt(0).toUpperCase() + nomeBairro.slice(1);
-    } else if (matchBairroFrase && !/valor|faixa|mil|reais|manh[aã]|tarde/i.test(matchBairroFrase[1])) {
-      ctx.bairro = matchBairroFrase[1].trim();
-    } else if (
-      !ctx.bairro &&
-      (ctx.etapa === 'aguardando_bairro' || (!apenasNumeroLimpo && !temPalavraPreco)) &&
-      !isConfirmacao &&
-      !matchHorario &&
-      !/^(oi|ol[aá]|bom dia|boa tarde|boa noite|quero comprar|quero alugar|procuro im[oó]vel|im[oó]vel|casa|apartamento)$/i.test(
-        textoLower
-      ) &&
-      texto.length >= 3 &&
-      texto.length <= 32
-    ) {
-      // Se o usuário respondeu diretamente o nome do bairro (ex: "bosque")
-      const limpo = texto.replace(/^(no|na|em|bairro)\s+/i, '').trim();
-      if (limpo && !/\d{3,}/.test(limpo)) {
-        ctx.bairro = limpo.charAt(0).toUpperCase() + limpo.slice(1);
-      }
-    }
-
-    // 6. Máquina de Estados Conversacional (Transição Fluida: Sofia -> Iago -> Téo -> Lara)
-    let agenteTurno = 'Sofia • Triagem 24h';
-    let resposta = '';
-    const tipoLabel = ctx.tipoImovel || 'imóvel';
-    const modLabel = ctx.modalidade || 'Compra';
-    const bairroLabel = ctx.bairro || 'região de sua preferência';
-    const orcamentoLabel = ctx.orcamento || 'sua faixa de investimento';
-
-    if (
-      ctx.etapa === 'aguardando_horario_visita' &&
-      (matchHorario || isConfirmacao || /visita|hor[aá]rio|corretor/i.test(textoLower))
-    ) {
-      // PASSO 4: Téo confirma a visita agendada e passa a bola para a Lara (Propostas/Financiamento)
-      const horarioEscolhido = matchHorario ? matchHorario[1] : 'amanhã às 10h';
-      ctx.horarioVisita = horarioEscolhido;
-      ctx.etapa = 'visita_confirmada';
-      ctx.agenteAtual = 'Téo (Agendador de Visitas)';
-      agenteTurno = 'Téo • Agendador de Visitas';
-      resposta =
-        `🗓️ Perfeito! Visita confirmada para ${horarioEscolhido} nos imóveis separados no bairro ${bairroLabel} (${orcamentoLabel}). ` +
-        `Já notifiquei o corretor de plantão na roleta e enviei a localização no seu WhatsApp! ` +
-        `Enquanto isso, quer que a Lara (Agente de Propostas) já deixe sua simulação de financiamento/FGTS pré-aprovada?`;
-    } else if (ctx.etapa === 'visita_confirmada') {
-      // PASSO 5: Lara finaliza com simulação de financiamento e preparação de proposta
-      ctx.agenteAtual = 'Lara (Propostas & Fechamento)';
-      agenteTurno = 'Lara • Propostas & Crédito';
-      if (isConfirmacao || /financ|parcela|fgts|entrada|simula|proposta/i.test(textoLower)) {
-        resposta =
-          `📑 [Lara — Propostas & Crédito]: Excelente! Para a faixa de ${orcamentoLabel} no bairro ${bairroLabel}, a simulação preliminar indica entrada facilitada (podendo usar FGTS) e taxas a partir de 8,99% a.a. ` +
-          `Seu atendimento já está salvo no Funil CRM do corretor para a visita (${ctx.horarioVisita || 'agendada'})!`;
-      } else {
-        resposta =
-          `✅ Tudo certo! Sua visita no bairro ${bairroLabel} (${orcamentoLabel}) já está confirmada com nosso corretor. Se precisar alterar o horário ou simular novas condições, é só chamar aqui!`;
-      }
-    } else if (
-      ctx.etapa === 'aguardando_confirmacao_fichas' &&
-      (isConfirmacao || /ficha|foto|op[cç][oõ]es|im[oó]ve|visita|agendar/i.test(textoLower))
-    ) {
-      // PASSO 3: Usuário respondeu "sim" -> Iago envia as 3 fichas e Téo propõe o horário da visita
-      ctx.fichasEnviadas = true;
-      ctx.etapa = 'aguardando_horario_visita';
-      ctx.agenteAtual = 'Téo (Agendador de Visitas)';
-      agenteTurno = 'Iago → Téo • Agendador IA';
-      resposta =
-        `📋 Aqui estão as 3 melhores fichas que separamos no bairro ${bairroLabel} dentro de ${orcamentoLabel}:\n` +
-        `1️⃣ ${ctx.tipoImovel || 'Imóvel'} Residencial ${bairroLabel} — ${ctx.quartos || '2 quartos c/ suíte'}, varanda e vaga coberta (Aceita Financiamento/FGTS)\n` +
-        `2️⃣ Opção Premium em ${bairroLabel} — Acabamento moderno, excelente sol da manhã\n` +
-        `3️⃣ Oportunidade Exclusiva ${bairroLabel} — Documentação 100% OK para fechamento rápido\n\n` +
-        `🗓️ O Téo (Agente de Visitas) verificou a agenda do corretor: fica melhor para você conhecer pessoalmente amanhã às 10h ou às 15h?`;
-    } else if (/visita|agendar|conhecer pessoalmente/i.test(textoLower)) {
-      // Pedido direto de visita em qualquer momento
-      ctx.etapa = 'aguardando_horario_visita';
-      ctx.agenteAtual = 'Téo (Agendador de Visitas)';
-      agenteTurno = 'Téo • Agendador de Visitas';
-      resposta =
-        `Ótimo! O Téo (Agente de Visitas) já cruzou a agenda para ${ctx.bairro ? `o bairro ${ctx.bairro}` : 'sua região'}${ctx.orcamento ? ` (${ctx.orcamento})` : ''}: ` +
-        `temos horário disponível amanhã às 10h ou às 15h. Qual desses horários prefere para eu confirmar com o corretor?`;
-    } else if (ctx.bairro && ctx.orcamento) {
-      // PASSO 2 COMPLETO: Já temos BAIRRO e ORÇAMENTO -> Avança para envio das fichas sem repetir perguntas!
-      ctx.etapa = 'aguardando_confirmacao_fichas';
-      ctx.agenteAtual = 'Iago (Qualificador de Perfil)';
-      agenteTurno = 'Iago • Qualificador de Perfil';
-      resposta =
-        `✅ Perfeito! Já filtrei nosso catálogo unindo bairro ${ctx.bairro} + faixa de ${ctx.orcamento} (${modLabel}). ` +
-        `Encontrei 3 excelentes opções disponíveis hoje que aceitam financiamento bancário e uso de FGTS. Posso te enviar as fichas com fotos agora?`;
-    } else if (ctx.orcamento && !ctx.bairro) {
-      // Usuário informou o VALOR (ex: "200 mil"), falta apenas o BAIRRO -> Reconhece o valor e pergunta SÓ o bairro!
-      ctx.etapa = 'aguardando_bairro';
-      ctx.agenteAtual = 'Iago (Qualificador de Perfil)';
-      agenteTurno = 'Iago • Qualificador de Perfil';
-      resposta =
-        `💰 Excelente faixa de investimento (${ctx.orcamento})! Já ativei o filtro de imóveis compatíveis com financiamento e FGTS nessa faixa. ` +
-        `Para eu separar as melhores opções, qual bairro ou região você prefere?`;
-    } else if (ctx.bairro && !ctx.orcamento) {
-      // Usuário informou o BAIRRO (ex: "bosque"), falta apenas o VALOR -> Reconhece o bairro e pergunta SÓ o valor!
-      ctx.etapa = 'aguardando_orcamento';
-      ctx.agenteAtual = 'Iago (Qualificador de Perfil)';
-      agenteTurno = 'Iago • Qualificador de Perfil';
-      resposta =
-        `📍 Ótima escolha! A região do ${ctx.bairro} tem alta procura e excelente valorização. ` +
-        `Para eu filtrar os imóveis certos lá no ${ctx.bairro}, qual faixa de valor ou investimento você busca hoje?`;
-    } else if (isConfirmacao) {
-      // Se o usuário respondeu "sim" logo no início sem ter dito bairro nem orçamento ainda
-      ctx.etapa = 'aguardando_bairro';
-      ctx.agenteAtual = 'Iago (Qualificador de Perfil)';
-      agenteTurno = 'Iago • Qualificador de Perfil';
-      resposta =
-        `Maravilha! Para eu te mostrar as opções ideais agora mesmo, me conta: qual bairro você tem preferência ou qual faixa de valor procura?`;
-    } else {
-      // Saudação inicial / Interesse geral -> Sofia recepciona e passa para o filtro de bairro
-      ctx.etapa = 'aguardando_bairro';
-      ctx.agenteAtual = 'Sofia (Triagem 24h)';
-      agenteTurno = 'Sofia • Triagem 24h';
-      resposta =
-        `👋 Olá! Já identifiquei seu interesse em ${tipoLabel} (${modLabel}). ` +
-        `Para o Iago filtrar as melhores oportunidades do nosso catálogo, qual bairro você prefere ou qual faixa de valor busca hoje?`;
-    }
-
-    setContextoSimuladorIA(ctx);
+    setErroSimIA('');
+    setGatilhoSimIA(null);
     setHistoricoTesteIA((prev) => [
       ...(Array.isArray(prev) ? prev : []),
-      { autor: 'cliente', texto },
-      { autor: 'ia', agente: agenteTurno, texto: resposta },
+      { autor: 'cliente', texto: mensagem },
     ]);
+
+    setEnviandoSimIA(true);
+    try {
+      const resultado = await responderSofiaSimulacao({
+        mensagem,
+        historico: historicoTesteIA,
+        catalogoImoveis: imoveisDisponiveisSimIA,
+        nomeImobiliaria: dadosImobCtx?.nome || dadosImobCtx?.nomeOficina || 'Imobiliária parceira',
+        nomeCorretor:
+          auth?.currentUser?.displayName || dadosImobCtx?.nomeResponsavel || 'Corretor responsável',
+        cabecalhos: await cabecalhosIA(),
+      });
+
+      if (!resultado.ok) {
+        setErroSimIA(resultado.erro);
+        return;
+      }
+
+      setHistoricoTesteIA((prev) => [
+        ...(Array.isArray(prev) ? prev : []),
+        { autor: 'ia', agente: 'Sofia • modo simulação', texto: resultado.texto },
+      ]);
+      setGatilhoSimIA(descreverHandoff(resultado.gatilho));
+    } catch (erro) {
+      setErroSimIA(erro?.message || 'Falha inesperada ao chamar a Sofia.');
+    } finally {
+      setEnviandoSimIA(false);
+    }
   };
 
   // Hooks legados para modais secundários
@@ -2837,12 +2655,13 @@ export default function Admin() {
               </div>
             </div>
 
-            {/* Simulador de Triagem ao Vivo para Demonstração Comercial */}
+            {/* Simulador da Sofia REAL: mesma persona do WhatsApp, resposta via /api/ai
+                com o catálogo do tenant. Nenhuma taxa, parcela ou ficha é inventada. */}
             <div className="lg:col-span-5 bg-slate-900 border border-slate-800 rounded-2xl p-5 flex flex-col h-[560px]">
               <div className="pb-3 mb-3 border-b border-slate-800 space-y-2">
                 <div className="flex items-center justify-between gap-2">
                   <h3 className="font-bold text-white flex items-center gap-2">
-                    <Sparkles size={16} style={{ color: '#10b981' }} className="text-[#10b981]" /> Simulador de Demonstração (Ao Vivo)
+                    <Sparkles size={16} style={{ color: '#10b981' }} className="text-[#10b981]" /> Simulador da Sofia (IA real)
                   </h3>
                   <button
                     type="button"
@@ -2853,30 +2672,36 @@ export default function Admin() {
                   </button>
                 </div>
                 <p className="text-xs text-slate-400">
-                  Memória ativa: veja a transição automática Sofia (Triagem) → Iago (Qualificação) → Téo (Agenda).
+                  A mesma Sofia do WhatsApp, respondendo pelo <span className="text-slate-200 font-semibold">/api/ai</span> com o
+                  catálogo real do tenant. Preço, taxa e parcela só saem do cadastro.
                 </p>
 
-                {/* Barra de Memória de Contexto Capturada pela IA */}
                 <div className="flex flex-wrap items-center gap-1.5 pt-1">
-                  <span className="px-2 py-0.5 rounded-md bg-[#10b981]/15 border border-[#10b981]/30 text-[#10b981] text-[10px] font-extrabold">
-                    🤖 {contextoSimuladorIA.agenteAtual}
+                  <span
+                    title={
+                      imoveisDisponiveisSimIA.length === (Array.isArray(listaImoveis) ? listaImoveis.length : 0)
+                        ? 'Catálogo enviado à Sofia'
+                        : 'Vendidos, alugados e inativos não são enviados à Sofia'
+                    }
+                    className="px-2 py-0.5 rounded-md bg-[#020408] border border-slate-700 text-slate-200 text-[10px] font-bold"
+                  >
+                    🏠 {imoveisDisponiveisSimIA.length} disponível(is) de{' '}
+                    {Array.isArray(listaImoveis) ? listaImoveis.length : 0} cadastrado(s)
                   </span>
-                  {contextoSimuladorIA.bairro && (
-                    <span className="px-2 py-0.5 rounded-md bg-[#020408] border border-slate-700 text-slate-200 text-[10px] font-bold">
-                      📍 {contextoSimuladorIA.bairro}
-                    </span>
-                  )}
-                  {contextoSimuladorIA.orcamento && (
-                    <span className="px-2 py-0.5 rounded-md bg-[#020408] border border-slate-700 text-[#10b981] text-[10px] font-bold">
-                      💰 {contextoSimuladorIA.orcamento}
-                    </span>
-                  )}
-                  {contextoSimuladorIA.horarioVisita && (
-                    <span className="px-2 py-0.5 rounded-md bg-[#020408] border border-[#10b981]/50 text-white text-[10px] font-bold">
-                      🗓️ Visita: {contextoSimuladorIA.horarioVisita}
+                  {gatilhoSimIA && (
+                    <span
+                      title={gatilhoSimIA.motivo ? `Motivo interno: ${gatilhoSimIA.motivo}` : 'Gatilho interno da esteira'}
+                      className="px-2 py-0.5 rounded-md bg-[#f59e0b]/15 border border-[#f59e0b]/40 text-[#f59e0b] text-[10px] font-extrabold"
+                    >
+                      ⚡ {gatilhoSimIA.rotulo}
                     </span>
                   )}
                 </div>
+                {gatilhoSimIA && (
+                  <p className="text-[10px] text-slate-500">
+                    Tag interna de handoff: o cliente final não vê esta linha — ela não vai para o WhatsApp.
+                  </p>
+                )}
               </div>
 
               <div className="flex-1 overflow-y-auto space-y-3 pr-1">
@@ -2898,20 +2723,52 @@ export default function Admin() {
                     {m.texto}
                   </div>
                 ))}
+                {enviandoSimIA && (
+                  <div
+                    style={{ backgroundColor: '#020408' }}
+                    className="p-3 rounded-2xl text-xs max-w-[88%] border border-slate-800 text-slate-400"
+                  >
+                    Sofia está digitando…
+                  </div>
+                )}
+                {erroSimIA && (
+                  <div className="p-3 rounded-xl text-[11px] border border-red-500/40 bg-red-500/10 text-red-300">
+                    {erroSimIA}
+                  </div>
+                )}
               </div>
+
+              {imoveisDisponiveisSimIA.length === 0 && (
+                <div className="mt-3 rounded-xl border border-[#f59e0b]/40 bg-[#f59e0b]/10 p-3 text-[11px] text-[#f59e0b] space-y-2">
+                  <p>
+                    {Array.isArray(listaImoveis) && listaImoveis.length
+                      ? AVISO_SEM_DISPONIVEIS
+                      : AVISO_CATALOGO_VAZIO}
+                  </p>
+                  <button
+                    type="button"
+                    onClick={() => setAbaAtiva('captacao_imobi')}
+                    className="px-2.5 py-1 rounded-lg bg-[#020408] border border-[#f59e0b]/40 text-[10px] font-bold hover:border-[#10b981] hover:text-[#10b981] cursor-pointer transition"
+                  >
+                    Cadastrar primeiro imóvel →
+                  </button>
+                </div>
+              )}
 
               <form onSubmit={simularRespostaAgente} className="mt-3 pt-3 border-t border-slate-800 flex gap-2">
                 <input
                   type="text"
                   value={msgTesteIA}
                   onChange={(e) => setMsgTesteIA(e.target.value)}
-                  placeholder="Ex: Quero visitar um apto de 2 quartos até 350 mil..."
-                  className="flex-1 bg-[#020408] border border-slate-700 rounded-xl px-3 py-2 text-xs text-white"
+                  disabled={enviandoSimIA}
+                  placeholder="Ex: Procuro um apto de 2 quartos no Tibery até 350 mil"
+                  className="flex-1 bg-[#020408] border border-slate-700 rounded-xl px-3 py-2 text-xs text-white disabled:opacity-60"
                 />
                 <button
                   type="submit"
+                  disabled={enviandoSimIA}
                   style={{ backgroundColor: '#10b981' }}
-                  className="px-4 py-2 rounded-xl hover:opacity-90 text-white text-xs font-bold cursor-pointer"
+                  className="px-4 py-2 rounded-xl hover:opacity-90 text-white text-xs font-bold cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   <Send size={15} />
                 </button>

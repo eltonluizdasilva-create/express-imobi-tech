@@ -46,7 +46,7 @@ const RE_LINHA_GATILHO = /^[ \t]*\[GATILHO_HERMES\s*:?\s*\{[\s\S]*?\}[ \t\r\n]{0
 const LIMITE_CAMPO = 120;
 
 /** Texto de tenant → uma linha só, sem caracteres de controle. */
-function linhaSegura(valor, limite = LIMITE_CAMPO) {
+export function linhaSegura(valor, limite = LIMITE_CAMPO) {
   if (valor === null || valor === undefined) return '';
   return String(valor)
     .replace(/[\u0000-\u001f\u007f]+/g, ' ')
