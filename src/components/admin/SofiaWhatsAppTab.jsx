@@ -1,5 +1,9 @@
 import React, { useState } from 'react';
 import { MessageCircle, Camera, Zap } from 'lucide-react';
+import { getPlano } from '../../lib/planos';
+
+const PLANO_OPERACAO_IA = getPlano('esquadrao_ia');
+const PRECO_OPERACAO_IA = `${PLANO_OPERACAO_IA.precoLabel}${PLANO_OPERACAO_IA.periodo}`;
 
 /**
  * SofiaWhatsAppTab — aba única que reúne "Conexão WhatsApp" e "QR Code Pólen".
@@ -93,17 +97,15 @@ export default function SofiaWhatsAppTab({
         </button>
       )}
 
-      {/* Módulo independente (D-22.01): a Pólen · Atendimento 24h é contratada
-          à parte — não vem com o Tom e vice-versa. Aviso discreto, não bloqueio:
+      {/* Operação IA reúne Pólen e Express Brain. Aviso discreto, não bloqueio:
           a tela de conexão continua visível para o cliente avaliar o setup. */}
       {!liberado && (
         <div className="flex flex-wrap items-center gap-2 rounded-2xl border border-amber-500/30 bg-amber-500/10 px-4 py-3">
           <span className="inline-flex items-center gap-1.5 rounded-full border border-amber-400/50 bg-amber-500/15 px-2 py-0.5 text-[10px] font-black uppercase tracking-[0.14em] text-amber-300">
-            Módulo independente · R$ 450+
+            Operação IA · Pólen + Express Brain · {PRECO_OPERACAO_IA}
           </span>
           <p className="min-w-0 flex-1 text-[11px] text-amber-100/90">
-            Pólen · Atendimento 24h é contratada à parte (implantação assistida). O Tom · Maestro da
-            Imobiliária é outro módulo, com preço próprio — um não inclui o outro.
+            O pacote inclui atendimento da Pólen e o Express Brain. A implantação assistida é contratada à parte.
           </p>
           {onAbrirPlanos && (
             <button

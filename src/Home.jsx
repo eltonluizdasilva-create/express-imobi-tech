@@ -4,6 +4,7 @@ import LogoExpress from './components/ui/LogoExpress';
 import { EMAIL_INSTITUCIONAL } from './lib/appUrl';
 import { EMAIL_EXCLUSAO, EMPRESA } from './pages/legal/conteudoLegal';
 import { abrirPreferenciasCookies } from './lib/consentimentoCookies';
+import { precoNoCiclo } from './lib/planos';
 
 /**
  * Home — vitrine pública do Express Imobi Tech.
@@ -13,6 +14,8 @@ import { abrirPreferenciasCookies } from './lib/consentimentoCookies';
  */
 
 const EMAIL = EMAIL_INSTITUCIONAL;
+const PRECO_PRO = precoNoCiclo('pro');
+const PRECO_OPERACAO_IA = precoNoCiclo('esquadrao_ia');
 
 const PORTAIS = ['ZAP Imóveis', 'Viva Real', 'OLX', 'Imovelweb', 'Chaves na Mão'];
 
@@ -60,7 +63,7 @@ const RECURSOS = [
     icone: '🌐',
     titulo: 'Portal Público (/portal)',
     texto:
-      'Sua carteira em uma vitrine própria, com link pronto para compartilhar no WhatsApp, no Instagram e nos anúncios. Sem depender do site de terceiro.',
+      'No PRO, os imóveis publicados ficam em uma vitrine própria, com link direto para compartilhar no WhatsApp, no Instagram e nos anúncios.',
   },
   {
     icone: '🧮',
@@ -121,16 +124,18 @@ const AGENTES = [
 ];
 
 const PLANO_GRATIS = [
-  'Vitrine digital e Portal Público (/portal)',
-  'CRM com funil de vendas',
-  'Agenda de visitas e tarefas',
-  'Financeiro, comissões e histórico',
-  'Estúdio de artes para divulgação',
+  'CRM, funil de leads e agenda de visitas',
+  'Simuladores essenciais e Assistente Legal',
+  'Painel, financeiro essencial e gestão da equipe',
+  'Sem upload de fotos ou publicação de imóveis na vitrine',
   '1 usuário',
 ];
 
 const PLANO_PRO = [
   'Tudo do plano gratuito',
+  'Captação & Imóveis e vitrine pública',
+  'Até 7 fotos por imóvel; Foto 1 como capa principal',
+  'Propostas, histórico e Meta Ads & Criativos',
   'Os 7 agentes de IA no WhatsApp',
   'Roleta de Leads automática',
   'Vistoria Digital com IA',
@@ -143,15 +148,15 @@ const PLANO_PRO = [
 const FAQ = [
   {
     q: 'Preciso de cartão para começar?',
-    a: 'Não. O cadastro não pede cartão. Você começa com 10 dias de teste completo — as 8 ferramentas PRO e a aba 7 Agentes de IA liberadas. Terminado o teste, o CRM continua gratuito e só essas duas frentes passam a exigir o PRO (R$ 99/mês).',
+    a: 'Não. O cadastro não pede cartão. Você começa com 10 dias de teste completo, com os módulos PRO e os 7 Agentes de IA liberados. Depois, CRM, agenda, simuladores e Assistente Legal continuam grátis; Captação & Imóveis e os demais módulos PRO exigem assinatura.',
   },
   {
     q: 'Como funcionam o teste de 10 dias e o bônus dos 100 primeiros?',
-    a: 'O teste de 10 dias começa na criação da conta e libera as 8 ferramentas PRO e a aba 7 Agentes de IA. Depois dele, sem assinatura, essas duas frentes ficam com cadeado e voltam somente com o PRO (R$ 99/mês). Em paralelo, as 100 primeiras imobiliárias cadastradas garantem 1 ano grátis no CRM Essencial, aplicado na própria conta e sem cobrança.',
+    a: 'O teste de 10 dias começa na criação da conta e libera os módulos PRO e os 7 Agentes de IA. Depois dele, sem assinatura, essas ferramentas ficam bloqueadas; o plano Grátis continua disponível. Em paralelo, as 100 primeiras imobiliárias cadastradas garantem 1 ano grátis no CRM Essencial, aplicado na própria conta e sem cobrança.',
   },
   {
     q: 'O que muda de fato entre o gratuito e o PRO?',
-    a: 'O gratuito organiza a operação: carteira, funil, agenda, financeiro e portal público. O PRO coloca a operação em movimento sozinha: os 7 agentes de IA no WhatsApp, roleta de leads, vistoria com IA, correspondente de crédito e publicação nos portais. Nos 10 dias de teste você usa tudo isso antes de decidir.',
+    a: 'O Grátis organiza leads, agenda, simuladores e Assistente Legal, sem upload de fotos. O PRO acrescenta Captação & Imóveis, vitrine pública, até 7 fotos por anúncio e os demais módulos operacionais. A Operação IA, contratada à parte, reúne Pólen e Express Brain.',
   },
   {
     q: 'Funciona no celular?',
@@ -541,8 +546,7 @@ export default function Home() {
               <span className="pb-1 text-sm text-slate-500">/mês</span>
             </p>
             <p className="mt-2 text-[13px] text-slate-400">
-              Plano gratuito para sempre, sem cartão. Antes dele, o teste completo de 10 dias libera também as 8 ferramentas
-              PRO e a aba 7 Agentes de IA.
+              Plano gratuito para sempre, sem cartão. O teste de 10 dias libera também os módulos PRO e os 7 Agentes de IA.
             </p>
 
             <ul className="mt-6 space-y-2.5">
@@ -576,13 +580,12 @@ export default function Home() {
               </span>
             </div>
             <p className="mt-4 flex items-end gap-1.5">
-              <span className="text-4xl font-black tracking-tight text-white">R$ 99</span>
+              <span className="text-4xl font-black tracking-tight text-white">{PRECO_PRO}</span>
               <span className="pb-1 text-sm text-slate-400">/mês</span>
             </p>
             <p className="mt-2 text-[13px] text-slate-400">
-              Sem fidelidade, cancele quando quiser. No plano anual:{' '}
-              <span className="font-semibold text-emerald-300">R$ 89/mês</span> (R$ 1.068/ano — economia de R$ 120).
-              É o plano que mantém liberadas, depois dos 10 dias grátis, as 8 ferramentas PRO e a aba 7 Agentes de IA.
+              Sem fidelidade, cancele quando quiser. Reúne Captação & Imóveis, vitrine pública e os módulos PRO
+              após o teste gratuito de 10 dias.
             </p>
 
             <ul className="mt-6 space-y-2.5">
@@ -610,16 +613,16 @@ export default function Home() {
           </div>
         </div>
 
-        {/* Teste completo × bônus de lançamento — regra comercial D-22.03 */}
+        {/* Teste completo × bônus de lançamento */}
         <div className="mt-6 grid gap-4 lg:grid-cols-2">
           <div className="rounded-2xl border border-emerald-500/25 bg-emerald-500/[0.07] p-6">
             <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-emerald-300">Teste completo</p>
             <h3 className="mt-2 text-[15px] font-bold text-white">10 dias grátis com tudo liberado</h3>
             <p className="mt-2 text-[13px] leading-relaxed text-slate-300">
               Ao criar a conta, o teste de 10 dias libera{' '}
-              <strong className="text-white">as 8 ferramentas PRO</strong> e a aba{' '}
-              <strong className="text-white">7 Agentes de IA</strong>. Terminado o período sem assinatura, essas duas frentes
-              passam a exigir o PRO (R$ 99/mês) — com cadeado no painel — e todo o resto do CRM continua no plano gratuito.
+              <strong className="text-white">os módulos PRO</strong> e os{' '}
+              <strong className="text-white">7 Agentes de IA</strong>. Terminado o período sem assinatura, esses módulos
+              ficam bloqueados; CRM, agenda, simuladores e Assistente Legal continuam no plano gratuito.
             </p>
           </div>
           <div className="rounded-2xl border border-amber-500/25 bg-amber-500/[0.06] p-6">
@@ -633,22 +636,15 @@ export default function Home() {
           </div>
         </div>
 
-        {/* OPERAÇÃO IA — dois módulos independentes, preço de partida em cada um. */}
-        <div className="mt-6 grid gap-4 sm:grid-cols-2">
+        {/* OPERAÇÃO IA reúne a Pólen e o Express Brain no mesmo pacote. */}
+        <div className="mt-6 grid gap-4">
           {[
             {
-              nome: 'Pólen · Atendimento 24h',
-              preco: 'a partir de R$ 450',
+              nome: 'Pólen · Atendimento 24h + Express Brain',
+              preco: PRECO_OPERACAO_IA,
               texto:
-                'Atendente IA no WhatsApp oficial da imobiliária, com QR Code, consulta de estoque e distribuição de leads. Contratada à parte do PRO.',
+                'Pacote de Operação IA: atendimento da Pólen no WhatsApp oficial e Express Brain para regras comerciais, processos, auditoria e memória operacional. Implantação assistida à parte.',
               cor: 'emerald',
-            },
-            {
-              nome: 'Tom · Maestro da Imobiliária',
-              preco: 'a partir de R$ 497',
-              texto:
-                'Central de Inteligência da casa: regras comerciais, processos, auditoria de equipe e memória operacional. Contratado à parte do PRO.',
-              cor: 'amber',
             },
           ].map((modulo) => (
             <div
@@ -667,8 +663,7 @@ export default function Home() {
         </div>
 
         <p className="mt-4 text-center text-[12px] text-slate-500">
-          Os dois módulos de Operação IA são independentes — pode contratar só um, só o outro, ou os dois em combo.
-          A implantação assistida é cobrada à parte em qualquer combinação.{' '}
+          A Operação IA inclui Pólen e Express Brain no mesmo pacote. A implantação assistida é cobrada à parte.{' '}
           <a
             href={`mailto:${EMAIL}?subject=Opera%C3%A7%C3%A3o%20IA%20-%20P%C3%B3len%20e%20Tom`}
             className="font-semibold text-emerald-300 hover:text-emerald-200"

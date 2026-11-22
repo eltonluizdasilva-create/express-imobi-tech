@@ -358,7 +358,7 @@ export default function Especialista({ dadosOficina, dadosImobiliaria, papelLoga
               <div className="mt-2.5 flex flex-wrap gap-1.5">
                 {[
                   'Como funciona a Roleta de Leads?',
-                  'O que entra no Essencial Plus?',
+                  'O que entra no PRO?',
                   'Como publico um imóvel na vitrine?',
                 ].map((exemplo) => (
                   <button

@@ -29,6 +29,7 @@
  *      cliente (ver api/_gatilho.js). O regex daqui é o espelho no front.
  * ============================================================================
  */
+import { urlPublica } from '../lib/appUrl.js';
 
 export const SOFIA_CONFIG = {
   provider: 'gemini',
@@ -82,6 +83,25 @@ export function descreverImovel(imovel = {}) {
   const bairro = linhaSegura(imovel.bairro, 40) || 'não informado';
   const quartos = imovel.quartos === 0 || imovel.quartos ? String(imovel.quartos) : 'n/i';
   const valor = formatarValor(imovel.valor ?? imovel.preco);
+  const fotos = Array.isArray(imovel.fotos) ? imovel.fotos : [];
+  const foto1 = fotos[0] || imovel.fotoCapa || '';
+  const temIdPublicavel =
+    imovel.publico === true &&
+    imovel.id &&
+    !String(imovel.id).startsWith('local_');
+  const parametrosPortal = new URLSearchParams();
+  if (temIdPublicavel) {
+    parametrosPortal.set('imovel', String(imovel.id));
+    if (imovel.oficinaId) parametrosPortal.set('imobiliariaId', String(imovel.oficinaId));
+  }
+  const linkPortal = temIdPublicavel
+    ? urlPublica(`/portal?${parametrosPortal.toString()}`)
+    : '';
+  const foto1Referencia = /^https?:\/\//i.test(String(foto1))
+    ? linhaSegura(foto1, 500)
+    : foto1
+      ? 'imagem cadastrada no imóvel'
+      : 'não cadastrada';
 
   const extras = [];
   if (linhaSegura(imovel.quadra)) extras.push(`Quadra ${linhaSegura(imovel.quadra, 12)}`);
@@ -96,6 +116,9 @@ export function descreverImovel(imovel = {}) {
     `| Quartos: ${quartos}`,
     `| Área: ${descreverArea(imovel)}`,
     `| Valor: ${valor}`,
+    `| Foto 1 (fachada/entrada): ${foto1Referencia}`,
+    `| Fotos adicionais disponíveis: ${Math.max(0, Math.min(6, fotos.length - 1))}`,
+    `| Link direto da vitrine: ${linkPortal || 'imóvel não publicado na vitrine pública'}`,
     extras.length ? `| ${extras.join(' · ')}` : '',
   ].filter(Boolean).join(' ');
 }
@@ -154,7 +177,12 @@ export function montarPromptSofia({
    - Nunca peça senha, código de acesso, dados bancários ou cartão.
    - Se o cliente enviar documento, print, áudio ou PDF, extraia apenas o necessário para qualificar o interesse (tipo de imóvel, região, faixa de orçamento) e avise que a validação formal é feita por ${corretor}.
    - Não repita dados pessoais do cliente de volta na conversa além do estritamente necessário.
-5. ESTILO WHATSAPP.
+5. APRESENTAÇÃO DE IMÓVEIS E FOTOS.
+   - Na primeira apresentação de um imóvel, apresente somente a Foto 1 (fachada/entrada), um resumo curto dos dados confirmados e o link direto da vitrine, quando disponível.
+   - Anexe a Foto 1 como imagem apenas se o canal atual realmente oferecer envio de mídia. Sem esse recurso, não afirme que enviou a foto nem cole a URL da imagem; use o link direto da vitrine.
+   - Não apresente nem envie as fotos 2 a 7 nessa primeira resposta. Envie fotos adicionais somente se o cliente pedir explicitamente.
+   - Se a Foto 1 ou o link não estiver disponível, não invente; encaminhe para ${corretor}.
+6. ESTILO WHATSAPP.
    - Português do Brasil. No máximo 3 frases curtas por resposta; nada de textão ou lista longa.
    - Tom cordial e direto, no máximo 1 ou 2 emojis.
    - Termine sempre com UMA pergunta objetiva que faça a conversa avançar.

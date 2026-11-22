@@ -35,6 +35,10 @@ const URBANO = {
   bairro: 'Tibery',
   quartos: '3',
   valor: 350000,
+  id: 'imv-123',
+  oficinaId: 'tenant-456',
+  publico: true,
+  fotos: ['https://cdn.example.com/fachada.jpg', 'https://cdn.example.com/cozinha.jpg'],
 };
 
 const RURAL = {
@@ -60,7 +64,16 @@ ok('imóvel urbano usa os campos reais do banco (valor, codigo, quartos)', () =>
   assert.match(linha, /Quartos: 3/);
   assert.match(linha, /Valor: R\$ 350\.000/);
   assert.match(linha, /Finalidade: venda/);
+  assert.match(linha, /Foto 1 \(fachada\/entrada\): https:\/\/cdn\.example\.com\/fachada\.jpg/);
+  assert.match(linha, /Link direto da vitrine: https:\/\/[^ ]+\/portal\?imovel=imv-123&imobiliariaId=tenant-456/);
+  assert.equal(linha.includes('cozinha.jpg'), false, 'fotos adicionais não entram na primeira apresentação');
   assert.equal(linha.includes('undefined'), false);
+});
+
+ok('imóvel não publicado não recebe link público', () => {
+  const linha = descreverImovel({ ...URBANO, publico: false });
+  assert.match(linha, /imóvel não publicado na vitrine pública/);
+  assert.equal(linha.includes('/portal?imovel='), false);
 });
 
 ok('imóvel rural mostra hectares e aptidão, não quartos', () => {
@@ -105,6 +118,10 @@ ok('prompt traz travas e o catálogo real', () => {
   assert.match(prompt, /CHAMAR_CORRETOR/);
   assert.match(prompt, /IMB-1234/);
   assert.match(prompt, /IMOBILIÁRIA TESTE/);
+  assert.match(prompt, /somente a Foto 1/);
+  assert.match(prompt, /fotos adicionais somente se o cliente pedir explicitamente/);
+  assert.match(prompt, /Anexe a Foto 1 como imagem apenas se o canal atual realmente oferecer envio de mídia/);
+  assert.match(prompt, /link direto da vitrine/);
 });
 
 ok('nome de imobiliária com quebra de linha não quebra o prompt', () => {

@@ -28,7 +28,7 @@ export default function MenuNavegacao({
     { id: 'especialista', label: 'ESPECIALISTA', icon: Wrench },
   ];
 
-  // Degrau 2 — Essencial Plus (R$ 39,90)
+  // Módulos PRO (R$ 39,90).
   const modulosEssencialPlus = [
     { id: 'historico', label: 'PROPOSTAS & NEGÓCIOS', icon: History },
     { id: 'marketing', label: 'META ADS & CRIATIVOS', icon: Megaphone },
@@ -101,11 +101,11 @@ export default function MenuNavegacao({
       {/* 2 E 3. MÓDULOS EXTRAS (SÓ APARECEM NO MODO COMPLETO) */}
       {modoPainel === 'completo' && (
         <>
-          {/* ESSENCIAL PLUS */}
+          {/* PRO */}
           <div className="flex flex-col gap-1.5 pt-2 border-t border-zinc-900">
             <div className="flex items-center gap-1.5 text-[9px] font-black tracking-widest uppercase text-teal-300">
               <span className="w-1.5 h-1.5 rounded-full bg-teal-400" />
-              ESSENCIAL PLUS · R$ 39,90
+              PRO · R$ 39,90
             </div>
             <div className="flex items-center gap-1.5 overflow-x-auto pb-1 scrollbar-thin">
               {modulosEssencialPlus.map((item) => renderItem(item, '#2dd4bf'))}

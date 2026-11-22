@@ -40,11 +40,7 @@ function modulosDoPlano(planoKey) {
   const profissional = dados.modulos.profissional_extra || [];
   const esquadrao = dados.modulos.esquadrao_extra || [];
 
-  if (chave === 'essencial_plus') {
-    return [...new Set([...gratis, ...essencialPlus])];
-  }
-
-  if (chave === 'profissional' || chave === 'pro') {
+  if (['essencial_plus', 'profissional', 'pro'].includes(chave)) {
     return [...new Set([...gratis, ...essencialPlus, ...profissional])];
   }
 

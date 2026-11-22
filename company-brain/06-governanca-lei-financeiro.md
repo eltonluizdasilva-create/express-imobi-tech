@@ -1,6 +1,6 @@
 # 06 — Governança Fiscal e Financeira · Express Tech
 
-> **Verdade atual:** 2026-11-20.
+> **Verdade atual:** 2026-11-23.
 > Este arquivo trata da saúde tributária **da Express Tech**. Não confundir com o assistente fiscal
 > que o cliente usa dentro do produto (aba `contador` do Imobi Tech / Auto Tech).
 
@@ -82,7 +82,7 @@ precisa de nota", "o contador não precisa ver isso".
 
 ```
 "Revisar o fechamento fiscal do mês"        → checklist + o que falta
-"Impacto fiscal de vender o PRO a R$ 99"    → simulação com alerta de validação
+"Impacto fiscal de vender o PRO a R$ 39,90" → simulação com alerta de validação
 "Como fica a NFSe de implantação em 3 parcelas" → modelo de descrição + retenções a confirmar
 "O que muda com a LC 214/2025 no meu preço" → tradução prática + pergunta para o contador
 ```

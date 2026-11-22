@@ -15,7 +15,7 @@ import {
   Wand2,
 } from 'lucide-react';
 import HeroAba from './HeroAba';
-import { WHATSAPP_COMERCIAL } from '../../lib/planos';
+import { getPlano, WHATSAPP_COMERCIAL } from '../../lib/planos';
 import { cabecalhosIA } from '../../lib/aiAuth';
 import { ACOES_TOM, responderTomSimulacao } from '../../lib/simuladorTom';
 import { LIMITE_DEMO, podeUsarDemo, registrarUsoDemo, restantesDemo } from '../../lib/limiteDemo';
@@ -62,10 +62,11 @@ const PILARES = [
 
 const SAUDACAO_TOM =
   'Sou o Tom, o Maestro da Imobiliária. Escolha uma das quatro ações abaixo ou escreva a sua pergunta: eu leio a sua operação e devolvo o que fazer primeiro, com quem executa.';
+const PLANO_OPERACAO_IA = getPlano('esquadrao_ia');
+const PRECO_OPERACAO_IA = `${PLANO_OPERACAO_IA.precoLabel}${PLANO_OPERACAO_IA.periodo}`;
 
 export default function ExpressBrainTab({
   liberado = false,
-  sofiaContratada = false,
   setAbaAtiva = () => {},
   dadosOficina = null,
   contextoOperacao = {},
@@ -145,9 +146,9 @@ export default function ExpressBrainTab({
 
   const falarComercial = () => {
     const texto = [
-      'Olá! Quero falar sobre o Tom · Maestro da Imobiliária (Operação IA) do Express Imobi Tech.',
+      'Olá! Quero falar sobre o pacote Operação IA (Pólen + Express Brain) do Express Imobi Tech.',
       nomeOficina ? `Imobiliária: ${nomeOficina}.` : '',
-      'Podemos falar sobre o escopo e o valor a partir de R$ 497/mês + implantação?',
+      `Podemos falar sobre o pacote ${PRECO_OPERACAO_IA} e a implantação assistida?`,
     ]
       .filter(Boolean)
       .join('\n');
@@ -300,51 +301,26 @@ export default function ExpressBrainTab({
           agentes de IA no formato certo, na hora certa.
         </p>
         <p className="mt-3 max-w-3xl text-xs leading-6 text-amber-200/90">
-          <strong className="font-black">Como o Tom se diferencia da Pólen:</strong> a{' '}
+          <strong className="font-black">Como o Tom complementa a Pólen:</strong> a{' '}
           <strong className="font-black">Pólen</strong> atende e qualifica o cliente no WhatsApp 24h. O{' '}
           <strong className="font-black">Tom</strong> é o maestro: guarda as regras comerciais, vigia
-          imóveis e leads parados e mantém a equipe no mesmo padrão.
+          imóveis e leads parados e mantém a equipe no mesmo padrão. Os dois fazem parte da Operação IA.
         </p>
         <p className="mt-3 max-w-3xl text-xs leading-6 text-amber-200/90">
-          <strong className="font-black">Módulo independente:</strong> o Tom pode ser contratado sozinho
-          — inclusive por quem já usa outro CRM — ou combinado com a Pólen. Um não inclui o outro, e a
+          <strong className="font-black">Pacote Operação IA:</strong> inclui Pólen e Express Brain; a
           implantação assistida é cobrada à parte.
         </p>
       </div>
 
-      {/* Formas de contratar: só Tom, só Pólen, ou combo. */}
-      <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
-        {[
-          {
-            titulo: 'Só o Tom',
-            preco: 'R$ 497+ /mês',
-            texto:
-              'Para quem já tem atendimento (ou outro CRM) e quer só o maestro: regras, processos, auditoria e memória operacional. Implantação assistida à parte.',
-          },
-          {
-            titulo: 'Só a Pólen',
-            preco: 'R$ 450+ /mês',
-            texto:
-              'Atendimento IA 24h no WhatsApp oficial, com QR Code e distribuição de leads. Não inclui o Tom.',
-          },
-          {
-            titulo: 'Combo Pólen + Tom',
-            preco: 'Sob proposta',
-            texto:
-              'A Pólen atende lendo as regras e a memória da casa, e o Tom audita o que a equipe prometeu. Escopo e implantação definidos em conjunto.',
-          },
-        ].map((item) => (
-          <div
-            key={item.titulo}
-            className="flex flex-col rounded-2xl border border-slate-800 bg-slate-900 p-5"
-          >
-            <h3 className="text-[11px] font-black uppercase tracking-[0.14em] text-amber-300">
-              {item.titulo}
-            </h3>
-            <p className="mt-1 text-lg font-black text-white">{item.preco}</p>
-            <p className="mt-2 flex-1 text-xs leading-6 text-slate-400">{item.texto}</p>
-          </div>
-        ))}
+      <div className="rounded-2xl border border-amber-500/30 bg-amber-500/[0.06] p-5">
+        <h3 className="text-[11px] font-black uppercase tracking-[0.14em] text-amber-300">
+          OPERAÇÃO IA · PÓLEN + EXPRESS BRAIN
+        </h3>
+        <p className="mt-1 text-lg font-black text-white">{PRECO_OPERACAO_IA}</p>
+        <p className="mt-2 text-xs leading-6 text-slate-400">
+          Atendimento 24h no WhatsApp, regras comerciais, processos, auditoria e memória operacional em um pacote.
+          A implantação assistida é contratada à parte.
+        </p>
       </div>
 
       <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
@@ -369,24 +345,10 @@ export default function ExpressBrainTab({
             <Lock size={34} className="text-emerald-400" />
           </div>
           <h3 className="text-lg font-black uppercase tracking-tight text-white md:text-xl">
-            Tom · Maestro da Imobiliária · módulo independente
+            Operação IA · Pólen + Express Brain
           </h3>
           <p className="mx-auto mt-2 max-w-xl text-sm leading-6 text-slate-300">
-            {sofiaContratada ? (
-              <>
-                Sua <span className="font-black text-emerald-400">Pólen</span> está ativa, mas o Tom é um
-                módulo <span className="font-black text-white">separado</span>: custa a partir de{' '}
-                <span className="font-black text-emerald-400">R$ 497/mês + implantação assistida</span> e
-                não vem no pacote da Pólen.
-              </>
-            ) : (
-              <>
-                Contratável sozinho a partir de{' '}
-                <span className="font-black text-emerald-400">R$ 497/mês + implantação assistida</span> —
-                inclusive por quem já usa outro CRM — ou em combo com a Pólen. Um módulo não inclui o
-                outro.
-              </>
-            )}
+            O pacote inclui Pólen e Express Brain por {PRECO_OPERACAO_IA}. A implantação assistida é contratada à parte.
           </p>
 
           <div className="mx-auto mt-6 grid max-w-2xl grid-cols-1 gap-2.5 text-left sm:grid-cols-2">

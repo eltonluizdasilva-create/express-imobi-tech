@@ -56,10 +56,7 @@ function modulosDoPlano(planoKey) {
   const profissional = dados.modulos.profissional_extra || [];
   const esquadrao = dados.modulos.esquadrao_extra || [];
 
-  if (chave === 'essencial_plus') {
-    return [...new Set([...gratis, ...essencialPlus])];
-  }
-  if (chave === 'profissional' || chave === 'pro') {
+  if (['essencial_plus', 'profissional', 'pro'].includes(chave)) {
     return [...new Set([...gratis, ...essencialPlus, ...profissional])];
   }
   if (chave === 'esquadrao_ia' || chave === 'presenca_digital') {
@@ -384,7 +381,7 @@ export default async function handler(req, res) {
     }
 
     const status = norm(body.status || body.event) || 'pago';
-    const planoKey = norm(body.plano) || 'profissional';
+    const planoKey = norm(body.plano) || 'pro';
     const ciclo = body.ciclo === 'anual' ? 'anual' : 'mensal';
 
     let oficinaId = body.oficinaId ? String(body.oficinaId).trim() : null;

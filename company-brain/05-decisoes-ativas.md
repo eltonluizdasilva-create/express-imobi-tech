@@ -7,7 +7,17 @@
 > 3. Preço, plano, arquitetura e regra comercial mudam aqui **no mesmo dia** em que mudam no código.
 > 4. Dúvida sobre "isso ainda vale?" → a resposta é este arquivo, não a memória de quem executou.
 
-**Estado do registro:** vigente em **2026-11-22** (inclui a divisão das faixas PRO × OPERAÇÃO IA, o renomeio comercial **Pólen · Atendimento 24h** / **Tom · Maestro da Imobiliária** — D-22.02 —, a **regra do trial de 10 dias nas 8 ferramentas PRO e na aba 7 Agentes de IA** — D-22.03 — e o **checklist de conformidade, LGPD, transparência e acessibilidade** — D-22.04 —, o **fecho de privacidade do produto: pedido de exclusão guiado, coleta mínima nos formulários e marcação de foto ilustrativa** — D-22.05; os nomes antigos Sofia/Express Brain continuam válidos como IDs internos).
+**Estado do registro:** vigente em **2026-11-23** (inclui a unificação dos planos em Grátis / PRO / Operação IA, o PRO a R$ 39,90, o limite de sete fotos e a regra de apresentação de imóveis pela Pólen — D-23.01).
+
+---
+
+## 2026-11-23 — Decisão registrada
+
+| # | Decisão | Status |
+|---|---|---|
+| D-23.01 | **Planos unificados e regra de apresentação de imóveis.** (a) **Navegação comercial:** somente três planos — Grátis (CRM, agenda, simuladores e Assistente Legal; sem upload de fotos), PRO a **R$ 39,90/mês** (Captação & Imóveis, vitrine pública opt-in e módulos PRO) e Operação IA **a partir de R$ 450/mês** (Pólen Atendimento 24h + Express Brain, mais implantação assistida). Preços, recursos e módulos vêm de `shared/planos.json`; `functions/planos.json` é cópia sincronizada por `node scripts/sync-planos.cjs`. (b) **Compatibilidade:** `essencial_plus` e `profissional` permanecem como aliases de PRO para contas/eventos antigos; não aparecem como planos separados nem autorizam preço antigo na interface. (c) **Fotos:** `src/lib/fotosImovel.js` limita a galeria a 7 fotos, preservando a ordem e a Foto 1 como capa; compressão continua via Canvas no navegador. A publicação pública é opt-in (`publico: false` por padrão). (d) **Portal:** link direto usa `?imovel=<id>&imobiliariaId=<tenant>`; além da vitrine geral, o portal busca o documento pedido diretamente e só o inclui se `publico === true` e o status estiver disponível. (e) **Pólen:** primeira apresentação segue apenas Foto 1, resumo confirmado e link direto; fotos 2–7 só após pedido explícito. O prompt instrui anexar Foto 1 somente se o canal oferecer envio de mídia; o repositório não contém integração de envio de mídia WhatsApp, então não se deve prometer que a imagem será anexada automaticamente. (f) **Decisões substituídas:** D-22.01 **[OBSOLETO]** (Pólen e Express Brain deixam de ser planos independentes e passam ao pacote Operação IA); as regras de preço e anualidade antigas em D-21.05 e D-22.03 **[OBSOLETO]**; a independência comercial e o piso de R$ 497 do D-22.02 **[OBSOLETO]**. O trial de 10 dias de D-22.03 e os nomes comerciais/IDs internos de D-22.02 permanecem vigentes. (g) **Validação:** execução de build/lint não solicitada; os testes `node` desta alteração serão registrados após a execução. | **VERDADE ATUAL** |
+
+> **Validação pendente (2026-11-23):** as chamadas para executar a sincronização do catálogo e os testes `node` foram recusadas; `functions/planos.json` continua desatualizado em relação a `shared/planos.json`. Não publicar até sincronizar e validar. Nenhum npm, build ou lint foi executado.
 
 ---
 

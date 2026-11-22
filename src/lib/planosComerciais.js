@@ -1,132 +1,86 @@
 /**
- * planosComerciais.js — os 5 degraus de venda da tela Meu Plano.
- * Fonte única da copy comercial: o componente só desenha, o teste confere.
- *
- * ESCADA (2026-11-20):
- *   1. Grátis            — R$ 0        abas operacionais + 7 Agentes de IA (vitrine)
- *   2. Essencial Plus    — R$ 39,90    Propostas & Negócios + Meta Ads & Criativos
- *   3. PRO               — R$ 99,00    demais módulos operacionais e de IA
- *   4. Pólen · Atendimento 24h — R$ 450+  atendimento IA no WhatsApp oficial
- *      (módulo independente; o Tom · Maestro da Imobiliária é R$ 497+, à parte)
- *   5. Presença Digital  — consultivo  site/portal, Google e tráfego pago
- *
- * Preço de verdade do SaaS continua em `shared/planos.json`; aqui está só a copy.
+ * Copy comercial dos três planos e do serviço adicional de Presença Digital.
+ * Preços, recursos e limites são lidos de shared/planos.json.
  */
+import { getPlano, precoNoCiclo as precoCatalogo } from './planos.js';
 
-export const ECONOMIA_ANUAL = 120;
-export const TOTAL_ANUAL = 1068;
+const planoGratis = getPlano('gratis');
+const planoPro = getPlano('pro');
+const planoOperacaoIA = getPlano('esquadrao_ia');
+const planoPresencaDigital = getPlano('presenca_digital');
+const textos = (plano) => (plano?.recursos || []).map((recurso) => recurso.texto);
+
+const precoMensalPro = Number(planoPro?.preco?.mensal || 0);
+const precoAnualPro = Number(planoPro?.preco?.anual ?? precoMensalPro);
+
+export const ECONOMIA_ANUAL = Math.max(0, Math.round((precoMensalPro - precoAnualPro) * 12));
+export const TOTAL_ANUAL = precoAnualPro * 12;
 
 export const DEGRAUS = Object.freeze([
   {
     key: 'essencial',
-    nome: 'Grátis',
+    nome: planoGratis.nome,
     tag: 'Grátis',
     tipo: 'gratis',
-    resumo: 'Para começar a vender hoje, sem cartão de crédito.',
-    detalhePreco: 'R$ 0',
-    periodo: '/mês',
-    recursos: [
-      'Visão Geral e CRM de leads em Kanban',
-      'Captação e catálogo de imóveis',
-      'Agenda de visitas e financeiro essencial',
-      'Conexão WhatsApp padrão',
-      '7 Agentes de IA (vitrine interativa gratuita)',
-    ],
-    cta: 'Plano atual',
-  },
-  {
-    key: 'essencial_plus',
-    nome: 'Essencial Plus',
-    tag: 'Essencial Plus',
-    tipo: 'checkout',
-    resumo: 'Para quem já organiza os leads e quer fechar mais negócio.',
-    precos: { mensal: 39.9, anual: 39.9 },
-    recursos: [
-      'Tudo do Grátis',
-      'Propostas & Negócios (histórico e follow-up)',
-      'Meta Ads & Criativos (copies e link p/ WhatsApp)',
-    ],
-    cta: 'Assinar Essencial Plus',
+    resumo: planoGratis.subtitulo,
+    detalhePreco: precoCatalogo(planoGratis, 'mensal'),
+    periodo: planoGratis.periodo,
+    recursos: textos(planoGratis),
+    cta: planoGratis.cta,
   },
   {
     key: 'pro',
-    nome: 'Completo PRO',
+    nome: planoPro.nome,
     tag: 'PRO',
     tipo: 'checkout',
     destaque: true,
     selo: 'Mais escolhido',
-    resumo: 'O corretor que opera sozinho e quer fechar mais rápido.',
-    precos: { mensal: 99, anual: 89 },
-    recursos: [
-      'Tudo do Essencial Plus',
-      'Avaliação PTAM com comparáveis',
-      'Correspondente / Crédito completo',
-      'Vistoria & Laudo IA',
-      'Repasses & NFS-e',
-      'Portais XML (ZAP/VivaReal/OLX)',
-      'Assistentes Comercial, Fiscal e Jurídico',
-    ],
-    cta: 'Assinar Plano PRO Agora',
+    resumo: planoPro.subtitulo,
+    precos: planoPro.preco,
+    periodo: planoPro.periodo,
+    recursos: textos(planoPro),
+    cta: planoPro.cta,
   },
   {
     key: 'automacao',
-    nome: 'Pólen · Atendimento 24h',
-    tag: 'Módulos independentes',
+    nome: planoOperacaoIA.nome,
+    tag: 'OPERAÇÃO IA',
     tipo: 'consultivo',
-    resumo:
-      'Pólen, a atendente IA 24h no WhatsApp oficial da imobiliária. O Tom · Maestro da Imobiliária é um módulo próprio, contratado à parte ou em combo — um não inclui o outro.',
-    detalhePreco: 'A partir de R$ 450',
-    periodo: '/mês',
-    implementacao: 'Taxa única de implantação',
-    observacao:
-      'Tom · Maestro da Imobiliária: R$ 497+/mês, contratável de forma independente (inclusive para quem já usa outro CRM) ou combinado com a Pólen. Implantação assistida cobrada à parte.',
-    recursos: [
-      'Tudo do PRO para a equipe',
-      'Pólen 24/7 no WhatsApp oficial',
-      'Qualificação automática de leads',
-      'Consulta de estoque e agendamento',
-      'Distribuição na Roleta de Leads',
-      'Tom · Maestro da Imobiliária (opcional, à parte) — regras comerciais, processos, auditoria de equipe e memória operacional',
-      'Implantação e acompanhamento dedicados',
-    ],
-    cta: 'Solicitar Implantação / Falar com Especialista',
-  },
-  {
-    key: 'presenca_digital',
-    nome: 'Presença Digital & Tráfego',
-    tag: 'Sob consulta',
-    tipo: 'consultivo',
-    resumo: 'Vitrine própria no ar e tráfego sob gestão, com a verba de anúncios à parte.',
-    detalhePreco: 'Setup R$ 690',
-    periodo: '',
-    implementacao: '(Vitrine/Portal sincronizado + Google Meu Negócio) + Gestão de Tráfego opcional R$ 490/mês',
-    verba: 'Verba de anúncios à parte (paga direto às plataformas)',
-    recursos: [
-      'Vitrine/Portal próprio sincronizado — setup R$ 690',
-      'Google Meu Negócio configurado e otimizado (incluso no setup)',
-      'Gestão de Tráfego opcional — R$ 490/mês',
-      'Verba de anúncios paga à parte (direto nas plataformas)',
-    ],
-    cta: 'Falar com Especialista',
+    resumo: planoOperacaoIA.subtitulo,
+    detalhePreco: planoOperacaoIA.precoLabel,
+    periodo: planoOperacaoIA.periodo,
+    implementacao: planoOperacaoIA.setup,
+    recursos: textos(planoOperacaoIA),
+    cta: planoOperacaoIA.cta,
   },
 ]);
 
-export function precoMensal(degrau, ciclo = 'anual') {
+export const SERVICO_PRESENCA_DIGITAL = Object.freeze({
+  key: planoPresencaDigital.key,
+  nome: planoPresencaDigital.nome,
+  resumo: planoPresencaDigital.subtitulo,
+  detalhePreco: planoPresencaDigital.precoLabel,
+  implementacao: planoPresencaDigital.setup,
+  recursos: textos(planoPresencaDigital),
+  cta: planoPresencaDigital.cta,
+});
+
+export function precoMensal(degrau, ciclo = 'mensal') {
   const valor = Number(degrau?.precos?.[ciclo] ?? degrau?.precos?.mensal ?? 0);
   return valor.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL', minimumFractionDigits: 2 });
 }
 
-export function detalheCiclo(degrau, ciclo = 'anual') {
+export function detalheCiclo(degrau, ciclo = 'mensal') {
   if (degrau?.key !== 'pro') return '';
   if (ciclo === 'anual') {
     const total = TOTAL_ANUAL.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL', minimumFractionDigits: 2 });
-    return `Cobrado ${total}/ano ou em até 12x • Economize R$ ${ECONOMIA_ANUAL}`;
+    return `Cobrado ${total}/ano`;
   }
   return 'Sem fidelidade, cancele quando quiser';
 }
 
-export function rotuloEconomia(ciclo = 'anual') {
-  return ciclo === 'anual' ? `Economize R$ ${ECONOMIA_ANUAL}` : '';
+export function rotuloEconomia(ciclo = 'mensal') {
+  return ciclo === 'anual' && ECONOMIA_ANUAL > 0 ? `Economize R$ ${ECONOMIA_ANUAL}` : '';
 }
 
 export function degrauPorKey(key) {

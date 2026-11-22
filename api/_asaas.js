@@ -18,13 +18,12 @@ export const EVENTOS_ASAAS_QUE_ATIVAM = Object.freeze(['PAYMENT_CONFIRMED', 'PAY
 
 const EVENTOS_QUE_ATIVAM = new Set(EVENTOS_ASAAS_QUE_ATIVAM);
 
-// Sinônimos aceitos em externalReference/description. Ordem importa: o mais
-// específico primeiro ("essencial plus" antes de "essencial").
+// Chaves antigas continuam aceitas, mas todas ativam o PRO canônico.
 const SINONIMOS_PLANO = [
-  { plano: 'essencial_plus', rx: /\bessencial[\s_-]*plus\b/i },
-  { plano: 'profissional', rx: /\bprofissional\b/i },
-  { plano: 'essencial_plus', rx: /\bessencial\b/i },
-  { plano: 'profissional', rx: /\bpro\b/i },
+  { plano: 'pro', rx: /\bessencial[\s_-]*plus\b/i },
+  { plano: 'pro', rx: /\bprofissional\b/i },
+  { plano: 'pro', rx: /\bessencial\b/i },
+  { plano: 'pro', rx: /\bpro\b/i },
 ];
 
 const arredondar2 = (n) => Math.round(n * 100) / 100;
@@ -43,10 +42,9 @@ export function valorEmReais(bruto) {
 }
 
 /**
- * valor pago → plano/ciclo, montado a partir do catálogo (fonte única) para não
- * duplicar preço no código: hoje 39,90 → essencial_plus (mensal),
- * 99,00 → profissional (mensal), 89,00 → profissional (anual) e
- * 1.068,00 → profissional (anual, cobrança do ano inteiro).
+ * valor pago → plano/ciclo, montado a partir do catálogo para preços vigentes.
+ * Valores de cobranças antigas (R$ 99, R$ 89 e R$ 1.068) continuam mapeados
+ * para o PRO para preservar a ativação de assinaturas legadas.
  */
 export const PLANO_POR_VALOR = (() => {
   const mapa = new Map();
@@ -60,10 +58,10 @@ export const PLANO_POR_VALOR = (() => {
     adicionar(plano.preco.mensal, plano.key, 'mensal');
     adicionar(plano.preco.anual, plano.key, 'anual');
   }
-  // Degraus da escada comercial (05-decisoes-ativas D-20.23 / 02-regras-comerciais).
-  adicionar(39.9, 'essencial_plus', 'mensal');
-  adicionar(99, 'profissional', 'mensal');
-  adicionar(1068, 'profissional', 'anual');
+  // Valores legados da escada anterior; não são usados em novos checkouts.
+  adicionar(99, 'pro', 'mensal');
+  adicionar(89, 'pro', 'anual');
+  adicionar(1068, 'pro', 'anual');
   return mapa;
 })();
 

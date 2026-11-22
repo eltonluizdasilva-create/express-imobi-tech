@@ -6,6 +6,8 @@ import {
   collectionGroup,
   query,
   getDocs,
+  getDoc,
+  doc,
   collection,
   addDoc,
   serverTimestamp,
@@ -1581,12 +1583,53 @@ export default function PortalCliente() {
       }
 
       const listaFirestore = [];
+      const parametros = new URLSearchParams(window.location.search);
+      const imovelIdDireto = parametros.get('imovel')?.trim() || '';
+      const imobiliariaIdDireto = (
+        parametros.get('imobiliariaId') ||
+        parametros.get('imob') ||
+        parametros.get('oficinaId') ||
+        ''
+      ).trim();
+
+      if (
+        imovelIdDireto &&
+        imobiliariaIdDireto &&
+        !imovelIdDireto.includes('/') &&
+        !imobiliariaIdDireto.includes('/')
+      ) {
+        try {
+          const imovelDireto = await getDoc(
+            doc(db, 'oficinas', imobiliariaIdDireto, 'imoveis_imobi', imovelIdDireto),
+          );
+          if (imovelDireto.exists()) {
+            const d = imovelDireto.data() || {};
+            if (
+              d.publico === true &&
+              (!d.status || d.status === 'Ativo' || d.status === 'Disponível')
+            ) {
+              listaFirestore.push({
+                ...d,
+                id: imovelDireto.id,
+                oficinaId: imobiliariaIdDireto,
+              });
+            }
+          }
+        } catch (e) {
+          console.warn('Aviso ao carregar o imóvel solicitado:', e);
+        }
+      }
+
       try {
         const snap = await getDocs(query(collectionGroup(db, 'imoveis_imobi'), where('publico', '==', true), limit(40)));
         snap.forEach((docSnap) => {
           const d = docSnap.data() || {};
           if (!d.status || d.status === 'Ativo' || d.status === 'Disponível') {
-            listaFirestore.push({ id: docSnap.id, ...d });
+            listaFirestore.push({
+              ...d,
+              id: docSnap.id,
+              oficinaId: docSnap.ref.parent.parent?.id || d.oficinaId || '',
+            });
           }
         });
       } catch (e) {
@@ -1762,6 +1805,11 @@ export default function PortalCliente() {
   };
 
   const leadAtual = { nome: nomePortal, telefone: whatsappPortal };
+  const imovelIdDireto = new URLSearchParams(window.location.search).get('imovel')?.trim() || '';
+  const imovelDiretoNaoEncontrado =
+    Boolean(imovelIdDireto) &&
+    imoveisVitrine.length > 0 &&
+    !imoveisVitrine.some((imovel) => String(imovel?.id || '') === imovelIdDireto);
 
   return (
     <div className="flex flex-col min-h-screen bg-[#020408] text-white font-sans overflow-x-hidden pt-14">
@@ -1862,9 +1910,16 @@ export default function PortalCliente() {
                 </div>
               )}
 
+              {imovelDiretoNaoEncontrado && (
+                <p role="status" className="rounded-2xl border border-slate-700 bg-slate-900 px-4 py-3 text-xs text-slate-300">
+                  Este imóvel não está disponível na vitrine pública.
+                </p>
+              )}
+
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 {(imoveisVitrine || [])
                   .filter((imv) => {
+                    if (imovelIdDireto && String(imv?.id || '') !== imovelIdDireto) return false;
                     if (filtroVitrine === 'Todos') return true;
                     if (filtroVitrine === 'MCMV') return /minha casa|social/i.test(imv?.padraoImovel || '');
                     if (filtroVitrine === 'Medio') return /m[eé]dio/i.test(imv?.padraoImovel || 'Médio Padrão');
@@ -1881,7 +1936,7 @@ export default function PortalCliente() {
                       : imv?.fotoCapa
                       ? [imv.fotoCapa]
                       : [FOTOS_EXEMPLO.apartamento];
-                    const fotoAtual = fotoAtivaPorCard[imv.id] || imv?.fotoCapa || fotosArr[0];
+                    const fotoAtual = fotoAtivaPorCard[imv.id] || fotosArr[0] || imv?.fotoCapa;
                     const isLote = /lote|terreno/i.test(imv?.tipo || '');
                     const isRural = /fazenda|rural|ch[aá]cara|s[ií]tio/i.test(imv?.tipo || '');
                     const isLocacao = imv?.finalidade === 'Locação';

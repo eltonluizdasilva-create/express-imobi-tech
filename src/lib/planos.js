@@ -20,24 +20,22 @@ export const WHATSAPP_COMERCIAL = dados.whatsappComercial;
 /* ------------------------------------------------------------------ */
 
 export const MODULOS_GRATIS = Object.freeze([...dados.modulos.gratis]);
-export const MODULOS_ESSENCIAL_PLUS = Object.freeze([
+export const MODULOS_PRO = Object.freeze([
   ...dados.modulos.gratis,
   ...(dados.modulos.essencial_plus_extra || []),
+  ...(dados.modulos.profissional_extra || []),
 ]);
-export const MODULOS_PROFISSIONAL = Object.freeze([
-  ...dados.modulos.gratis,
-  ...(dados.modulos.essencial_plus_extra || []),
-  ...dados.modulos.profissional_extra,
-]);
+// Aliases mantidos para consumidores e contas legadas.
+export const MODULOS_ESSENCIAL_PLUS = MODULOS_PRO;
+export const MODULOS_PROFISSIONAL = MODULOS_PRO;
 export const MODULOS_ESQUADRAO = Object.freeze([
-  ...dados.modulos.gratis,
-  ...(dados.modulos.essencial_plus_extra || []),
-  ...dados.modulos.profissional_extra,
+  ...MODULOS_PRO,
   ...dados.modulos.esquadrao_extra,
 ]);
 
 const MODULOS_POR_PLANO = {
   gratis: MODULOS_GRATIS,
+  pro: MODULOS_PRO,
   essencial_plus: MODULOS_ESSENCIAL_PLUS,
   profissional: MODULOS_PROFISSIONAL,
   esquadrao_ia: MODULOS_ESQUADRAO,
@@ -95,10 +93,8 @@ export function isPlanoPro(plano) {
 /* ------------------------------------------------------------------ */
 /* TRIAL DE 10 DIAS (D-22.03)                                          */
 /* ------------------------------------------------------------------ */
-/* Regra comercial: o teste completo dura 10 dias. Dentro da janela o   */
-/* usuário entra nas 8 ferramentas PRO e na aba 7 Agentes de IA. Sem     */
-/* plano ativo depois disso, as duas frentes exigem PRO (R$ 99/mês) —    */
-/* com cadeado no menu e simulador bloqueado. O CRM gratuito não muda.   */
+/* O teste completo dura 10 dias. Após o trial, os módulos PRO exigem     */
+/* assinatura; o CRM, agenda, simuladores e Assistente Legal seguem grátis.*/
 
 export const DIAS_TRIAL = 10;
 
@@ -106,7 +102,7 @@ export const DIAS_TRIAL = 10;
 export const SELO_TRIAL_PRO = '10 DIAS GRÁTIS · PRO';
 
 export const AVISO_TRIAL_ENCERRADO =
-  'Seu período de 10 dias grátis encerrou · Assine o PRO (R$ 99/mês) para destravar seus agentes e ferramentas';
+  'Seu período de 10 dias grátis encerrou · Assine o PRO por R$ 39,90/mês para continuar usando os módulos PRO';
 
 const MS_POR_DIA = 24 * 60 * 60 * 1000;
 
@@ -180,8 +176,7 @@ function contaPaga(conta = {}) {
 }
 
 /**
- * Acesso às 8 ferramentas PRO e à aba `agentes_ia`: assinatura ativa OU teste
- * de 10 dias em andamento. Fora disso, exige PRO (D-22.03).
+ * Acesso aos módulos PRO: assinatura ativa OU teste de 10 dias em andamento.
  */
 export function temAcessoPro(conta = {}, agora = new Date()) {
   if (contaPaga(conta)) return true;
@@ -193,11 +188,11 @@ export function temAcessoAgentesIA(conta = {}, agora = new Date()) {
   return temAcessoPro(conta, agora);
 }
 
-/** Chave canónica do catálogo ('gratis' | 'profissional' | 'esquadrao_ia' | ...) */
+/** Chave canónica do catálogo ('gratis' | 'pro' | 'esquadrao_ia' | ...) */
 export function chaveCanonica(plano) {
   const chave = normalizarPlano(plano);
   if (ALIAS_GRATIS.has(chave)) return DEFAULT_PLANO_KEY;
-  if (chave === 'pro') return 'profissional';
+  if (['essencial_plus', 'profissional', 'plano_profissional'].includes(chave)) return 'pro';
   return chave;
 }
 
@@ -237,20 +232,21 @@ export function precoNoCiclo(plano, ciclo = 'mensal') {
 }
 
 /* ------------------------------------------------------------------ */
-/* OPERAÇÃO IA — Sofia WhatsApp e Express Brain são módulos SEPARADOS   */
+/* OPERAÇÃO IA — Pólen e Express Brain no mesmo pacote                 */
 /* ------------------------------------------------------------------ */
-/* Regra comercial (D-22.01): a imobiliária contrata só a Sofia          */
-/* (R$ 450+), só o Express Brain (R$ 497+ / sob implantação) ou os dois. */
-/* Nenhum dos dois é brinde do outro. A implantação é assistida à parte.  */
+/* O plano esquadrao_ia libera ambos. Os aliases antigos continuam       */
+/* reconhecidos para compatibilidade com contas já contratadas.           */
 
-/** Piso mensal da Sofia WhatsApp (D-20.23, degrau 4). */
-export const VALOR_MINIMO_SOFIA_WHATSAPP = 450;
-/** Piso mensal do Express Brain (vendido sozinho ou com a Sofia). */
-export const VALOR_MINIMO_EXPRESS_BRAIN = 497;
+const VALOR_MINIMO_OPERACAO_IA = Number(
+  dados.planos.find((plano) => plano.key === 'esquadrao_ia')?.valorMinimoMensal || 0
+);
+
+/** Piso mensal do pacote Operação IA, definido no catálogo compartilhado. */
+export const VALOR_MINIMO_SOFIA_WHATSAPP = VALOR_MINIMO_OPERACAO_IA;
+export const VALOR_MINIMO_EXPRESS_BRAIN = VALOR_MINIMO_OPERACAO_IA;
 
 /** Chaves de plano que liberam SÓ a Sofia WhatsApp. */
 export const PLANOS_SO_SOFIA = new Set([
-  'esquadrao_ia', // chave canônica em shared/planos.json ("Automação Sofia WhatsApp")
   'sofia_whatsapp',
   'automacao',
   'automacao_sofia',
@@ -267,6 +263,7 @@ export const PLANOS_SO_BRAIN = new Set([
 
 /** Chaves de plano combo: liberam os dois módulos. */
 export const PLANOS_COMBO_IA = new Set([
+  'esquadrao_ia',
   'operacao_ia',
   'combo_operacao_ia',
   'full_tech',
@@ -329,8 +326,7 @@ export function modulosOperacaoIA(dadosOficina = {}) {
     contratados.add('brain');
   }
 
-  // Sem plano reconhecido: o valor da assinatura decide. R$ 497+ compra o
-  // Brain; de R$ 450 a R$ 496, só a Sofia. Um valor não paga os dois.
+  // Sem uma chave explícita, o piso do pacote compartilhado libera os dois.
   if (contratados.size === 0) {
     const pago =
       conta.planoAssinante === true || conta.pago === true || isPlanoPro(conta.plano);

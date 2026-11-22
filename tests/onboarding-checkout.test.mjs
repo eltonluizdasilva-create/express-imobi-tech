@@ -69,13 +69,13 @@ ok('URL sem protocolo é descartada', urlCheckoutPro({ VITE_CHECKOUT_PRO_URL: 'p
 ok('URL válida passa', urlCheckoutPro({ VITE_CHECKOUT_PRO_URL: 'https://pay.exemplo.com/pro' }) === 'https://pay.exemplo.com/pro');
 ok('URL com espaço é aparada', urlCheckoutPro({ VITE_CHECKOUT_PRO_URL: '  https://pagar.io/pro  ' }) === 'https://pagar.io/pro');
 
-const msg = mensagemCheckout({ planoNome: 'Plano Profissional', ciclo: 'anual', email: 'a@b.com', uid: 'UID123', nomeOficina: 'Imob X', valor: 'R$ 89,00/mês' });
-ok('mensagem cita plano', msg.includes('Plano Profissional'));
-ok('mensagem cita ciclo', msg.includes('anual'));
+const msg = mensagemCheckout({ planoNome: 'PRO', ciclo: 'mensal', email: 'a@b.com', uid: 'UID123', nomeOficina: 'Imob X', valor: 'R$ 39,90/mês' });
+ok('mensagem cita plano', msg.includes('PRO'));
+ok('mensagem cita ciclo', msg.includes('mensal'));
 ok('mensagem cita e-mail', msg.includes('a@b.com'));
 ok('mensagem cita UID', msg.includes('UID123'));
 ok('mensagem cita imobiliária', msg.includes('Imob X'));
-ok('mensagem cita valor', msg.includes('R$ 89,00'));
+ok('mensagem cita valor', msg.includes('R$ 39,90'));
 ok('mensagem sem campo vazio sobrando', !mensagemCheckout({}).includes('E-mail'));
 
 const dCheckout = destinoCheckout({ checkoutUrl: 'https://pay.io/pro', whatsapp: '5534991439845', email: 'a@b.com', uid: 'U1' });
@@ -90,6 +90,8 @@ ok('URL mensal escolhida pelo ciclo',
    urlCheckoutPro({ VITE_CHECKOUT_PRO_MENSAL_URL: 'https://pay.io/m', VITE_CHECKOUT_PRO_ANUAL_URL: 'https://pay.io/a' }, 'mensal') === 'https://pay.io/m');
 ok('URL anual escolhida pelo ciclo',
    urlCheckoutPro({ VITE_CHECKOUT_PRO_MENSAL_URL: 'https://pay.io/m', VITE_CHECKOUT_PRO_ANUAL_URL: 'https://pay.io/a' }, 'anual') === 'https://pay.io/a');
+ok('ciclo sem especificação usa o preço mensal unificado',
+   urlCheckoutPro({ VITE_CHECKOUT_PRO_MENSAL_URL: 'https://pay.io/m', VITE_CHECKOUT_PRO_ANUAL_URL: 'https://pay.io/a' }) === 'https://pay.io/m');
 ok('ciclo sem URL própria cai na antiga', urlCheckoutPro({ VITE_CHECKOUT_PRO_URL: 'https://pay.io/old' }, 'anual') === 'https://pay.io/old');
 ok('sem nenhuma URL devolve vazio', urlCheckoutPro({}, 'mensal') === '');
 ok('abrirDestino abre', abrirDestino({ url: 'https://x' }, () => ({})) === true);
@@ -103,16 +105,16 @@ ok('ordem: essencial, pro, automacao', DEGRAUS.map((d) => d.key).join() === 'ess
 ok('só o PRO é destaque', DEGRAUS.filter((d) => d.destaque).map((d) => d.key).join() === 'pro');
 ok('PRO tem selo Mais escolhido', DEGRAUS.find((d) => d.key === 'pro').selo === 'Mais escolhido');
 ok('Essencial é grátis', precoMensal(degrauPorKey('essencial'), 'mensal').replace(/\u00a0/g, ' ') === 'R$ 0,00');
-ok('PRO mensal = R$ 99,00', precoMensal(degrauPorKey('pro'), 'mensal').replace(/\u00a0/g, ' ') === 'R$ 99,00', precoMensal(degrauPorKey('pro'), 'mensal'));
-ok('PRO anual = R$ 89,00', precoMensal(degrauPorKey('pro'), 'anual').replace(/\u00a0/g, ' ') === 'R$ 89,00', precoMensal(degrauPorKey('pro'), 'anual'));
-ok('detalhe anual cita R$ 1.068,00 e economia', /1\.068,00/.test(detalheCiclo(degrauPorKey('pro'), 'anual')) && /Economize R\$ 120/.test(detalheCiclo(degrauPorKey('pro'), 'anual')));
+ok('PRO mensal = preço único do catálogo', precoMensal(degrauPorKey('pro'), 'mensal').replace(/\u00a0/g, ' ') === 'R$ 39,90', precoMensal(degrauPorKey('pro'), 'mensal'));
+ok('anual legado não cria outro preço comercial', precoMensal(degrauPorKey('pro'), 'anual').replace(/\u00a0/g, ' ') === 'R$ 39,90');
+ok('detalhe anual não anuncia desconto', /478,80/.test(detalheCiclo(degrauPorKey('pro'), 'anual')) && !/Economize/.test(detalheCiclo(degrauPorKey('pro'), 'anual')));
 ok('detalhe mensal sem fidelidade', detalheCiclo(degrauPorKey('pro'), 'mensal') === 'Sem fidelidade, cancele quando quiser');
-ok('economia anual = 120', ECONOMIA_ANUAL === 120 && TOTAL_ANUAL === 1068);
-ok('selo de economia no seletor', rotuloEconomia('anual') === 'Economize R$ 120' && rotuloEconomia('mensal') === '');
-ok('automação a partir de R$ 497 + implementação',
-   degrauPorKey('automacao').detalhePreco.includes('497') && Boolean(degrauPorKey('automacao').implementacao));
-ok('automação fala da Pólen 24/7',
-   degrauPorKey('automacao').recursos.some((r) => /Pólen 24\/7/.test(r)));
+ok('sem desconto anual no catálogo unificado', ECONOMIA_ANUAL === 0 && Math.round(TOTAL_ANUAL * 100) === 47880);
+ok('seletor não anuncia economia inexistente', rotuloEconomia('anual') === '' && rotuloEconomia('mensal') === '');
+ok('Operação IA inclui os dois módulos a partir de R$ 450',
+   degrauPorKey('automacao').detalhePreco.includes('450') &&
+   degrauPorKey('automacao').recursos.some((r) => /Pólen/.test(r)) &&
+   degrauPorKey('automacao').recursos.some((r) => /Express Brain/.test(r)));
 ok('PRO lista os módulos pedidos',
    ['PTAM', 'Correspondente', 'Vistoria', 'NFS-e', 'Portais XML'].every((termo) =>
      degrauPorKey('pro').recursos.some((r) => r.includes(termo))));
@@ -124,13 +126,12 @@ ok('Meuplano usa planosComerciais', planoJa.includes("from '../lib/planosComerci
 ok('Meuplano não auto-ativa plano pago', !planoJa.includes('httpsCallable') && !planoJa.includes('ativarPlano'));
 const admin = readFileSync(new URL('../src/AdminNovo.jsx', import.meta.url), 'utf8');
 ok('Meuplano usa destinoCheckout', planoJa.includes('destinoCheckout({'));
-ok('CTA do PRO é o texto pedido', degrauPorKey('pro').cta === 'Assinar Plano PRO Agora');
-ok('CTA da implantação é o texto pedido',
-   degrauPorKey('automacao').cta === 'Solicitar Implantação / Falar com Especialista');
+ok('CTA do PRO vem do catálogo', degrauPorKey('pro').cta === 'Assinar PRO');
+ok('CTA da Operação IA vem do catálogo',
+   degrauPorKey('automacao').cta === 'Falar sobre Operação IA');
 ok('Meuplano renderiza o CTA do degrau', planoJa.includes('rotuloCta(degrau)'));
 ok('Meuplano desenha os 3 degraus', planoJa.includes('DEGRAUS.map'));
-ok('Meuplano tem seletor de ciclo', planoJa.includes("setCiclo('anual')") && planoJa.includes('rotuloEconomia'));
-ok('Meuplano abre no ciclo mensal (links do Asaas são mensais)', planoJa.includes("useState('mensal')"));
+ok('Meuplano não mostra seletor de ciclo anual', !planoJa.includes("setCiclo('anual')") && !planoJa.includes('rotuloEconomia'));
 ok('Meuplano avisa que o e-mail do Asaas tem de ser o do cadastro',
    planoJa.includes('Importante: use no pagamento o mesmo e-mail cadastrado aqui para ativação automática imediata.'));
 ok('aviso fica acima dos degraus de assinatura',

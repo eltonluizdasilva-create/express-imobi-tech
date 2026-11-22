@@ -1,6 +1,6 @@
 # Plano Pós-Venda — Express Imobi Tech
 
-Documento operacional e técnico para início dos testes comerciais (faixa de R$ 99,00/mês).
+Documento operacional e técnico atualizado para o plano PRO unificado de R$ 39,90/mês.
 
 **Regra deste documento:** tudo aqui foi apurado lendo o código do repositório. Onde uma proteção
 **não** existe, ela aparece como pendência — não como recurso. Nenhum nome de variável, endpoint ou
@@ -25,26 +25,18 @@ Arquivos consultados para escrever este plano:
 
 Arquivo: `src/lib/checkout.js`
 
-```
-urlCheckoutPro(env, ciclo)
-  1. env.VITE_CHECKOUT_PRO_MENSAL_URL   (quando ciclo = mensal)
-     env.VITE_CHECKOUT_PRO_ANUAL_URL    (quando ciclo = anual)
-  2. env.VITE_CHECKOUT_PRO_URL          (compatibilidade: URL única)
-  3. '' (nenhuma)                        → cai no WhatsApp
-```
-
-Só aceita valor que comece com `http://` ou `https://`; qualquer outra coisa é descartada e o
-sistema cai no passo seguinte.
+`Meuplano.jsx` chama `urlAsaasLink()` para o PRO unificado. A variável atualmente lida pela tela é
+`VITE_ASAAS_LINK_ESSENCIAL` (nome legado); se estiver ausente ou inválida, usa o link público
+unificado `LINK_ASAAS_PADRAO.pro`. Não há seletor de ciclo anual na tela: o preço comercial é
+R$ 39,90/mês.
 
 Arquivo: `src/components/Meuplano.jsx` — função `assinarPro()`
 
-- O ciclo vem do seletor da tela, **`anual` por padrão**.
-- `urlCheckoutPro` recebe os **valores** das três variáveis (não o objeto `import.meta.env`, para o
-  bundle não variar conforme o ambiente de build).
-- Sem URL configurada, monta `https://wa.me/<numero>?text=<mensagem>`.
-  Número: `VITE_SU_WPP`; se ausente, `5534991439845` (constante `WHATSAPP_PADRAO` em `checkout.js`).
-- A mensagem (`mensagemCheckout`) leva: nome do plano com o ciclo, valor, imobiliária, **e-mail** e
-  **UID** da conta logada.
+- O checkout é mensal, sem seletor de ciclo.
+- `comDadosDaConta()` acrescenta e-mail e ID da imobiliária (`externalReference`) ao link do Asaas.
+- Se a abertura do checkout for bloqueada, a tela mostra um aviso; o fluxo consultivo de Operação
+  IA continua pelo WhatsApp comercial.
+- A ativação automática depende do webhook do Asaas e do uso do mesmo e-mail da conta.
 - `abrirDestino` abre em `_blank` com `noopener,noreferrer` e devolve `false` quando o navegador
   bloqueia o pop-up — nesse caso a tela mostra aviso, não fica clique morto.
 
@@ -55,9 +47,8 @@ exclusivamente o webhook da Parte 1.3. O usuário precisa recarregar o painel pa
 ### 1.2 Configurar as variáveis de checkout (Vercel)
 
 1. Vercel → projeto `express-imobi-tech-dqgx` → **Settings → Environment Variables**.
-2. Criar, em **Production** (e em **Preview**, se quiser testar antes):
-   - `VITE_CHECKOUT_PRO_MENSAL_URL` = URL de pagamento do ciclo mensal (R$ 99,00/mês)
-   - `VITE_CHECKOUT_PRO_ANUAL_URL` = URL de pagamento do ciclo anual (R$ 1.068,00/ano)
+2. Opcionalmente, configurar em **Production** (e em **Preview**, se quiser testar antes):
+   - `VITE_ASAAS_LINK_ESSENCIAL` = link de pagamento do PRO único (R$ 39,90/mês; o nome da variável é legado)
 3. **Redeploy obrigatório** — variáveis `VITE_` são embutidas no bundle durante o build; adicionar
    sem redeploy não muda nada no que já está publicado.
 
@@ -65,8 +56,8 @@ exclusivamente o webhook da Parte 1.3. O usuário precisa recarregar o painel pa
 > o JavaScript público do navegador. Segredos de gateway ficam apenas no servidor (`WEBHOOK_SECRET`,
 > em Cloud Functions).
 
-Sem as variáveis, o botão continua funcionando e leva ao WhatsApp comercial — o fluxo não quebra,
-apenas deixa de ser pagamento automático.
+Sem a variável, o botão continua funcionando com o link público unificado do Asaas. Operação IA
+continua sendo uma contratação consultiva pelo WhatsApp comercial.
 
 ### 1.3 `pagamentoWebhook` — o que está implementado
 

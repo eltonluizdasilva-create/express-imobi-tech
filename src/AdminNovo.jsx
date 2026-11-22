@@ -71,6 +71,7 @@ import ControleInteligenciaIA from './components/ControleInteligenciaIA';
 import GuiaDaAba from './components/ui/GuiaDaAba';
 import RodapeLegal from './components/ui/RodapeLegal';
 import { FOTOS_EXEMPLO, AVISO_FOTO_EXEMPLO, ehFotoExemplo, temFotoExemplo } from './lib/fotosExemplo';
+import { adicionarFotosImovel, MAX_FOTOS_IMOVEL } from './lib/fotosImovel';
 import DorESolucao from './components/ui/DorESolucao';
 import LogoExpress from './components/ui/LogoExpress';
 import MicButton from './components/ui/MicButton';
@@ -148,7 +149,7 @@ const historicoInicialSimulador = () => [
 
 const GRUPOS_MENU_IMOBI = [
   {
-    titulo: 'BLOCO 1: OPERAÇÃO IMOBILIÁRIA (MÓDULOS ESSENCIAIS — 100% GRÁTIS)',
+    titulo: 'BLOCO 1: FERRAMENTAS ESSENCIAIS',
     cor: '#10b981',
     itens: [
       {
@@ -165,9 +166,9 @@ const GRUPOS_MENU_IMOBI = [
         label: '🏠 Captação & Imóveis',
         tituloCard: 'GESTÃO & VITRINE DE IMÓVEIS',
         tituloLimpo: 'GESTÃO & VITRINE DE IMÓVEIS',
-        tier: 'gratis',
+        tier: 'pro',
         descricao:
-          'Cadastre o imóvel uma vez e ele já sai na vitrine, nos portais e no seu material de venda. O formulário muda conforme o nicho, então você não esquece campo nem refaz cadastro.',
+          'Cadastre imóveis com até 7 fotos e publique na vitrine. A primeira foto vira a capa e a imagem principal para a Pólen.',
       },
       {
         id: 'funil_leads',
@@ -201,7 +202,7 @@ const GRUPOS_MENU_IMOBI = [
         label: '📋 Propostas & Negócios',
         tituloCard: 'PROPOSTAS & FECHAMENTO',
         tituloLimpo: 'PROPOSTAS & FECHAMENTO',
-        tier: 'gratis',
+        tier: 'pro',
         descricao:
           'Da proposta à assinatura, com status e histórico. Quando o cliente perguntar "como está aquele negócio?", a resposta está na tela.',
       },
@@ -219,14 +220,14 @@ const GRUPOS_MENU_IMOBI = [
         label: '🎯 Meta Ads & Criativos',
         tituloCard: 'ADS & CAPTAÇÃO DE TRÁFEGO',
         tituloLimpo: 'ADS & CAPTAÇÃO DE TRÁFEGO',
-        tier: 'gratis',
+        tier: 'pro',
         descricao:
           'Anúncio pronto em 1 minuto: arte, legenda e público no tom que o cliente responde. Pare de improvisar post no meio do plantão.',
       },
       {
         id: 'meuplano',
         label: '⭐ Meu Plano (10 Dias Grátis)',
-        tituloCard: 'MEU PLANO (14 DIAS GRÁTIS)',
+        tituloCard: 'MEU PLANO (10 DIAS GRÁTIS)',
         tituloLimpo: 'Meu Plano (10 Dias Grátis) & Assinatura',
         tier: 'gratis',
         descricao:
@@ -235,7 +236,7 @@ const GRUPOS_MENU_IMOBI = [
     ],
   },
   {
-    titulo: 'BLOCO 2: ESQUADRÃO DE IA & AUTOMAÇÃO WHATSAPP (DIFERENCIAL PRO)',
+    titulo: 'BLOCO 2: IA DO PAINEL (PRO) E OPERAÇÃO IA',
     cor: '#10b981',
     itens: [
       {
@@ -245,15 +246,15 @@ const GRUPOS_MENU_IMOBI = [
         tituloLimpo: 'ESQUADRÃO DE INTELIGÊNCIA ARTIFICIAL',
         tier: 'pro',
         descricao:
-          'Lead que chega às 22h de sábado recebe resposta na hora: os agentes qualificam, agendam e reengajam 24h. Você acorda com a conversa adiantada.',
+          'Sete assistentes de IA apoiam o corretor no painel. O atendimento automático 24h da Pólen faz parte da Operação IA.',
       },
       {
         id: 'whatsapp_hub',
         label: '💬 Conexão WhatsApp',
         tituloCard: 'CONEXÃO WHATSAPP & GATEWAY',
         tituloLimpo: 'Conexão WhatsApp',
-        tier: 'pro',
-        descricao: 'Ponte oficial via API para unificar o atendimento da imobiliária 24h por dia.',
+        tier: 'operacao',
+        descricao: 'Conexão de WhatsApp para a Pólen, incluída no pacote Operação IA.',
       },
       {
         id: 'copiloto',
@@ -269,18 +270,18 @@ const GRUPOS_MENU_IMOBI = [
         label: '📲 Ativação & QR Code da Pólen (WhatsApp)',
         tituloCard: 'ATIVAÇÃO & QR CODE DA PÓLEN (WHATSAPP)',
         tituloLimpo: 'Ativação & QR Code da Pólen (WhatsApp)',
-        tier: 'pro',
+        tier: 'operacao',
         descricao:
-          'Central prática de conexão via QR Code e ativação da Pólen · Atendimento 24h para triagem de leads no WhatsApp.',
+          'Central prática de conexão via QR Code e ativação da Pólen · Atendimento 24h, incluída no pacote Operação IA.',
       },
       {
         id: 'sofia_whatsapp',
         label: '📲 Pólen · Atendimento 24h',
         tituloCard: 'PÓLEN · ATENDIMENTO 24H',
         tituloLimpo: 'Pólen · Atendimento 24h',
-        tier: 'pro',
+        tier: 'operacao',
         descricao:
-          'Uma tela só: conexão do WhatsApp da imobiliária e ativação da Pólen por QR Code, sem alternar entre abas.',
+          'Uma tela só: conexão do WhatsApp da imobiliária e ativação da Pólen por QR Code, incluída no pacote Operação IA.',
       },
       {
         id: 'brain',
@@ -302,19 +303,19 @@ const GRUPOS_MENU_IMOBI = [
       },
       {
         id: 'contador',
-        label: '🧾 Simulador de Custos',
-        tituloCard: 'ASSISTÊNCIA LEGAL & TRIBUTÁRIA',
-        tituloLimpo: 'ASSISTÊNCIA LEGAL & TRIBUTÁRIA (FISCAL)',
-        tier: 'pro',
+        label: '🧾 Simuladores',
+        tituloCard: 'SIMULADORES DE CUSTOS',
+        tituloLimpo: 'SIMULADORES DE CUSTOS',
+        tier: 'gratis',
         descricao:
-          'Consultoria instantânea baseada na Lei do Inquilinato (Lei nº 8.245/91) e orientações fiscais automatizadas para transações imobiliárias seguras.',
+          'Simulações essenciais de custos e orientações fiscais para apoiar a conversa com o cliente.',
       },
       {
         id: 'juridico_imobi',
-        label: '⚖️ Minutas & Checklist (Lei do Inquilinato)',
-        tituloCard: 'ASSISTÊNCIA LEGAL & TRIBUTÁRIA',
-        tituloLimpo: 'ASSISTÊNCIA LEGAL & TRIBUTÁRIA (LEI DO INQUILINATO)',
-        tier: 'pro',
+        label: '⚖️ Assistente Legal',
+        tituloCard: 'ASSISTENTE LEGAL',
+        tituloLimpo: 'ASSISTENTE LEGAL',
+        tier: 'gratis',
         descricao:
           'Consultoria instantânea baseada na Lei do Inquilinato (Lei nº 8.245/91) e orientações fiscais automatizadas para transações imobiliárias seguras.',
       },
@@ -361,7 +362,7 @@ const GRUPOS_MENU_IMOBI = [
       {
         id: 'meuplano',
         label: '⭐ Meu Plano (10 Dias Grátis)',
-        tituloCard: 'MEU PLANO (14 DIAS GRÁTIS)',
+        tituloCard: 'MEU PLANO (10 DIAS GRÁTIS)',
         tituloLimpo: 'Meu Plano (10 Dias Grátis) & Assinatura',
         tier: 'gratis',
         descricao:
@@ -372,7 +373,7 @@ const GRUPOS_MENU_IMOBI = [
         label: '⚙️ Configurações',
         tituloCard: 'CONFIGURAÇÕES DA IMOBILIÁRIA / CORRETOR',
         tituloLimpo: 'Configurações da Imobiliária / Corretor',
-        tier: 'pro',
+        tier: 'gratis',
         descricao: 'Personalização de CRECI, logomarca, chave PIX de comissões e dados institucionais.',
       },
       {
@@ -407,7 +408,7 @@ const GRUPOS_MENU_IMOBI = [
         label: '🛠️ Suporte Especialista',
         tituloCard: 'SUPORTE COM ESPECIALISTA IMOBILIÁRIO',
         tituloLimpo: 'Suporte Especialista Imobiliário',
-        tier: 'pro',
+        tier: 'gratis',
         descricao: 'Central de apoio operacional e consultoria técnica para acelerar resultados na plataforma.',
       },
     ],
@@ -416,27 +417,23 @@ const GRUPOS_MENU_IMOBI = [
 
 const MODULOS_GRATIS_PLG = new Set([
   'dashboard_imobi',
-  'captacao_imobi',
   'funil_leads',
   'visitas_imobi',
   'financeiro',
   'equipe',
-  // D-22.03 — `agentes_ia` saiu daqui: a aba passou para a faixa PRO e só
-  // abre com assinatura ativa ou dentro do trial de 10 dias.
-  'whatsapp_hub',
-  'sofia_whatsapp',
+  'contador',
+  'juridico_imobi',
   'config',
   'especialista',
   'meuplano',
 ]);
 
-// D-22.03 — as 8 ferramentas assistidas. Ficam liberadas durante o trial de
-// 10 dias; sem plano ativo depois dele, exigem PRO (R$ 99/mês). O conjunto
-// serve de guarda de navegação: atalho, estado antigo ou deep link não abre a
-// ferramenta, cai no Meu Plano. A aba `agentes_ia` NÃO entra aqui de propósito:
-// ela abre como vitrine, com cadeado e o simulador bloqueado (o aviso do PRO
-// aparece na própria tela).
+// Todos os módulos PRO passam pela mesma trava de assinatura/trial.
 const MODULOS_PRO_PLG = new Set([
+  'captacao_imobi',
+  'historico',
+  'marketing',
+  'agentes_ia',
   'tarefa',
   'migracao',
   'avaliacao_imovel',
@@ -444,9 +441,11 @@ const MODULOS_PRO_PLG = new Set([
   'radar_captacao',
   'administrador',
   'roleta_imobi',
-  'contador',
   'notafiscal',
-  'juridico_imobi',
+  'clientes',
+  'leads',
+  'acompanhamento_cliente',
+  'copiloto',
 ]);
 
 const MAPA_DETALHES_ABAS = (GRUPOS_MENU_IMOBI || [])
@@ -578,10 +577,8 @@ export default function Admin() {
 
   const ehMasterPlataforma = ehMasterPlataformaFn(papelLogado, claimAdmin);
 
-  // ── D-22.03 — Trial de 10 dias ────────────────────────────────────────────
-  // Durante o teste o usuário entra nas 8 ferramentas PRO e na aba 7 Agentes
-  // de IA. Sem plano ativo depois dos 10 dias, as duas frentes exigem PRO
-  // (R$ 99/mês): cadeado no menu, simulador bloqueado. O CRM gratuito segue.
+  // Trial de 10 dias: após o prazo, os módulos PRO exigem assinatura; CRM,
+  // agenda, simuladores e Assistente Legal permanecem no plano Grátis.
   const contaAcesso = {
     ...(dadosImobCtx || dadosLegadoCtx || {}),
     trialFim: dadosImobCtx?.trialFim || dadosLegadoCtx?.trialFim || dataFimTrial,
@@ -659,12 +656,14 @@ export default function Admin() {
   // Formulários rápidos (Com suporte a Nichos Especializados, Padrão de Imóvel, Galeria de Fotos e Vitrine Digital)
   const [filtroNichoCaptacao, setFiltroNichoCaptacao] = useState('Todos');
   const [novaFotoInput, setNovaFotoInput] = useState('');
+  const [avisoFotosImovel, setAvisoFotosImovel] = useState('');
   const [formImovel, setFormImovel] = useState({
     titulo: '',
     tipo: 'Apartamento',
     finalidade: 'Venda',
     padraoImovel: 'Médio Padrão',
     status: 'Ativo',
+    publico: false,
     publicarPortais: true,
     bairro: '',
     quartos: '2',
@@ -849,7 +848,12 @@ export default function Admin() {
 
     const unsubImoveis = onSnapshot(
       refImoveis,
-      (snap) => setListaImoveis(ordenarPorCriacaoDesc((snap?.docs || [])?.map((d) => ({ id: d.id, ...d.data() })) || [])),
+      (snap) =>
+        setListaImoveis(
+          ordenarPorCriacaoDesc(
+            (snap?.docs || []).map((d) => ({ ...d.data(), id: d.id, oficinaId: imobiliariaId })),
+          ),
+        ),
       (err) => console.warn('Aviso listener imoveis_imobi:', err.message)
     );
 
@@ -958,51 +962,100 @@ export default function Admin() {
   const adicionarLinkFotoImovel = (urlDireta = null) => {
     const link = (urlDireta ?? novaFotoInput).trim();
     if (!link) return;
+    const fotosAtuais = Array.isArray(formImovel.fotos) ? formImovel.fotos : [];
+    if (fotosAtuais.includes(link)) return;
+    if (fotosAtuais.length >= MAX_FOTOS_IMOVEL) {
+      setAvisoFotosImovel(`O limite de ${MAX_FOTOS_IMOVEL} fotos por imóvel foi atingido.`);
+      return;
+    }
+
     setFormImovel((prev) => {
       const atuais = Array.isArray(prev.fotos) ? prev.fotos : [];
       if (atuais.includes(link)) return prev;
-      const novas = [...atuais, link];
+      const novas = adicionarFotosImovel(atuais, [link]);
       return {
         ...prev,
         fotos: novas,
-        fotoCapa: prev.fotoCapa || link,
+        fotoCapa: atuais[0] || novas[0] || '',
       };
     });
+    setAvisoFotosImovel('');
     if (!urlDireta) setNovaFotoInput('');
   };
 
-  const handleUploadArquivosImovel = (e) => {
-    const files = Array.from(e.target.files || []);
-    if (files.length === 0) return;
-
-    files.slice(0, 6).forEach((file) => {
+  const lerFotoComprimida = (file) =>
+    new Promise((resolve, reject) => {
       const reader = new FileReader();
-      reader.onload = (ev) => {
+      reader.onerror = () => reject(reader.error || new Error('Falha ao ler o arquivo de imagem.'));
+      reader.onload = () => {
         const img = new Image();
+        img.onerror = () => reject(new Error('O arquivo selecionado não pôde ser decodificado como imagem.'));
         img.onload = () => {
-          const canvas = document.createElement('canvas');
-          const maxW = 900;
-          const scale = img.width > maxW ? maxW / img.width : 1;
-          canvas.width = Math.round(img.width * scale);
-          canvas.height = Math.round(img.height * scale);
-          const ctx2d = canvas.getContext('2d');
-          ctx2d.drawImage(img, 0, 0, canvas.width, canvas.height);
-          const dataUrl = canvas.toDataURL('image/jpeg', 0.78);
-          setFormImovel((prev) => {
-            const atuais = Array.isArray(prev.fotos) ? prev.fotos : [];
-            const novas = [...atuais, dataUrl];
-            return {
-              ...prev,
-              fotos: novas,
-              fotoCapa: prev.fotoCapa || dataUrl,
-            };
-          });
+          try {
+            const canvas = document.createElement('canvas');
+            const maxW = 900;
+            const scale = img.width > maxW ? maxW / img.width : 1;
+            canvas.width = Math.round(img.width * scale);
+            canvas.height = Math.round(img.height * scale);
+            const ctx2d = canvas.getContext('2d');
+            if (!ctx2d) throw new Error('Não foi possível preparar a compressão da imagem.');
+            ctx2d.drawImage(img, 0, 0, canvas.width, canvas.height);
+            resolve(canvas.toDataURL('image/jpeg', 0.78));
+          } catch (error) {
+            reject(error);
+          }
         };
-        img.src = ev.target?.result;
+        if (typeof reader.result !== 'string') {
+          reject(new Error('O arquivo de imagem não foi lido corretamente.'));
+          return;
+        }
+        img.src = reader.result;
       };
       reader.readAsDataURL(file);
     });
-    e.target.value = '';
+
+  const handleUploadArquivosImovel = async (e) => {
+    const input = e.currentTarget;
+    const arquivos = Array.from(input.files || []);
+    if (arquivos.length === 0) return;
+
+    const fotosAtuais = Array.isArray(formImovel.fotos) ? formImovel.fotos : [];
+    const vagas = Math.max(0, MAX_FOTOS_IMOVEL - fotosAtuais.length);
+    if (vagas === 0) {
+      setAvisoFotosImovel(`O limite de ${MAX_FOTOS_IMOVEL} fotos por imóvel foi atingido.`);
+      input.value = '';
+      return;
+    }
+
+    const selecionados = arquivos.slice(0, vagas);
+    setAvisoFotosImovel(
+      arquivos.length > vagas
+        ? `Só cabem mais ${vagas} foto(s). As demais não foram adicionadas.`
+        : '',
+    );
+
+    try {
+      const fotosNovas = [];
+      for (const arquivo of selecionados) {
+        fotosNovas.push(await lerFotoComprimida(arquivo));
+      }
+
+      setFormImovel((prev) => {
+        const atuais = Array.isArray(prev.fotos) ? prev.fotos : [];
+        const novas = adicionarFotosImovel(atuais, fotosNovas);
+        const adicionadas = novas.slice(atuais.length);
+        return {
+          ...prev,
+          fotos: novas,
+          fotoCapa: atuais[0] || adicionadas[0] || '',
+        };
+      });
+    } catch (error) {
+      console.error('Erro ao comprimir fotos do imóvel:', error);
+      setAvisoFotosImovel('Não foi possível processar as fotos selecionadas. Tente novamente.');
+    } finally {
+      input.value = '';
+    }
   };
 
   const removerFotoGaleria = (urlParaRemover) => {
@@ -1011,9 +1064,10 @@ export default function Admin() {
       return {
         ...prev,
         fotos: novas,
-        fotoCapa: prev.fotoCapa === urlParaRemover ? novas[0] || '' : prev.fotoCapa,
+        fotoCapa: novas[0] || '',
       };
     });
+    setAvisoFotosImovel('');
   };
 
   const alternarStatusVitrine = async (imv) => {
@@ -1041,11 +1095,12 @@ export default function Admin() {
     setSalvandoAcao(true);
     try {
       const listaFotos = Array.isArray(formImovel.fotos) ? formImovel.fotos : [];
-      const capaEscolhida = formImovel.fotoCapa || listaFotos[0] || '';
+      const capaEscolhida = listaFotos[0] || '';
       const novoImovel = {
         ...formImovel,
         fotos: listaFotos,
         fotoCapa: capaEscolhida,
+        publico: formImovel.publico === true,
         padraoImovel: formImovel.padraoImovel || 'Médio Padrão',
         valor: parseMoedaBR(formImovel.valor),
         codigo: `IMB-${Math.floor(1000 + Math.random() * 9000)}`,
@@ -1064,6 +1119,8 @@ export default function Admin() {
         finalidade: 'Venda',
         padraoImovel: 'Médio Padrão',
         status: 'Ativo',
+        publico: false,
+        publicarPortais: true,
         bairro: '',
         quartos: '2',
         valor: '',
@@ -1079,6 +1136,7 @@ export default function Admin() {
         regrasLocacao: '',
       });
       setNovaFotoInput('');
+      setAvisoFotosImovel('');
       setModalNovoImovel(false);
       setAbaAtiva('captacao_imobi');
     } catch (err) {
@@ -1532,9 +1590,7 @@ export default function Admin() {
   // botão não mudava mais nada além do rótulo do banner.
   const modoPro = Boolean(isProConta || ehMasterPlataforma);
   const isPro = Boolean(isProConta && modoPro);
-  // OPERAÇÃO IA tem dois módulos independentes (D-22.01): Sofia WhatsApp
-  // (R$ 450+) e Express Brain (R$ 497+ / sob implantação). Uma conta pode
-  // contratar só um, só o outro, ou o combo. Gates separados de propósito.
+  // O pacote Operação IA libera Pólen e Express Brain em conjunto.
   const contaPlano = dadosImobCtx || dadosLegadoCtx || {};
   const sofiaLiberada = Boolean(ehMasterPlataforma || temSofiaWhatsApp(contaPlano));
   const brainLiberado = Boolean(ehMasterPlataforma || temExpressBrain(contaPlano));
@@ -1565,26 +1621,21 @@ export default function Admin() {
     // D-22.05 — "Meu Plano" saiu da última posição: era o 9º item da faixa e
     // ficava fora da tela justamente para quem precisa ver o plano e assinar.
     { id: 'meuplano', icone: '⭐', label: 'Meu Plano', destaquePlano: true },
-    { id: 'captacao_imobi', icone: '🏠', label: 'Captação & Imóveis' },
     { id: 'funil_leads', icone: '👥', label: 'Leads & Funil CRM' },
     { id: 'visitas_imobi', icone: '📅', label: 'Agenda de Visitas' },
     { id: 'financeiro', icone: '💰', label: 'Financeiro & VGV' },
+    { id: 'contador', icone: '🧮', label: 'Simuladores' },
+    { id: 'juridico_imobi', icone: '⚖️', label: 'Assistente Legal' },
     { id: 'equipe', icone: '🧑‍💼', label: 'Corretores & Equipe' },
     { id: 'config', icone: '⚙️', label: 'Configurações' },
     { id: 'especialista', icone: '🎧', label: 'Suporte Especialista' },
   ];
 
-  // Degrau 2 — Essencial Plus (R$ 39,90): propostas e anúncios
-  const botoesBlocoEssencialPlus = [
+  // Plano PRO unificado: Captação & Imóveis, vitrine e demais módulos pagos.
+  const botoesBlocoPro = [
+    { id: 'captacao_imobi', icone: '🏠', label: 'Captação & Imóveis' },
     { id: 'historico', icone: '📝', label: 'Propostas & Negócios' },
     { id: 'marketing', icone: '🎯', label: 'Meta Ads & Criativos' },
-  ];
-
-  // Faixa 3 — PRO · Assinantes (R$ 99,00): as 8 ferramentas assistidas sob
-  // demanda + a aba 7 Agentes de IA (D-22.03 — no trial de 10 dias ela abre
-  // para todo mundo; sem plano ativo depois, cadeado). Configurações e Suporte
-  // Especialista não ficam aqui: são de todo plano e moram na faixa Essenciais.
-  const botoesBloco3Gestao = [
     {
       id: 'agentes_ia',
       icone: '🤖',
@@ -1598,44 +1649,39 @@ export default function Admin() {
     { id: 'credito', icone: '🏦', label: 'Correspondente / Crédito' },
     { id: 'radar_captacao', icone: '📡', label: 'Radar de Captação' },
     { id: 'administrador', icone: '📈', label: 'Diretor Comercial IA' },
-    { id: 'contador', icone: '🏛️', label: 'Simulador de Custos' },
-    { id: 'juridico_imobi', icone: '⚖️', label: 'Minutas & Checklist' },
     // Lote 3 — `roleta_imobi` e `notafiscal` não são botões soltos: viraram abas
     // internas de `administrador` e `contador`. As rotas seguem válidas.
   ];
 
-  // Degrau 4 — OPERAÇÃO IA: dois módulos INDEPENDENTES, com preço próprio.
-  // Pólen (ex-Sofia WhatsApp) e Tom (ex-Express Brain) — a badge de cada item
-  // diz o preço; um não é brinde do outro.
+  // Operação IA libera Pólen e Express Brain no mesmo pacote.
   const botoesBlocoOperacaoIA = [
     {
       id: 'sofia_whatsapp',
       icone: '📲',
       label: 'Pólen · Atendimento 24h',
-      badge: 'Independente · R$ 450+',
+      badge: 'Incluído',
     },
     {
       id: 'brain',
       icone: '🧠',
       label: 'Tom · Maestro da Imobiliária',
-      badge: 'Independente · R$ 497+ / sob implantação',
+      badge: 'Incluído',
     },
   ];
 
-  // Preço de cada degrau lido de shared/planos.json (fonte única) e escrito com
-  // os centavos: "R$ 99" ao lado da contagem "9" lia como "R$ 99,99".
+  // Preço e faixa consultiva vêm do catálogo compartilhado.
   const precoDoPlano = (key) => {
     const plano = PLANOS.find((item) => item.key === key);
+    if (plano?.precoLabel) return plano.precoLabel;
     const mensal = plano?.preco?.mensal;
     if (mensal === null || mensal === undefined) return null;
     if (!mensal) return null;
-    return `R$ ${mensal.toFixed(2).replace('.', ',')}`;
+    return mensal.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL', minimumFractionDigits: 2 });
   };
 
-  /* D-22.05 — trilho único. Antes eram 4 faixas empilhadas (~450px de tela) com
+  /* Trilho único com os três níveis comerciais. Antes eram 4 faixas empilhadas (~450px de tela) com
      rolagem horizontal invisível: no mouse não havia como alcançar o fim da
-     linha. Agora os 22 módulos vivem numa linha só, cada pílula com o círculo
-     do degrau a que pertence (verde grátis · teal Plus · vinho PRO · âmbar IA),
+     linha. Cada pílula usa a cor do plano (verde Grátis · azul PRO · âmbar IA),
      e o cliente alcança o resto arrastando, pela roda do mouse ou pelas setas.
      A lista de abas é de todo mundo: o acesso é que depende do plano. */
   const gruposTrilho = [
@@ -1647,23 +1693,12 @@ export default function Admin() {
       itens: filtrarPorPapel(botoesBloco1Essencial),
     },
     {
-      id: 'plus',
-      degrau: 'plus',
-      rotuloCurto: 'Plus',
-      preco: precoDoPlano('essencial_plus'),
-      titulo: `Essencial Plus · ${precoDoPlano('essencial_plus') || ''}`,
-      itens: filtrarPorPapel(botoesBlocoEssencialPlus).map((item) => ({
-        ...item,
-        bloqueado: bloqueioProAtivo,
-      })),
-    },
-    {
       id: 'pro',
       degrau: 'pro',
       rotuloCurto: 'PRO',
-      preco: precoDoPlano('profissional'),
-      titulo: trialEmAndamento && !bloqueioProAtivo ? 'PRO · Teste de 10 dias' : 'PRO · Assinantes',
-      itens: filtrarPorPapel(botoesBloco3Gestao).map((item) => ({
+      preco: precoDoPlano('pro'),
+      titulo: trialEmAndamento && !bloqueioProAtivo ? 'PRO · Teste de 10 dias' : 'PRO',
+      itens: filtrarPorPapel(botoesBlocoPro).map((item) => ({
         ...item,
         bloqueado: bloqueioProAtivo,
       })),
@@ -1672,8 +1707,8 @@ export default function Admin() {
       id: 'operacao',
       degrau: 'operacao',
       rotuloCurto: 'Operação IA',
-      preco: 'R$ 450+',
-      titulo: 'Operação IA · R$ 450+',
+      preco: precoDoPlano('esquadrao_ia'),
+      titulo: `Operação IA · ${precoDoPlano('esquadrao_ia') || ''}`,
       itens: filtrarPorPapel(botoesBlocoOperacaoIA),
     },
   ];
@@ -2170,7 +2205,7 @@ export default function Admin() {
                 onClick={() => setAbaAtiva('meuplano')}
                 className="shrink-0 rounded-full bg-gradient-to-r from-amber-300 to-amber-500 px-3 py-1.5 text-[11px] font-black text-amber-950 shadow-[0_0_18px_rgba(245,158,11,0.45)] transition-all hover:-translate-y-0.5 hover:shadow-[0_0_28px_rgba(245,158,11,0.65)]"
               >
-                Assinar o PRO · R$ 99/mês
+                Assinar o PRO · {precoDoPlano('pro')}/mês
               </button>
             </div>
           )}
@@ -2730,7 +2765,7 @@ export default function Admin() {
                   onClick={() => setAbaAtiva('meuplano')}
                   className="shrink-0 rounded-full bg-gradient-to-r from-amber-300 to-amber-500 px-3 py-1.5 text-[11px] font-black text-amber-950 shadow-[0_0_18px_rgba(245,158,11,0.45)] transition-all hover:-translate-y-0.5"
                 >
-                  Assinar o PRO · R$ 99/mês
+                  Assinar o PRO · {precoDoPlano('pro')}/mês
                 </button>
               </div>
             )}
@@ -2924,7 +2959,7 @@ export default function Admin() {
                     onClick={() => setAbaAtiva('meuplano')}
                     className="px-2.5 py-1 rounded-lg bg-[#020408] border border-[#f59e0b]/40 text-[10px] font-bold hover:border-[#10b981] hover:text-[#10b981] cursor-pointer transition"
                   >
-                    Assinar o PRO · R$ 99/mês →
+                    Assinar o PRO · {precoDoPlano('pro')}/mês →
                   </button>
                 </div>
               )}
@@ -2999,14 +3034,12 @@ export default function Admin() {
 
 
         {/* ─── ABA: TOM · MAESTRO DA IMOBILIÁRIA (OPERAÇÃO IA) ────────────────
-            ID de rota continua `brain`. Gate próprio: contratável sozinho
-            (R$ 497+ / sob implantação) ou em combo com a Pólen. Abaixo disso
-            mostra o cartão de upgrade. O simulador do Tom recebe as contagens
+            ID de rota continua `brain`. Gate próprio do pacote Operação IA.
+            O simulador do Tom recebe as contagens
             reais da conta; sem carteira, ele usa o cenário de demonstração. */}
         {abaAtiva === 'brain' && (
           <ExpressBrainTab
             liberado={brainLiberado}
-            sofiaContratada={sofiaLiberada}
             setAbaAtiva={setAbaAtiva}
             dadosOficina={contaPlano}
             contextoOperacao={{
@@ -3165,10 +3198,22 @@ export default function Admin() {
                   onChange={(e) => setFormImovel({ ...formImovel, status: e.target.value })}
                   className="w-full bg-[#020408] border border-slate-700 rounded-xl px-3 py-2.5 text-sm text-white font-bold"
                 >
-                  <option value="Ativo">Ativo (Visível na Vitrine do Cliente)</option>
+                  <option value="Ativo">Ativo / disponível</option>
                   <option value="Reservado">Reservado / Em Proposta</option>
                   <option value="Inativo">Inativo / Oculto</option>
                 </select>
+                <label className="mt-2 flex items-center gap-2 text-[10px] font-bold uppercase text-slate-400">
+                  <input
+                    type="checkbox"
+                    checked={formImovel.publico === true}
+                    onChange={(e) => setFormImovel({ ...formImovel, publico: e.target.checked })}
+                    className="h-3.5 w-3.5 accent-[#10b981]"
+                  />
+                  Publicar na vitrine pública e permitir link direto da Pólen
+                </label>
+                <p className="mt-1 text-[10px] leading-relaxed text-slate-500">
+                  Ao publicar, o anúncio e suas fotos ficam acessíveis no portal público.
+                </p>
                 <label className="mt-2 flex items-center gap-2 text-[10px] font-bold uppercase text-slate-400">
                   <input
                     type="checkbox"
@@ -3196,18 +3241,32 @@ export default function Admin() {
               />
             </div>
 
-            {/* GALERIA DE FOTOS DO IMÓVEL & FOTO DE CAPA PRINCIPAL */}
+            {/* GALERIA DE FOTOS DO IMÓVEL: a primeira foto é sempre a capa */}
             <div className="bg-[#020408] border border-slate-800 rounded-2xl p-4 space-y-3">
+              <p className="rounded-xl border border-emerald-500/30 bg-emerald-500/[0.08] px-3 py-2 text-[11px] leading-relaxed text-emerald-100">
+                <strong className="font-black">Foto 1 (Principal — Fachada ou Entrada do Imóvel).</strong>{' '}
+                Ela será a capa do portal. A Pólen deve priorizar essa foto, um resumo e o link direto na primeira apresentação;
+                o envio da imagem como anexo depende de o canal WhatsApp oferecer suporte a mídia.
+                As outras até 6 fotos ficam na vitrine ou são enviadas somente se o cliente pedir explicitamente.
+              </p>
               <div className="flex flex-wrap items-center justify-between gap-2">
                 <span className="text-xs font-extrabold uppercase text-[#10b981]">
-                  📷 Galeria de Fotos & Foto de Capa ({(formImovel.fotos || []).length})
+                  📷 Galeria de Fotos ({(formImovel.fotos || []).length}/{MAX_FOTOS_IMOVEL})
                 </span>
-                <label className="px-3 py-1 rounded-lg bg-[#10b981] text-white text-[11px] font-black cursor-pointer hover:opacity-90 transition">
-                  + Enviar Arquivos de Imagem
+                <label
+                  aria-disabled={(formImovel.fotos || []).length >= MAX_FOTOS_IMOVEL}
+                  className={`px-3 py-1 rounded-lg text-white text-[11px] font-black transition ${
+                    (formImovel.fotos || []).length >= MAX_FOTOS_IMOVEL
+                      ? 'bg-slate-700 cursor-not-allowed opacity-60'
+                      : 'bg-[#10b981] cursor-pointer hover:opacity-90'
+                  }`}
+                >
+                  + Enviar Fotos ({Math.max(0, MAX_FOTOS_IMOVEL - (formImovel.fotos || []).length)} restantes)
                   <input
                     type="file"
                     accept="image/*"
                     multiple
+                    disabled={(formImovel.fotos || []).length >= MAX_FOTOS_IMOVEL}
                     onChange={handleUploadArquivosImovel}
                     className="hidden"
                   />
@@ -3218,12 +3277,14 @@ export default function Admin() {
                 <input
                   value={novaFotoInput}
                   onChange={(e) => setNovaFotoInput(e.target.value)}
+                  disabled={(formImovel.fotos || []).length >= MAX_FOTOS_IMOVEL}
                   placeholder="Ou cole o link de uma foto (https://...)"
                   className="flex-1 bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white"
                 />
                 <button
                   type="button"
                   onClick={() => adicionarLinkFotoImovel()}
+                  disabled={(formImovel.fotos || []).length >= MAX_FOTOS_IMOVEL}
                   className="px-3.5 py-2 rounded-xl bg-slate-800 hover:bg-[#10b981] text-xs font-extrabold text-white cursor-pointer transition"
                 >
                   Adicionar Link
@@ -3251,12 +3312,19 @@ export default function Admin() {
                     key={demo.nome}
                     type="button"
                     onClick={() => adicionarLinkFotoImovel(demo.url)}
-                    className="px-2 py-0.5 rounded bg-slate-900 border border-slate-700 hover:border-[#10b981] text-slate-300 hover:text-[#10b981] cursor-pointer"
+                    disabled={(formImovel.fotos || []).length >= MAX_FOTOS_IMOVEL}
+                    className="px-2 py-0.5 rounded bg-slate-900 border border-slate-700 hover:border-[#10b981] text-slate-300 hover:text-[#10b981] cursor-pointer disabled:cursor-not-allowed disabled:opacity-50"
                   >
                     {demo.nome}
                   </button>
                 ))}
               </div>
+
+              {avisoFotosImovel && (
+                <p role="status" className="rounded-xl border border-amber-500/35 bg-amber-500/10 px-3 py-2 text-[10.5px] font-semibold text-amber-200">
+                  {avisoFotosImovel}
+                </p>
+              )}
 
               {temFotoExemplo(formImovel.fotos) && (
                 <p role="note" className="rounded-xl border border-amber-500/40 bg-amber-500/10 px-3 py-2 text-[10.5px] font-semibold leading-relaxed text-amber-200">
@@ -3264,11 +3332,11 @@ export default function Admin() {
                 </p>
               )}
 
-              {/* Miniaturas da Galeria com Seleção da Foto de Capa */}
+              {/* A primeira miniatura é sempre a capa e a foto principal. */}
               {Array.isArray(formImovel.fotos) && formImovel.fotos.length > 0 && (
                 <div className="grid grid-cols-3 gap-2 pt-1">
                   {(formImovel.fotos || [])?.map((fotoUrl, idx) => {
-                    const isCapa = formImovel.fotoCapa === fotoUrl || (!formImovel.fotoCapa && idx === 0);
+                    const isCapa = idx === 0;
                     const fotoDeExemplo = ehFotoExemplo(fotoUrl);
                     return (
                       <div
@@ -3294,15 +3362,6 @@ export default function Admin() {
                         <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition flex items-center justify-center gap-1.5">
                           <button
                             type="button"
-                            onClick={() => setFormImovel({ ...formImovel, fotoCapa: fotoUrl })}
-                            aria-label={`Usar a foto ${idx + 1} como capa do imóvel`}
-                            style={{ backgroundColor: '#10b981' }}
-                            className="px-2 py-1 rounded text-[9px] font-black text-white cursor-pointer"
-                          >
-                            ★ Capa
-                          </button>
-                          <button
-                            type="button"
                             onClick={() => removerFotoGaleria(fotoUrl)}
                             aria-label={`Remover a foto ${idx + 1} da galeria`}
                             className="px-2 py-1 rounded bg-red-600 text-[9px] font-black text-white cursor-pointer"
@@ -3315,7 +3374,7 @@ export default function Admin() {
                             style={{ backgroundColor: '#10b981' }}
                             className="absolute top-1 left-1 px-1.5 py-0.5 rounded text-[8px] font-black uppercase text-white"
                           >
-                            ★ CAPA
+                            ★ {idx === 0 ? 'FOTO 1 · CAPA' : `FOTO ${idx + 1}`}
                           </span>
                         )}
                       </div>

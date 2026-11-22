@@ -1,6 +1,6 @@
 # 02 — Regras Comerciais · Express Tech
 
-> **Verdade atual:** 2026-11-20 · Toda alteração de preço, plano ou política entra aqui **e** em
+> **Verdade atual:** 2026-11-23 · Toda alteração de preço, plano ou política entra aqui **e** em
 > `05-decisoes-ativas.md`, com data.
 
 ---
@@ -12,7 +12,7 @@
 | Item | Valor | Observação |
 |---|---|---|
 | Implantação / agentes de IA sob medida | **a partir de R$ 450** | piso comercial para filtrar lead e validar demanda B2B |
-| Automação Sofia WhatsApp (atendente IA 24h, equipe 2–20+ corretores) | **a partir de R$ 450/mês** + taxa única de implantação | venda consultiva, fechamento com especialista |
+| Operação IA — Pólen Atendimento 24h + Express Brain | **a partir de R$ 450/mês** + taxa única de implantação | pacote único, venda consultiva e fechamento com especialista |
 | Presença Digital & Tráfego | **setup R$ 690** + **gestão opcional R$ 490/mês** | Vitrine/Portal + Google Meu Negócio no setup; verba de anúncios à parte |
 
 O ticket de R$ 450 existe para **qualificar**, não para competir por preço. Abaixo disso, o custo de
@@ -22,11 +22,15 @@ atendimento consome a margem.
 
 | Plano | Preço | O que entrega |
 |---|---|---|
-| **Gratuito** | **R$ 0** para sempre | vitrine digital + portal público, CRM e funil, agenda, financeiro, estúdio de artes, **7 Agentes de IA (vitrine interativa — sem teto de uso implementado, ver D-20.24)**, 1 usuário |
-| **Essencial Plus** | **R$ 39,90/mês** | tudo do gratuito + **Propostas & Negócios** + **Meta Ads & Criativos**, até 2 usuários |
-| **PRO** | **R$ 99/mês** (anual: **R$ 89/mês** — R$ 1.068/ano, economia de R$ 120) | tudo do Essencial Plus + 7 agentes de IA, roleta de leads, vistoria IA, correspondente/crédito, portais XML, NFS-e, até 3 usuários |
-| **Automação Sofia WhatsApp** | **a partir de R$ 450/mês** + taxa única de implantação | atendente IA 24h conectada no WhatsApp oficial |
+| **Grátis** | **R$ 0** | CRM, funil, agenda, simuladores e Assistente Legal; sem upload de fotos de imóveis |
+| **PRO** | **R$ 39,90/mês** | Captação & Imóveis, vitrine pública (opt-in), até 7 fotos por imóvel, 7 agentes de IA e módulos PRO; Foto 1 é a capa |
+| **Operação IA** | **a partir de R$ 450/mês** + taxa única de implantação | Pólen Atendimento 24h + Express Brain no mesmo pacote |
 | **Presença Digital & Tráfego** | **setup R$ 690** + **gestão de tráfego opcional R$ 490/mês** | Vitrine/Portal sincronizado + Google Meu Negócio (no setup); verba de anúncios paga à parte |
+
+As chaves antigas `essencial_plus` e `profissional` são aliases técnicos do PRO, não planos ou
+ofertas separados. Foto 1 deve ser a apresentação inicial da Pólen; as fotos 2–7 só podem ser
+compartilhadas se o cliente pedir explicitamente. O envio de imagem como anexo depende de o canal
+WhatsApp oferecer suporte a mídia.
 
 Fonte única de verdade técnica: `shared/planos.json` (copiado para `functions/planos.json` por
 `scripts/sync-planos.cjs`). **Nunca** digitar preço em componente.
@@ -48,7 +52,7 @@ Zero jargão técnico na ponta comercial (nada de "orquestração de LLM", "pipe
 **Regras de escrita comercial**
 
 1. Falar do problema do cliente antes da tecnologia.
-2. Números sempre com contexto (o que significa R$ 99/mês frente a uma diária de anúncio).
+2. Números sempre com contexto (o que significa R$ 39,90/mês frente a uma diária de anúncio).
 3. **Nunca** desmerecer o corretor, o gestor ou a equipe dele. A culpa é do processo, não da pessoa.
 4. Prova só quando existe: sem depoimento inventado, sem "5,0 no Google", sem métrica fabricada.
 5. Uma ideia por parágrafo; verbo no presente; nada de "revolucionário", "disruptivo", "sinérgico".

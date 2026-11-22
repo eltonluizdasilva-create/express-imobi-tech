@@ -1,31 +1,24 @@
 import React, { useMemo, useState } from 'react';
 import {
   Check, Sparkles, Crown, Bot, MessageCircle, ShieldCheck, Users, Home,
-  ArrowUpRight, Lock, Zap, Globe, Info,
+  ArrowUpRight, Lock, Globe, Info,
 } from 'lucide-react';
 import { getAuth } from 'firebase/auth';
 import { PLANOS_PRO, WHATSAPP_COMERCIAL } from '../lib/planos';
-import { DEGRAUS, precoMensal, detalheCiclo, rotuloEconomia } from '../lib/planosComerciais';
-import { destinoCheckout, urlCheckoutPro, urlAsaasLink, comDadosDaConta, abrirDestino } from '../lib/checkout';
+import { DEGRAUS, SERVICO_PRESENCA_DIGITAL, precoMensal } from '../lib/planosComerciais';
+import { destinoCheckout, urlAsaasLink, comDadosDaConta, abrirDestino } from '../lib/checkout';
 
 const ICONE_DEGRAU = {
   essencial: Home,
-  essencial_plus: Zap,
   pro: Crown,
   automacao: Bot,
   presenca_digital: Globe,
 };
 
 /**
- * Meu Plano — 5 degraus comerciais (Grátis, Essencial Plus, PRO,
- * Pólen · Atendimento 24h, Presença Digital & Tráfego).
- * O ciclo é escolhido no topo e muda preço e destino do checkout.
+ * Meu Plano — três níveis (Grátis, PRO e Operação IA) e um serviço adicional.
  */
 export default function ModuloMeuPlano({ dadosOficina }) {
-  // Ciclo inicial = mensal: é o que os links de pagamento ativos no Asaas
-  // cobram hoje (R$ 39,90 e R$ 99,00/mês). O anual continua no seletor, mas
-  // só cobra o preço certo quando existir VITE_ASAAS_LINK_PRO_ANUAL.
-  const [ciclo, setCiclo] = useState('mensal');
   const [mensagem, setMensagem] = useState('');
 
   const planoAtual = String(dadosOficina?.plano || 'gratis');
@@ -57,63 +50,25 @@ export default function ModuloMeuPlano({ dadosOficina }) {
     comDadosDaConta(
       urlAsaasLink(
         {
-          essencial: import.meta.env?.VITE_ASAAS_LINK_ESSENCIAL,
-          pro: import.meta.env?.VITE_ASAAS_LINK_PRO,
-          proAnual: import.meta.env?.VITE_ASAAS_LINK_PRO_ANUAL,
+          pro: import.meta.env?.VITE_ASAAS_LINK_ESSENCIAL,
         },
         planoKey,
-        ciclo,
       ),
       { email: conta.email, oficinaId: conta.oficinaId },
     );
 
-  /** Card 2 — Essencial Plus (R$ 39,90): link do Asaas ou WhatsApp comercial. */
-  const assinarEssencialPlus = () => {
-    const essencialPlus = DEGRAUS.find((d) => d.key === 'essencial_plus');
-    const conta = dadosConta();
-    const valor = `${precoMensal(essencialPlus, ciclo)}/mês`;
-
-    const destino = destinoCheckout({
-      checkoutUrl: linkDoPlano('essencial_plus', conta),
-      whatsapp: import.meta.env?.VITE_SU_WPP || WHATSAPP_COMERCIAL,
-      planoNome: 'Essencial Plus',
-      ciclo,
-      email: conta.email,
-      uid: conta.uid,
-      nomeOficina: conta.nomeOficina,
-      valor,
-    });
-
-    const abriu = abrirDestino(destino);
-    if (!abriu) {
-      mostrarMensagem('O navegador bloqueou a janela. Libere pop-ups e tente novamente.');
-      return;
-    }
-    mostrarMensagem(
-      destino.tipo === 'checkout'
-        ? 'Abrimos o pagamento do Essencial Plus em outra aba.'
-        : 'Abrimos o WhatsApp comercial com o Essencial Plus, seu e-mail e ID já preenchidos.',
-    );
-  };
-
-  /** Card 3 — checkout do PRO no ciclo escolhido. */
+  /** Checkout mensal do PRO unificado. */
   const assinarPro = () => {
     const pro = DEGRAUS.find((d) => d.key === 'pro');
     const conta = dadosConta();
     const { email, uid, nomeOficina } = conta;
-    const valor = `${precoMensal(pro, ciclo)}/mês${ciclo === 'anual' ? ' (cobrado R$ 1.068,00/ano)' : ''}`;
+    const valor = `${precoMensal(pro)}/mês`;
 
     const destino = destinoCheckout({
-      checkoutUrl:
-        linkDoPlano('pro', conta) ||
-        urlCheckoutPro({
-          mensal: import.meta.env?.VITE_CHECKOUT_PRO_MENSAL_URL,
-          anual: import.meta.env?.VITE_CHECKOUT_PRO_ANUAL_URL,
-          unico: import.meta.env?.VITE_CHECKOUT_PRO_URL,
-        }, ciclo),
+      checkoutUrl: linkDoPlano('pro', conta),
       whatsapp: import.meta.env?.VITE_SU_WPP || WHATSAPP_COMERCIAL,
-      planoNome: `Completo PRO (${ciclo})`,
-      ciclo,
+      planoNome: 'PRO',
+      ciclo: 'mensal',
       email,
       uid,
       nomeOficina,
@@ -132,20 +87,19 @@ export default function ModuloMeuPlano({ dadosOficina }) {
     );
   };
 
-  /** Card 3 — implantação consultiva. */
-  const falarEspecialista = (nomeDegrau = 'Pólen · Atendimento 24h') => {
+  /** Contratação consultiva de Operação IA ou do serviço adicional. */
+  const falarEspecialista = (nomeDegrau = 'Operação IA') => {
     const { email, uid, nomeOficina } = dadosConta();
-    // Aceita o nome novo (Pólen) e o legado (Sofia / Automação): o degrau
-    // consultivo é o único que pede número de corretores e implantação.
-    const ehAutomacao = /p[óo]len|sofia|automa[cç][aã]o/i.test(String(nomeDegrau || ''));
+    const operacaoIA = DEGRAUS.find((degrau) => degrau.key === 'automacao');
+    const ehOperacaoIA = /opera[cç][aã]o ia|p[óo]len|tom|sofia|automa[cç][aã]o/i.test(String(nomeDegrau || ''));
     const texto = [
       `Olá! Quero falar sobre o ${nomeDegrau} do Express Imobi Tech.`,
       nomeOficina ? `Imobiliária: ${nomeOficina}.` : '',
-      ehAutomacao ? 'Equipe de corretores: ___ (quantos corretores hoje).' : '',
+      ehOperacaoIA ? 'Equipe de corretores: ___ (quantos corretores hoje).' : '',
       email ? `E-mail da conta: ${email}.` : '',
       uid ? `ID da conta: ${uid}.` : '',
-      ehAutomacao
-        ? 'Podemos falar sobre a taxa de implantação e o valor a partir de R$ 450/mês?'
+      ehOperacaoIA
+        ? `Podemos falar sobre o pacote Pólen + Express Brain, ${operacaoIA?.detalhePreco || ''}${operacaoIA?.periodo || ''}, e a implantação assistida?`
         : 'Podemos falar sobre o escopo e o setup do projeto?',
     ].filter(Boolean).join('\n');
 
@@ -158,7 +112,7 @@ export default function ModuloMeuPlano({ dadosOficina }) {
   const falarSobreDowngrade = () => {
     const { email, uid } = dadosConta();
     const texto = [
-      'Olá! Quero voltar do PRO para o plano Essencial (gratuito).',
+      'Olá! Quero voltar do PRO para o plano Grátis.',
       email ? `E-mail da conta: ${email}.` : '',
       uid ? `ID da conta: ${uid}.` : '',
     ].filter(Boolean).join('\n');
@@ -169,7 +123,6 @@ export default function ModuloMeuPlano({ dadosOficina }) {
   const rotuloCta = (degrau) => {
     if (degrau.key === 'pro') return ehPro ? 'Plano PRO ativo' : degrau.cta;
     if (degrau.key === 'essencial') return ehPro ? 'Falar sobre downgrade' : 'Plano atual';
-    if (degrau.key === 'essencial_plus' && ehPro) return 'Assinar Essencial Plus';
     return degrau.cta;
   };
 
@@ -178,7 +131,6 @@ export default function ModuloMeuPlano({ dadosOficina }) {
 
   const acaoCta = (degrau) => {
     if (degrau.key === 'pro') return assinarPro();
-    if (degrau.key === 'essencial_plus') return assinarEssencialPlus();
     if (degrau.key === 'essencial') return falarSobreDowngrade();
     return falarEspecialista(degrau.nome);
   };
@@ -195,47 +147,13 @@ export default function ModuloMeuPlano({ dadosOficina }) {
           Escolha o nível do seu jogo
         </h1>
         <p className="mx-auto mt-3 max-w-2xl text-sm leading-6 text-slate-300 md:text-base">
-          Comece grátis com os 7 Agentes de IA em vitrine, suba para o Essencial Plus
-          quando quiser propostas e anúncios, ou vá de PRO para a operação completa.
+          Comece grátis com CRM, agenda, simuladores e Assistente Legal. No PRO, capte imóveis
+          e publique sua vitrine; a Operação IA reúne Pólen e Express Brain.
         </p>
         <div className="mt-5 inline-flex items-center gap-2 rounded-2xl border border-emerald-500/30 bg-emerald-500/10 px-4 py-2 text-xs font-black uppercase tracking-widest text-emerald-300">
-          Plano atual: <span className="text-white">{ehPro ? 'Completo PRO' : 'Grátis'}</span>
+          Plano atual: <span className="text-white">{ehPro ? 'PRO' : 'Grátis'}</span>
         </div>
       </section>
-
-      {/* SELETOR DE CICLO */}
-      <div className="flex flex-col items-center gap-2">
-        <div className="inline-flex items-center gap-1 rounded-2xl border border-slate-800 bg-slate-950/80 p-1">
-          <button
-            type="button"
-            onClick={() => setCiclo('mensal')}
-            className={`rounded-xl px-5 py-2 text-xs font-black uppercase tracking-widest transition ${
-              ciclo === 'mensal' ? 'bg-emerald-500 text-slate-950' : 'text-slate-400 hover:text-slate-200'
-            }`}
-          >
-            Mensal
-          </button>
-          <button
-            type="button"
-            onClick={() => setCiclo('anual')}
-            className={`flex items-center gap-2 rounded-xl px-5 py-2 text-xs font-black uppercase tracking-widest transition ${
-              ciclo === 'anual' ? 'bg-emerald-500 text-slate-950' : 'text-slate-400 hover:text-slate-200'
-            }`}
-          >
-            Anual
-            <span
-              className={`rounded-full px-2 py-0.5 text-[9px] ${
-                ciclo === 'anual' ? 'bg-slate-950/20 text-slate-900' : 'bg-emerald-500/15 text-emerald-300'
-              }`}
-            >
-              {rotuloEconomia('anual')}
-            </span>
-          </button>
-        </div>
-        <p className="text-[10px] uppercase tracking-widest text-slate-500">
-          {ciclo === 'anual' ? 'Cobrança anual — melhor preço por mês' : 'Cobrança mensal — sem fidelidade'}
-        </p>
-      </div>
 
       {/* Aviso de ativação automática: o webhook casa o pagamento pelo
           externalReference/e-mail que o Asaas levar na cobrança. */}
@@ -252,12 +170,11 @@ export default function ModuloMeuPlano({ dadosOficina }) {
         </div>
       )}
 
-      {/* 5 DEGRAUS */}
-      <section className="grid items-start gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
+      {/* TRÊS PLANOS */}
+      <section className="grid items-start gap-6 sm:grid-cols-2 lg:grid-cols-3">
         {DEGRAUS.map((degrau) => {
           const Icone = ICONE_DEGRAU[degrau.key] || Check;
-          const preco = degrau.precos ? precoMensal(degrau, ciclo) : degrau.detalhePreco;
-          const detalhe = detalheCiclo(degrau, ciclo);
+          const preco = degrau.precos ? precoMensal(degrau, 'mensal') : degrau.detalhePreco;
           const bloqueado = desabilitado(degrau);
 
           return (
@@ -291,19 +208,10 @@ export default function ModuloMeuPlano({ dadosOficina }) {
                 <span className="text-3xl font-black text-white">{preco}</span>
                 <span className="text-sm text-slate-400">{degrau.periodo}</span>
               </div>
-              {detalhe && <p className="text-[11px] font-bold text-emerald-400">{detalhe}</p>}
               {degrau.implementacao && (
                 <p className="text-[11px] font-bold text-emerald-400">
-                  {degrau.key === 'presenca_digital' ? degrau.implementacao : `+ ${degrau.implementacao}`}
+                  + {degrau.implementacao}
                 </p>
-              )}
-              {degrau.observacao && (
-                <p className="mt-2 rounded-xl border border-amber-500/25 bg-amber-500/[0.07] px-2.5 py-2 text-[10px] leading-4 text-amber-200/90">
-                  {degrau.observacao}
-                </p>
-              )}
-              {degrau.verba && (
-                <p className="text-[10px] text-slate-500">{degrau.verba}</p>
               )}
 
               <ul className="my-6 flex-1 space-y-2.5">
@@ -335,10 +243,29 @@ export default function ModuloMeuPlano({ dadosOficina }) {
         })}
       </section>
 
+      <section className="rounded-3xl border border-slate-800 bg-slate-950/70 p-6">
+        <div className="flex flex-col gap-5 md:flex-row md:items-start md:justify-between">
+          <div className="max-w-2xl">
+            <p className="text-[10px] font-black uppercase tracking-[0.18em] text-slate-400">Serviço adicional</p>
+            <h2 className="mt-2 text-xl font-black text-white">{SERVICO_PRESENCA_DIGITAL.nome}</h2>
+            <p className="mt-2 text-sm leading-6 text-slate-400">{SERVICO_PRESENCA_DIGITAL.resumo}</p>
+            <p className="mt-3 text-sm font-bold text-emerald-300">{SERVICO_PRESENCA_DIGITAL.detalhePreco}</p>
+            <p className="mt-1 text-xs leading-5 text-slate-500">{SERVICO_PRESENCA_DIGITAL.implementacao}</p>
+          </div>
+          <button
+            type="button"
+            onClick={() => falarEspecialista(SERVICO_PRESENCA_DIGITAL.nome)}
+            className="shrink-0 rounded-2xl border border-emerald-500/30 px-5 py-3 text-xs font-black uppercase tracking-widest text-emerald-300 transition hover:bg-emerald-500/10"
+          >
+            {SERVICO_PRESENCA_DIGITAL.cta}
+          </button>
+        </div>
+      </section>
+
       {/* GARANTIAS */}
       <section className="grid gap-4 md:grid-cols-3">
         {[
-          { icon: ShieldCheck, titulo: 'Sem fidelidade', texto: 'No mensal você cancela quando quiser; no anual o desconto já está no preço.' },
+          { icon: ShieldCheck, titulo: 'Sem fidelidade', texto: 'O PRO é mensal e você cancela quando quiser.' },
           { icon: Users, titulo: 'Feito para imobiliárias', texto: 'Do corretor sozinho à equipe de 20+ com automação no WhatsApp.' },
           { icon: Lock, titulo: 'Pagamento seguro', texto: 'Checkout do PRO em ambiente de pagamento; a implantação passa por contrato.' },
         ].map((item) => {

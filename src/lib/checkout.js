@@ -22,15 +22,15 @@ export function normalizarWhatsapp(numero) {
 }
 
 /**
- * URL de pagamento do ciclo. Ordem: variável do ciclo (MENSAL/ANUAL) e, como
- * compatibilidade, uma URL única.
+ * URL de pagamento do ciclo. O ciclo mensal é o padrão; o anual continua aceito
+ * somente para compatibilidade com chamadores e links já configurados.
  *
  * Recebe VALORES, não o objeto `import.meta.env`: passar o ambiente inteiro
  * faz o Vite inlinar todas as VITE_* disponíveis e o bundle muda de máquina
  * para máquina (hash de build diferente do local). Assim é reprodutível.
  */
-export function urlCheckoutPro(env = {}, ciclo = 'anual') {
-  const cicloKey = String(ciclo || 'anual').toUpperCase() === 'MENSAL' ? 'MENSAL' : 'ANUAL';
+export function urlCheckoutPro(env = {}, ciclo = 'mensal') {
+  const cicloKey = String(ciclo || 'mensal').toUpperCase() === 'ANUAL' ? 'ANUAL' : 'MENSAL';
   const candidatos = [
     env[`VITE_CHECKOUT_PRO_${cicloKey}_URL`],
     env[cicloKey === 'MENSAL' ? 'mensal' : 'anual'],
@@ -51,36 +51,32 @@ export function urlCheckoutPro(env = {}, ciclo = 'anual') {
  * botão de upgrade nunca cair no WhatsApp por falta de configuração.
  */
 export const LINK_ASAAS_PADRAO = Object.freeze({
-  essencial_plus: 'https://www.asaas.com/000/c/62w4zie9tigrfj5w', // Essencial Plus — R$ 39,90/mês
-  pro: 'https://www.asaas.com/000/c/xioo567rm50hn601', // PRO — R$ 99,00/mês
+  essencial_plus: 'https://www.asaas.com/000/c/62w4zie9tigrfj5w', // Alias legado do PRO — R$ 39,90/mês
+  pro: 'https://www.asaas.com/000/c/62w4zie9tigrfj5w', // PRO — R$ 39,90/mês
 });
 
 /**
- * Link de pagamento (Asaas) do degrau escolhido.
- *   VITE_ASAAS_LINK_ESSENCIAL → Essencial Plus (R$ 39,90)
- *   VITE_ASAAS_LINK_PRO       → PRO / Profissional (R$ 99,00)
- *   VITE_ASAAS_LINK_PRO_ANUAL → opcional, só para o ciclo anual do PRO
+ * Link de pagamento (Asaas) do PRO único.
+ * `essencial` é aceito como alias da variável usada pelo plano de R$ 39,90.
  *
  * Variável ausente ou inválida → `LINK_ASAAS_PADRAO` do plano. Só devolve
- * string vazia para planos sem link público (Automação Sofia, Presença
- * Digital), que continuam indo pelo WhatsApp comercial.
+ * string vazia para planos/serviços consultivos, que continuam indo pelo
+ * WhatsApp comercial.
  *
  * Recebe VALORES (nunca `import.meta.env` inteiro) pelo mesmo motivo de
  * `urlCheckoutPro`: o bundle não pode variar de máquina para máquina.
  */
-export function urlAsaasLink({ essencial = '', pro = '', proAnual = '' } = {}, plano = 'pro', ciclo = 'mensal') {
+export function urlAsaasLink({ essencial = '', pro = '' } = {}, plano = 'pro') {
   const alvo = String(plano || '').toLowerCase();
-  const chave = alvo === 'essencial_plus' ? 'essencial_plus' : alvo === 'pro' || alvo === 'profissional' ? 'pro' : null;
-  if (!chave) return ''; // Automação Sofia e Presença Digital são consultivas (WhatsApp).
-  const anual = String(ciclo || '').toLowerCase() === 'anual';
-  const candidatos =
-    chave === 'essencial_plus' ? [essencial] : anual ? [proAnual, pro] : [pro];
+  const ehPro = ['essencial_plus', 'profissional', 'pro'].includes(alvo);
+  if (!ehPro) return '';
+  const candidatos = [pro, essencial];
 
   for (const bruto of candidatos) {
     const url = String(bruto || '').trim();
     if (/^https?:\/\//i.test(url)) return url;
   }
-  return LINK_ASAAS_PADRAO[chave] || '';
+  return LINK_ASAAS_PADRAO.pro;
 }
 
 /**

@@ -4,18 +4,22 @@
   "modulos": {
     "gratis": [
       "dashboard_imobi",
-      "captacao_imobi",
       "funil_leads",
       "visitas_imobi",
       "financeiro",
       "equipe",
-      "agentes_ia",
-      "whatsapp_hub",
       "config",
       "ajuda",
-      "meuplano"
+      "meuplano",
+      "contador",
+      "juridico_imobi"
     ],
-    "profissional_extra": [
+    "profissional_extra": [],
+    "essencial_plus_extra": [
+      "captacao_imobi",
+      "historico",
+      "marketing",
+      "agentes_ia",
       "clientes",
       "leads",
       "tarefa",
@@ -23,23 +27,24 @@
       "migracao",
       "acompanhamento_cliente",
       "copiloto",
-      "secretaria",
       "administrador",
       "roleta_imobi",
       "avaliacao_imovel",
-      "credito"
+      "credito",
+      "radar_captacao"
     ],
-    "essencial_plus_extra": [
-      "historico",
-      "marketing"
-    ],
-    "esquadrao_extra": []
+    "esquadrao_extra": [
+      "whatsapp_hub",
+      "secretaria",
+      "sofia_whatsapp",
+      "brain"
+    ]
   },
   "planos": [
     {
       "key": "gratis",
-      "nome": "Modo Grátis",
-      "subtitulo": "Para começar a organizar a sua carteira e atrair leads todos os dias",
+      "nome": "Grátis",
+      "subtitulo": "Ferramentas essenciais para organizar leads, agenda e atendimento",
       "icone": "Gift",
       "preco": {
         "mensal": 0,
@@ -51,127 +56,102 @@
       "recursos": [
         {
           "icone": "Users",
-          "texto": "CRM de leads em Kanban + Conexão WhatsApp padrão"
+          "texto": "CRM de leads, funil e agenda de visitas"
         },
         {
-          "icone": "Home",
-          "texto": "Captação e catálogo central de imóveis"
-        },
-        {
-          "icone": "CalendarDays",
-          "texto": "Agenda de visitas e financeiro essencial"
-        },
-        {
-          "icone": "Bot",
-          "texto": "7 Agentes de IA (vitrine interativa gratuita)"
+          "icone": "Calculator",
+          "texto": "Simuladores essenciais e Assistente Legal"
         },
         {
           "icone": "ShieldCheck",
-          "texto": "Visão Geral do Painel Executivo sem bloqueios"
+          "texto": "Painel, financeiro essencial e gestão da equipe"
+        },
+        {
+          "icone": "Lock",
+          "texto": "Sem upload de fotos ou publicação de imóveis na vitrine"
         }
       ],
       "cta": "Usar Modo Grátis",
       "autoAtivavel": true
     },
     {
-      "key": "essencial_plus",
-      "nome": "Essencial Plus",
-      "subtitulo": "Para quem já organiza os leads e quer fechar mais negócio",
-      "icone": "Zap",
+      "key": "pro",
+      "nome": "PRO",
+      "subtitulo": "Captação, imóveis e gestão completa em um único plano",
+      "icone": "Crown",
       "preco": {
         "mensal": 39.9,
         "anual": 39.9
       },
-      "precoLabel": null,
-      "periodo": "/mês",
-      "destaque": false,
-      "recursos": [
-        {
-          "icone": "Check",
-          "texto": "Tudo do Modo Grátis"
-        },
-        {
-          "icone": "FileBarChart",
-          "texto": "Propostas & Negócios (histórico e follow-up)"
-        },
-        {
-          "icone": "Sparkles",
-          "texto": "Meta Ads & Criativos (copies e link direto p/ WhatsApp)"
-        }
-      ],
-      "cta": "Assinar Essencial Plus",
-      "autoAtivavel": true
-    },
-    {
-      "key": "profissional",
-      "nome": "Plano Profissional",
-      "subtitulo": "Assinante — gestão completa para corretores",
-      "icone": "Crown",
-      "preco": {
-        "mensal": 99,
-        "anual": 89
-      },
-      "precoLabel": null,
       "periodo": "/mês",
       "destaque": true,
       "recursos": [
         {
           "icone": "Check",
-          "texto": "Tudo do Essencial Plus"
+          "texto": "Tudo do plano Grátis"
         },
         {
-          "icone": "FileBarChart",
-          "texto": "Gestão avançada: funil, propostas, financeiro e VGV"
+          "icone": "Check",
+          "texto": "Captação & Imóveis e vitrine pública"
         },
         {
           "icone": "Camera",
-          "texto": "Vistorias fotográficas com laudo por IA"
+          "texto": "Até 7 fotos por imóvel; a Foto 1 é a capa principal"
+        },
+        {
+          "icone": "FileBarChart",
+          "texto": "Propostas, histórico, Meta Ads e demais módulos PRO"
         },
         {
           "icone": "Bot",
-          "texto": "Demais módulos operacionais e de IA do painel"
+          "texto": "7 Agentes de IA do painel, avaliação PTAM, Correspondente / Crédito e Vistoria digital"
+        },
+        {
+          "icone": "FileBarChart",
+          "texto": "NFS-e e publicação em Portais XML"
         },
         {
           "icone": "Users",
-          "texto": "Gestão de corretores e equipe"
+          "texto": "Até 3 usuários"
         }
       ],
-      "cta": "Assinar Plano Profissional",
+      "cta": "Assinar PRO",
       "autoAtivavel": true
     },
     {
       "key": "esquadrao_ia",
-      "nome": "Automação Sofia WhatsApp",
-      "subtitulo": "Atendente IA 24h conectada no WhatsApp oficial",
+      "nome": "OPERAÇÃO IA",
+      "subtitulo": "Pólen Atendimento 24h e Express Brain em um único pacote",
       "icone": "Bot",
       "preco": null,
       "precoLabel": "A partir de R$ 450",
+      "valorMinimoMensal": 450,
       "periodo": "/mês",
       "setup": "Taxa única de implantação",
       "destaque": false,
       "recursos": [
         {
           "icone": "Check",
-          "texto": "Tudo do Plano PRO"
+          "texto": "Tudo do PRO"
         },
         {
           "icone": "Clock",
-          "texto": "Atendimento automatizado 24h no WhatsApp"
+          "texto": "Pólen: atendimento e qualificação 24h no WhatsApp"
         },
         {
           "icone": "Bot",
-          "texto": "Agente Sofia (Secretária) + Hermes Copiloto"
+          "texto": "Express Brain: regras comerciais, processos e memória operacional"
         },
         {
           "icone": "Shuffle",
-          "texto": "Roleta de leads entre corretores"
+          "texto": "Pólen e Express Brain incluídos no mesmo pacote"
         },
         {
           "icone": "MessageCircle",
-          "texto": "Implantação e acompanhamento dedicados"
+          "texto": "Implantação assistida à parte"
         }
       ],
-      "cta": "Solicitar Proposta",
+      "cta": "Falar sobre Operação IA",
       "autoAtivavel": false
     },
     {
@@ -213,6 +193,12 @@
       "osMes": 1,
       "descricao": "Até 1 Ordem de Serviço por mês"
     },
+    "pro": {
+      "funcionarios": 3,
+      "abas": 5,
+      "osMes": null,
+      "descricao": "O.S. ilimitadas"
+    },
     "profissional": {
       "funcionarios": 3,
       "abas": 5,
@@ -220,8 +206,8 @@
       "descricao": "O.S. ilimitadas"
     },
     "essencial_plus": {
-      "funcionarios": 2,
-      "abas": 4,
+      "funcionarios": 3,
+      "abas": 5,
       "osMes": null,
       "descricao": "O.S. ilimitadas"
     },

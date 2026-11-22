@@ -1,5 +1,8 @@
 import React from 'react';
 import { Lock } from 'lucide-react';
+import { precoNoCiclo } from '../../lib/planos';
+
+const PRECO_PRO = precoNoCiclo('pro');
 
 /**
  * BarraModulos — linha horizontal de navegação no padrão do painel de referência:
@@ -7,9 +10,8 @@ import { Lock } from 'lucide-react';
  * A pílula ativa fica branca com texto escuro (leitura imediata);
  * as demais mantêm borda neutra, com halo na cor da seção ao passar o mouse.
  *
- * `item.bloqueado` (D-22.03): a pílula mostra cadeado, fica âmbar e o clique
- * chama `onBloqueado(item)` em vez de trocar de aba — é assim que as 8
- * ferramentas PRO e os 7 Agentes de IA exigem assinatura depois do trial.
+ * `item.bloqueado`: a pílula mostra cadeado, fica âmbar e o clique chama
+ * `onBloqueado(item)` em vez de trocar de aba.
  */
 
 const TONS = {
@@ -91,7 +93,7 @@ export default function BarraModulos({
                 }}
                 title={
                   bloqueado
-                    ? `${btn.label}: exclusivo do PRO (R$ 99/mês) — teste de 10 dias encerrado`
+                    ? `${btn.label}: exclusivo do PRO (${PRECO_PRO}/mês) — teste de 10 dias encerrado`
                     : det
                       ? `${det.tituloCard || det.tituloLimpo || btn.label}: ${det.descricao}`
                       : btn.label
@@ -122,8 +124,7 @@ export default function BarraModulos({
                 <span className="text-[12px] leading-none">{btn.icone}</span>
                 <span className="whitespace-nowrap">{btn.label}</span>
                 {bloqueado && <Lock size={10} className="shrink-0" aria-hidden="true" />}
-                {/* Lote 4 — badge de degrau comercial: separa o que é PRO (R$ 99)
-                    do que só existe na Automação WhatsApp (R$ 450+). */}
+                {/* Badge para indicar o nível comercial do módulo. */}
                 {btn.badge && (
                   <span
                     className={`whitespace-nowrap rounded-full px-1.5 py-0.5 text-[8.5px] font-black uppercase tracking-[0.10em] ${

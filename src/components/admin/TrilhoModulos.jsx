@@ -4,8 +4,8 @@ import { ChevronLeft, ChevronRight, Lock, LayoutGrid, X } from 'lucide-react';
 /**
  * TrilhoModulos — navegação em UMA linha arrastável (substitui as 4 barra
  * empilhadas). Cada pílula carrega o círculo/borda da cor do degrau comercial
- * a que pertence, então o cliente vê de relance onde está (grátis × Plus × PRO
- * × Operação IA) sem precisar abrir "Meu Plano".
+ * a que pertence, então o cliente vê de relance onde está (Grátis × PRO ×
+ * Operação IA) sem precisar abrir "Meu Plano".
  *
  * Por que arrasto + setas + filtro: com 22 módulos o trilho passa de 3000px;
  * sozinho o arrasto esconde metade do menu de quem usa mouse. As setas, a borda
@@ -21,21 +21,13 @@ const DEGRAUS = {
     textoClaro: '#047857',
     textoEscuro: '#6ee7b7',
   },
-  plus: {
-    id: 'plus',
-    nome: 'Plus',
-    cor: '#14b8a6',
-    base: '20,184,166',
-    textoClaro: '#0f766e',
-    textoEscuro: '#5eead4',
-  },
   pro: {
     id: 'pro',
     nome: 'PRO',
-    cor: '#a1123f',
-    base: '161,18,63',
-    textoClaro: '#9f1239',
-    textoEscuro: '#fda4af',
+    cor: '#0284c7',
+    base: '2,132,199',
+    textoClaro: '#0369a1',
+    textoEscuro: '#7dd3fc',
   },
   operacao: {
     id: 'operacao',
@@ -254,8 +246,7 @@ export default function TrilhoModulos({
                 {g.preco && (
                   <span className="hidden font-extrabold tracking-normal sm:inline">{g.preco}</span>
                 )}
-                {/* A contagem fica numa caixinha própria: solta ao lado do preço
-                    ela virava "R$ 99 9" e lia como "R$ 99,99". */}
+                {/* A contagem fica numa caixinha própria para não se confundir com o preço. */}
                 <span
                   title={`${(g.itens || []).length} módulos neste degrau`}
                   className="ml-1 inline-flex h-4 min-w-[16px] items-center justify-center rounded-full px-1 text-[8.5px] font-black tabular-nums"
