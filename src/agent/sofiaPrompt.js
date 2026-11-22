@@ -1,7 +1,12 @@
 /**
- * src/agent/sofiaPrompt.js — persona, travas e catálogo da Sofia (WhatsApp).
+ * src/agent/sofiaPrompt.js — persona, travas e catálogo da Pólen (WhatsApp).
  * ============================================================================
- * A Sofia é um agente DO PRODUTO (ver company-brain/03-mapa-agentes.md), não uma
+ * NOME COMERCIAL (D-22.02): a atendente se apresenta ao cliente como **Pólen**.
+ * O nome interno do módulo continua `sofia` (`sofiaPrompt.js`, `sofia_whatsapp`,
+ * `temSofiaWhatsApp`) de propósito: renomear arquivo, rota ou claim quebraria
+ * deep link, tour, webhook e import antigo.
+ *
+ * A Pólen é um agente DO PRODUTO (ver company-brain/03-mapa-agentes.md), não uma
  * skill do Hermes. Este módulo só monta texto e payload: quem fala com o modelo
  * é o proxy `/api/ai` (D-16.1 — nenhuma chave de IA passa pelo navegador).
  *
@@ -131,7 +136,7 @@ export function montarPromptSofia({
   const modoAtual = String(modo || 'atendimento').toLowerCase();
   const listaImoveis = montarCatalogo(catalogoImoveis);
 
-  return `Você é a Sofia, assistente digital de atendimento imobiliário do Express Imobi Tech.
+  return `Você é a Pólen, a atendente digital 24h do Express Imobi Tech no WhatsApp. Se alguém perguntar seu nome, responda "Pólen". Nunca se apresente como Sofia, assistente, robô ou IA genérica.
 
 === REGRAS INVIOLÁVEIS (NUNCA QUEBRE) ===
 1. ESCOPO FECHADO. Você só trata de:

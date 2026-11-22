@@ -18,7 +18,7 @@ const ICONE_DEGRAU = {
 
 /**
  * Meu Plano — 5 degraus comerciais (Grátis, Essencial Plus, PRO,
- * Automação Sofia WhatsApp, Presença Digital & Tráfego).
+ * Pólen · Atendimento 24h, Presença Digital & Tráfego).
  * O ciclo é escolhido no topo e muda preço e destino do checkout.
  */
 export default function ModuloMeuPlano({ dadosOficina }) {
@@ -133,9 +133,11 @@ export default function ModuloMeuPlano({ dadosOficina }) {
   };
 
   /** Card 3 — implantação consultiva. */
-  const falarEspecialista = (nomeDegrau = 'Automação Sofia WhatsApp') => {
+  const falarEspecialista = (nomeDegrau = 'Pólen · Atendimento 24h') => {
     const { email, uid, nomeOficina } = dadosConta();
-    const ehAutomacao = nomeDegrau === 'Automação Sofia WhatsApp';
+    // Aceita o nome novo (Pólen) e o legado (Sofia / Automação): o degrau
+    // consultivo é o único que pede número de corretores e implantação.
+    const ehAutomacao = /p[óo]len|sofia|automa[cç][aã]o/i.test(String(nomeDegrau || ''));
     const texto = [
       `Olá! Quero falar sobre o ${nomeDegrau} do Express Imobi Tech.`,
       nomeOficina ? `Imobiliária: ${nomeOficina}.` : '',
@@ -293,6 +295,11 @@ export default function ModuloMeuPlano({ dadosOficina }) {
               {degrau.implementacao && (
                 <p className="text-[11px] font-bold text-emerald-400">
                   {degrau.key === 'presenca_digital' ? degrau.implementacao : `+ ${degrau.implementacao}`}
+                </p>
+              )}
+              {degrau.observacao && (
+                <p className="mt-2 rounded-xl border border-amber-500/25 bg-amber-500/[0.07] px-2.5 py-2 text-[10px] leading-4 text-amber-200/90">
+                  {degrau.observacao}
                 </p>
               )}
               {degrau.verba && (

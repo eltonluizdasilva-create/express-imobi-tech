@@ -6,7 +6,8 @@
  *   1. Grátis            — R$ 0        abas operacionais + 7 Agentes de IA (vitrine)
  *   2. Essencial Plus    — R$ 39,90    Propostas & Negócios + Meta Ads & Criativos
  *   3. PRO               — R$ 99,00    demais módulos operacionais e de IA
- *   4. Automação Sofia   — R$ 450+     atendente IA 24h no WhatsApp oficial
+ *   4. Pólen · Atendimento 24h — R$ 450+  atendimento IA no WhatsApp oficial
+ *      (módulo independente; o Tom · Maestro da Imobiliária é R$ 497+, à parte)
  *   5. Presença Digital  — consultivo  site/portal, Google e tráfego pago
  *
  * Preço de verdade do SaaS continua em `shared/planos.json`; aqui está só a copy.
@@ -69,19 +70,23 @@ export const DEGRAUS = Object.freeze([
   },
   {
     key: 'automacao',
-    nome: 'Automação Sofia WhatsApp',
-    tag: 'Consultivo',
+    nome: 'Pólen · Atendimento 24h',
+    tag: 'Módulos independentes',
     tipo: 'consultivo',
-    resumo: 'Atendente IA 24h conectada no WhatsApp oficial da imobiliária.',
+    resumo:
+      'Pólen, a atendente IA 24h no WhatsApp oficial da imobiliária. O Tom · Maestro da Imobiliária é um módulo próprio, contratado à parte ou em combo — um não inclui o outro.',
     detalhePreco: 'A partir de R$ 450',
     periodo: '/mês',
     implementacao: 'Taxa única de implantação',
+    observacao:
+      'Tom · Maestro da Imobiliária: R$ 497+/mês, contratável de forma independente (inclusive para quem já usa outro CRM) ou combinado com a Pólen. Implantação assistida cobrada à parte.',
     recursos: [
       'Tudo do PRO para a equipe',
-      'Agente Sofia 24/7 no WhatsApp oficial',
+      'Pólen 24/7 no WhatsApp oficial',
       'Qualificação automática de leads',
       'Consulta de estoque e agendamento',
       'Distribuição na Roleta de Leads',
+      'Tom · Maestro da Imobiliária (opcional, à parte) — regras comerciais, processos, auditoria de equipe e memória operacional',
       'Implantação e acompanhamento dedicados',
     ],
     cta: 'Solicitar Implantação / Falar com Especialista',

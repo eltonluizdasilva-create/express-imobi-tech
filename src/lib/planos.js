@@ -134,3 +134,128 @@ export function precoNoCiclo(plano, ciclo = 'mensal') {
   if (valor === 0) return 'R$ 0';
   return valor.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL', minimumFractionDigits: 2 });
 }
+
+/* ------------------------------------------------------------------ */
+/* OPERAÇÃO IA — Sofia WhatsApp e Express Brain são módulos SEPARADOS   */
+/* ------------------------------------------------------------------ */
+/* Regra comercial (D-22.01): a imobiliária contrata só a Sofia          */
+/* (R$ 450+), só o Express Brain (R$ 497+ / sob implantação) ou os dois. */
+/* Nenhum dos dois é brinde do outro. A implantação é assistida à parte.  */
+
+/** Piso mensal da Sofia WhatsApp (D-20.23, degrau 4). */
+export const VALOR_MINIMO_SOFIA_WHATSAPP = 450;
+/** Piso mensal do Express Brain (vendido sozinho ou com a Sofia). */
+export const VALOR_MINIMO_EXPRESS_BRAIN = 497;
+
+/** Chaves de plano que liberam SÓ a Sofia WhatsApp. */
+export const PLANOS_SO_SOFIA = new Set([
+  'esquadrao_ia', // chave canônica em shared/planos.json ("Automação Sofia WhatsApp")
+  'sofia_whatsapp',
+  'automacao',
+  'automacao_sofia',
+  'automacao_whatsapp',
+]);
+
+/** Chaves de plano que liberam SÓ o Express Brain. */
+export const PLANOS_SO_BRAIN = new Set([
+  'express_brain',
+  'expressbrain',
+  'brain',
+  'brain_imobiliaria',
+]);
+
+/** Chaves de plano combo: liberam os dois módulos. */
+export const PLANOS_COMBO_IA = new Set([
+  'operacao_ia',
+  'combo_operacao_ia',
+  'full_tech',
+  'combo',
+]);
+
+/** Compatibilidade: o conjunto antigo continua exportado (união dos três). */
+export const PLANOS_OPERACAO_IA = new Set([
+  ...PLANOS_SO_SOFIA,
+  ...PLANOS_SO_BRAIN,
+  ...PLANOS_COMBO_IA,
+]);
+
+const valorMensalDaConta = (conta = {}) =>
+  Number(
+    conta.valorPlano ??
+      conta.valorMensal ??
+      conta.assinaturaValor ??
+      conta.valorAssinatura ??
+      conta.assinaturas?.atual?.valor ??
+      0
+  );
+
+/**
+ * Quais módulos de OPERAÇÃO IA a conta contratou: Set com 'sofia' e/ou 'brain'.
+ * Fontes, nesta ordem: lista explícita (`modulosIA`/`modulosOperacaoIA`), marcas
+ * booleanas da oficina (`automacaoAtiva`/`brainAtivo`), chave do plano e, por
+ * último, o valor mensal quando o plano é genérico e pago.
+ */
+export function modulosOperacaoIA(dadosOficina = {}) {
+  const conta = dadosOficina || {};
+  const contratados = new Set();
+
+  const lista = [conta.modulosIA, conta.modulosOperacaoIA, conta.operacaoIA].find(Array.isArray);
+  if (lista) {
+    const normalizada = lista.map((item) => normalizarPlano(item));
+    if (normalizada.some((item) => item.includes('sofia') || item === 'automacao' || item === 'whatsapp')) {
+      contratados.add('sofia');
+    }
+    if (normalizada.some((item) => item.includes('brain') || item.includes('cerebro'))) {
+      contratados.add('brain');
+    }
+  }
+  // `operacaoIA: true` é o formato legado: liberava o pacote inteiro.
+  if (conta.operacaoIA === true) {
+    contratados.add('sofia');
+    contratados.add('brain');
+  }
+
+  if (conta.automacaoAtiva === true || conta.sofiaAtiva === true) contratados.add('sofia');
+  if (conta.brainAtivo === true || conta.expressBrainAtivo === true) contratados.add('brain');
+
+  const chave = normalizarPlano(conta.plano);
+  if (PLANOS_COMBO_IA.has(chave)) {
+    contratados.add('sofia');
+    contratados.add('brain');
+  } else if (PLANOS_SO_SOFIA.has(chave)) {
+    contratados.add('sofia');
+  } else if (PLANOS_SO_BRAIN.has(chave)) {
+    contratados.add('brain');
+  }
+
+  // Sem plano reconhecido: o valor da assinatura decide. R$ 497+ compra o
+  // Brain; de R$ 450 a R$ 496, só a Sofia. Um valor não paga os dois.
+  if (contratados.size === 0) {
+    const pago =
+      conta.planoAssinante === true || conta.pago === true || isPlanoPro(conta.plano);
+    const valor = valorMensalDaConta(conta);
+    if (pago && Number.isFinite(valor) && valor >= VALOR_MINIMO_EXPRESS_BRAIN) {
+      contratados.add('sofia');
+      contratados.add('brain');
+    } else if (pago && Number.isFinite(valor) && valor >= VALOR_MINIMO_SOFIA_WHATSAPP) {
+      contratados.add('sofia');
+    }
+  }
+
+  return contratados;
+}
+
+/** A conta tem o módulo Sofia WhatsApp (WhatsApp oficial + QR Code)? */
+export function temSofiaWhatsApp(dadosOficina = {}) {
+  return modulosOperacaoIA(dadosOficina).has('sofia');
+}
+
+/** A conta tem o módulo Express Brain (Central de Inteligência)? */
+export function temExpressBrain(dadosOficina = {}) {
+  return modulosOperacaoIA(dadosOficina).has('brain');
+}
+
+/** Alias legado: algum módulo de OPERAÇÃO IA contratado. */
+export function temOperacaoIA(dadosOficina = {}) {
+  return temSofiaWhatsApp(dadosOficina) || temExpressBrain(dadosOficina);
+}

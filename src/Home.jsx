@@ -21,7 +21,7 @@ const DORES = [
     texto:
       'Ele viu o anúncio, mandou mensagem no WhatsApp e só recebeu retorno na segunda. Nesse intervalo, visitou com outra imobiliária que respondeu primeiro.',
     vira:
-      'A Sofia recebe o contato em segundos, entende o que ele procura e agenda a visita — inclusive fora do horário comercial.',
+      'A Pólen recebe o contato em segundos, entende o que ele procura e agenda a visita — inclusive fora do horário comercial.',
   },
   {
     hora: 'Quarta, 15h',
@@ -82,7 +82,7 @@ const RECURSOS = [
 
 const AGENTES = [
   {
-    nome: 'Sofia',
+    nome: 'Pólen',
     funcao: 'Recepção 24h',
     texto: 'Responde em segundos e identifica se o lead quer imóvel urbano, loteamento, rural ou locação.',
   },
@@ -232,10 +232,9 @@ export default function Home() {
             </span>
 
             <h1 className="mt-6 text-[2rem] font-black leading-[1.05] tracking-tight sm:text-5xl lg:text-[3.4rem]">
-              A venda que escapou no sábado
-              <br className="hidden sm:block" />{' '}
-              <span className="bg-gradient-to-r from-[#34d399] via-[#0d9488] to-[#38bdf8] bg-clip-text text-transparent">
-                não aparece em relatório nenhum.
+              <span className="block text-white">Pronto para a 3ª onda do corretor?</span>
+              <span className="mt-2 block text-[#10b981] sm:mt-3">
+                Indicação e tráfego trazem o lead, mas a resposta imediata fecha.
               </span>
             </h1>
 
@@ -263,7 +262,7 @@ export default function Home() {
             </div>
 
             <ul className="mt-7 flex flex-wrap gap-x-5 gap-y-2 text-[12px] text-slate-500">
-              <li className="flex items-center gap-1.5"><span className="text-emerald-400">✓</span> Plano gratuito para sempre</li>
+              <li className="flex items-center gap-1.5"><span className="text-emerald-400">✓</span> 1 ano grátis para os 100 primeiros</li>
               <li className="flex items-center gap-1.5"><span className="text-emerald-400">✓</span> Sem instalação</li>
               <li className="flex items-center gap-1.5"><span className="text-emerald-400">✓</span> Funciona no celular</li>
             </ul>
@@ -408,7 +407,7 @@ export default function Home() {
             <div>
               <h3 className="text-[15px] font-bold text-white">Sete agentes de IA atendendo no WhatsApp</h3>
               <p className="mt-1 text-[13px] text-slate-300">
-                Sofia abre a conversa, Iago qualifica, Téo agenda, Lara monta a proposta, Heitor retoma o frio,
+                Pólen abre a conversa, Iago qualifica, Téo agenda, Lara monta a proposta, Heitor retoma o frio,
                 Nina organiza documento e Hermes executa o que você pedir dentro do painel.
               </p>
             </div>
@@ -490,6 +489,14 @@ export default function Home() {
           <p className="mt-6 text-[12px] text-slate-500">
             No plano PRO você também conta com os assistentes de gestão: Diretor Comercial IA, Simulador de Custos e
             Minutas & Checklist (Lei do Inquilinato) — rascunho operacional, com revisão obrigatória de contador (CRC) e advogado (OAB).
+          </p>
+
+          <p className="mt-3 text-[12px] text-slate-500">
+            Acima do PRO ficam os dois módulos de <span className="font-semibold text-slate-300">Operação IA</span>,
+            contratados separadamente: <span className="font-semibold text-emerald-300">Pólen · Atendimento 24h</span> (a
+            atendente que responde e qualifica no WhatsApp oficial) e{' '}
+            <span className="font-semibold text-amber-300">Tom · Maestro da Imobiliária</span> (as regras comerciais, os
+            processos e a auditoria da equipe no mesmo lugar).
           </p>
         </div>
       </section>
@@ -586,7 +593,52 @@ export default function Home() {
           </div>
         </div>
 
-        <p className="mt-6 text-center text-[12px] text-slate-500">
+        {/* OPERAÇÃO IA — dois módulos independentes, preço de partida em cada um. */}
+        <div className="mt-6 grid gap-4 sm:grid-cols-2">
+          {[
+            {
+              nome: 'Pólen · Atendimento 24h',
+              preco: 'a partir de R$ 450',
+              texto:
+                'Atendente IA no WhatsApp oficial da imobiliária, com QR Code, consulta de estoque e distribuição de leads. Contratada à parte do PRO.',
+              cor: 'emerald',
+            },
+            {
+              nome: 'Tom · Maestro da Imobiliária',
+              preco: 'a partir de R$ 497',
+              texto:
+                'Central de Inteligência da casa: regras comerciais, processos, auditoria de equipe e memória operacional. Contratado à parte do PRO.',
+              cor: 'amber',
+            },
+          ].map((modulo) => (
+            <div
+              key={modulo.nome}
+              className={`rounded-2xl border p-6 ${
+                modulo.cor === 'emerald'
+                  ? 'border-emerald-500/30 bg-emerald-500/[0.06]'
+                  : 'border-amber-500/30 bg-amber-500/[0.06]'
+              }`}
+            >
+              <h3 className="text-[15px] font-bold text-white">{modulo.nome}</h3>
+              <p className="mt-1 text-[13px] font-semibold text-slate-300">{modulo.preco}/mês</p>
+              <p className="mt-2 text-[13px] leading-relaxed text-slate-400">{modulo.texto}</p>
+            </div>
+          ))}
+        </div>
+
+        <p className="mt-4 text-center text-[12px] text-slate-500">
+          Os dois módulos de Operação IA são independentes — pode contratar só um, só o outro, ou os dois em combo.
+          A implantação assistida é cobrada à parte em qualquer combinação.{' '}
+          <a
+            href={`mailto:${EMAIL}?subject=Opera%C3%A7%C3%A3o%20IA%20-%20P%C3%B3len%20e%20Tom`}
+            className="font-semibold text-emerald-300 hover:text-emerald-200"
+          >
+            Falar sobre a Operação IA
+          </a>
+          .
+        </p>
+
+        <p className="mt-4 text-center text-[12px] text-slate-500">
           Imobiliária com equipe e operação de WhatsApp dedicada? Tem um degrau acima do PRO.{' '}
           <a
             href={`mailto:${EMAIL}?subject=Plano%20para%20equipe%20-%20Express%20Imobi%20Tech`}

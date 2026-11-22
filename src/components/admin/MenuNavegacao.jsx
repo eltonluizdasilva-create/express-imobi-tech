@@ -48,9 +48,9 @@ export default function MenuNavegacao({
   const modulosIA = [
     // Lote 2 — `copiloto` (Hermes) saiu da barra lateral: o acesso segue pela
     // aba `administrador` (Diretor Comercial IA) e pelo atalho interno da tela
-    // Sofia WhatsApp & QR Code. `secretaria` e `whatsapp_hub` foram reunidas em
+    // Pólen · Atendimento 24h. `secretaria` e `whatsapp_hub` foram reunidas em
     // `sofia_whatsapp`; as rotas antigas continuam válidas para links diretos.
-    { id: 'sofia_whatsapp', label: 'SOFIA WHATSAPP', icon: PhoneCall },
+    { id: 'sofia_whatsapp', label: 'PÓLEN 24H', icon: PhoneCall },
     { id: 'administrador', label: 'ADMINISTRADOR', icon: UserX },
     { id: 'contador', label: 'SIMULADOR CUSTOS', icon: Calculator },
     { id: 'retorno', label: 'RETORNO', icon: RotateCcw },

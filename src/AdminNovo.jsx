@@ -57,6 +57,7 @@ import { TelaTrialExpirou, TelaBloqueado, TelaLogin } from './components/admin/T
 import ModuloBloqueado from './components/admin/ModuloBloqueado';
 import BarraModulos from './components/admin/BarraModulos';
 import SofiaWhatsAppTab from './components/admin/SofiaWhatsAppTab';
+import ExpressBrainTab from './components/admin/ExpressBrainTab';
 import ModuloComAbas from './components/admin/ModuloComAbas';
 import HeroAba from './components/admin/HeroAba';
 import CaptacaoNicho from './components/imobi/CaptacaoNicho';
@@ -77,6 +78,7 @@ import OnboardingPrimeiroUso from './components/onboarding/OnboardingPrimeiroUso
 import { ehMasterPlataforma as ehMasterPlataformaFn, modoProEfetivo, rotuloVisao } from './lib/acesso-plano';
 import { MODULOS_MAP } from './modulosMap';
 import { setCreditoPrefill } from './lib/credito/prefill';
+import { temSofiaWhatsApp, temExpressBrain } from './lib/planos';
 import { MODULOS_SO_GESTAO, ehGestor as ehGestorDoPapel, filtrarModulos } from './lib/permissoes-menu';
 
 import { useAuth } from './contexts/AuthContext';
@@ -86,12 +88,14 @@ import RodaProspeccao from './components/RodaProspeccao';
 import useQuickActions, { parseMoedaBR } from './hooks/useQuickActions';
 import { cabecalhosIA } from './lib/aiAuth';
 import {
+  ACOES_POLEN,
   AVISO_CATALOGO_VAZIO,
   AVISO_SEM_DISPONIVEIS,
   descreverHandoff,
   filtrarCatalogoDisponivel,
   responderSofiaSimulacao,
 } from './lib/simuladorSofia';
+import { LIMITE_DEMO, podeUsarDemo, registrarUsoDemo, restantesDemo } from './lib/limiteDemo';
 
 // ─── Proteção Isolada para Modais Legados ──────────────────────────────────────
 
@@ -126,10 +130,10 @@ const fmtBRL = (v) =>
 
 /** Saudação fixa do simulador: é a única frase que não vem da IA. */
 const SAUDACAO_SOFIA_SIMULACAO =
-  'Olá! Sou a Sofia, a mesma agente que atende no WhatsApp. Escreva como se você fosse o cliente (bairro, tipo de imóvel, faixa de valor) — eu respondo com os imóveis reais do seu catálogo, sem inventar preço, taxa ou parcela.';
+  'Olá! Sou a Pólen, a mesma atendente que atende no WhatsApp 24h. Escreva como se você fosse o cliente (bairro, tipo de imóvel, faixa de valor) — eu respondo com os imóveis reais do seu catálogo, sem inventar preço, taxa ou parcela.';
 
 const historicoInicialSimulador = () => [
-  { autor: 'ia', agente: 'Sofia • modo simulação', texto: SAUDACAO_SOFIA_SIMULACAO },
+  { autor: 'ia', agente: 'Pólen • modo simulação', texto: SAUDACAO_SOFIA_SIMULACAO },
 ];
 
 const GRUPOS_MENU_IMOBI = [
@@ -252,21 +256,30 @@ const GRUPOS_MENU_IMOBI = [
       },
       {
         id: 'secretaria',
-        label: '📲 Ativação & QR Code da Sofia (WhatsApp)',
-        tituloCard: 'ATIVAÇÃO & QR CODE DA SOFIA (WHATSAPP)',
-        tituloLimpo: 'Ativação & QR Code da Sofia (WhatsApp)',
+        label: '📲 Ativação & QR Code da Pólen (WhatsApp)',
+        tituloCard: 'ATIVAÇÃO & QR CODE DA PÓLEN (WHATSAPP)',
+        tituloLimpo: 'Ativação & QR Code da Pólen (WhatsApp)',
         tier: 'pro',
         descricao:
-          'Central prática de conexão via QR Code e ativação da secretária virtual Sofia para triagem 24h de leads no WhatsApp.',
+          'Central prática de conexão via QR Code e ativação da Pólen · Atendimento 24h para triagem de leads no WhatsApp.',
       },
       {
         id: 'sofia_whatsapp',
-        label: '📲 Sofia WhatsApp & QR Code',
-        tituloCard: 'SOFIA WHATSAPP & QR CODE',
-        tituloLimpo: 'Sofia WhatsApp & QR Code',
+        label: '📲 Pólen · Atendimento 24h',
+        tituloCard: 'PÓLEN · ATENDIMENTO 24H',
+        tituloLimpo: 'Pólen · Atendimento 24h',
         tier: 'pro',
         descricao:
-          'Uma tela só: conexão do WhatsApp da imobiliária e ativação da Sofia por QR Code, sem alternar entre abas.',
+          'Uma tela só: conexão do WhatsApp da imobiliária e ativação da Pólen por QR Code, sem alternar entre abas.',
+      },
+      {
+        id: 'brain',
+        label: '🧠 Tom · Maestro da Imobiliária',
+        tituloCard: 'TOM · MAESTRO DA IMOBILIÁRIA',
+        tituloLimpo: 'Tom · Maestro da Imobiliária',
+        tier: 'operacao',
+        descricao:
+          'O maestro da operação: regras comerciais, processos, auditoria de equipe e memória operacional em um só lugar — o que hoje só existe na cabeça do dono.',
       },
       {
         id: 'administrador',
@@ -401,6 +414,8 @@ const MODULOS_GRATIS_PLG = new Set([
   'agentes_ia',
   'whatsapp_hub',
   'sofia_whatsapp',
+  'config',
+  'especialista',
   'meuplano',
 ]);
 
@@ -414,10 +429,10 @@ const MAPA_DETALHES_ABAS = (GRUPOS_MENU_IMOBI || [])
 const AGENTES_INICIAIS = [
   {
     id: 'sofia_triagem',
-    nome: 'Sofia — Atendimento & Triagem 24h',
+    nome: 'Pólen — Atendimento & Triagem 24h',
     cargo: 'Recepção 24h no WhatsApp',
     ativo: true,
-    // Lote 4 — a Sofia é a demonstração do atendimento no degrau Grátis.
+    // Lote 4 — a Pólen é a demonstração do atendimento no degrau Grátis.
     // O WhatsApp oficial com QR Code é o degrau Automação (R$ 450+).
     demonstracao: true,
     atendimentos: 128,
@@ -625,13 +640,15 @@ export default function Admin() {
     corretor: 'Corretor Plantão 01',
   });
 
-  // Simulador da Sofia REAL (aba de Agentes) — a resposta vem do /api/ai com o
+  // Simulador da Pólen REAL (aba de Agentes) — a resposta vem do /api/ai com o
   // catálogo do tenant; nada de roteiro fixo, taxa inventada ou ficha fictícia.
   const [msgTesteIA, setMsgTesteIA] = useState('');
   const [enviandoSimIA, setEnviandoSimIA] = useState(false);
   const [erroSimIA, setErroSimIA] = useState('');
   const [gatilhoSimIA, setGatilhoSimIA] = useState(null);
   const [historicoTesteIA, setHistoricoTesteIA] = useState(historicoInicialSimulador);
+  // Demonstração: 5 mensagens por navegador para conta sem o módulo (D-22.02).
+  const [restantesPolen, setRestantesPolen] = useState(() => restantesDemo('polen'));
 
   // O que a Sofia pode oferecer: imóveis vendidos/alugados/inativos ficam
   // fora do catálogo enviado ao /api/ai (e da contagem mostrada na tela).
@@ -1260,10 +1277,21 @@ export default function Admin() {
   // tenant, chama /api/ai com o Bearer (cabecalhosIA) e mostra APENAS o `text`
   // limpo devolvido pelo proxy. Se houver handoff, a badge acima registra —
   // o cliente final nunca vê essa tag (D-21.06 / D-21.07).
-  const simularRespostaAgente = async (e) => {
-    e.preventDefault();
-    const mensagem = msgTesteIA.trim();
+  //
+  // Limite de demonstração (D-22.02): conta SEM o módulo da Pólen tem 5
+  // mensagens por navegador (localStorage via `limiteDemo`). Conta com o
+  // módulo (ou master) conversa sem contador.
+  const enviarMensagemPolen = async (mensagemBruta) => {
+    const mensagem = String(mensagemBruta || '').trim();
     if (!mensagem || enviandoSimIA) return;
+
+    if (!podeUsarDemo('polen', { liberado: sofiaLiberada })) {
+      setRestantesPolen(0);
+      setErroSimIA(
+        `Você usou as ${LIMITE_DEMO} mensagens gratuitas de demonstração da Pólen. Contrate o módulo de atendimento 24h para falar com ela sem limite.`
+      );
+      return;
+    }
 
     setMsgTesteIA('');
     setErroSimIA('');
@@ -1290,16 +1318,26 @@ export default function Admin() {
         return;
       }
 
+      if (!sofiaLiberada) {
+        registrarUsoDemo('polen');
+        setRestantesPolen(restantesDemo('polen'));
+      }
+
       setHistoricoTesteIA((prev) => [
         ...(Array.isArray(prev) ? prev : []),
-        { autor: 'ia', agente: 'Sofia • modo simulação', texto: resultado.texto },
+        { autor: 'ia', agente: 'Pólen • modo simulação', texto: resultado.texto },
       ]);
       setGatilhoSimIA(descreverHandoff(resultado.gatilho));
     } catch (erro) {
-      setErroSimIA(erro?.message || 'Falha inesperada ao chamar a Sofia.');
+      setErroSimIA(erro?.message || 'Falha inesperada ao chamar a Pólen.');
     } finally {
       setEnviandoSimIA(false);
     }
+  };
+
+  const simularRespostaAgente = async (e) => {
+    e.preventDefault();
+    await enviarMensagemPolen(msgTesteIA);
   };
 
   // Hooks legados para modais secundários
@@ -1443,6 +1481,12 @@ export default function Admin() {
   // O localStorage ('modoPainel') só vale para a conta MASTER.
   const modoPro = modoProEfetivo({ master: ehMasterPlataforma, isModoGratis, isProConta });
   const isPro = Boolean(isProConta && modoPro);
+  // OPERAÇÃO IA tem dois módulos independentes (D-22.01): Sofia WhatsApp
+  // (R$ 450+) e Express Brain (R$ 497+ / sob implantação). Uma conta pode
+  // contratar só um, só o outro, ou o combo. Gates separados de propósito.
+  const contaPlano = dadosImobCtx || dadosLegadoCtx || {};
+  const sofiaLiberada = Boolean(ehMasterPlataforma || temSofiaWhatsApp(contaPlano));
+  const brainLiberado = Boolean(ehMasterPlataforma || temExpressBrain(contaPlano));
   const setModoPro = (ativo) => alternarModoPainel(ativo ? 'completo' : 'gratis');
 
   // Lote 4 — o rascunho 'gratis' gravado no navegador não pode sobreviver a um
@@ -1465,6 +1509,7 @@ export default function Admin() {
     'whatsapp_hub',
     'secretaria',
     'sofia_whatsapp',
+    'brain',
     // Lote 3 — renderizadas por dentro de `ModuloComAbas`, nunca pelo
     // GerenciadorDeModulos (senão a tela aparece duas vezes).
     'administrador',
@@ -1480,6 +1525,8 @@ export default function Admin() {
     { id: 'financeiro', icone: '💰', label: 'Financeiro & VGV' },
     { id: 'equipe', icone: '🧑‍💼', label: 'Corretores & Equipe' },
     { id: 'agentes_ia', icone: '🤖', label: '7 Agentes de IA' },
+    { id: 'config', icone: '⚙️', label: 'Configurações' },
+    { id: 'especialista', icone: '🎧', label: 'Suporte Especialista' },
     { id: 'meuplano', icone: '⭐', label: 'Meu Plano (10 Dias Grátis)', destaquePlano: true },
   ];
 
@@ -1489,26 +1536,38 @@ export default function Admin() {
     { id: 'marketing', icone: '🎯', label: 'Meta Ads & Criativos' },
   ];
 
-  const botoesBloco2EsquadraoIA = [
-    { id: 'radar_captacao', icone: '📡', label: 'Radar de Captação' },
-    // Lote 4 — a Sofia no WhatsApp oficial é o degrau Automação (R$ 450+),
-    // não o PRO de R$ 99. O badge evita confundir o assinante PRO.
-    { id: 'sofia_whatsapp', icone: '📲', label: 'Sofia WhatsApp & QR Code', badge: 'Automação · R$ 450+' },
-    { id: 'administrador', icone: '📈', label: 'Diretor Comercial IA' },
-    { id: 'contador', icone: '🏛️', label: 'Simulador de Custos' },
-    { id: 'juridico_imobi', icone: '⚖️', label: 'Minutas & Checklist' },
-  ];
-
+  // Faixa 3 — PRO · Assinantes (R$ 99,00): exclusivamente as 8 ferramentas
+  // assistidas sob demanda. Configurações e Suporte Especialista saíram daqui:
+  // são de todo plano (inclusive Grátis) e moram na faixa Essenciais.
   const botoesBloco3Gestao = [
-    // Lote 3 — `roleta_imobi` e `notafiscal` deixaram de ser botões soltos:
-    // viraram abas internas de `administrador` e `contador` respectivamente.
-    // As rotas continuam válidas para links diretos.
     { id: 'tarefa', icone: '📋', label: 'Vistoria & Laudo IA' },
     { id: 'migracao', icone: '🔄', label: 'Migração de CRM' },
     { id: 'avaliacao_imovel', icone: '📐', label: 'Avaliação de Imóvel' },
     { id: 'credito', icone: '🏦', label: 'Correspondente / Crédito' },
-    { id: 'config', icone: '⚙️', label: 'Configurações' },
-    { id: 'especialista', icone: '🎧', label: 'Suporte Especialista' },
+    { id: 'radar_captacao', icone: '📡', label: 'Radar de Captação' },
+    { id: 'administrador', icone: '📈', label: 'Diretor Comercial IA' },
+    { id: 'contador', icone: '🏛️', label: 'Simulador de Custos' },
+    { id: 'juridico_imobi', icone: '⚖️', label: 'Minutas & Checklist' },
+    // Lote 3 — `roleta_imobi` e `notafiscal` não são botões soltos: viraram abas
+    // internas de `administrador` e `contador`. As rotas seguem válidas.
+  ];
+
+  // Faixa 4 — OPERAÇÃO IA: dois módulos INDEPENDENTES, com preço próprio.
+  // Pólen (ex-Sofia WhatsApp) e Tom (ex-Express Brain) — a badge de cada item
+  // diz o preço; um não é brinde do outro.
+  const botoesBlocoOperacaoIA = [
+    {
+      id: 'sofia_whatsapp',
+      icone: '📲',
+      label: 'Pólen · Atendimento 24h',
+      badge: 'Independente · R$ 450+',
+    },
+    {
+      id: 'brain',
+      icone: '🧠',
+      label: 'Tom · Maestro da Imobiliária',
+      badge: 'Independente · R$ 497+ / sob implantação',
+    },
   ];
 
   // Lote 2 — mapa de módulos e id da oficina, usados pela aba unificada Sofia
@@ -2023,12 +2082,12 @@ export default function Admin() {
             />
           )}
 
-          {/* Barra 4 — Inteligência Artificial (PRO) */}
+          {/* Barra 4 — OPERAÇÃO IA (R$ 450+) */}
           {modoPro && (
             <BarraModulos
-              titulo="Inteligência Artificial · PRO"
+              titulo="OPERAÇÃO IA · R$ 450+"
               tom="ambar"
-              itens={filtrarPorPapel(botoesBloco2EsquadraoIA)}
+              itens={filtrarPorPapel(botoesBlocoOperacaoIA)}
               abaAtiva={abaAtiva}
               setAbaAtiva={setAbaAtiva}
               detalhes={MAPA_DETALHES_ABAS}
@@ -2655,13 +2714,14 @@ export default function Admin() {
               </div>
             </div>
 
-            {/* Simulador da Sofia REAL: mesma persona do WhatsApp, resposta via /api/ai
-                com o catálogo do tenant. Nenhuma taxa, parcela ou ficha é inventada. */}
+            {/* Simulador da PÓLEN REAL: mesma persona do WhatsApp, resposta via /api/ai
+                com o catálogo do tenant. Nenhuma taxa, parcela ou ficha é inventada.
+                Conta sem o módulo tem 5 mensagens de demonstração (D-22.02). */}
             <div className="lg:col-span-5 bg-slate-900 border border-slate-800 rounded-2xl p-5 flex flex-col h-[560px]">
               <div className="pb-3 mb-3 border-b border-slate-800 space-y-2">
                 <div className="flex items-center justify-between gap-2">
                   <h3 className="font-bold text-white flex items-center gap-2">
-                    <Sparkles size={16} style={{ color: '#10b981' }} className="text-[#10b981]" /> Simulador da Sofia (IA real)
+                    <Sparkles size={16} style={{ color: '#10b981' }} className="text-[#10b981]" /> Pólen · Atendimento 24h
                   </h3>
                   <button
                     type="button"
@@ -2672,11 +2732,19 @@ export default function Admin() {
                   </button>
                 </div>
                 <p className="text-xs text-slate-400">
-                  A mesma Sofia do WhatsApp, respondendo pelo <span className="text-slate-200 font-semibold">/api/ai</span> com o
+                  A mesma Pólen do WhatsApp, respondendo pelo <span className="text-slate-200 font-semibold">/api/ai</span> com o
                   catálogo real do tenant. Preço, taxa e parcela só saem do cadastro.
                 </p>
 
                 <div className="flex flex-wrap items-center gap-1.5 pt-1">
+                  {!sofiaLiberada && (
+                    <span
+                      title="Mensagens gratuitas de demonstração neste navegador"
+                      className="px-2 py-0.5 rounded-md bg-slate-800 border border-slate-700 text-white text-[10px] font-bold"
+                    >
+                      💬 {Math.min(Math.max(0, LIMITE_DEMO - restantesPolen), LIMITE_DEMO)}/{LIMITE_DEMO} mensagens grátis
+                    </span>
+                  )}
                   <span
                     title={
                       imoveisDisponiveisSimIA.length === (Array.isArray(listaImoveis) ? listaImoveis.length : 0)
@@ -2726,7 +2794,7 @@ export default function Admin() {
                   <div
                     className="p-3 rounded-2xl text-xs max-w-[88%] border border-slate-800 bg-[#020408] text-slate-400"
                   >
-                    Sofia está digitando…
+                    Pólen está digitando…
                   </div>
                 )}
                 {erroSimIA && (
@@ -2753,13 +2821,46 @@ export default function Admin() {
                 </div>
               )}
 
+              {/* 3 perguntas rápidas: o visitante não precisa inventar a pergunta. */}
+              <div className="mt-3 flex flex-wrap gap-1.5">
+                {ACOES_POLEN.map((acao) => (
+                  <button
+                    key={acao.key}
+                    type="button"
+                    disabled={enviandoSimIA || (!sofiaLiberada && restantesPolen <= 0)}
+                    onClick={() => enviarMensagemPolen(acao.pergunta)}
+                    className="px-2.5 py-1 rounded-full bg-[#10b981]/10 border border-[#10b981]/40 text-[#10b981] text-[10px] font-bold hover:bg-[#10b981]/20 cursor-pointer transition disabled:opacity-40 disabled:cursor-not-allowed"
+                  >
+                    {acao.rotulo}
+                  </button>
+                ))}
+              </div>
+
+              {/* Conta sem o módulo: 5 mensagens e o CTA de contratação. */}
+              {!sofiaLiberada && restantesPolen <= 0 && (
+                <div className="tarja-aviso mt-3 rounded-xl border border-[#f59e0b]/40 bg-[#f59e0b]/10 p-3 text-[11px] text-[#f59e0b] space-y-2">
+                  <p>
+                    Você usou as {LIMITE_DEMO} mensagens gratuitas de demonstração da Pólen. Ela atende
+                    sem limite no WhatsApp quando o módulo está contratado (a partir de R$ 450/mês +
+                    implantação).
+                  </p>
+                  <button
+                    type="button"
+                    onClick={() => setAbaAtiva('meuplano')}
+                    className="px-2.5 py-1 rounded-lg bg-[#020408] border border-[#f59e0b]/40 text-[10px] font-bold hover:border-[#10b981] hover:text-[#10b981] cursor-pointer transition"
+                  >
+                    Contratar a Pólen →
+                  </button>
+                </div>
+              )}
+
               <form onSubmit={simularRespostaAgente} className="mt-3 pt-3 border-t border-slate-800 flex gap-2">
                 <div className="relative flex-1">
                   <input
                     type="text"
                     value={msgTesteIA}
                     onChange={(e) => setMsgTesteIA(e.target.value)}
-                    disabled={enviandoSimIA}
+                    disabled={enviandoSimIA || (!sofiaLiberada && restantesPolen <= 0)}
                     placeholder="Ex: Procuro um apto de 2 quartos no Tibery até 350 mil"
                     className="w-full bg-[#020408] border border-slate-700 rounded-xl pl-3 pr-10 py-2 text-xs text-white disabled:opacity-60"
                   />
@@ -2771,7 +2872,7 @@ export default function Admin() {
                 </div>
                 <button
                   type="submit"
-                  disabled={enviandoSimIA}
+                  disabled={enviandoSimIA || (!sofiaLiberada && restantesPolen <= 0)}
                   style={{ backgroundColor: '#10b981' }}
                   className="px-4 py-2 rounded-xl hover:opacity-90 text-white text-xs font-bold cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
                 >
@@ -2783,20 +2884,51 @@ export default function Admin() {
           </div>
         )}
 
-        {/* ─── ABA UNIFICADA: SOFIA WHATSAPP & QR CODE ────────────────────────
+        {/* ─── ABA UNIFICADA: PÓLEN · ATENDIMENTO 24H & QR CODE ───────────────
             Uma entrada de menu, duas telas originais preservadas por dentro.
             As três rotas renderizam a MESMA tela; muda só a sub-aba inicial:
               • `sofia_whatsapp` → Conexão WhatsApp (entrada do menu)
               • `whatsapp_hub`   → Conexão WhatsApp (link direto antigo)
-              • `secretaria`     → QR Code Sofia    (link direto antigo)
+              • `secretaria`     → QR Code Pólen   (link direto antigo)
             Nenhuma rota foi removida. */}
         {(abaAtiva === 'sofia_whatsapp' ||
           abaAtiva === 'whatsapp_hub' ||
           abaAtiva === 'secretaria') && (
           <SofiaWhatsAppTab
             abaInicial={abaAtiva === 'secretaria' ? 'secretaria' : 'whatsapp_hub'}
+            liberado={sofiaLiberada}
+            onAbrirPlanos={() => setAbaAtiva('meuplano')}
             onAbrirCopiloto={() => setAbaAtiva('copiloto')}
             childrenMap={childrenSofiaWhatsApp}
+          />
+        )}
+
+
+        {/* ─── ABA: TOM · MAESTRO DA IMOBILIÁRIA (OPERAÇÃO IA) ────────────────
+            ID de rota continua `brain`. Gate próprio: contratável sozinho
+            (R$ 497+ / sob implantação) ou em combo com a Pólen. Abaixo disso
+            mostra o cartão de upgrade. O simulador do Tom recebe as contagens
+            reais da conta; sem carteira, ele usa o cenário de demonstração. */}
+        {abaAtiva === 'brain' && (
+          <ExpressBrainTab
+            liberado={brainLiberado}
+            sofiaContratada={sofiaLiberada}
+            setAbaAtiva={setAbaAtiva}
+            dadosOficina={contaPlano}
+            contextoOperacao={{
+              imoveis: Array.isArray(listaImoveis) ? listaImoveis.length : 0,
+              corretores: Array.isArray(corretoresComMetricas) ? corretoresComMetricas.length : 0,
+              leads: Array.isArray(listaLeads) ? listaLeads.length : 0,
+              imoveisParados: Array.isArray(listaImoveis)
+                ? listaImoveis.filter((im) => {
+                    const marco = im?.atualizadoEm || im?.criadoEm || im?.dataCadastro;
+                    const quando = marco?.toDate ? marco.toDate() : marco ? new Date(marco) : null;
+                    return quando instanceof Date && !Number.isNaN(quando.getTime())
+                      ? Date.now() - quando.getTime() > 30 * 24 * 60 * 60 * 1000
+                      : false;
+                  }).length
+                : 0,
+            }}
           />
         )}
 

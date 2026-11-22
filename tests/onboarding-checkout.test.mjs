@@ -111,8 +111,8 @@ ok('economia anual = 120', ECONOMIA_ANUAL === 120 && TOTAL_ANUAL === 1068);
 ok('selo de economia no seletor', rotuloEconomia('anual') === 'Economize R$ 120' && rotuloEconomia('mensal') === '');
 ok('automação a partir de R$ 497 + implementação',
    degrauPorKey('automacao').detalhePreco.includes('497') && Boolean(degrauPorKey('automacao').implementacao));
-ok('automação fala da Sofia 24/7',
-   degrauPorKey('automacao').recursos.some((r) => /Sofia 24\/7/.test(r)));
+ok('automação fala da Pólen 24/7',
+   degrauPorKey('automacao').recursos.some((r) => /Pólen 24\/7/.test(r)));
 ok('PRO lista os módulos pedidos',
    ['PTAM', 'Correspondente', 'Vistoria', 'NFS-e', 'Portais XML'].every((termo) =>
      degrauPorKey('pro').recursos.some((r) => r.includes(termo))));

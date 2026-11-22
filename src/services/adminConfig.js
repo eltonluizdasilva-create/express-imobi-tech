@@ -32,7 +32,7 @@ export const MAPA_MODULOS_SERVICOS = {
 export const LABELS_ABAS_MODAL = {
     clientes: 'Clientes & Leads',
     copiloto: 'Hermes Copiloto IA',
-    secretaria: 'Sofia Secretária IA',
+    secretaria: 'Pólen · Atendimento 24h',
     administrador: 'Diretor Comercial IA',
     contador: 'Simulador de Custos IA',
 };

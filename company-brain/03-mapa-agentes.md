@@ -35,8 +35,8 @@ landing e no painel.
 
 | Agente | Caminho | O que faz na prática | Gatilho | Status |
 |---|---|---|---|---|
-| Sofia | `src/AdminNovo.jsx` · `AGENTES_INICIAIS[0]` · prompt em `src/agent/sofiaPrompt.js` | Recebe o lead no WhatsApp em segundos e classifica o interesse (urbano, loteamento, rural, locação). | mensagem recebida no WhatsApp do tenant | Ativo |
-| Iago | `src/AdminNovo.jsx` · `AGENTES_INICIAIS[1]` | Filtra orçamento, metragem, hectares e garantias antes de ocupar o corretor. | Sofia conclui a triagem | Ativo |
+| **Pólen · Atendimento 24h** (id interno `sofia`) | `src/AdminNovo.jsx` · `AGENTES_INICIAIS[0]` · prompt em `src/agent/sofiaPrompt.js` | Recebe o lead no WhatsApp em segundos e classifica o interesse (urbano, loteamento, rural, locação). **Nome comercial desde D-22.02: Pólen** (antes "Sofia"). | mensagem recebida no WhatsApp do tenant | Ativo |
+| Iago | `src/AdminNovo.jsx` · `AGENTES_INICIAIS[1]` | Filtra orçamento, metragem, hectares e garantias antes de ocupar o corretor. | Pólen conclui a triagem | Ativo |
 | Téo | `src/AdminNovo.jsx` · `AGENTES_INICIAIS[2]` | Cruza a agenda do corretor e agenda a visita com lembrete. | lead qualificado pelo Iago | Ativo |
 | Lara | `src/AdminNovo.jsx` · `AGENTES_INICIAIS[3]` | Estrutura condições, sinal e permuta e devolve o resumo para aprovação. | pedido de proposta no atendimento | Ativo |
 | Heitor | `src/AdminNovo.jsx` · `AGENTES_INICIAIS[4]` | Retoma lead frio com oportunidade real (queda de preço, imóvel compatível). | lead sem resposta há 15+ dias | Ativo |
@@ -45,6 +45,7 @@ landing e no painel.
 | Diretor Comercial IA | aba `administrador` | Analisa carteira, meta e onde investir; leitura preditiva com LC 214/2025. | aba Diretor Comercial | Ativo |
 | Assistente Fiscal **(do cliente)** | aba `contador` | Orientação tributária na venda do imóvel, ganho de capital e nota do cliente. **Não** é o fiscal da Express Tech. | aba Assistente Fiscal | Ativo |
 | Assistente Jurídico | aba `juridico_imobi` | Analisa cláusula, distrato e matrícula com motor legal de 27 UFs. | aba Assistente Jurídico | Ativo |
+| **Tom · Maestro da Imobiliária** (id interno `brain`) | `src/components/admin/ExpressBrainTab.jsx` + `src/lib/simuladorTom.js` | Central de Inteligência da imobiliária: regras comerciais, processos, auditoria de equipe e memória operacional. O simulador (D-22.02) responde auditando imóveis parados 30+ dias, leads sem resposta, regra de captação/comissão e treino de corretor novo, com as contagens reais da conta ou cenário de demonstração declarado. | aba `brain` / botão do simulador | Ativo (módulo em implantação; simulador no ar) |
 
 > Esses agentes **não** são skills do Hermes: são código do produto, executados no painel/WhatsApp do
 > cliente. Não confundir com os agentes internos da seção 7.
@@ -60,7 +61,8 @@ landing e no painel.
 | Router Hermes | `src/agent/hermesRouter.js` | Decide qual agente responde a cada mensagem (regra por palavra-chave). | toda mensagem que entra no copiloto | Ativo |
 | Cliente Hermes | `src/agent/hermesClient.js` | Chama o endpoint `/api/ai` com o prompt do agente e devolve o texto. | chamada interna dos agentes acima | Ativo |
 | Prompt Imobi | `src/agent/imobiPrompt.js` | Persona e regras do copiloto no contexto imobiliário. | carregado pelo router | Ativo |
-| Prompt Sofia | `src/agent/sofiaPrompt.js` | Persona, travas (escopo, zero alucinação, LGPD), catálogo real formatado, triagem por nicho e handoff `CHAMAR_IAGO`/`CHAMAR_CORRETOR` da Sofia. Monta o payload do `/api/ai` sem nenhuma chave (D-21.06). | atendimento de lead no WhatsApp / modo suporte ou simulação | Ativo |
+| Prompt Pólen | `src/agent/sofiaPrompt.js` | Persona (**Pólen** desde D-22.02), travas (escopo, zero alucinação, LGPD), catálogo real formatado, triagem por nicho e handoff `CHAMAR_IAGO`/`CHAMAR_CORRETOR` da atendente. Monta o payload do `/api/ai` sem nenhuma chave (D-21.06). | atendimento de lead no WhatsApp / modo suporte ou simulação | Ativo |
+| Prompt Tom | `src/lib/simuladorTom.js` | Persona do Tom (maestro), resumo da operação (real ou cenário de demonstração declarado), 4 ações de 1 clique e payload do `/api/ai` (D-22.02). | simulador da aba `brain` | Ativo |
 | Proxy de IA | `api/ai.js` + `api/_authToken.js` + `api/_gatilho.js` | Fala com DeepSeek/Groq/Gemini/Zhipu/SiliconFlow com chave no servidor, exige ID token, aplica teto de payload, mídia (imagem/áudio/PDF no Gemini) e remove o bloco `[GATILHO_HERMES]` antes de devolver o texto (D-21.07). | qualquer chamada de IA do painel | Ativo |
 
 ---

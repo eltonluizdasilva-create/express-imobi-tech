@@ -44,7 +44,7 @@ export default function HeroAba({
           {destaque ? (
             <>
               {' '}
-              <span style={{ color: cor }}>{destaque}</span>
+              <span className="hero-destaque" style={{ color: cor }}>{destaque}</span>
             </>
           ) : null}
         </h1>
@@ -96,6 +96,9 @@ export default function HeroAba({
       style={{
         borderColor: comAlpha(cor, 0.40),
         '--hero-cor': comAlpha(cor, 0.16),
+        // Cor cheia do acento da aba: o modo claro escurece o `destaque` por
+        // `color-mix` sobre esta variável (D-22.03), preservando a tonalidade.
+        '--hero-acento': cor,
       }}
     >
       {inner}

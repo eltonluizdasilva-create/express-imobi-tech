@@ -25,13 +25,20 @@
 import { linhaSegura, montarCorpoSofia, separarGatilho } from '../agent/sofiaPrompt.js';
 
 export const AVISO_CATALOGO_VAZIO =
-  'Nenhum imóvel cadastrado ainda. Cadastre o primeiro imóvel em Captação & Imóveis para a Sofia responder com o catálogo real.';
+  'Nenhum imóvel cadastrado ainda. Cadastre o primeiro imóvel em Captação & Imóveis para a Pólen responder com o catálogo real.';
 
 export const AVISO_SEM_DISPONIVEIS =
-  'Todos os imóveis do catálogo estão marcados como vendidos, alugados ou inativos. Reative um imóvel em Captação & Imóveis para a Sofia ter o que oferecer.';
+  'Todos os imóveis do catálogo estão marcados como vendidos, alugados ou inativos. Reative um imóvel em Captação & Imóveis para a Pólen ter o que oferecer.';
+
+/** 3 perguntas rápidas do simulador da Pólen (1 clique). */
+export const ACOES_POLEN = Object.freeze([
+  { key: 'estoque', rotulo: 'Quais imóveis vocês têm disponíveis?', pergunta: 'Quais imóveis vocês têm disponíveis?' },
+  { key: 'financiamento', rotulo: 'Aceita financiamento Caixa?', pergunta: 'Aceita financiamento Caixa?' },
+  { key: 'visita', rotulo: 'Quero agendar uma visita', pergunta: 'Quero agendar uma visita.' },
+]);
 
 /**
- * Status que tiram o imóvel da conversa. Comparação sem acento e sem caixa;
+ * Status que tira o imóvel da conversa. Comparação sem acento e sem caixa;
  * status ausente (documento legado) continua valendo — o prompt responde
  * "a confirmar" para o que não existe, mas não descarta o imóvel.
  */

@@ -291,8 +291,8 @@ export default function Secretaria({ oficinaId, abrirRecuperacaoFinanceira, dado
                 <HeroAba
                     icone={QrCode}
                     titulo="Ativação & QR Code da"
-                    destaque="Sofia (WhatsApp)"
-                    chip="Central Prática de Conexão da Secretária Virtual 24h"
+                    destaque="Pólen · Atendimento 24h"
+                    chip="Central Prática de Conexão do Atendimento 24h"
                     cor="#10b981"
                     acoes={
                         <div className="bg-[#020408] p-1 rounded-xl flex border border-slate-800">
@@ -520,7 +520,7 @@ export default function Secretaria({ oficinaId, abrirRecuperacaoFinanceira, dado
                                                 </div>
                                                 <button 
                                                     onClick={() => window.dispatchEvent(new CustomEvent('mudarAba', { detail: 'meuplano' }))}
-                                                    className="w-full sm:w-auto bg-transparent hover:bg-pink-600/10 border-2 border-pink-500/80 text-white font-black text-xs uppercase tracking-widest px-6 py-3 rounded-xl shadow-[0_0_20px_rgba(236,72,153,0.2)] hover:shadow-[0_0_30px_rgba(236,72,153,0.5)] transition-all hover:scale-[1.02] active:scale-[0.98] whitespace-nowrap"
+                                                    className="w-full sm:w-auto bg-transparent hover:bg-pink-600/10 border-2 border-pink-500/80 text-pink-400 font-black text-xs uppercase tracking-widest px-6 py-3 rounded-xl shadow-[0_0_20px_rgba(236,72,153,0.2)] hover:shadow-[0_0_30px_rgba(236,72,153,0.5)] transition-all hover:scale-[1.02] active:scale-[0.98] whitespace-nowrap"
                                                 >
                                                     ASSINAR PLANO PRO
                                                 </button>
@@ -589,8 +589,8 @@ export default function Secretaria({ oficinaId, abrirRecuperacaoFinanceira, dado
                                             <img src="https://api.dicebear.com/7.x/bottts/svg?seed=Office" alt="Secretaria IA" />
                                         </div>
                                         <div className="flex-1 min-w-0">
-                                            <h5 className="text-white text-xs font-bold truncate">Secretária {dadosOficina?.nome || 'Express Imobi Tech'}</h5>
-                                            <span className="text-[10px] text-emerald-200">online</span>
+                                            <h5 className="text-xs font-bold truncate" style={{ color: '#ffffff' }}>Pólen · Atendimento 24h</h5>
+                                            <span className="text-[10px]" style={{ color: '#a7f3d0' }}>online</span>
                                         </div>
                                     </div>
 
@@ -608,7 +608,7 @@ export default function Secretaria({ oficinaId, abrirRecuperacaoFinanceira, dado
                                             <div className="flex items-center gap-2 text-purple-600 font-bold text-[9px] uppercase tracking-wider border-b border-zinc-100 pb-1">
                                                 <Sparkles size={10} /> Resposta IA
                                             </div>
-                                            <p>Olá! Sou a Secretária da <strong>{dadosOficina?.nome || 'sua imobiliária'}</strong>. 🏠✨</p>
+                                            <p>Olá! Sou a Pólen, atendente da <strong>{dadosOficina?.nome || 'sua imobiliária'}</strong>. 🏠✨</p>
                                             <p>O imóvel está na fase: <span className="bg-amber-100 text-amber-800 px-1.5 py-0.5 rounded font-bold">Proposta em análise</span>.</p>
                                             <p>Acompanhe as fotos e o andamento em tempo real aqui no link: </p>
                                             <div className="bg-zinc-50 border border-zinc-200 p-2 rounded-lg text-blue-600 font-bold text-[10px] flex items-center gap-2">
