@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { db } from './lib/firebase';
 import {
   collectionGroup,
@@ -12,6 +12,8 @@ import {
   where,
 } from 'firebase/firestore';
 import { useGroq } from './hooks/useGroq';
+import SolicitacaoExclusaoDados from './components/privacidade/SolicitacaoExclusaoDados';
+import { FOTOS_EXEMPLO, ehFotoExemplo } from './lib/fotosExemplo';
 import {
   ArrowLeft,
   Building2,
@@ -193,15 +195,34 @@ function BlocoQualificacaoLead({ nome, setNome, telefone, setTelefone, erroQuali
       <p className="text-xs text-slate-400 mb-4">
         Informe o seu Nome e WhatsApp/Telemóvel para desbloquear o resultado completo e receber acompanhamento personalizado do corretor.
       </p>
+      <p className="text-[11px] text-slate-500 mb-4 leading-relaxed">
+        Coleta mínima: usamos esses dois dados apenas para responder ao seu contato e registrá-lo no CRM da
+        imobiliária responsável. Para pedir acesso, correção ou exclusão, fale com a imobiliária ou escreva para{' '}
+        <a
+          href="mailto:contato@expresstech.com.br?subject=LGPD%20-%20Exclus%C3%A3o%20de%20dados"
+          className="text-[#10b981] underline"
+        >
+          contato@expresstech.com.br
+        </a>
+        . Detalhes na{' '}
+        <Link to="/privacidade" className="text-[#10b981] underline">
+          Política de Privacidade
+        </Link>
+        .
+      </p>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
         <div>
-          <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 block mb-1.5">
+          <label htmlFor="portal-lead-nome" className="text-[10px] font-black uppercase tracking-widest text-slate-400 block mb-1.5">
             Seu Nome Completo *
           </label>
           <div className="relative">
-            <User size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[#10b981]" />
+            <User size={15} aria-hidden="true" className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[#10b981]" />
             <input
+              id="portal-lead-nome"
+              name="nome"
               type="text"
+              autoComplete="name"
+              required
               placeholder="Ex: Maria Oliveira"
               value={nome}
               onChange={(e) => setNome(e.target.value)}
@@ -210,14 +231,19 @@ function BlocoQualificacaoLead({ nome, setNome, telefone, setTelefone, erroQuali
           </div>
         </div>
         <div>
-          <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 block mb-1.5">
+          <label htmlFor="portal-lead-telefone" className="text-[10px] font-black uppercase tracking-widest text-slate-400 block mb-1.5">
             WhatsApp / Telemóvel *
           </label>
           <div className="relative">
-            <Phone size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[#10b981]" />
+            <Phone size={15} aria-hidden="true" className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[#10b981]" />
             <input
+              id="portal-lead-telefone"
+              name="telefone"
               type="tel"
-              placeholder="Ex: (11) 99999-9999"
+              inputMode="tel"
+              autoComplete="tel"
+              required
+              placeholder="Ex: (34) 99999-9999"
               value={telefone}
               onChange={(e) => setTelefone(e.target.value)}
               className="w-full pl-10 pr-4 py-3 rounded-xl bg-slate-950 border border-slate-800 text-white text-sm font-semibold outline-none focus:border-[#10b981]"
@@ -226,8 +252,8 @@ function BlocoQualificacaoLead({ nome, setNome, telefone, setTelefone, erroQuali
         </div>
       </div>
       {erroQualificacao && (
-        <p className="mt-3 text-xs font-bold text-amber-400 flex items-center gap-1.5">
-          ⚠️ {erroQualificacao}
+        <p role="alert" className="mt-3 text-xs font-bold text-amber-400 flex items-center gap-1.5">
+          <span aria-hidden="true">⚠️</span> {erroQualificacao}
         </p>
       )}
     </div>
@@ -1320,11 +1346,14 @@ function AgendamentoVisitaImovel({ oficinaId, codigoImovel, leadInicial, onBack 
 
       <form onSubmit={enviarAgendamento} className="bg-slate-950 border border-slate-800 p-6 rounded-3xl space-y-4 text-left">
         <div>
-          <label className="text-[10px] font-black uppercase text-[#10b981] tracking-widest mb-1.5 block">
+          <label htmlFor="visita-nome" className="text-[10px] font-black uppercase text-[#10b981] tracking-widest mb-1.5 block">
             1. Seu Nome Completo *
           </label>
           <input
+            id="visita-nome"
+            name="nome"
             type="text"
+            autoComplete="name"
             placeholder="Digite seu nome completo"
             value={nome}
             onChange={(e) => setNome(e.target.value)}
@@ -1333,12 +1362,16 @@ function AgendamentoVisitaImovel({ oficinaId, codigoImovel, leadInicial, onBack 
           />
         </div>
         <div>
-          <label className="text-[10px] font-black uppercase text-[#10b981] tracking-widest mb-1.5 block">
+          <label htmlFor="visita-telefone" className="text-[10px] font-black uppercase text-[#10b981] tracking-widest mb-1.5 block">
             2. Seu WhatsApp / Telemóvel *
           </label>
           <input
+            id="visita-telefone"
+            name="telefone"
             type="tel"
-            placeholder="(11) 99999-9999"
+            inputMode="tel"
+            autoComplete="tel"
+            placeholder="(34) 99999-9999"
             value={telefone}
             onChange={(e) => setTelefone(e.target.value)}
             className="w-full p-3.5 bg-[#020408] border border-slate-800 rounded-xl text-white font-bold outline-none focus:border-[#10b981]"
@@ -1346,21 +1379,26 @@ function AgendamentoVisitaImovel({ oficinaId, codigoImovel, leadInicial, onBack 
           />
         </div>
         <div>
-          <label className="text-[10px] font-black uppercase text-slate-400 tracking-widest mb-1.5 block">
+          <label htmlFor="visita-imovel" className="text-[10px] font-black uppercase text-slate-400 tracking-widest mb-1.5 block">
             3. Referência do Imóvel / Cliente
           </label>
           <input
+            id="visita-imovel"
+            name="imovel"
             type="text"
+            autoComplete="off"
             value={codigoImovel}
             disabled
             className="w-full p-3.5 bg-slate-900/60 border border-slate-800 rounded-xl text-slate-400 font-bold"
           />
         </div>
         <div>
-          <label className="text-[10px] font-black uppercase text-[#10b981] tracking-widest mb-1.5 block">
+          <label htmlFor="visita-data" className="text-[10px] font-black uppercase text-[#10b981] tracking-widest mb-1.5 block">
             4. Data Pretendida *
           </label>
           <input
+            id="visita-data"
+            name="data"
             type="date"
             value={data}
             onChange={(e) => setData(e.target.value)}
@@ -1370,6 +1408,17 @@ function AgendamentoVisitaImovel({ oficinaId, codigoImovel, leadInicial, onBack 
             required
           />
         </div>
+        {/* LGPD — finalidade, coleta mínima e canal de exclusão (D-22.05) */}
+        <p className="text-[11px] leading-relaxed text-slate-500">
+          Usamos seu nome e WhatsApp apenas para confirmar esta visita com o corretor responsável e registrar o
+          pedido no CRM da imobiliária. A data pretendida serve só para a agenda. Para correção ou exclusão,
+          use o botão <strong className="text-slate-300">"Solicitar exclusão dos meus dados"</strong> no rodapé
+          ou leia a{' '}
+          <Link to="/privacidade" className="text-[#10b981] underline">
+            Política de Privacidade
+          </Link>
+          .
+        </p>
         <button
           type="submit"
           disabled={loading}
@@ -1424,10 +1473,10 @@ const IMOVEIS_VITRINE_DEMONSTRACAO = [
     bairro: 'Bosque / Zona Sul',
     quartos: '2',
     valor: 235000,
-    fotoCapa: 'https://images.unsplash.com/photo-1545324418-cc1a3fa10c00?auto=format&fit=crop&w=900&q=80',
+    fotoCapa: FOTOS_EXEMPLO.apartamento,
     fotos: [
-      'https://images.unsplash.com/photo-1545324418-cc1a3fa10c00?auto=format&fit=crop&w=900&q=80',
-      'https://images.unsplash.com/photo-1502672260266-1c1ef2d93688?auto=format&fit=crop&w=900&q=80',
+      FOTOS_EXEMPLO.apartamento,
+      FOTOS_EXEMPLO.interior,
     ],
   },
   {
@@ -1443,9 +1492,9 @@ const IMOVEIS_VITRINE_DEMONSTRACAO = [
     quadra: 'Qd. 08',
     lote: 'Lote 15',
     metragemTerreno: '420',
-    fotoCapa: 'https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?auto=format&fit=crop&w=900&q=80',
+    fotoCapa: FOTOS_EXEMPLO.casa,
     fotos: [
-      'https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?auto=format&fit=crop&w=900&q=80',
+      FOTOS_EXEMPLO.casa,
     ],
   },
   {
@@ -1461,9 +1510,9 @@ const IMOVEIS_VITRINE_DEMONSTRACAO = [
     hectares: '185',
     aptidaoRural: 'Dupla Aptidão (Lavoura e Pecuária)',
     benfeitorias: 'Sede completa, curral, 2 represas, energia trifásica e CAR/INCRA OK',
-    fotoCapa: 'https://images.unsplash.com/photo-1500382017468-9049fed747ef?auto=format&fit=crop&w=900&q=80',
+    fotoCapa: FOTOS_EXEMPLO.fazenda,
     fotos: [
-      'https://images.unsplash.com/photo-1500382017468-9049fed747ef?auto=format&fit=crop&w=900&q=80',
+      FOTOS_EXEMPLO.fazenda,
     ],
   },
 ];
@@ -1504,6 +1553,11 @@ export default function PortalCliente() {
   const [imoveisVitrine, setImoveisVitrine] = useState([]);
   const [filtroVitrine, setFiltroVitrine] = useState('Todos');
   const [fotoAtivaPorCard, setFotoAtivaPorCard] = useState({});
+  // Vitrine sem imóvel real publicado cai nos exemplos de tela: a página avisa
+  // e cada cartão ganha selo "Exemplo" (D-22.04 — nada de anúncio fictício).
+  const [vitrineEmDemonstracao, setVitrineEmDemonstracao] = useState(false);
+  // Fluxo explícito de exclusão de dados (LGPD) acessível no portal público.
+  const [exclusaoAberta, setExclusaoAberta] = useState(false);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -1549,6 +1603,7 @@ export default function PortalCliente() {
       });
 
       setImoveisVitrine(unicos.length > 0 ? unicos : IMOVEIS_VITRINE_DEMONSTRACAO);
+      setVitrineEmDemonstracao(unicos.length === 0);
     };
 
     carregarVitrinePublica();
@@ -1781,6 +1836,7 @@ export default function PortalCliente() {
                         key={f.id}
                         type="button"
                         onClick={() => setFiltroVitrine(f.id)}
+                        aria-pressed={ativo}
                         className={`px-3 py-1.5 rounded-xl text-[11px] font-black transition cursor-pointer border ${
                           ativo
                             ? 'bg-[#10b981] text-[#020408] border-[#10b981]'
@@ -1793,6 +1849,17 @@ export default function PortalCliente() {
                   })}
                 </div>
               </div>
+
+              {vitrineEmDemonstracao && (
+                <div
+                  role="status"
+                  className="rounded-2xl border border-amber-500/40 bg-amber-500/10 px-4 py-3 text-xs leading-relaxed text-amber-200"
+                >
+                  <strong className="font-black uppercase tracking-wider">Vitrine em modo demonstração.</strong>{' '}
+                  Nenhum imóvel real está publicado nesta vitrine ainda. Os cartões abaixo são exemplos de tela —
+                  não são anúncios disponíveis e não devem ser tratados como oferta.
+                </div>
+              )}
 
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 {(imoveisVitrine || [])
@@ -1812,11 +1879,15 @@ export default function PortalCliente() {
                       ? imv.fotos
                       : imv?.fotoCapa
                       ? [imv.fotoCapa]
-                      : ['https://images.unsplash.com/photo-1545324418-cc1a3fa10c00?auto=format&fit=crop&w=900&q=80'];
+                      : [FOTOS_EXEMPLO.apartamento];
                     const fotoAtual = fotoAtivaPorCard[imv.id] || imv?.fotoCapa || fotosArr[0];
                     const isLote = /lote|terreno/i.test(imv?.tipo || '');
                     const isRural = /fazenda|rural|ch[aá]cara|s[ií]tio/i.test(imv?.tipo || '');
                     const isLocacao = imv?.finalidade === 'Locação';
+                    const ehExemplo =
+                      vitrineEmDemonstracao ||
+                      String(imv?.id || '').startsWith('vit_demo') ||
+                      ehFotoExemplo(fotoAtual);
 
                     return (
                       <div
@@ -1828,9 +1899,14 @@ export default function PortalCliente() {
                           <div className="relative h-52 w-full bg-[#020408] overflow-hidden border-b border-slate-800">
                             <img
                               src={fotoAtual}
-                              alt={imv.titulo}
+                              alt={ehExemplo ? `Imagem ilustrativa de exemplo — ${imv.titulo || 'imóvel'}` : imv.titulo}
                               className="w-full h-full object-cover transition-all duration-300"
                             />
+                            {ehExemplo && (
+                              <span className="absolute bottom-3 left-3 rounded-full bg-amber-500 px-2.5 py-0.5 text-[10px] font-black uppercase tracking-wide text-amber-950">
+                                Exemplo
+                              </span>
+                            )}
                             <div className="absolute top-3 left-3 flex flex-wrap gap-1.5">
                               <span className={`px-2.5 py-1 rounded-full text-[10px] font-black uppercase backdrop-blur-md bg-[#020408]/85 ${tagPadrao.classes}`}>
                                 {tagPadrao.label}
@@ -1850,11 +1926,13 @@ export default function PortalCliente() {
                                     onClick={() =>
                                       setFotoAtivaPorCard((prev) => ({ ...prev, [imv.id]: fUrl }))
                                     }
+                                    aria-label={`Ver foto ${idx + 1} de ${fotosArr.length}`}
+                                    aria-pressed={fotoAtual === fUrl}
                                     className={`w-9 h-7 rounded-md overflow-hidden border-2 cursor-pointer ${
                                       fotoAtual === fUrl ? 'border-[#10b981]' : 'border-transparent opacity-70'
                                     }`}
                                   >
-                                    <img src={fUrl} alt="" className="w-full h-full object-cover" />
+                                    <img src={fUrl} alt={`Miniatura ${idx + 1}`} className="w-full h-full object-cover" />
                                   </button>
                                 ))}
                               </div>
@@ -1937,25 +2015,35 @@ export default function PortalCliente() {
               </div>
 
               <div>
-                <label className="text-[#10b981] text-[10px] font-black uppercase tracking-widest mb-1.5 block">
-                  🏢 Código do Imóvel ou CPF/WhatsApp *
+                <label htmlFor="portal-consulta-id" className="text-[#10b981] text-[10px] font-black uppercase tracking-widest mb-1.5 block">
+                  🏢 Código do Imóvel (ou CPF/WhatsApp do cadastro) *
                 </label>
                 <input
+                  id="portal-consulta-id"
+                  name="identificador"
                   type="text"
-                  placeholder="Ex: IMOB-102 ou 000.000.000-00"
+                  autoComplete="off"
+                  placeholder="Ex: IMOB-102"
                   value={identificador}
                   onChange={(e) => setIdentificador(e.target.value)}
                   className="w-full p-3.5 rounded-xl bg-[#020408] border border-slate-800 text-white font-bold text-center outline-none focus:border-[#10b981]"
                 />
+                <p className="mt-1.5 text-[10.5px] leading-relaxed text-slate-500">
+                  Prefira o código do imóvel. O CPF só é necessário se a imobiliária cadastrou o seu
+                  atendimento por ele — não pedimos CPF para simulações.
+                </p>
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
-                  <label className="text-slate-400 text-[10px] font-black uppercase tracking-widest mb-1.5 block">
+                  <label htmlFor="portal-consulta-nome" className="text-slate-400 text-[10px] font-black uppercase tracking-widest mb-1.5 block">
                     👤 Seu Nome *
                   </label>
                   <input
+                    id="portal-consulta-nome"
+                    name="nome"
                     type="text"
+                    autoComplete="name"
                     placeholder="Nome completo"
                     value={nomePortal}
                     onChange={(e) => setNomePortal(e.target.value)}
@@ -1963,12 +2051,16 @@ export default function PortalCliente() {
                   />
                 </div>
                 <div>
-                  <label className="text-slate-400 text-[10px] font-black uppercase tracking-widest mb-1.5 block">
+                  <label htmlFor="portal-consulta-whatsapp" className="text-slate-400 text-[10px] font-black uppercase tracking-widest mb-1.5 block">
                     📱 Seu WhatsApp / Telemóvel *
                   </label>
                   <input
+                    id="portal-consulta-whatsapp"
+                    name="telefone"
                     type="tel"
-                    placeholder="(11) 99999-9999"
+                    inputMode="tel"
+                    autoComplete="tel"
+                    placeholder="(34) 99999-9999"
                     value={whatsappPortal}
                     onChange={(e) => setWhatsappPortal(e.target.value)}
                     className="w-full p-3 rounded-xl bg-[#020408] border border-slate-800 text-white text-sm font-semibold outline-none focus:border-[#10b981]"
@@ -1976,12 +2068,33 @@ export default function PortalCliente() {
                 </div>
               </div>
 
+              <p className="text-[10.5px] leading-relaxed text-slate-500">
+                Nome e WhatsApp são usados para identificar o seu atendimento e liberar o relatório — e ficam
+                registrados no CRM da imobiliária responsável. Sem esses dois dados a consulta não abre. Para
+                correção ou exclusão, use{' '}
+                <button
+                  type="button"
+                  onClick={() => setExclusaoAberta(true)}
+                  className="cursor-pointer text-[#10b981] underline"
+                >
+                  Solicitar exclusão dos meus dados
+                </button>{' '}
+                ou leia a{' '}
+                <Link to="/privacidade" className="text-[#10b981] underline">
+                  Política de Privacidade
+                </Link>
+                .
+              </p>
+
               <div>
-                <label className="text-slate-400 text-[10px] font-black uppercase tracking-widest mb-1.5 block">
+                <label htmlFor="portal-consulta-senha" className="text-slate-400 text-[10px] font-black uppercase tracking-widest mb-1.5 block">
                   🔑 Código de Acesso / 4 últimos dígitos do WhatsApp (Opcional)
                 </label>
                 <input
+                  id="portal-consulta-senha"
+                  name="senha"
                   type="password"
+                  autoComplete="off"
                   placeholder="••••"
                   value={senha}
                   onChange={(e) => setSenha(e.target.value)}
@@ -2206,6 +2319,52 @@ export default function PortalCliente() {
           </div>
         )}
       </main>
+
+      {/* Rodapé do portal: quem opera, para que servem os dados e como pedir
+          exclusão. O visitante é cliente da imobiliária; a plataforma é
+          operadora (D-22.04). */}
+      <footer className="mx-auto max-w-6xl px-4 pb-10 pt-2 sm:px-6">
+        <div className="space-y-2 rounded-2xl border border-slate-800 bg-slate-950 p-5 text-[11px] leading-relaxed text-slate-400">
+          <p>
+            Este portal é operado pela imobiliária responsável pelos imóveis anunciados, com tecnologia{' '}
+            <strong className="text-slate-200">Express Imobi Tech</strong>. O nome e o WhatsApp enviados nos formulários
+            são usados para responder ao seu contato e ficam registrados no CRM dessa imobiliária.
+          </p>
+          <p>
+            Para pedir acesso, correção ou exclusão dos seus dados, fale com a imobiliária pelo canal de atendimento
+            dela ou use o pedido guiado da plataforma — o mesmo canal de privacidade existe em todo rodapé.
+          </p>
+          <p className="flex flex-wrap items-center gap-3">
+            <button
+              type="button"
+              onClick={() => setExclusaoAberta(true)}
+              className="inline-flex cursor-pointer items-center gap-2 rounded-xl border border-slate-700 px-3 py-2 text-[11px] font-black uppercase tracking-wider text-slate-200 transition hover:border-[#10b981] hover:text-white"
+            >
+              <Lock size={12} aria-hidden="true" />
+              Solicitar exclusão dos meus dados
+            </button>
+            <span className="text-slate-600">contato@expresstech.com.br</span>
+          </p>
+          <p className="flex flex-wrap items-center gap-x-4 gap-y-1">
+            <Link to="/privacidade" className="text-[#10b981] underline">
+              Política de Privacidade
+            </Link>
+            <Link to="/termos" className="text-[#10b981] underline">
+              Termos de Uso
+            </Link>
+            <Link to="/reembolso" className="text-[#10b981] underline">
+              Política de Reembolso
+            </Link>
+            <span className="text-slate-600">Express Tech · Araguari e Uberlândia/MG</span>
+          </p>
+        </div>
+      </footer>
+
+      <SolicitacaoExclusaoDados
+        aberto={exclusaoAberta}
+        onFechar={() => setExclusaoAberta(false)}
+        contexto="portal"
+      />
     </div>
   );
 }

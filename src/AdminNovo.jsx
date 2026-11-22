@@ -48,6 +48,7 @@ import {
   MessageCircle,
   Calculator,
   Receipt,
+  Lock,
 } from 'lucide-react';
 
 // Componentes existentes do ecossistema
@@ -69,6 +70,7 @@ import GerenciadorDeModulos from './components/admin/GerenciadorDeModulos';
 import ControleInteligenciaIA from './components/ControleInteligenciaIA';
 import GuiaDaAba from './components/ui/GuiaDaAba';
 import RodapeLegal from './components/ui/RodapeLegal';
+import { FOTOS_EXEMPLO, AVISO_FOTO_EXEMPLO, ehFotoExemplo, temFotoExemplo } from './lib/fotosExemplo';
 import DorESolucao from './components/ui/DorESolucao';
 import LogoExpress from './components/ui/LogoExpress';
 import MicButton from './components/ui/MicButton';
@@ -78,7 +80,14 @@ import OnboardingPrimeiroUso from './components/onboarding/OnboardingPrimeiroUso
 import { ehMasterPlataforma as ehMasterPlataformaFn, modoProEfetivo, rotuloVisao } from './lib/acesso-plano';
 import { MODULOS_MAP } from './modulosMap';
 import { setCreditoPrefill } from './lib/credito/prefill';
-import { temSofiaWhatsApp, temExpressBrain } from './lib/planos';
+import {
+  AVISO_TRIAL_ENCERRADO,
+  SELO_TRIAL_PRO,
+  temAcessoPro,
+  temExpressBrain,
+  temSofiaWhatsApp,
+  trialAtivo,
+} from './lib/planos';
 import { MODULOS_SO_GESTAO, ehGestor as ehGestorDoPapel, filtrarModulos } from './lib/permissoes-menu';
 
 import { useAuth } from './contexts/AuthContext';
@@ -411,12 +420,32 @@ const MODULOS_GRATIS_PLG = new Set([
   'visitas_imobi',
   'financeiro',
   'equipe',
-  'agentes_ia',
+  // D-22.03 — `agentes_ia` saiu daqui: a aba passou para a faixa PRO e só
+  // abre com assinatura ativa ou dentro do trial de 10 dias.
   'whatsapp_hub',
   'sofia_whatsapp',
   'config',
   'especialista',
   'meuplano',
+]);
+
+// D-22.03 — as 8 ferramentas assistidas. Ficam liberadas durante o trial de
+// 10 dias; sem plano ativo depois dele, exigem PRO (R$ 99/mês). O conjunto
+// serve de guarda de navegação: atalho, estado antigo ou deep link não abre a
+// ferramenta, cai no Meu Plano. A aba `agentes_ia` NÃO entra aqui de propósito:
+// ela abre como vitrine, com cadeado e o simulador bloqueado (o aviso do PRO
+// aparece na própria tela).
+const MODULOS_PRO_PLG = new Set([
+  'tarefa',
+  'migracao',
+  'avaliacao_imovel',
+  'credito',
+  'radar_captacao',
+  'administrador',
+  'roleta_imobi',
+  'contador',
+  'notafiscal',
+  'juridico_imobi',
 ]);
 
 const MAPA_DETALHES_ABAS = (GRUPOS_MENU_IMOBI || [])
@@ -531,12 +560,50 @@ export default function Admin() {
 
   const dadosImobiliaria = dadosImobCtx || dadosLegadoCtx;
 
+  // --- Conta MASTER da plataforma: só ela vê o alternador de demonstração ---
+  // MASTER = VITE_SU (papelLogado 'master') ou custom claim admin=true no token.
+  // (Declarado antes dos retornos de carregamento para a contagem de hooks não
+  // mudar entre o primeiro render e os seguintes.)
+  const [claimAdmin, setClaimAdmin] = useState(false);
+  useEffect(() => {
+    let vivo = true;
+    const conta = auth?.currentUser;
+    if (!conta?.getIdTokenResult) return undefined;
+    conta.getIdTokenResult()
+      .then((r) => { if (vivo) setClaimAdmin(r?.claims?.admin === true); })
+      .catch(() => {});
+    return () => { vivo = false; };
+  }, [auth?.currentUser]);
+
+  const ehMasterPlataforma = ehMasterPlataformaFn(papelLogado, claimAdmin);
+
+  // ── D-22.03 — Trial de 10 dias ────────────────────────────────────────────
+  // Durante o teste o usuário entra nas 8 ferramentas PRO e na aba 7 Agentes
+  // de IA. Sem plano ativo depois dos 10 dias, as duas frentes exigem PRO
+  // (R$ 99/mês): cadeado no menu, simulador bloqueado. O CRM gratuito segue.
+  const contaAcesso = {
+    ...(dadosImobCtx || dadosLegadoCtx || {}),
+    trialFim: dadosImobCtx?.trialFim || dadosLegadoCtx?.trialFim || dataFimTrial,
+  };
+  const trialEmAndamento = trialAtivo(contaAcesso);
+  const acessoProLiberado = Boolean(ehMasterPlataforma || temAcessoPro(contaAcesso));
+  const bloqueioProAtivo = !acessoProLiberado;
+
   // Muda automaticamente o título da aba do navegador para Express Imobi Tech
   useEffect(() => {
     document.title = 'Express Imobi Tech — Plataforma Imobiliária IA';
   }, []);
 
   const [abaAtiva, setAbaAtiva] = useState('dashboard_imobi');
+
+  // D-22.03 — guarda de navegação das abas PRO (8 ferramentas + 7 Agentes de
+  // IA): sem PRO e com o trial encerrado, qualquer entrada por atalho, deep
+  // link ou estado antigo volta para o Meu Plano em vez de abrir a ferramenta.
+  useEffect(() => {
+    if (!bloqueioProAtivo) return;
+    if (!MODULOS_PRO_PLG.has(abaAtiva)) return;
+    setAbaAtiva('meuplano');
+  }, [bloqueioProAtivo, abaAtiva]);
 
   // Pedido de "novo processo": incrementa ao clicar no CTA dourado e é consumido
   // pelo módulo Acompanhamento do Cliente, que abre o formulário.
@@ -1285,6 +1352,13 @@ export default function Admin() {
     const mensagem = String(mensagemBruta || '').trim();
     if (!mensagem || enviandoSimIA) return;
 
+    // D-22.03 — encerrado o trial de 10 dias sem plano ativo, o simulador
+    // não gasta token: a consulta é bloqueada com o aviso do PRO.
+    if (bloqueioProAtivo) {
+      setErroSimIA(AVISO_TRIAL_ENCERRADO);
+      return;
+    }
+
     if (!podeUsarDemo('polen', { liberado: sofiaLiberada })) {
       setRestantesPolen(0);
       setErroSimIA(
@@ -1461,20 +1535,8 @@ export default function Admin() {
     raiz.classList.toggle('tema-claro', !isEscuro);
     return () => raiz.classList.remove('tema-claro');
   }, [isEscuro]);
-  // --- Conta MASTER da plataforma: só ela vê o alternador de demonstração ---
-  // MASTER = VITE_SU (papelLogado 'master') ou custom claim admin=true no token.
-  const [claimAdmin, setClaimAdmin] = useState(false);
-  useEffect(() => {
-    let vivo = true;
-    const conta = auth?.currentUser;
-    if (!conta?.getIdTokenResult) return undefined;
-    conta.getIdTokenResult()
-      .then((r) => { if (vivo) setClaimAdmin(r?.claims?.admin === true); })
-      .catch(() => {});
-    return () => { vivo = false; };
-  }, [auth?.currentUser]);
-
-  const ehMasterPlataforma = ehMasterPlataformaFn(papelLogado, claimAdmin);
+  // MASTER e o trial de 10 dias já foram resolvidos acima (claimAdmin,
+  // ehMasterPlataforma, acessoProLiberado, bloqueioProAtivo).
 
   const isModoGratis = modoPainel === 'gratis' || modoPainel === 'lite';
   // Cliente final não tem rascunho de demo: o painel segue o plano REAL da conta.
@@ -1524,7 +1586,6 @@ export default function Admin() {
     { id: 'visitas_imobi', icone: '📅', label: 'Agenda de Visitas' },
     { id: 'financeiro', icone: '💰', label: 'Financeiro & VGV' },
     { id: 'equipe', icone: '🧑‍💼', label: 'Corretores & Equipe' },
-    { id: 'agentes_ia', icone: '🤖', label: '7 Agentes de IA' },
     { id: 'config', icone: '⚙️', label: 'Configurações' },
     { id: 'especialista', icone: '🎧', label: 'Suporte Especialista' },
     { id: 'meuplano', icone: '⭐', label: 'Meu Plano (10 Dias Grátis)', destaquePlano: true },
@@ -1536,10 +1597,18 @@ export default function Admin() {
     { id: 'marketing', icone: '🎯', label: 'Meta Ads & Criativos' },
   ];
 
-  // Faixa 3 — PRO · Assinantes (R$ 99,00): exclusivamente as 8 ferramentas
-  // assistidas sob demanda. Configurações e Suporte Especialista saíram daqui:
-  // são de todo plano (inclusive Grátis) e moram na faixa Essenciais.
+  // Faixa 3 — PRO · Assinantes (R$ 99,00): as 8 ferramentas assistidas sob
+  // demanda + a aba 7 Agentes de IA (D-22.03 — no trial de 10 dias ela abre
+  // para todo mundo; sem plano ativo depois, cadeado). Configurações e Suporte
+  // Especialista não ficam aqui: são de todo plano e moram na faixa Essenciais.
   const botoesBloco3Gestao = [
+    {
+      id: 'agentes_ia',
+      icone: '🤖',
+      label: '7 Agentes de IA',
+      badge: SELO_TRIAL_PRO,
+      tituloCard: 'ESQUADRÃO DE INTELIGÊNCIA ARTIFICIAL',
+    },
     { id: 'tarefa', icone: '📋', label: 'Vistoria & Laudo IA' },
     { id: 'migracao', icone: '🔄', label: 'Migração de CRM' },
     { id: 'avaliacao_imovel', icone: '📐', label: 'Avaliação de Imóvel' },
@@ -1685,7 +1754,7 @@ export default function Admin() {
           {statusRoletaMsg && (
             <div className="bg-[#020408] border border-[#10b981] rounded-xl px-4 py-3 text-xs font-bold text-[#10b981] flex items-center justify-between">
               <span>{statusRoletaMsg}</span>
-              <button onClick={() => setStatusRoletaMsg('')} className="text-slate-400 hover:text-white cursor-pointer">✕</button>
+              <button onClick={() => setStatusRoletaMsg('')} aria-label="Fechar o aviso da roleta" className="text-slate-400 hover:text-white cursor-pointer">✕</button>
             </div>
           )}
 
@@ -1967,8 +2036,10 @@ export default function Admin() {
             onClick={toggleTema}
             className="p-2 rounded-lg bg-zinc-800 border border-zinc-700/60 text-zinc-300 hover:text-white transition cursor-pointer"
             title="Alternar tema Claro/Escuro"
+            aria-label={isEscuro ? 'Ativar tema claro' : 'Ativar tema escuro'}
+            aria-pressed={!isEscuro}
           >
-            {isEscuro ? <Sun size={15} /> : <Moon size={15} />}
+            {isEscuro ? <Sun size={15} aria-hidden="true" /> : <Moon size={15} aria-hidden="true" />}
           </button>
 
           <button
@@ -2068,17 +2139,34 @@ export default function Admin() {
             temaClaro={!isEscuro}
           />
 
-          {/* Barra 3 — Módulos PRO (Assinantes) */}
+          {/* Barra 3 — PRO · Assinantes: 8 ferramentas + 7 Agentes de IA.
+              D-22.03 — sem PRO e com o trial vencido, cada pílula mostra
+              cadeado e leva ao Meu Plano em vez de abrir a aba. */}
           {modoPro && (
             <BarraModulos
               titulo="PRO · Assinantes"
+              subtitulo={
+                bloqueioProAtivo
+                  ? 'Cadeado = exige PRO (R$ 99/mês)'
+                  : trialEmAndamento
+                    ? 'Teste de 10 dias em andamento'
+                    : 'Liberado para a sua conta'
+              }
               tom="roxo"
-              itens={filtrarPorPapel(botoesBloco3Gestao)}
+              itens={filtrarPorPapel(botoesBloco3Gestao).map((item) => ({
+                ...item,
+                bloqueado: bloqueioProAtivo,
+              }))}
               abaAtiva={abaAtiva}
               setAbaAtiva={setAbaAtiva}
               detalhes={MAPA_DETALHES_ABAS}
               dataTour="barra-pro"
               temaClaro={!isEscuro}
+              onBloqueado={(btn) =>
+                // A aba dos 7 Agentes é vitrine: abre com o simulador
+                // bloqueado e o aviso do PRO. As 8 ferramentas vão ao plano.
+                setAbaAtiva(btn?.id === 'agentes_ia' ? 'agentes_ia' : 'meuplano')
+              }
             />
           )}
 
@@ -2095,6 +2183,24 @@ export default function Admin() {
               dataTour="barra-ia"
               temaClaro={!isEscuro}
             />
+          )}
+
+          {/* D-22.03 — trial de 10 dias encerrado sem plano ativo: as 8
+              ferramentas PRO e os 7 Agentes de IA exigem assinatura. */}
+          {bloqueioProAtivo && (
+            <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-amber-500/30 bg-gradient-to-r from-amber-500/[0.12] via-amber-500/[0.05] to-transparent px-4 py-2.5">
+              <div className="flex items-start gap-2 text-xs text-amber-200">
+                <Lock size={14} className="mt-0.5 shrink-0" aria-hidden="true" />
+                <span>{AVISO_TRIAL_ENCERRADO}</span>
+              </div>
+              <button
+                type="button"
+                onClick={() => setAbaAtiva('meuplano')}
+                className="shrink-0 rounded-full bg-gradient-to-r from-amber-300 to-amber-500 px-3 py-1.5 text-[11px] font-black text-amber-950 shadow-[0_0_18px_rgba(245,158,11,0.45)] transition-all hover:-translate-y-0.5 hover:shadow-[0_0_28px_rgba(245,158,11,0.65)]"
+              >
+                Assinar o PRO · R$ 99/mês
+              </button>
+            </div>
           )}
 
           {/* Convite ao PRO no modo Grátis */}
@@ -2262,6 +2368,7 @@ export default function Admin() {
                     const tagPadrao = obterEstiloTagPadrao(imv?.padraoImovel);
                     const fotosArr = Array.isArray(imv?.fotos) ? imv.fotos : [];
                     const capaUrl = imv?.fotoCapa || fotosArr[0] || '';
+                    const capaDeExemplo = ehFotoExemplo(capaUrl);
                     const isAtivoVitrine = !imv?.status || imv.status === 'Ativo' || imv.status === 'Disponível';
 
                     return (
@@ -2275,13 +2382,22 @@ export default function Admin() {
                             <div className="relative h-44 w-full bg-[#020408] overflow-hidden border-b border-slate-800">
                               <img
                                 src={capaUrl}
-                                alt={imv.titulo}
+                                alt={
+                                  capaDeExemplo
+                                    ? `Imagem de exemplo (banco de imagens) — ${imv.titulo || 'imóvel'}`
+                                    : imv.titulo
+                                }
                                 className="w-full h-full object-cover"
                               />
                               <div className="absolute top-2.5 left-2.5 flex flex-wrap gap-1.5">
                                 <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase backdrop-blur-md bg-[#020408]/85 ${tagPadrao.classes}`}>
                                   {tagPadrao.label}
                                 </span>
+                                {capaDeExemplo && (
+                                  <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase backdrop-blur-md bg-amber-500 text-amber-950">
+                                    Exemplo
+                                  </span>
+                                )}
                               </div>
                               {fotosArr.length > 0 && (
                                 <span className="absolute bottom-2.5 right-2.5 px-2 py-0.5 rounded-md bg-black/80 text-white text-[10px] font-bold">
@@ -2448,7 +2564,7 @@ export default function Admin() {
             {statusRoletaMsg && (
               <div className="bg-[#020408] border border-[#10b981] rounded-xl px-4 py-3 text-xs font-bold text-[#10b981] flex items-center justify-between">
                 <span>{statusRoletaMsg}</span>
-                <button onClick={() => setStatusRoletaMsg('')} className="text-slate-400 hover:text-white cursor-pointer">✕</button>
+                <button onClick={() => setStatusRoletaMsg('')} aria-label="Fechar o aviso da roleta" className="text-slate-400 hover:text-white cursor-pointer">✕</button>
               </div>
             )}
 
@@ -2660,6 +2776,24 @@ export default function Admin() {
               setAbaAtiva={setAbaAtiva}
             />
 
+            {/* D-22.03 — a aba entrou na faixa PRO · Assinantes; o trial de
+                10 dias é o que a mantém aberta para quem ainda não assinou. */}
+            {bloqueioProAtivo && (
+              <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-amber-500/40 bg-amber-500/10 p-4">
+                <div className="flex items-start gap-2 text-xs font-bold text-amber-200">
+                  <Lock size={16} className="mt-0.5 shrink-0" aria-hidden="true" />
+                  <span>{AVISO_TRIAL_ENCERRADO}</span>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setAbaAtiva('meuplano')}
+                  className="shrink-0 rounded-full bg-gradient-to-r from-amber-300 to-amber-500 px-3 py-1.5 text-[11px] font-black text-amber-950 shadow-[0_0_18px_rgba(245,158,11,0.45)] transition-all hover:-translate-y-0.5"
+                >
+                  Assinar o PRO · R$ 99/mês
+                </button>
+              </div>
+            )}
+
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
             <div className="lg:col-span-7 space-y-4">
               {/* Tema: cabeçalho em classes normais do painel (sem shadow root),
@@ -2827,7 +2961,7 @@ export default function Admin() {
                   <button
                     key={acao.key}
                     type="button"
-                    disabled={enviandoSimIA || (!sofiaLiberada && restantesPolen <= 0)}
+                    disabled={bloqueioProAtivo || enviandoSimIA || (!sofiaLiberada && restantesPolen <= 0)}
                     onClick={() => enviarMensagemPolen(acao.pergunta)}
                     className="px-2.5 py-1 rounded-full bg-[#10b981]/10 border border-[#10b981]/40 text-[#10b981] text-[10px] font-bold hover:bg-[#10b981]/20 cursor-pointer transition disabled:opacity-40 disabled:cursor-not-allowed"
                   >
@@ -2835,6 +2969,24 @@ export default function Admin() {
                   </button>
                 ))}
               </div>
+
+              {/* D-22.03 — trial encerrado sem plano ativo: nenhuma consulta
+                  nova sai daqui (o handler também barra antes do /api/ai). */}
+              {bloqueioProAtivo && (
+                <div className="tarja-aviso mt-3 rounded-xl border border-[#f59e0b]/40 bg-[#f59e0b]/10 p-3 text-[11px] text-[#f59e0b] space-y-2">
+                  <p className="flex items-center gap-1.5 font-black uppercase tracking-wide">
+                    <Lock size={12} aria-hidden="true" /> Simulador bloqueado
+                  </p>
+                  <p>{AVISO_TRIAL_ENCERRADO}</p>
+                  <button
+                    type="button"
+                    onClick={() => setAbaAtiva('meuplano')}
+                    className="px-2.5 py-1 rounded-lg bg-[#020408] border border-[#f59e0b]/40 text-[10px] font-bold hover:border-[#10b981] hover:text-[#10b981] cursor-pointer transition"
+                  >
+                    Assinar o PRO · R$ 99/mês →
+                  </button>
+                </div>
+              )}
 
               {/* Conta sem o módulo: 5 mensagens e o CTA de contratação. */}
               {!sofiaLiberada && restantesPolen <= 0 && (
@@ -2860,7 +3012,7 @@ export default function Admin() {
                     type="text"
                     value={msgTesteIA}
                     onChange={(e) => setMsgTesteIA(e.target.value)}
-                    disabled={enviandoSimIA || (!sofiaLiberada && restantesPolen <= 0)}
+                    disabled={bloqueioProAtivo || enviandoSimIA || (!sofiaLiberada && restantesPolen <= 0)}
                     placeholder="Ex: Procuro um apto de 2 quartos no Tibery até 350 mil"
                     className="w-full bg-[#020408] border border-slate-700 rounded-xl pl-3 pr-10 py-2 text-xs text-white disabled:opacity-60"
                   />
@@ -2872,11 +3024,12 @@ export default function Admin() {
                 </div>
                 <button
                   type="submit"
-                  disabled={enviandoSimIA || (!sofiaLiberada && restantesPolen <= 0)}
+                  aria-label="Enviar mensagem de teste para a Pólen"
+                  disabled={bloqueioProAtivo || enviandoSimIA || (!sofiaLiberada && restantesPolen <= 0)}
                   style={{ backgroundColor: '#10b981' }}
                   className="px-4 py-2 rounded-xl hover:opacity-90 text-white text-xs font-bold cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  <Send size={15} />
+                  <Send size={15} aria-hidden="true" />
                 </button>
               </form>
             </div>
@@ -3138,19 +3291,19 @@ export default function Admin() {
 
               {/* Sugestões rápidas de fotos para teste imediato */}
               <div className="flex flex-wrap items-center gap-1.5 text-[10px]">
-                <span className="text-slate-400">Fotos exemplo 1-clique:</span>
+                <span className="text-slate-400">Fotos ilustrativas (banco de imagens):</span>
                 {[
                   {
                     nome: '+ Apto Moderno',
-                    url: 'https://images.unsplash.com/photo-1545324418-cc1a3fa10c00?auto=format&fit=crop&w=900&q=80',
+                    url: FOTOS_EXEMPLO.apartamento,
                   },
                   {
                     nome: '+ Casa Condomínio',
-                    url: 'https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?auto=format&fit=crop&w=900&q=80',
+                    url: FOTOS_EXEMPLO.casa,
                   },
                   {
                     nome: '+ Fazenda / Rural',
-                    url: 'https://images.unsplash.com/photo-1500382017468-9049fed747ef?auto=format&fit=crop&w=900&q=80',
+                    url: FOTOS_EXEMPLO.fazenda,
                   },
                 ]?.map((demo) => (
                   <button
@@ -3164,11 +3317,18 @@ export default function Admin() {
                 ))}
               </div>
 
+              {temFotoExemplo(formImovel.fotos) && (
+                <p role="note" className="rounded-xl border border-amber-500/40 bg-amber-500/10 px-3 py-2 text-[10.5px] font-semibold leading-relaxed text-amber-200">
+                  {AVISO_FOTO_EXEMPLO}
+                </p>
+              )}
+
               {/* Miniaturas da Galeria com Seleção da Foto de Capa */}
               {Array.isArray(formImovel.fotos) && formImovel.fotos.length > 0 && (
                 <div className="grid grid-cols-3 gap-2 pt-1">
                   {(formImovel.fotos || [])?.map((fotoUrl, idx) => {
                     const isCapa = formImovel.fotoCapa === fotoUrl || (!formImovel.fotoCapa && idx === 0);
+                    const fotoDeExemplo = ehFotoExemplo(fotoUrl);
                     return (
                       <div
                         key={`${idx}_${fotoUrl.slice(0, 24)}`}
@@ -3176,11 +3336,25 @@ export default function Admin() {
                           isCapa ? 'border-[#10b981]' : 'border-slate-800'
                         }`}
                       >
-                        <img src={fotoUrl} alt={`Foto ${idx + 1}`} className="w-full h-full object-cover" />
+                        <img
+                          src={fotoUrl}
+                          alt={
+                            fotoDeExemplo
+                              ? `Foto ${idx + 1} de exemplo (banco de imagens) — não é o imóvel`
+                              : `Foto ${idx + 1} do imóvel`
+                          }
+                          className="w-full h-full object-cover"
+                        />
+                        {fotoDeExemplo && (
+                          <span className="absolute bottom-1 left-1 px-1.5 py-0.5 rounded bg-amber-500 text-[8px] font-black uppercase text-amber-950">
+                            Exemplo
+                          </span>
+                        )}
                         <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition flex items-center justify-center gap-1.5">
                           <button
                             type="button"
                             onClick={() => setFormImovel({ ...formImovel, fotoCapa: fotoUrl })}
+                            aria-label={`Usar a foto ${idx + 1} como capa do imóvel`}
                             style={{ backgroundColor: '#10b981' }}
                             className="px-2 py-1 rounded text-[9px] font-black text-white cursor-pointer"
                           >
@@ -3189,6 +3363,7 @@ export default function Admin() {
                           <button
                             type="button"
                             onClick={() => removerFotoGaleria(fotoUrl)}
+                            aria-label={`Remover a foto ${idx + 1} da galeria`}
                             className="px-2 py-1 rounded bg-red-600 text-[9px] font-black text-white cursor-pointer"
                           >
                             ✕
@@ -3353,52 +3528,104 @@ export default function Admin() {
         <div className="fixed inset-0 z-50 bg-black/75 flex items-center justify-center p-4">
           <form
             onSubmit={salvarLeadImobi}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="modal-novo-lead-titulo"
             className="bg-slate-900 border border-slate-700 rounded-2xl p-6 w-full max-w-md space-y-4"
           >
-            <h3 className="text-lg font-black text-white">👥 Cadastrar Novo Lead Imobiliário</h3>
+            <h3 id="modal-novo-lead-titulo" className="text-lg font-black text-white">👥 Cadastrar Novo Lead Imobiliário</h3>
             <div className="bg-[#020408] border border-slate-800 rounded-xl px-3.5 py-2.5 text-xs flex items-center justify-between">
               <span className="text-slate-400">🔀 Destino na Roleta:</span>
               <span style={{ color: '#10b981' }} className="font-bold text-[#10b981]">
                 {roletaAtiva ? (proximoCorretorDaVez?.nome || 'Plantão Geral') : 'Fila Manual (Roleta Pausada)'}
               </span>
             </div>
-            <input
-              required
-              placeholder="Nome do Cliente"
-              value={formLead.nome}
-              onChange={(e) => setFormLead({ ...formLead, nome: e.target.value })}
-              className="w-full bg-[#020408] border border-slate-700 rounded-xl px-3.5 py-2.5 text-sm text-white"
-            />
-            <input
-              required
-              placeholder="WhatsApp com DDD (Ex: 11999998888)"
-              value={formLead.telefone}
-              onChange={(e) => setFormLead({ ...formLead, telefone: e.target.value })}
-              className="w-full bg-[#020408] border border-slate-700 rounded-xl px-3.5 py-2.5 text-sm text-white"
-            />
-            <div className="grid grid-cols-2 gap-3">
-              <select
-                value={formLead.interesse}
-                onChange={(e) => setFormLead({ ...formLead, interesse: e.target.value })}
-                className="bg-[#020408] border border-slate-700 rounded-xl px-3 py-2.5 text-sm text-white"
-              >
-                <option>Compra</option>
-                <option>Locação</option>
-                <option>Investimento</option>
-              </select>
+            <div>
+              <label htmlFor="lead-nome" className="block text-[10px] font-bold uppercase text-slate-400 mb-1">
+                Nome do cliente *
+              </label>
               <input
-                placeholder="Orçamento (R$)"
-                value={formLead.orcamento}
-                onChange={(e) => setFormLead({ ...formLead, orcamento: e.target.value })}
-                className="bg-[#020408] border border-slate-700 rounded-xl px-3.5 py-2.5 text-sm text-white"
+                id="lead-nome"
+                name="nome"
+                autoComplete="off"
+                required
+                placeholder="Ex: Maria Oliveira"
+                value={formLead.nome}
+                onChange={(e) => setFormLead({ ...formLead, nome: e.target.value })}
+                className="w-full bg-[#020408] border border-slate-700 rounded-xl px-3.5 py-2.5 text-sm text-white"
               />
             </div>
-            <input
-              placeholder="Bairro de Preferência"
-              value={formLead.bairro}
-              onChange={(e) => setFormLead({ ...formLead, bairro: e.target.value })}
-              className="w-full bg-[#020408] border border-slate-700 rounded-xl px-3.5 py-2.5 text-sm text-white"
-            />
+            <div>
+              <label htmlFor="lead-telefone" className="block text-[10px] font-bold uppercase text-slate-400 mb-1">
+                WhatsApp com DDD *
+              </label>
+              <input
+                id="lead-telefone"
+                name="telefone"
+                type="tel"
+                inputMode="tel"
+                autoComplete="off"
+                required
+                placeholder="Ex: 34999998888"
+                value={formLead.telefone}
+                onChange={(e) => setFormLead({ ...formLead, telefone: e.target.value })}
+                className="w-full bg-[#020408] border border-slate-700 rounded-xl px-3.5 py-2.5 text-sm text-white"
+              />
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label htmlFor="lead-interesse" className="block text-[10px] font-bold uppercase text-slate-400 mb-1">
+                  Interesse
+                </label>
+                <select
+                  id="lead-interesse"
+                  name="interesse"
+                  value={formLead.interesse}
+                  onChange={(e) => setFormLead({ ...formLead, interesse: e.target.value })}
+                  className="w-full bg-[#020408] border border-slate-700 rounded-xl px-3 py-2.5 text-sm text-white"
+                >
+                  <option>Compra</option>
+                  <option>Locação</option>
+                  <option>Investimento</option>
+                </select>
+              </div>
+              <div>
+                <label htmlFor="lead-orcamento" className="block text-[10px] font-bold uppercase text-slate-400 mb-1">
+                  Orçamento (R$)
+                </label>
+                <input
+                  id="lead-orcamento"
+                  name="orcamento"
+                  inputMode="decimal"
+                  autoComplete="off"
+                  placeholder="Ex: 350.000"
+                  value={formLead.orcamento}
+                  onChange={(e) => setFormLead({ ...formLead, orcamento: e.target.value })}
+                  className="w-full bg-[#020408] border border-slate-700 rounded-xl px-3.5 py-2.5 text-sm text-white"
+                />
+              </div>
+            </div>
+            <div>
+              <label htmlFor="lead-bairro" className="block text-[10px] font-bold uppercase text-slate-400 mb-1">
+                Bairro de preferência
+              </label>
+              <input
+                id="lead-bairro"
+                name="bairro"
+                autoComplete="off"
+                placeholder="Ex: Tibery"
+                value={formLead.bairro}
+                onChange={(e) => setFormLead({ ...formLead, bairro: e.target.value })}
+                className="w-full bg-[#020408] border border-slate-700 rounded-xl px-3.5 py-2.5 text-sm text-white"
+              />
+            </div>
+            {/* LGPD — dado de terceiro digitado pelo corretor (D-22.05) */}
+            <p className="text-[10.5px] leading-relaxed text-slate-500">
+              Registre aqui apenas o que o cliente informou para ser atendido: nome, WhatsApp, interesse e faixa de
+              orçamento. O cadastro fica no CRM desta imobiliária e serve para responder a esse contato. Para
+              correção ou exclusão, use <strong className="text-slate-300">Excluir meus dados</strong> no rodapé do
+              painel ou a Política de Privacidade.
+            </p>
             <div className="flex justify-end gap-2 pt-2">
               <button
                 type="button"
@@ -3424,42 +3651,91 @@ export default function Admin() {
         <div className="fixed inset-0 z-50 bg-black/75 flex items-center justify-center p-4">
           <form
             onSubmit={salvarVisitaImobi}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="modal-nova-visita-titulo"
             className="bg-slate-900 border border-slate-700 rounded-2xl p-6 w-full max-w-md space-y-4"
           >
-            <h3 className="text-lg font-black text-white">📅 Agendar Visita ao Imóvel</h3>
-            <input
-              required
-              placeholder="Nome do Cliente"
-              value={formVisita.cliente}
-              onChange={(e) => setFormVisita({ ...formVisita, cliente: e.target.value })}
-              className="w-full bg-[#020408] border border-slate-700 rounded-xl px-3.5 py-2.5 text-sm text-white"
-            />
-            <input
-              placeholder="WhatsApp do Cliente"
-              value={formVisita.telefone}
-              onChange={(e) => setFormVisita({ ...formVisita, telefone: e.target.value })}
-              className="w-full bg-[#020408] border border-slate-700 rounded-xl px-3.5 py-2.5 text-sm text-white"
-            />
-            <input
-              placeholder="Imóvel / Código"
-              value={formVisita.imovel}
-              onChange={(e) => setFormVisita({ ...formVisita, imovel: e.target.value })}
-              className="w-full bg-[#020408] border border-slate-700 rounded-xl px-3.5 py-2.5 text-sm text-white"
-            />
-            <div className="grid grid-cols-2 gap-3">
+            <h3 id="modal-nova-visita-titulo" className="text-lg font-black text-white">📅 Agendar Visita ao Imóvel</h3>
+            <div>
+              <label htmlFor="visita-cliente" className="block text-[10px] font-bold uppercase text-slate-400 mb-1">
+                Nome do cliente *
+              </label>
               <input
-                type="date"
-                value={formVisita.data}
-                onChange={(e) => setFormVisita({ ...formVisita, data: e.target.value })}
-                className="bg-[#020408] border border-slate-700 rounded-xl px-3 py-2.5 text-sm text-white"
-              />
-              <input
-                type="time"
-                value={formVisita.hora}
-                onChange={(e) => setFormVisita({ ...formVisita, hora: e.target.value })}
-                className="bg-[#020408] border border-slate-700 rounded-xl px-3 py-2.5 text-sm text-white"
+                id="visita-cliente"
+                name="cliente"
+                autoComplete="off"
+                required
+                placeholder="Ex: Maria Oliveira"
+                value={formVisita.cliente}
+                onChange={(e) => setFormVisita({ ...formVisita, cliente: e.target.value })}
+                className="w-full bg-[#020408] border border-slate-700 rounded-xl px-3.5 py-2.5 text-sm text-white"
               />
             </div>
+            <div>
+              <label htmlFor="visita-telefone" className="block text-[10px] font-bold uppercase text-slate-400 mb-1">
+                WhatsApp do cliente
+              </label>
+              <input
+                id="visita-telefone"
+                name="telefone"
+                type="tel"
+                inputMode="tel"
+                autoComplete="off"
+                placeholder="Ex: 34999998888"
+                value={formVisita.telefone}
+                onChange={(e) => setFormVisita({ ...formVisita, telefone: e.target.value })}
+                className="w-full bg-[#020408] border border-slate-700 rounded-xl px-3.5 py-2.5 text-sm text-white"
+              />
+            </div>
+            <div>
+              <label htmlFor="visita-imovel" className="block text-[10px] font-bold uppercase text-slate-400 mb-1">
+                Imóvel / código
+              </label>
+              <input
+                id="visita-imovel"
+                name="imovel"
+                autoComplete="off"
+                placeholder="Ex: IMB-1042"
+                value={formVisita.imovel}
+                onChange={(e) => setFormVisita({ ...formVisita, imovel: e.target.value })}
+                className="w-full bg-[#020408] border border-slate-700 rounded-xl px-3.5 py-2.5 text-sm text-white"
+              />
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label htmlFor="visita-data" className="block text-[10px] font-bold uppercase text-slate-400 mb-1">
+                  Data
+                </label>
+                <input
+                  id="visita-data"
+                  name="data"
+                  type="date"
+                  value={formVisita.data}
+                  onChange={(e) => setFormVisita({ ...formVisita, data: e.target.value })}
+                  className="w-full bg-[#020408] border border-slate-700 rounded-xl px-3 py-2.5 text-sm text-white"
+                />
+              </div>
+              <div>
+                <label htmlFor="visita-hora" className="block text-[10px] font-bold uppercase text-slate-400 mb-1">
+                  Hora
+                </label>
+                <input
+                  id="visita-hora"
+                  name="hora"
+                  type="time"
+                  value={formVisita.hora}
+                  onChange={(e) => setFormVisita({ ...formVisita, hora: e.target.value })}
+                  className="w-full bg-[#020408] border border-slate-700 rounded-xl px-3 py-2.5 text-sm text-white"
+                />
+              </div>
+            </div>
+            {/* LGPD — dado de terceiro digitado pelo corretor (D-22.05) */}
+            <p className="text-[10.5px] leading-relaxed text-slate-500">
+              Nome e WhatsApp servem para confirmar a visita e ficam registrados no CRM desta imobiliária. Não pede
+              documento nem dado financeiro. Para correção ou exclusão, use{' '}
+              <strong className="text-slate-300">Excluir meus dados</strong> no rodapé do painel.
+            </p>
             <div className="flex justify-end gap-2 pt-2">
               <button
                 type="button"
