@@ -15,7 +15,7 @@ import {
   Wand2,
 } from 'lucide-react';
 import HeroAba from './HeroAba';
-import { getPlano, WHATSAPP_COMERCIAL } from '../../lib/planos';
+import { getPlano, precoNoCiclo, WHATSAPP_COMERCIAL } from '../../lib/planos';
 import { cabecalhosIA } from '../../lib/aiAuth';
 import { ACOES_TOM, responderTomSimulacao } from '../../lib/simuladorTom';
 import { LIMITE_DEMO, podeUsarDemo, registrarUsoDemo, restantesDemo } from '../../lib/limiteDemo';
@@ -62,8 +62,12 @@ const PILARES = [
 
 const SAUDACAO_TOM =
   'Sou o Tom, o Maestro da Imobiliária. Escolha uma das quatro ações abaixo ou escreva a sua pergunta: eu leio a sua operação e devolvo o que fazer primeiro, com quem executa.';
-const PLANO_OPERACAO_IA = getPlano('esquadrao_ia');
-const PRECO_OPERACAO_IA = `${PLANO_OPERACAO_IA.precoLabel}${PLANO_OPERACAO_IA.periodo}`;
+// D-22.09 — o Tom deixou de ser um único produto dentro do pacote Operação IA.
+// Agora são dois degraus com preço próprio, lidos do catálogo compartilhado.
+const PLANO_TOM_AUTONOMO = getPlano('tom_autonomo');
+const PLANO_TOM_IMOBILIARIA = getPlano('tom_imobiliaria');
+const PRECO_TOM_AUTONOMO = `${precoNoCiclo(PLANO_TOM_AUTONOMO)}${PLANO_TOM_AUTONOMO.periodo}`;
+const PRECO_TOM_IMOBILIARIA = `${precoNoCiclo(PLANO_TOM_IMOBILIARIA)}${PLANO_TOM_IMOBILIARIA.periodo}`;
 
 export default function ExpressBrainTab({
   liberado = false,
@@ -146,9 +150,9 @@ export default function ExpressBrainTab({
 
   const falarComercial = () => {
     const texto = [
-      'Olá! Quero falar sobre o pacote Operação IA (Pólen + Express Brain) do Express Imobi Tech.',
+      'Olá! Quero falar sobre o Tom (Maestro da Imobiliária) do Express Imobi Tech.',
       nomeOficina ? `Imobiliária: ${nomeOficina}.` : '',
-      `Podemos falar sobre o pacote ${PRECO_OPERACAO_IA} e a implantação assistida?`,
+      `Podemos falar do Tom Autônomo (${PRECO_TOM_AUTONOMO}) e do Tom Imobiliária (${PRECO_TOM_IMOBILIARIA} + implantação)?`,
     ]
       .filter(Boolean)
       .join('\n');
@@ -301,26 +305,41 @@ export default function ExpressBrainTab({
           agentes de IA no formato certo, na hora certa.
         </p>
         <p className="mt-3 max-w-3xl text-xs leading-6 text-amber-200/90">
-          <strong className="font-black">Como o Tom complementa a Pólen:</strong> a{' '}
+          <strong className="font-black">Produtos contratados separadamente:</strong> a{' '}
           <strong className="font-black">Pólen</strong> atende e qualifica o cliente no WhatsApp 24h. O{' '}
-          <strong className="font-black">Tom</strong> é o maestro: guarda as regras comerciais, vigia
-          imóveis e leads parados e mantém a equipe no mesmo padrão. Os dois fazem parte da Operação IA.
-        </p>
-        <p className="mt-3 max-w-3xl text-xs leading-6 text-amber-200/90">
-          <strong className="font-black">Pacote Operação IA:</strong> inclui Pólen e Express Brain; a
-          implantação assistida é cobrada à parte.
+          <strong className="font-black">Tom</strong> guarda regras comerciais, acompanha a operação e
+          tem versões Autônomo e Imobiliária. Um produto não está incluído no outro.
         </p>
       </div>
 
-      <div className="rounded-2xl border border-amber-500/30 bg-amber-500/[0.06] p-5">
-        <h3 className="text-[11px] font-black uppercase tracking-[0.14em] text-amber-300">
-          OPERAÇÃO IA · PÓLEN + EXPRESS BRAIN
-        </h3>
-        <p className="mt-1 text-lg font-black text-white">{PRECO_OPERACAO_IA}</p>
-        <p className="mt-2 text-xs leading-6 text-slate-400">
-          Atendimento 24h no WhatsApp, regras comerciais, processos, auditoria e memória operacional em um pacote.
-          A implantação assistida é contratada à parte.
-        </p>
+      <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+        <div className="rounded-2xl border border-amber-500/30 bg-amber-500/[0.06] p-5">
+          <h3 className="text-[11px] font-black uppercase tracking-[0.14em] text-amber-300">
+            Tom Autônomo · Segundo Cérebro Empacotado
+          </h3>
+          <p className="mt-1 text-lg font-black text-white">{PRECO_TOM_AUTONOMO}</p>
+          <p className="mt-1 text-[10px] font-bold uppercase tracking-widest text-emerald-400">
+            {PLANO_TOM_AUTONOMO.setup}
+          </p>
+          <p className="mt-2 text-xs leading-6 text-slate-400">
+            Molde pronto e clonável, conectado por QR Code ao WhatsApp do corretor que trabalha sozinho:
+            rotina do dia, cobrança de follow-up, roteiros de vídeo e copy.
+          </p>
+        </div>
+
+        <div className="rounded-2xl border border-emerald-500/30 bg-emerald-500/[0.06] p-5">
+          <h3 className="text-[11px] font-black uppercase tracking-[0.14em] text-emerald-300">
+            Tom Imobiliária · Operação Customizada
+          </h3>
+          <p className="mt-1 text-lg font-black text-white">{PRECO_TOM_IMOBILIARIA}</p>
+          <p className="mt-1 text-[10px] font-bold uppercase tracking-widest text-emerald-400">
+            {PLANO_TOM_IMOBILIARIA.setup}
+          </p>
+          <p className="mt-2 text-xs leading-6 text-slate-400">
+            Cérebro adaptado sob medida para imobiliárias e equipes: regras de comissão, metas, auditoria de
+            funil, governança de equipe e imóveis parados.
+          </p>
+        </div>
       </div>
 
       <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
@@ -328,7 +347,7 @@ export default function ExpressBrainTab({
           <div key={titulo} className="rounded-2xl border border-slate-800 bg-slate-900 p-5">
             <div className="mb-3 flex items-center gap-2.5">
               <span className="flex h-9 w-9 items-center justify-center rounded-xl border border-amber-500/30 bg-amber-500/10 text-amber-400">
-                <Icone size={17} />
+                {React.createElement(Icone, { size: 17 })}
               </span>
               <h3 className="text-sm font-black uppercase tracking-tight text-white">{titulo}</h3>
             </div>
@@ -345,10 +364,11 @@ export default function ExpressBrainTab({
             <Lock size={34} className="text-emerald-400" />
           </div>
           <h3 className="text-lg font-black uppercase tracking-tight text-white md:text-xl">
-            Operação IA · Pólen + Express Brain
+            Tom · Maestro da Imobiliária
           </h3>
           <p className="mx-auto mt-2 max-w-xl text-sm leading-6 text-slate-300">
-            O pacote inclui Pólen e Express Brain por {PRECO_OPERACAO_IA}. A implantação assistida é contratada à parte.
+            Tom Autônomo por {PRECO_TOM_AUTONOMO} (sem implantação) ou Tom Imobiliária por{' '}
+            {PRECO_TOM_IMOBILIARIA} {PLANO_TOM_IMOBILIARIA.setup ? `+ ${PLANO_TOM_IMOBILIARIA.setup}` : ''}.
           </p>
 
           <div className="mx-auto mt-6 grid max-w-2xl grid-cols-1 gap-2.5 text-left sm:grid-cols-2">

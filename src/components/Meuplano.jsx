@@ -1,28 +1,37 @@
 import React, { useMemo, useState } from 'react';
 import {
   Check, Sparkles, Crown, Bot, MessageCircle, ShieldCheck, Users, Home,
-  ArrowUpRight, Lock, Globe, Info,
+  ArrowUpRight, Lock, Globe, Info, Rocket, Smartphone, Building2,
 } from 'lucide-react';
 import { getAuth } from 'firebase/auth';
-import { PLANOS_PRO, WHATSAPP_COMERCIAL } from '../lib/planos';
+import { PLANOS_PRO, WHATSAPP_COMERCIAL, chaveCanonica, getPlano } from '../lib/planos';
 import { DEGRAUS, SERVICO_PRESENCA_DIGITAL, precoMensal } from '../lib/planosComerciais';
 import { destinoCheckout, urlAsaasLink, comDadosDaConta, abrirDestino } from '../lib/checkout';
 
 const ICONE_DEGRAU = {
   essencial: Home,
   pro: Crown,
-  automacao: Bot,
+  plus: Rocket,
+  esquadrao_ia: Bot,
+  tom_autonomo: Smartphone,
+  tom_imobiliaria: Building2,
   presenca_digital: Globe,
 };
 
 /**
- * Meu Plano — três níveis (Grátis, PRO e Operação IA) e um serviço adicional.
+ * Meu Plano — Grátis, PRO (R$ 39,90), PLUS (R$ 99,90) e os módulos de IA
+ * contratados à parte (Pólen, Tom Autônomo e Tom Imobiliária), mais o serviço
+ * adicional de Presença Digital.
  */
 export default function ModuloMeuPlano({ dadosOficina }) {
   const [mensagem, setMensagem] = useState('');
 
   const planoAtual = String(dadosOficina?.plano || 'gratis');
-  const ehPro = useMemo(() => (PLANOS_PRO instanceof Set ? PLANOS_PRO.has(planoAtual) : false), [planoAtual]);
+  const chavePlano = useMemo(() => chaveCanonica(planoAtual), [planoAtual]);
+  const ehPro = useMemo(() => (PLANOS_PRO instanceof Set ? PLANOS_PRO.has(planoAtual.toLowerCase()) : false), [planoAtual]);
+  const ehPlus = chavePlano === 'plus';
+  const ehPago = ehPro || ehPlus;
+  const nomePlanoAtual = getPlano(chavePlano)?.nome || 'Grátis';
 
   const mostrarMensagem = (texto) => {
     setMensagem(texto);
@@ -43,31 +52,36 @@ export default function ModuloMeuPlano({ dadosOficina }) {
 
   /**
    * Link de pagamento (Asaas) do degrau, já com e-mail e oficinaId na URL.
-   * Variável de ambiente do plano quando existe; sem ela, o link público do
-   * Asaas (LINK_ASAAS_PADRAO). Só volta vazio para planos sem checkout.
+   * Cada plano/ciclo usa sua URL. Só o PRO mensal tem link público padrão;
+   * PLUS e ciclos anuais sem link próprio seguem para o WhatsApp comercial.
    */
   const linkDoPlano = (planoKey, conta) =>
     comDadosDaConta(
       urlAsaasLink(
         {
-          pro: import.meta.env?.VITE_ASAAS_LINK_ESSENCIAL,
+          essencial: import.meta.env?.VITE_ASAAS_LINK_ESSENCIAL,
+          pro: import.meta.env?.VITE_ASAAS_LINK_PRO,
+          proAnual: import.meta.env?.VITE_ASAAS_LINK_PRO_ANUAL,
+          plus: import.meta.env?.VITE_ASAAS_LINK_PLUS,
+          plusAnual: import.meta.env?.VITE_ASAAS_LINK_PLUS_ANUAL,
         },
         planoKey,
+        'mensal',
       ),
       { email: conta.email, oficinaId: conta.oficinaId },
     );
 
-  /** Checkout mensal do PRO unificado. */
-  const assinarPro = () => {
-    const pro = DEGRAUS.find((d) => d.key === 'pro');
+  /** Checkout do degrau pago (PRO R$ 39,90 / PLUS R$ 99,90). */
+  const assinar = (planoKey = 'pro') => {
+    const degrau = DEGRAUS.find((d) => d.key === planoKey);
     const conta = dadosConta();
     const { email, uid, nomeOficina } = conta;
-    const valor = `${precoMensal(pro)}/mês`;
+    const valor = `${precoMensal(degrau)}/mês`;
 
     const destino = destinoCheckout({
-      checkoutUrl: linkDoPlano('pro', conta),
+      checkoutUrl: linkDoPlano(planoKey, conta),
       whatsapp: import.meta.env?.VITE_SU_WPP || WHATSAPP_COMERCIAL,
-      planoNome: 'PRO',
+      planoNome: String(degrau?.nome || planoKey).toUpperCase(),
       ciclo: 'mensal',
       email,
       uid,
@@ -82,24 +96,24 @@ export default function ModuloMeuPlano({ dadosOficina }) {
     }
     mostrarMensagem(
       destino.tipo === 'checkout'
-        ? 'Abrimos o pagamento do PRO em outra aba.'
+        ? `Abrimos o pagamento do ${degrau?.nome || 'plano'} em outra aba.`
         : 'Abrimos o WhatsApp comercial com seu plano, e-mail e ID já preenchidos.',
     );
   };
 
-  /** Contratação consultiva de Operação IA ou do serviço adicional. */
-  const falarEspecialista = (nomeDegrau = 'Operação IA') => {
+  /** Contratação consultiva dos módulos de IA ou do serviço adicional. */
+  const falarEspecialista = (nomeDegrau = 'Pólen') => {
     const { email, uid, nomeOficina } = dadosConta();
-    const operacaoIA = DEGRAUS.find((degrau) => degrau.key === 'automacao');
-    const ehOperacaoIA = /opera[cç][aã]o ia|p[óo]len|tom|sofia|automa[cç][aã]o/i.test(String(nomeDegrau || ''));
+    const operacaoIA = DEGRAUS.find((degrau) => degrau.key === 'esquadrao_ia');
+    const ehOperacaoIA = /p[óo]len|tom|sofia|automa[cç][aã]o|ia\b/i.test(String(nomeDegrau || ''));
     const texto = [
       `Olá! Quero falar sobre o ${nomeDegrau} do Express Imobi Tech.`,
       nomeOficina ? `Imobiliária: ${nomeOficina}.` : '',
       ehOperacaoIA ? 'Equipe de corretores: ___ (quantos corretores hoje).' : '',
       email ? `E-mail da conta: ${email}.` : '',
       uid ? `ID da conta: ${uid}.` : '',
-      ehOperacaoIA
-        ? `Podemos falar sobre o pacote Pólen + Express Brain, ${operacaoIA?.detalhePreco || ''}${operacaoIA?.periodo || ''}, e a implantação assistida?`
+      ehOperacaoIA && operacaoIA
+        ? `Podemos falar do módulo ${nomeDegrau} (${operacaoIA.detalhePreco || ''}${operacaoIA.periodo || ''}) e da implantação assistida?`
         : 'Podemos falar sobre o escopo e o setup do projeto?',
     ].filter(Boolean).join('\n');
 
@@ -112,7 +126,7 @@ export default function ModuloMeuPlano({ dadosOficina }) {
   const falarSobreDowngrade = () => {
     const { email, uid } = dadosConta();
     const texto = [
-      'Olá! Quero voltar do PRO para o plano Grátis.',
+      `Olá! Quero voltar do ${nomePlanoAtual} para o plano Grátis.`,
       email ? `E-mail da conta: ${email}.` : '',
       uid ? `ID da conta: ${uid}.` : '',
     ].filter(Boolean).join('\n');
@@ -121,16 +135,22 @@ export default function ModuloMeuPlano({ dadosOficina }) {
   };
 
   const rotuloCta = (degrau) => {
-    if (degrau.key === 'pro') return ehPro ? 'Plano PRO ativo' : degrau.cta;
-    if (degrau.key === 'essencial') return ehPro ? 'Falar sobre downgrade' : 'Plano atual';
+    if (degrau.key === 'pro') {
+      if (ehPlus) return 'Incluído no seu plano';
+      return ehPro ? 'Plano PRO ativo' : degrau.cta;
+    }
+    if (degrau.key === 'plus') return ehPlus ? 'Plano PLUS ativo' : degrau.cta;
+    if (degrau.key === 'essencial') return ehPago ? 'Falar sobre downgrade' : 'Plano atual';
     return degrau.cta;
   };
 
   const desabilitado = (degrau) =>
-    (degrau.key === 'pro' && ehPro) || (degrau.key === 'essencial' && !ehPro);
+    (degrau.key === 'pro' && ehPago) ||
+    (degrau.key === 'plus' && ehPlus) ||
+    (degrau.key === 'essencial' && !ehPago);
 
   const acaoCta = (degrau) => {
-    if (degrau.key === 'pro') return assinarPro();
+    if (degrau.key === 'pro' || degrau.key === 'plus') return assinar(degrau.key);
     if (degrau.key === 'essencial') return falarSobreDowngrade();
     return falarEspecialista(degrau.nome);
   };
@@ -147,11 +167,12 @@ export default function ModuloMeuPlano({ dadosOficina }) {
           Escolha o nível do seu jogo
         </h1>
         <p className="mx-auto mt-3 max-w-2xl text-sm leading-6 text-slate-300 md:text-base">
-          Comece grátis com CRM, agenda, simuladores e Assistente Legal. No PRO, capte imóveis
-          e publique sua vitrine; a Operação IA reúne Pólen e Express Brain.
+          Comece grátis com CRM, agenda, simuladores e Assistente Legal. O PRO abre a captação e a
+          vitrine pública; o PLUS escala a equipe (até 3 usuários inclusos). Pólen, Tom Autônomo e
+          Tom Imobiliária entram como módulos de IA contratados à parte.
         </p>
         <div className="mt-5 inline-flex items-center gap-2 rounded-2xl border border-emerald-500/30 bg-emerald-500/10 px-4 py-2 text-xs font-black uppercase tracking-widest text-emerald-300">
-          Plano atual: <span className="text-white">{ehPro ? 'PRO' : 'Grátis'}</span>
+          Plano atual: <span className="text-white">{nomePlanoAtual}</span>
         </div>
       </section>
 
@@ -170,7 +191,7 @@ export default function ModuloMeuPlano({ dadosOficina }) {
         </div>
       )}
 
-      {/* TRÊS PLANOS */}
+      {/* PLANOS E MÓDULOS DE IA */}
       <section className="grid items-start gap-6 sm:grid-cols-2 lg:grid-cols-3">
         {DEGRAUS.map((degrau) => {
           const Icone = ICONE_DEGRAU[degrau.key] || Check;

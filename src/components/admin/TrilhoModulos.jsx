@@ -4,8 +4,8 @@ import { ChevronLeft, ChevronRight, Lock, LayoutGrid, X } from 'lucide-react';
 /**
  * TrilhoModulos — navegação em UMA linha arrastável (substitui as 4 barra
  * empilhadas). Cada pílula carrega o círculo/borda da cor do degrau comercial
- * a que pertence, então o cliente vê de relance onde está (Grátis × PRO ×
- * Operação IA) sem precisar abrir "Meu Plano".
+ * a que pertence, então o cliente vê de relance onde está (Grátis × PRO/PLUS ×
+ * módulos de IA) sem precisar abrir "Meu Plano".
  *
  * Por que arrasto + setas + filtro: com 22 módulos o trilho passa de 3000px;
  * sozinho o arrasto esconde metade do menu de quem usa mouse. As setas, a borda
@@ -31,7 +31,7 @@ const DEGRAUS = {
   },
   operacao: {
     id: 'operacao',
-    nome: 'Operação IA',
+    nome: 'Módulos de IA',
     cor: '#f59e0b',
     base: '245,158,11',
     textoClaro: '#b45309',

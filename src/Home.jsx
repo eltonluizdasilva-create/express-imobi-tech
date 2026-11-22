@@ -14,8 +14,12 @@ import { precoNoCiclo } from './lib/planos';
  */
 
 const EMAIL = EMAIL_INSTITUCIONAL;
+// D-22.09 — todo preço da página vem do catálogo (shared/planos.json).
 const PRECO_PRO = precoNoCiclo('pro');
-const PRECO_OPERACAO_IA = precoNoCiclo('esquadrao_ia');
+const PRECO_PLUS = precoNoCiclo('plus');
+const PRECO_POLEN = precoNoCiclo('esquadrao_ia');
+const PRECO_TOM_AUTONOMO = precoNoCiclo('tom_autonomo');
+const PRECO_TOM_IMOBILIARIA = precoNoCiclo('tom_imobiliaria');
 
 const PORTAIS = ['ZAP Imóveis', 'Viva Real', 'OLX', 'Imovelweb', 'Chaves na Mão'];
 
@@ -142,7 +146,7 @@ const PLANO_PRO = [
   'Correspondente / Crédito',
   'Portais XML: ZAP, Viva Real, OLX, Imovelweb e Chaves na Mão',
   'Simulador de financiamento e NFS-e',
-  'Até 3 usuários',
+  '1 usuário (corretor autônomo)',
 ];
 
 const FAQ = [
@@ -156,7 +160,7 @@ const FAQ = [
   },
   {
     q: 'O que muda de fato entre o gratuito e o PRO?',
-    a: 'O Grátis organiza leads, agenda, simuladores e Assistente Legal, sem upload de fotos. O PRO acrescenta Captação & Imóveis, vitrine pública, até 7 fotos por anúncio e os demais módulos operacionais. A Operação IA, contratada à parte, reúne Pólen e Express Brain.',
+    a: 'O Grátis organiza leads, agenda, simuladores e Assistente Legal, sem upload de fotos. O PRO acrescenta Captação & Imóveis, vitrine pública, até 7 fotos por anúncio e os demais módulos operacionais. Acima dele, PLUS (escala da equipe) e, contratados à parte, a Pólen (atendimento 24h) e o Tom (Autônomo R$ 197 ou Imobiliária R$ 497).',
   },
   {
     q: 'Funciona no celular?',
@@ -510,7 +514,8 @@ export default function Home() {
           </p>
 
           <p className="mt-3 text-[12px] text-slate-500">
-            Acima do PRO ficam os dois módulos de <span className="font-semibold text-slate-300">Operação IA</span>,
+            Entre o PRO e a camada de IA existe o <span className="font-semibold text-slate-300">PLUS</span> (escala
+            da equipe). Acima dele ficam dois produtos independentes,
             contratados separadamente: <span className="font-semibold text-emerald-300">Pólen · Atendimento 24h</span> (a
             atendente que responde e qualifica no WhatsApp oficial) e{' '}
             <span className="font-semibold text-amber-300">Tom · Maestro da Imobiliária</span> (as regras comerciais, os
@@ -532,7 +537,7 @@ export default function Home() {
           </p>
         </div>
 
-        <div className="mt-12 grid items-start gap-4 lg:grid-cols-2">
+        <div className="mt-12 grid items-start gap-4 lg:grid-cols-3">
           {/* GRÁTIS */}
           <div className="rounded-2xl border border-white/[0.08] bg-[#050b09] p-7">
             <div className="flex items-baseline justify-between gap-3">
@@ -611,6 +616,52 @@ export default function Home() {
               Prefiro falar com a equipe antes
             </a>
           </div>
+
+          {/* PLUS */}
+          <div className="rounded-2xl border border-white/[0.08] bg-[#050b09] p-7">
+            <div className="flex items-baseline justify-between gap-3">
+              <h3 className="text-lg font-bold text-white">PLUS</h3>
+              <span className="rounded-full border border-white/10 bg-white/[0.04] px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.12em] text-slate-400">
+                Escala
+              </span>
+            </div>
+            <p className="mt-4 flex items-end gap-1.5">
+              <span className="text-4xl font-black tracking-tight text-white">{PRECO_PLUS}</span>
+              <span className="pb-1 text-sm text-slate-500">/mês</span>
+            </p>
+            <p className="mt-2 text-[13px] text-slate-400">
+              No anual sai por <strong className="text-white">R$ 89,90/mês</strong>. Sem fidelidade e sem
+              implantação.
+            </p>
+
+            <ul className="mt-6 space-y-2.5">
+              {[
+                'Tudo do PRO',
+                'Até 3 usuários inclusos (+R$ 19,90/usuário extra)',
+                'Automações da plataforma e teto maior de operação',
+                'Implantação R$ 0',
+              ].map((item) => (
+                <li key={item} className="flex items-start gap-2.5 text-[13px] text-slate-300">
+                  <span className="mt-0.5 text-emerald-400">✓</span>
+                  <span>{item}</span>
+                </li>
+              ))}
+            </ul>
+
+            <button
+              type="button"
+              onClick={() => navigate('/cadastro')}
+              className="mt-7 w-full rounded-xl border border-emerald-500/40 bg-emerald-500/[0.12] px-5 py-3 text-sm font-bold text-emerald-200 transition-colors hover:bg-emerald-500/20"
+            >
+              Assinar o PLUS
+            </button>
+            <a
+              href={`mailto:${EMAIL}?subject=Quero%20saber%20mais%20sobre%20o%20plano%20PLUS`}
+              className="mt-3 block text-center text-[12px] text-slate-400 underline decoration-slate-600 underline-offset-4 transition-colors hover:text-white"
+            >
+              Falar sobre a operação da equipe
+            </a>
+          </div>
         </div>
 
         {/* Teste completo × bônus de lançamento */}
@@ -636,15 +687,32 @@ export default function Home() {
           </div>
         </div>
 
-        {/* OPERAÇÃO IA reúne a Pólen e o Express Brain no mesmo pacote. */}
-        <div className="mt-6 grid gap-4">
+        {/* D-22.09 — Pólen e Tom são produtos separados. O Tom tem dois degraus. */}
+        <div className="mt-6 grid gap-4 md:grid-cols-3">
           {[
             {
-              nome: 'Pólen · Atendimento 24h + Express Brain',
-              preco: PRECO_OPERACAO_IA,
+              nome: 'Pólen · Atendimento 24h no WhatsApp',
+              preco: PRECO_POLEN,
+              nota: '+ implantação R$ 497',
               texto:
-                'Pacote de Operação IA: atendimento da Pólen no WhatsApp oficial e Express Brain para regras comerciais, processos, auditoria e memória operacional. Implantação assistida à parte.',
+                'Atendimento comercial automatizado 24h no WhatsApp oficial: consulta o catálogo, qualifica o lead e compartilha o link do imóvel no portal.',
               cor: 'emerald',
+            },
+            {
+              nome: 'Tom Autônomo · Segundo Cérebro Empacotado',
+              preco: PRECO_TOM_AUTONOMO,
+              nota: 'sem implantação',
+              texto:
+                'Molde pronto e clonável, conectado por QR Code ao WhatsApp de quem trabalha sozinho: rotina do dia, cobrança de follow-up, roteiro de vídeo e copy.',
+              cor: 'amber',
+            },
+            {
+              nome: 'Tom Imobiliária · Operação Customizada',
+              preco: PRECO_TOM_IMOBILIARIA,
+              nota: '+ implantação R$ 697',
+              texto:
+                'Cérebro adaptado sob medida para imobiliárias e equipes: regras de comissão, metas, auditoria de funil, governança de equipe e imóveis parados.',
+              cor: 'amber',
             },
           ].map((modulo) => (
             <div
@@ -657,20 +725,29 @@ export default function Home() {
             >
               <h3 className="text-[15px] font-bold text-white">{modulo.nome}</h3>
               <p className="mt-1 text-[13px] font-semibold text-slate-300">{modulo.preco}/mês</p>
+              <p className="text-[11px] font-bold uppercase tracking-[0.1em] text-slate-500">{modulo.nota}</p>
               <p className="mt-2 text-[13px] leading-relaxed text-slate-400">{modulo.texto}</p>
             </div>
           ))}
         </div>
 
         <p className="mt-4 text-center text-[12px] text-slate-500">
-          A Operação IA inclui Pólen e Express Brain no mesmo pacote. A implantação assistida é cobrada à parte.{' '}
+          Pólen e Tom são camadas diferentes e não vêm um dentro do outro: a Pólen atende o cliente final no
+          WhatsApp, o Tom organiza a operação da casa.{' '}
           <a
             href={`mailto:${EMAIL}?subject=Opera%C3%A7%C3%A3o%20IA%20-%20P%C3%B3len%20e%20Tom`}
             className="font-semibold text-emerald-300 hover:text-emerald-200"
           >
-            Falar sobre a Operação IA
+            Falar sobre Pólen e Tom
           </a>
           .
+        </p>
+
+        <p className="mt-4 text-center text-[12px] text-slate-500">
+          Social de vídeo automático (15s–30s) entra como add-on:{' '}
+          <strong className="text-slate-300">+ R$ 247/mês por 8 vídeos</strong> ou{' '}
+          <strong className="text-slate-300">+ R$ 347/mês por 12 vídeos</strong> — Reels e TikTok, com legenda e
+          copy. Acima de 30s, consulte preços.
         </p>
 
         <p className="mt-4 text-center text-[12px] text-slate-500">

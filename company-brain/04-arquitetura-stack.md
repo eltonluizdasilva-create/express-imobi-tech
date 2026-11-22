@@ -1,6 +1,6 @@
 # 04 — Arquitetura e Stack · Express Tech
 
-> **Verdade atual:** 2026-11-20. Mudou infraestrutura? Registre em `05-decisoes-ativas.md`.
+> **Verdade atual:** 2026-11-23. Mudou infraestrutura? Registre em `05-decisoes-ativas.md`.
 
 ---
 
@@ -84,7 +84,7 @@ criados em um único batch; o listener de autenticação aguarda o batch antes d
 O endpoint `pagamento-webhook.js` usa a dependência `firebase-admin` instalada na raiz e a variável
 `FIREBASE_SERVICE_ACCOUNT`; os demais endpoints que usam `_firestoreAdmin.js` continuam via REST.
 
-Webhook do Asaas: o token do cabeçalho `asaas-access-token` é comparado com `WEBHOOK_SECRET` (mesmo segredo do JSON direto). Plano vem do valor pago (mapa derivado de `shared/planos.json`) ou de `externalReference`/`description`; a leitura pura vive em `api/_asaas.js`. Links de upgrade: `src/lib/checkout.js` (`urlAsaasLink`, `LINK_ASAAS_PADRAO`), sem link configurado o botão do Essencial Plus/PRO usa o link público do Asaas.
+Webhook do Asaas: o token do cabeçalho `asaas-access-token` é comparado com `WEBHOOK_SECRET` (mesmo segredo do JSON direto). Plano vem do valor pago (mapa derivado de `shared/planos.json`) ou de `externalReference`/`description`; a leitura pura vive em `api/_asaas.js`. Links de upgrade: `src/lib/checkout.js` (`urlAsaasLink`, `LINK_ASAAS_PADRAO`); o link público cobre apenas PRO mensal. PLUS e ciclos anuais exigem link próprio, sem fallback para outra faixa de preço.
 
 ---
 

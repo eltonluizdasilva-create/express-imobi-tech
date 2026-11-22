@@ -6,8 +6,8 @@ import {
   useAuth,
   DEFAULT_NIVEL_INTELIGENCIA,
   CREDITOS_IA_FALLBACK,
-  DEFAULT_LIMITE_USUARIOS,
 } from '../contexts/AuthContext';
+import { limiteUsuariosDoPlano } from '../lib/planos';
 
 const OficinaContext = createContext();
 
@@ -69,7 +69,7 @@ export function OficinaProvider({ children }) {
         limiteUsuarios:
           typeof authCtx?.limiteUsuarios === 'number' && authCtx.limiteUsuarios > 0
             ? authCtx.limiteUsuarios
-            : DEFAULT_LIMITE_USUARIOS,
+            : limiteUsuariosDoPlano(authCtx?.dadosOficina?.plano || 'gratis'),
         membrosEquipe: Array.isArray(authCtx?.membrosEquipe) ? authCtx.membrosEquipe : [],
         quantidadeAtualCorretores:
           typeof authCtx?.quantidadeAtualCorretores === 'number'

@@ -19,7 +19,8 @@ import {
   X,
   Sparkles,
 } from 'lucide-react';
-import { useAuth, DEFAULT_LIMITE_USUARIOS } from './contexts/AuthContext';
+import { useAuth } from './contexts/AuthContext';
+import { limiteUsuariosDoPlano } from './lib/planos';
 import BloqueioPremium from './components/BloqueioPremium';
 
 const FUNCOES_EQUIPE = [
@@ -69,7 +70,9 @@ export default function Equipe({
     authCtx.dadosOficina ||
     {};
 
-  // Fallback seguro de 1 caso limiteUsuarios esteja ausente no documento raiz
+  // Assentos: `limiteUsuarios` do documento raiz manda (é o que sobe quando o
+  // cliente compra usuário extra). Sem ele, o limite vem do catálogo pelo plano
+  // — Grátis 1 · PRO 1 · PLUS até 3 inclusos.
   const limiteUsuarios = useMemo(() => {
     if (typeof dadosRaiz?.limiteUsuarios === 'number' && !Number.isNaN(dadosRaiz.limiteUsuarios) && dadosRaiz.limiteUsuarios > 0) {
       return dadosRaiz.limiteUsuarios;
@@ -77,8 +80,8 @@ export default function Equipe({
     if (typeof authCtx?.limiteUsuarios === 'number' && !Number.isNaN(authCtx.limiteUsuarios) && authCtx.limiteUsuarios > 0) {
       return authCtx.limiteUsuarios;
     }
-    return DEFAULT_LIMITE_USUARIOS;
-  }, [dadosRaiz?.limiteUsuarios, authCtx?.limiteUsuarios]);
+    return limiteUsuariosDoPlano(dadosRaiz?.plano || 'gratis');
+  }, [dadosRaiz?.limiteUsuarios, dadosRaiz?.plano, authCtx?.limiteUsuarios]);
 
   // Estado local sincronizado com o estado global (subcoleção `equipe`)
   const [membrosLocais, setMembrosLocais] = useState([]);

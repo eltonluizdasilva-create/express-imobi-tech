@@ -7,37 +7,43 @@
 
 ## 1. Preços vigentes
 
-### 1.1 Automação e serviços (ticket de entrada)
+### 1.1 Produtos de IA e serviços
 
 | Item | Valor | Observação |
 |---|---|---|
-| Implantação / agentes de IA sob medida | **a partir de R$ 450** | piso comercial para filtrar lead e validar demanda B2B |
-| Operação IA — Pólen Atendimento 24h + Express Brain | **a partir de R$ 450/mês** + taxa única de implantação | pacote único, venda consultiva e fechamento com especialista |
+| Pólen · Atendimento 24h | **R$ 450/mês** + **implantação R$ 497** | produto independente; contratação consultiva |
+| Tom Autônomo | **R$ 197/mês** | implantação R$ 0 |
+| Tom Imobiliária | **R$ 497/mês** + **implantação R$ 697** | operação customizada para equipe |
+| Add-on Social Vídeo Automático | **R$ 247/mês (8 vídeos)** ou **R$ 347/mês (12 vídeos)** | vídeos acima de 30s: consultar |
+| Implantação / agentes de IA sob medida | **a partir de R$ 450** | escopo e proposta próprios; não representa pacote Pólen + Tom |
 | Presença Digital & Tráfego | **setup R$ 690** + **gestão opcional R$ 490/mês** | Vitrine/Portal + Google Meu Negócio no setup; verba de anúncios à parte |
 
-O ticket de R$ 450 existe para **qualificar**, não para competir por preço. Abaixo disso, o custo de
-atendimento consome a margem.
+Pólen e Tom são produtos independentes: nenhum é incluído automaticamente no outro.
 
 ### 1.2 SaaS — Express Imobi Tech
 
 | Plano | Preço | O que entrega |
 |---|---|---|
 | **Grátis** | **R$ 0** | CRM, funil, agenda, simuladores e Assistente Legal; sem upload de fotos de imóveis |
-| **PRO** | **R$ 39,90/mês** | Captação & Imóveis, vitrine pública (opt-in), até 7 fotos por imóvel, 7 agentes de IA e módulos PRO; Foto 1 é a capa |
-| **Operação IA** | **a partir de R$ 450/mês** + taxa única de implantação | Pólen Atendimento 24h + Express Brain no mesmo pacote |
+| **PRO** | **R$ 39,90/mês** ou **R$ 34,90/mês no anual** | Captação & Imóveis, vitrine pública (opt-in), até 7 fotos por imóvel, 7 agentes de IA e módulos PRO; Foto 1 é a capa |
+| **PLUS** | **R$ 99,90/mês** ou **R$ 89,90/mês no anual** | Tudo do PRO, até 3 usuários inclusos e teto maior de operação |
+| **Pólen · Atendimento 24h** | **R$ 450/mês** + implantação de **R$ 497** | Atendimento comercial automatizado; produto contratado à parte |
+| **Tom Autônomo** | **R$ 197/mês** | Segundo cérebro empacotado; implantação R$ 0 |
+| **Tom Imobiliária** | **R$ 497/mês** + implantação de **R$ 697** | Operação customizada para imobiliárias |
+| **Add-on Social Vídeo Automático** | **R$ 247/mês (8 vídeos)** ou **R$ 347/mês (12 vídeos)** | Add-on com contratação própria |
 | **Presença Digital & Tráfego** | **setup R$ 690** + **gestão de tráfego opcional R$ 490/mês** | Vitrine/Portal sincronizado + Google Meu Negócio (no setup); verba de anúncios paga à parte |
 
-As chaves antigas `essencial_plus` e `profissional` são aliases técnicos do PRO, não planos ou
-ofertas separados. Foto 1 deve ser a apresentação inicial da Pólen; as fotos 2–7 só podem ser
-compartilhadas se o cliente pedir explicitamente. O envio de imagem como anexo depende de o canal
-WhatsApp oferecer suporte a mídia.
+No anual, o preço exibido é mensal equivalente e a cobrança usa o link anual específico. As chaves
+legadas `essencial_plus -> pro` e `profissional -> plus` são aliases técnicos para compatibilidade.
+Foto 1 é a capa do imóvel no portal. A apresentação inicial da Pólen inclui resumo e link direto;
+não se deve afirmar envio de foto no WhatsApp até existir integração real de mídia.
 
 Fonte única de verdade técnica: `shared/planos.json` (copiado para `functions/planos.json` por
 `scripts/sync-planos.cjs`). **Nunca** digitar preço em componente.
 
-### 1.3 Express Auto Tech
-Mesmo motor comercial (modo gratuito + degraus pagos); preços de tabela ficam em
-`shared/planos.json` (`gratis`, `profissional`, `esquadrao_ia`).
+### 1.3 Fonte de preço
+Preços, módulos e limites do Express Imobi Tech ficam em `shared/planos.json`; não criar ofertas
+duplicadas em componentes ou habilitar produtos pagos por rótulo visual.
 
 ---
 

@@ -462,7 +462,7 @@ const AGENTES_INICIAIS = [
     cargo: 'Recepção 24h no WhatsApp',
     ativo: true,
     // Lote 4 — a Pólen é a demonstração do atendimento no degrau Grátis.
-    // O WhatsApp oficial com QR Code é o degrau Automação (R$ 450+).
+    // O WhatsApp oficial com QR Code é a Pólen (D-22.09): R$ 450/mês + implantação.
     demonstracao: true,
     atendimentos: 128,
     prompt: 'Recepciona o lead em 3 segundos e identifica se busca Imóvel Urbano, Loteamento/Condomínio, Fazenda/Rural ou Locação.',
@@ -1616,6 +1616,16 @@ export default function Admin() {
     'notafiscal',
   ];
 
+  // Preços exibidos no menu também vêm do catálogo compartilhado.
+  const precoDoPlano = (key) => {
+    const plano = PLANOS.find((item) => item.key === key);
+    if (plano?.precoLabel) return plano.precoLabel;
+    const mensal = plano?.preco?.mensal;
+    if (mensal === null || mensal === undefined) return null;
+    if (!mensal) return null;
+    return mensal.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL', minimumFractionDigits: 2 });
+  };
+
   const botoesBloco1Essencial = [
     { id: 'dashboard_imobi', icone: '📊', label: 'Visão Geral' },
     // D-22.05 — "Meu Plano" saiu da última posição: era o 9º item da faixa e
@@ -1631,7 +1641,7 @@ export default function Admin() {
     { id: 'especialista', icone: '🎧', label: 'Suporte Especialista' },
   ];
 
-  // Plano PRO unificado: Captação & Imóveis, vitrine e demais módulos pagos.
+  // PRO e PLUS liberam Captação & Imóveis, vitrine e os módulos pagos.
   const botoesBlocoPro = [
     { id: 'captacao_imobi', icone: '🏠', label: 'Captação & Imóveis' },
     { id: 'historico', icone: '📝', label: 'Propostas & Negócios' },
@@ -1653,37 +1663,30 @@ export default function Admin() {
     // internas de `administrador` e `contador`. As rotas seguem válidas.
   ];
 
-  // Operação IA libera Pólen e Express Brain no mesmo pacote.
+  // Produtos de IA têm preços próprios; as travas de acesso não mudam aqui.
   const botoesBlocoOperacaoIA = [
     {
       id: 'sofia_whatsapp',
       icone: '📲',
       label: 'Pólen · Atendimento 24h',
-      badge: 'Incluído',
+      badge: `${precoDoPlano('esquadrao_ia')}/mês`,
     },
     {
       id: 'brain',
       icone: '🧠',
-      label: 'Tom · Maestro da Imobiliária',
-      badge: 'Incluído',
+      label: 'Tom · Autônomo / Imobiliária',
+      badge: `${precoDoPlano('tom_autonomo')} / ${precoDoPlano('tom_imobiliaria')}`,
     },
   ];
 
-  // Preço e faixa consultiva vêm do catálogo compartilhado.
-  const precoDoPlano = (key) => {
-    const plano = PLANOS.find((item) => item.key === key);
-    if (plano?.precoLabel) return plano.precoLabel;
-    const mensal = plano?.preco?.mensal;
-    if (mensal === null || mensal === undefined) return null;
-    if (!mensal) return null;
-    return mensal.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL', minimumFractionDigits: 2 });
-  };
-
-  /* Trilho único com os três níveis comerciais. Antes eram 4 faixas empilhadas (~450px de tela) com
+  /* Trilho único com os degraus comerciais. Antes eram 4 faixas empilhadas (~450px de tela) com
      rolagem horizontal invisível: no mouse não havia como alcançar o fim da
-     linha. Cada pílula usa a cor do plano (verde Grátis · azul PRO · âmbar IA),
+     linha. Cada pílula usa a cor do plano (verde Grátis · azul PRO/PLUS · âmbar IA),
      e o cliente alcança o resto arrastando, pela roda do mouse ou pelas setas.
-     A lista de abas é de todo mundo: o acesso é que depende do plano. */
+     A lista de abas é de todo mundo: o acesso é que depende do plano.
+     PRO e PLUS liberam o mesmo conjunto de módulos — o que muda é o assento
+     (PRO 1 usuário · PLUS até 3 inclusos, +R$ 19,90/usuário extra) e o teto de
+     operação, por isso os dois preços aparecem no mesmo degrau. */
   const gruposTrilho = [
     {
       id: 'gratis',
@@ -1695,9 +1698,11 @@ export default function Admin() {
     {
       id: 'pro',
       degrau: 'pro',
-      rotuloCurto: 'PRO',
-      preco: precoDoPlano('pro'),
-      titulo: trialEmAndamento && !bloqueioProAtivo ? 'PRO · Teste de 10 dias' : 'PRO',
+      rotuloCurto: 'PRO / PLUS',
+      preco: `PRO ${precoDoPlano('pro')} · PLUS ${precoDoPlano('plus')}`,
+      titulo: trialEmAndamento && !bloqueioProAtivo
+        ? `PRO ${precoDoPlano('pro')} · Teste de 10 dias`
+        : `PRO ${precoDoPlano('pro')} · PLUS ${precoDoPlano('plus')}`,
       itens: filtrarPorPapel(botoesBlocoPro).map((item) => ({
         ...item,
         bloqueado: bloqueioProAtivo,
@@ -1706,9 +1711,9 @@ export default function Admin() {
     {
       id: 'operacao',
       degrau: 'operacao',
-      rotuloCurto: 'Operação IA',
-      preco: precoDoPlano('esquadrao_ia'),
-      titulo: `Operação IA · ${precoDoPlano('esquadrao_ia') || ''}`,
+      rotuloCurto: 'IA',
+      preco: `Pólen ${precoDoPlano('esquadrao_ia')} · Tom ${precoDoPlano('tom_autonomo')} / ${precoDoPlano('tom_imobiliaria')}`,
+      titulo: 'Produtos de IA contratados separadamente',
       itens: filtrarPorPapel(botoesBlocoOperacaoIA),
     },
   ];
@@ -2807,7 +2812,7 @@ export default function Admin() {
                         <h3 className="font-bold text-white text-sm">{ag.nome}</h3>
                         {/* Lote 4 — no degrau Grátis o esquadrão é vitrine:
                             Sofia aparece como DEMONSTRAÇÃO do atendimento,
-                            sem prometer o WhatsApp oficial do degrau R$ 450+. */}
+                            sem prometer o WhatsApp oficial da Pólen (R$ 450 + implantação). */}
                         {ag.demonstracao && (
                           <span className="rounded-full border border-amber-400/50 bg-amber-500/15 px-1.5 py-0.5 text-[9px] font-black uppercase tracking-[0.10em] text-amber-300">
                             Demonstração
@@ -2969,8 +2974,8 @@ export default function Admin() {
                 <div className="tarja-aviso mt-3 rounded-xl border border-[#f59e0b]/40 bg-[#f59e0b]/10 p-3 text-[11px] text-[#f59e0b] space-y-2">
                   <p>
                     Você usou as {LIMITE_DEMO} mensagens gratuitas de demonstração da Pólen. Ela atende
-                    sem limite no WhatsApp quando o módulo está contratado (a partir de R$ 450/mês +
-                    implantação).
+                    sem limite no WhatsApp quando o módulo está contratado ({precoDoPlano('esquadrao_ia')}/mês
+                    + implantação).
                   </p>
                   <button
                     type="button"

@@ -406,9 +406,9 @@ const REEMBOLSO = {
     },
     {
       id: 'implantacao',
-      titulo: '8. Implantação e módulos de Operação IA',
+      titulo: '8. Implantação dos módulos de IA (Pólen e Tom)',
       paragrafos: [
-        'A taxa de implantação e as horas assistidas dos módulos de Operação IA remuneram trabalho já executado: configuração, conexão do WhatsApp e treinamento da equipe.',
+        'A taxa de implantação e as horas assistidas dos módulos de inteligência artificial (Pólen, Tom Autônomo e Tom Imobiliária) remuneram trabalho já executado: configuração, conexão do WhatsApp e treinamento da equipe.',
         'Pedido de reembolso desses valores é avaliado conforme o que já foi executado e o que estiver escrito na proposta aceita, sem prejuízo do direito de arrependimento nos 7 dias quando aplicável.',
       ],
     },

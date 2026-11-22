@@ -10,7 +10,7 @@ import {
 } from 'firebase/auth';
 import { db } from '../lib/firebase';
 import { collection, doc, getDoc, onSnapshot, setDoc, writeBatch } from 'firebase/firestore';
-import { isPlanoPro } from '../lib/planos';
+import { isPlanoPro, limiteUsuariosDoPlano } from '../lib/planos';
 
 const AuthContext = createContext(null);
 
@@ -34,8 +34,6 @@ export const FRANQUIA_BASE_CREDITOS_IA = 1000;
 export const CREDITOS_IA_FALLBACK = FRANQUIA_BASE_CREDITOS_IA;
 export const DEFAULT_LIMITE_USUARIOS = 1;
 
-
-
 const normalizarNivel = (valor) =>
   valor === 'avancado' || valor === 'padrao' ? valor : DEFAULT_NIVEL_INTELIGENCIA;
 
@@ -46,8 +44,16 @@ const normalizarNivel = (valor) =>
 const normalizarCreditos = (valor) =>
   typeof valor === 'number' && !Number.isNaN(valor) ? Math.max(0, valor) : CREDITOS_IA_FALLBACK;
 
-const normalizarLimite = (valor) =>
-  typeof valor === 'number' && !Number.isNaN(valor) && valor > 0 ? valor : DEFAULT_LIMITE_USUARIOS;
+/**
+ * Assentos da conta: o campo `limiteUsuarios` de `oficinas/{id}` é gravado pelo
+ * backend/comercial (é ele que sobe quando o cliente compra assento extra).
+ * Quando ele ainda NÃO existe, o limite vem do catálogo pelo plano:
+ * Grátis 1 · PRO 1 · PLUS 3. Nunca cair num número fixo aqui.
+ */
+const normalizarLimite = (valor, plano) =>
+  typeof valor === 'number' && !Number.isNaN(valor) && valor > 0
+    ? valor
+    : limiteUsuariosDoPlano(plano || 'gratis');
 
 /**
  * Lê o documento raiz da organização (`oficinas/{id}`).
@@ -67,7 +73,7 @@ export async function gerenciarDocumentoImobiliaria(oficinaId, dadosBase = {}) {
       id: oficinaId,
       nivelInteligencia: normalizarNivel(ofiData.nivelInteligencia),
       creditosIA: normalizarCreditos(ofiData.creditosIA),
-      limiteUsuarios: normalizarLimite(ofiData.limiteUsuarios),
+      limiteUsuarios: normalizarLimite(ofiData.limiteUsuarios, ofiData.plano),
     };
   }
 
@@ -155,7 +161,7 @@ export function AuthProvider({ children }) {
     const aplicarDadosOrganizacao = (orgId, data) => {
       const nivelSinc = normalizarNivel(data.nivelInteligencia);
       const creditosSinc = normalizarCreditos(data.creditosIA);
-      const limiteSinc = normalizarLimite(data.limiteUsuarios);
+      const limiteSinc = normalizarLimite(data.limiteUsuarios, data.plano);
 
       setNivelInteligencia(nivelSinc);
       setCreditosIASomenteSnapshot(creditosSinc);

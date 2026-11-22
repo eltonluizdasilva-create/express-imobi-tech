@@ -1,6 +1,7 @@
 # Plano Pós-Venda — Express Imobi Tech
 
-Documento operacional e técnico atualizado para o plano PRO unificado de R$ 39,90/mês.
+Documento operacional e técnico alinhado à tabela D-22.09: Grátis, PRO, PLUS, Pólen, Tom
+Autônomo, Tom Imobiliária e add-on Social Vídeo.
 
 **Regra deste documento:** tudo aqui foi apurado lendo o código do repositório. Onde uma proteção
 **não** existe, ela aparece como pendência — não como recurso. Nenhum nome de variável, endpoint ou
@@ -25,14 +26,15 @@ Arquivos consultados para escrever este plano:
 
 Arquivo: `src/lib/checkout.js`
 
-`Meuplano.jsx` chama `urlAsaasLink()` para o PRO unificado. A variável atualmente lida pela tela é
-`VITE_ASAAS_LINK_ESSENCIAL` (nome legado); se estiver ausente ou inválida, usa o link público
-unificado `LINK_ASAAS_PADRAO.pro`. Não há seletor de ciclo anual na tela: o preço comercial é
-R$ 39,90/mês.
+`Meuplano.jsx` chama `urlAsaasLink()` com a chave e o ciclo do plano. O PRO mensal usa
+`VITE_ASAAS_LINK_PRO` (ou `VITE_ASAAS_LINK_ESSENCIAL`, nome legado) e, sem URL válida, o link
+público PRO de R$ 39,90/mês. PLUS usa somente `VITE_ASAAS_LINK_PLUS`; PLUS anual usa
+`VITE_ASAAS_LINK_PLUS_ANUAL`. Sem link PLUS próprio, o fluxo segue para WhatsApp e nunca para o
+checkout PRO. Ciclos anuais também exigem URL anual própria; não reutilizam checkout mensal.
 
 Arquivo: `src/components/Meuplano.jsx` — função `assinarPro()`
 
-- O checkout é mensal, sem seletor de ciclo.
+- Meu Plano oferece checkout mensal; não há seletor anual ativo nessa tela.
 - `comDadosDaConta()` acrescenta e-mail e ID da imobiliária (`externalReference`) ao link do Asaas.
 - Se a abertura do checkout for bloqueada, a tela mostra um aviso; o fluxo consultivo de Operação
   IA continua pelo WhatsApp comercial.
@@ -48,7 +50,11 @@ exclusivamente o webhook da Parte 1.3. O usuário precisa recarregar o painel pa
 
 1. Vercel → projeto `express-imobi-tech-dqgx` → **Settings → Environment Variables**.
 2. Opcionalmente, configurar em **Production** (e em **Preview**, se quiser testar antes):
-   - `VITE_ASAAS_LINK_ESSENCIAL` = link de pagamento do PRO único (R$ 39,90/mês; o nome da variável é legado)
+   - `VITE_ASAAS_LINK_PRO` = link PRO mensal (R$ 39,90).
+   - `VITE_ASAAS_LINK_PRO_ANUAL` = link PRO anual com preço anual correto.
+   - `VITE_ASAAS_LINK_PLUS` = link PLUS mensal (R$ 99,90).
+   - `VITE_ASAAS_LINK_PLUS_ANUAL` = link PLUS anual (R$ 89,90/mês equivalente, cobrança anual).
+   - `VITE_ASAAS_LINK_ESSENCIAL` = compatibilidade legada; alias de checkout PRO.
 3. **Redeploy obrigatório** — variáveis `VITE_` são embutidas no bundle durante o build; adicionar
    sem redeploy não muda nada no que já está publicado.
 
@@ -56,8 +62,8 @@ exclusivamente o webhook da Parte 1.3. O usuário precisa recarregar o painel pa
 > o JavaScript público do navegador. Segredos de gateway ficam apenas no servidor (`WEBHOOK_SECRET`,
 > em Cloud Functions).
 
-Sem a variável, o botão continua funcionando com o link público unificado do Asaas. Operação IA
-continua sendo uma contratação consultiva pelo WhatsApp comercial.
+Sem link próprio para o PLUS, o botão abre o WhatsApp comercial com o plano e os dados da conta.
+Produtos de IA e o add-on continuam sendo contratações consultivas.
 
 ### 1.3 `pagamentoWebhook` — o que está implementado
 
@@ -84,7 +90,7 @@ Payload aceito (todos opcionais, com defaults):
 | Campo | Uso | Default quando ausente |
 |---|---|---|
 | `status` ou `event` | define a ação | **`pago`** (ver pendência P2) |
-| `plano` | chave do plano | `profissional` |
+| `plano` | chave do plano | `profissional` (alias legado de PLUS) |
 | `ciclo` | `mensal` / `anual` | `mensal` |
 | `oficinaId` | id do tenant | — |
 | `email` | alternativa ao `oficinaId` | — |
@@ -109,8 +115,9 @@ O que `aplicarPlano` grava em `oficinas/{oficinaId}`: `plano`, `isPro`, `tipoPla
 `cancelamento`), `planoAtualizadoEm`; quando o plano não é PRO, também `nivelInteligencia: 'padrao'`.
 Se o documento da oficina não existir, ele é criado com `uid`, `plano`, `isPro`, `criadoEm`.
 
-O plano é considerado PRO conforme `planosPro` em `planos.json` (`pro`, `profissional`,
-`esquadrao_ia`, `premium`, `pago`, `master`, `prime`, `planoprimeia`, `especialista`, `ultimate`).
+O plano é considerado pago conforme `planosPro` em `planos.json` (`pro`, `plus`, `profissional`,
+`essencial_plus`, `esquadrao_ia`, `premium`, `pago`, `master`, `prime`, `planoprimeia`,
+`especialista`, `ultimate`). `profissional` é alias de PLUS; `essencial_plus` é alias de PRO.
 `gratis`, `gratuito`, `free`, `trial` e vazio são tratados como gratuitos.
 
 ### 1.4 Configurar o webhook (checklist)

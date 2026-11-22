@@ -4,8 +4,13 @@ import { collection, setDoc, doc, onSnapshot, query, deleteDoc } from 'firebase/
 import { useOficina } from './components/OficinaContext';
 
 const REGRAS_PLANOS = {
-  essencial: { membros: 3, nome: 'Essencial' },
-  profissional: { membros: 5, nome: 'Profissional' },
+  gratis: { membros: 1, nome: 'Grátis' },
+  essencial: { membros: 1, nome: 'PRO' },
+  pro: { membros: 1, nome: 'PRO' },
+  essencial_plus: { membros: 1, nome: 'PRO' },
+  // PLUS: até 3 usuários inclusos; assento extra é compra à parte (R$ 19,90/mês)
+  plus: { membros: 3, nome: 'PLUS' },
+  profissional: { membros: 3, nome: 'PLUS' },
   especialista: { membros: 8, nome: 'Especialista' },
   master: { membros: 99, nome: 'Master IA' },
   planoPrimeIA: { membros: 99, nome: 'Prime IA' }
@@ -39,7 +44,8 @@ export default function Equipe({ setModalUpgradeAberto, dataFimTrial }) {
   let configPlano = REGRAS_PLANOS[planoAtual] || REGRAS_PLANOS.essencial;
 
   if (isTrial) {
-    configPlano = REGRAS_PLANOS.ultimate;
+    // Teste de 10 dias libera os módulos PRO; o assento é o do PRO (1 usuário).
+    configPlano = REGRAS_PLANOS.pro;
   }
 
   // Carregar Equipe em Tempo Real
