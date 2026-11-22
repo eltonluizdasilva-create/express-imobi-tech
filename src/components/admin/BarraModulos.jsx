@@ -1,10 +1,15 @@
 import React from 'react';
+import { Lock } from 'lucide-react';
 
 /**
  * BarraModulos — linha horizontal de navegação no padrão do painel de referência:
  * rótulo micro em maiúsculas com ponto colorido + pílulas compactas.
  * A pílula ativa fica branca com texto escuro (leitura imediata);
  * as demais mantêm borda neutra, com halo na cor da seção ao passar o mouse.
+ *
+ * `item.bloqueado` (D-22.03): a pílula mostra cadeado, fica âmbar e o clique
+ * chama `onBloqueado(item)` em vez de trocar de aba — é assim que as 8
+ * ferramentas PRO e os 7 Agentes de IA exigem assinatura depois do trial.
  */
 
 const TONS = {
@@ -26,6 +31,7 @@ export default function BarraModulos({
   linhaUnica = false,
   dataTour,
   temaClaro = false,
+  onBloqueado = null,
 }) {
   const t = TONS[tom] || TONS.esmeralda;
 
@@ -68,17 +74,33 @@ export default function BarraModulos({
         >
           {(itens || []).map((btn) => {
             const ativo = abaAtiva === btn.id;
+            const bloqueado = btn.bloqueado === true;
             const det = detalhes[btn.id];
             return (
               <button
                 key={btn.id}
                 type="button"
                 data-tour={`tab-${btn.id}`}
-                onClick={() => setAbaAtiva(btn.id)}
-                title={det ? `${det.tituloCard || det.tituloLimpo || btn.label}: ${det.descricao}` : btn.label}
+                aria-disabled={bloqueado || undefined}
+                onClick={() => {
+                  if (bloqueado) {
+                    if (typeof onBloqueado === 'function') onBloqueado(btn);
+                    return;
+                  }
+                  setAbaAtiva(btn.id);
+                }}
+                title={
+                  bloqueado
+                    ? `${btn.label}: exclusivo do PRO (R$ 99/mês) — teste de 10 dias encerrado`
+                    : det
+                      ? `${det.tituloCard || det.tituloLimpo || btn.label}: ${det.descricao}`
+                      : btn.label
+                }
                 aria-current={ativo ? 'page' : undefined}
                 className={`inline-flex shrink-0 items-center gap-1.5 rounded-full border px-2.5 py-1 text-[10.5px] font-bold transition-all duration-200 ${
-                  ativo
+                  bloqueado
+                    ? 'cursor-pointer border-amber-500/45 bg-amber-500/[0.10] text-amber-200 hover:-translate-y-px hover:border-amber-400 hover:bg-amber-500/20'
+                    : ativo
                     ? (temaClaro
                         ? 'border-slate-900 bg-slate-900 text-white shadow-[0_2px_12px_rgba(15,23,42,0.25)]'
                         : 'border-white bg-white text-slate-900 shadow-[0_2px_12px_rgba(255,255,255,0.18)]')
@@ -87,26 +109,29 @@ export default function BarraModulos({
                         : 'border-white/[0.07] bg-white/[0.02] text-slate-300 hover:-translate-y-px hover:text-white')
                 }`}
                 onMouseEnter={(e) => {
-                  if (ativo || temaClaro) return;
+                  if (ativo || temaClaro || bloqueado) return;
                   e.currentTarget.style.borderColor = `rgba(${t.base},0.55)`;
                   e.currentTarget.style.boxShadow = `0 0 14px rgba(${t.base},0.30)`;
                 }}
                 onMouseLeave={(e) => {
-                  if (ativo || temaClaro) return;
+                  if (ativo || temaClaro || bloqueado) return;
                   e.currentTarget.style.borderColor = '';
                   e.currentTarget.style.boxShadow = '';
                 }}
               >
                 <span className="text-[12px] leading-none">{btn.icone}</span>
                 <span className="whitespace-nowrap">{btn.label}</span>
+                {bloqueado && <Lock size={10} className="shrink-0" aria-hidden="true" />}
                 {/* Lote 4 — badge de degrau comercial: separa o que é PRO (R$ 99)
                     do que só existe na Automação WhatsApp (R$ 450+). */}
                 {btn.badge && (
                   <span
                     className={`whitespace-nowrap rounded-full px-1.5 py-0.5 text-[8.5px] font-black uppercase tracking-[0.10em] ${
-                      ativo
-                        ? 'bg-emerald-500 text-slate-950'
-                        : 'border border-emerald-500/50 bg-emerald-500/15 text-emerald-300'
+                      bloqueado
+                        ? 'border border-amber-400/50 bg-amber-400/15 text-amber-100'
+                        : ativo
+                          ? 'bg-emerald-500 text-slate-950'
+                          : 'border border-emerald-500/50 bg-emerald-500/15 text-emerald-300'
                     }`}
                   >
                     {btn.badge}

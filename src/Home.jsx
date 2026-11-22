@@ -2,6 +2,8 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import LogoExpress from './components/ui/LogoExpress';
 import { EMAIL_INSTITUCIONAL } from './lib/appUrl';
+import { EMAIL_EXCLUSAO, EMPRESA } from './pages/legal/conteudoLegal';
+import { abrirPreferenciasCookies } from './lib/consentimentoCookies';
 
 /**
  * Home — vitrine pública do Express Imobi Tech.
@@ -21,7 +23,7 @@ const DORES = [
     texto:
       'Ele viu o anúncio, mandou mensagem no WhatsApp e só recebeu retorno na segunda. Nesse intervalo, visitou com outra imobiliária que respondeu primeiro.',
     vira:
-      'A Pólen recebe o contato em segundos, entende o que ele procura e agenda a visita — inclusive fora do horário comercial.',
+      'A Pólen recebe o contato automaticamente, entende o que ele procura e agenda a visita — inclusive fora do horário comercial.',
   },
   {
     hora: 'Quarta, 15h',
@@ -84,7 +86,7 @@ const AGENTES = [
   {
     nome: 'Pólen',
     funcao: 'Recepção 24h',
-    texto: 'Responde em segundos e identifica se o lead quer imóvel urbano, loteamento, rural ou locação.',
+    texto: 'Responde automaticamente e identifica se o lead quer imóvel urbano, loteamento, rural ou locação.',
   },
   {
     nome: 'Iago',
@@ -141,11 +143,15 @@ const PLANO_PRO = [
 const FAQ = [
   {
     q: 'Preciso de cartão para começar?',
-    a: 'Não. O plano gratuito tem preço de R$ 0 e não pede cartão em nenhum momento. Você cria a conta, cadastra a carteira e usa. O PRO só entra quando você decidir assinar.',
+    a: 'Não. O cadastro não pede cartão. Você começa com 10 dias de teste completo — as 8 ferramentas PRO e a aba 7 Agentes de IA liberadas. Terminado o teste, o CRM continua gratuito e só essas duas frentes passam a exigir o PRO (R$ 99/mês).',
+  },
+  {
+    q: 'Como funcionam o teste de 10 dias e o bônus dos 100 primeiros?',
+    a: 'O teste de 10 dias começa na criação da conta e libera as 8 ferramentas PRO e a aba 7 Agentes de IA. Depois dele, sem assinatura, essas duas frentes ficam com cadeado e voltam somente com o PRO (R$ 99/mês). Em paralelo, as 100 primeiras imobiliárias cadastradas garantem 1 ano grátis no CRM Essencial, aplicado na própria conta e sem cobrança.',
   },
   {
     q: 'O que muda de fato entre o gratuito e o PRO?',
-    a: 'O gratuito organiza a operação: carteira, funil, agenda, financeiro e portal público. O PRO coloca a operação em movimento sozinha: os 7 agentes de IA no WhatsApp, roleta de leads, vistoria com IA, correspondente de crédito e publicação nos portais.',
+    a: 'O gratuito organiza a operação: carteira, funil, agenda, financeiro e portal público. O PRO coloca a operação em movimento sozinha: os 7 agentes de IA no WhatsApp, roleta de leads, vistoria com IA, correspondente de crédito e publicação nos portais. Nos 10 dias de teste você usa tudo isso antes de decidir.',
   },
   {
     q: 'Funciona no celular?',
@@ -262,7 +268,8 @@ export default function Home() {
             </div>
 
             <ul className="mt-7 flex flex-wrap gap-x-5 gap-y-2 text-[12px] text-slate-500">
-              <li className="flex items-center gap-1.5"><span className="text-emerald-400">✓</span> 1 ano grátis para os 100 primeiros</li>
+              <li className="flex items-center gap-1.5"><span className="text-emerald-400">✓</span> 10 dias de teste completo, grátis</li>
+              <li className="flex items-center gap-1.5"><span className="text-emerald-400">✓</span> 100 primeiros: 1 ano grátis no CRM Essencial</li>
               <li className="flex items-center gap-1.5"><span className="text-emerald-400">✓</span> Sem instalação</li>
               <li className="flex items-center gap-1.5"><span className="text-emerald-400">✓</span> Funciona no celular</li>
             </ul>
@@ -278,6 +285,9 @@ export default function Home() {
                 <span className="h-2.5 w-2.5 rounded-full bg-[#28ca41]" />
                 <span className="ml-2 truncate rounded-md bg-white/[0.04] px-2 py-1 text-[10px] text-slate-500">
                   imobi.expresstech.com.br
+                </span>
+                <span className="ml-auto shrink-0 rounded-md border border-amber-500/40 bg-amber-500/10 px-2 py-0.5 text-[9px] font-black uppercase tracking-[0.12em] text-amber-300">
+                  Prévia com dados de exemplo
                 </span>
               </div>
 
@@ -317,6 +327,9 @@ export default function Home() {
                     ))}
                   </div>
                   <p className="mt-2 text-[10px] uppercase tracking-[0.16em] text-slate-500">Leads atendidos por dia</p>
+                  <p className="mt-1 text-[9px] leading-snug tracking-[0.10em] text-slate-600">
+                    Imagem ilustrativa: nomes, imóveis e números são exemplos de tela, não clientes reais.
+                  </p>
                 </div>
               </div>
             </div>
@@ -527,7 +540,10 @@ export default function Home() {
               <span className="text-4xl font-black tracking-tight text-white">R$ 0</span>
               <span className="pb-1 text-sm text-slate-500">/mês</span>
             </p>
-            <p className="mt-2 text-[13px] text-slate-400">Para sempre. Sem cartão, sem teste que expira.</p>
+            <p className="mt-2 text-[13px] text-slate-400">
+              Plano gratuito para sempre, sem cartão. Antes dele, o teste completo de 10 dias libera também as 8 ferramentas
+              PRO e a aba 7 Agentes de IA.
+            </p>
 
             <ul className="mt-6 space-y-2.5">
               {PLANO_GRATIS.map((item) => (
@@ -566,6 +582,7 @@ export default function Home() {
             <p className="mt-2 text-[13px] text-slate-400">
               Sem fidelidade, cancele quando quiser. No plano anual:{' '}
               <span className="font-semibold text-emerald-300">R$ 89/mês</span> (R$ 1.068/ano — economia de R$ 120).
+              É o plano que mantém liberadas, depois dos 10 dias grátis, as 8 ferramentas PRO e a aba 7 Agentes de IA.
             </p>
 
             <ul className="mt-6 space-y-2.5">
@@ -590,6 +607,29 @@ export default function Home() {
             >
               Prefiro falar com a equipe antes
             </a>
+          </div>
+        </div>
+
+        {/* Teste completo × bônus de lançamento — regra comercial D-22.03 */}
+        <div className="mt-6 grid gap-4 lg:grid-cols-2">
+          <div className="rounded-2xl border border-emerald-500/25 bg-emerald-500/[0.07] p-6">
+            <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-emerald-300">Teste completo</p>
+            <h3 className="mt-2 text-[15px] font-bold text-white">10 dias grátis com tudo liberado</h3>
+            <p className="mt-2 text-[13px] leading-relaxed text-slate-300">
+              Ao criar a conta, o teste de 10 dias libera{' '}
+              <strong className="text-white">as 8 ferramentas PRO</strong> e a aba{' '}
+              <strong className="text-white">7 Agentes de IA</strong>. Terminado o período sem assinatura, essas duas frentes
+              passam a exigir o PRO (R$ 99/mês) — com cadeado no painel — e todo o resto do CRM continua no plano gratuito.
+            </p>
+          </div>
+          <div className="rounded-2xl border border-amber-500/25 bg-amber-500/[0.06] p-6">
+            <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-amber-300">Bônus de lançamento</p>
+            <h3 className="mt-2 text-[15px] font-bold text-white">100 primeiros: 1 ano grátis no CRM Essencial</h3>
+            <p className="mt-2 text-[13px] leading-relaxed text-slate-300">
+              As 100 primeiras imobiliárias cadastradas garantem{' '}
+              <strong className="text-white">1 ano grátis no CRM Essencial</strong>, aplicado na própria conta e sem
+              cobrança. O teste completo de 10 dias continua valendo para conhecer as ferramentas PRO e os agentes de IA.
+            </p>
           </div>
         </div>
 
@@ -766,14 +806,43 @@ export default function Home() {
               <li>
                 <a href={`mailto:${EMAIL}`} className="hover:text-white">{EMAIL}</a>
               </li>
+              <li>
+                <a
+                  href={`https://wa.me/${EMPRESA.whatsapp}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="hover:text-white"
+                >
+                  WhatsApp comercial {EMPRESA.whatsappExibicao}
+                </a>
+              </li>
               <li><button type="button" onClick={() => navigate('/termos')} className="hover:text-white">Termos de uso</button></li>
               <li><button type="button" onClick={() => navigate('/privacidade')} className="hover:text-white">Política de privacidade</button></li>
+              <li><button type="button" onClick={() => navigate('/reembolso')} className="hover:text-white">Política de reembolso</button></li>
             </ul>
           </div>
         </div>
 
-        <div className="border-t border-white/[0.06] px-4 py-6 text-center text-[11px] text-slate-600 sm:px-6">
-          © {new Date().getFullYear()} Express Tech · Express Imobi Tech · Todos os direitos reservados.
+        <div className="border-t border-white/[0.06] px-4 py-6 sm:px-6">
+          <div className="mx-auto flex max-w-6xl flex-col gap-3 text-[11px] text-slate-500 md:flex-row md:items-center md:justify-between">
+            <p>
+              © {new Date().getFullYear()} Express Tech · Express Imobi Tech — Araguari e Uberlândia/MG · atendimento digital
+              em todo o Brasil.
+            </p>
+            <p className="flex flex-wrap items-center gap-x-4 gap-y-2">
+              <a href={EMAIL_EXCLUSAO} className="hover:text-white">Excluir meus dados</a>
+              <button type="button" onClick={() => abrirPreferenciasCookies()} className="hover:text-white">
+                Preferências de cookies
+              </button>
+            </p>
+          </div>
+          <p className="mx-auto mt-3 max-w-6xl text-[11px] leading-relaxed text-slate-600">
+            Canal único para contato e privacidade:{' '}
+            <a href={`mailto:${EMAIL}`} className="underline decoration-slate-600 underline-offset-2 hover:text-white">
+              {EMAIL}
+            </a>
+            . O conteúdo deste site é informativo e não substitui a análise do seu corretor, advogado ou contador.
+          </p>
         </div>
       </footer>
     </div>

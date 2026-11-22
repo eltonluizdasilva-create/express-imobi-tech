@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import { doc, getDoc } from 'firebase/firestore';
 import { Check, Search, LoaderCircle, ShieldCheck, CircleDot, Building2 } from 'lucide-react';
 import { db } from '../../lib/firebase';
@@ -82,12 +82,16 @@ export default function AcompanharProcesso() {
               value={codigo}
               onChange={(e) => setCodigo(e.target.value.toUpperCase())}
               placeholder="Código (IMB-4829)"
+              aria-label="Código do processo"
+              autoComplete="off"
               className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-3 text-sm font-mono text-white placeholder-slate-600 focus:outline-none focus:border-[#10b981]"
             />
             <input
               value={senha}
               onChange={(e) => setSenha(e.target.value.replace(/\D/g, '').slice(0, 4))}
               placeholder="Senha"
+              aria-label="Senha de 4 dígitos recebida no WhatsApp"
+              autoComplete="off"
               inputMode="numeric"
               className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-3 text-sm font-mono text-white placeholder-slate-600 focus:outline-none focus:border-[#10b981]"
             />
@@ -165,6 +169,17 @@ export default function AcompanharProcesso() {
           </section>
         )}
       </div>
+
+      {/* Privacidade desta consulta: código + senha, sem coleta de dado novo. */}
+      <p className="mt-6 max-w-2xl text-center text-[11px] leading-relaxed text-slate-500">
+        Esta consulta usa apenas o código e a senha enviados pela imobiliária — nada é gravado no seu navegador.
+        Os dados do processo pertencem ao atendimento da imobiliária; para correção ou exclusão, fale com ela ou
+        use o canal de privacidade da{' '}
+        <Link to="/privacidade" className="text-[#10b981] underline">
+          Política de Privacidade
+        </Link>
+        .
+      </p>
     </div>
   );
 }

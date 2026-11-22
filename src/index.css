@@ -120,7 +120,7 @@ html.tema-claro .tarja-aviso {
 .tema-claro [class*="text-slate-5"] { color: #475569 !important; }
 
 /* ==========================================================================
-   MODO CLARO — contraste medido (D-22.03)
+   MODO CLARO — contraste medido (D-22.02 g)
    O harness `tests/render_contraste.run.mjs` renderiza as telas reais com este
    CSS e mede o contraste computado no navegador. Estas regras existem porque o
    acento claro (âmbar/esmeralda/amarelo/rosa/violeta/azul) sobre a superfície
@@ -180,3 +180,29 @@ html.tema-claro .hero-destaque {
    esmeralda não podem alcançá-la. */
 .tema-claro [class*="bg-[#075E54]"] [class*="text-white"],
 .tema-claro [class*="bg-[#075E54]"] [class*="text-emerald-2"] { color: #ffffff !important; }
+
+/* Cabeçalho do telemóvel da Pólen (`src/components/imobi/SimuladorPolen.jsx`,
+   usado em Secretaria.jsx): a barra é sempre verde-escura, então título e
+   status continuam claros no modo claro. A regra genérica de `text-white`
+   acima deixava o título azul-escuro sobre o verde (~1.5:1) — o par medido no
+   harness de contraste. As regras são explícitas por classe para não depender
+   do texto exato do `bg-[#...]` do elemento. */
+.tema-claro .whatsapp-barra { background-color: #075E54 !important; color: #ffffff !important; }
+.tema-claro .whatsapp-barra .whatsapp-barra-titulo { color: #ffffff !important; }
+.tema-claro .whatsapp-barra .whatsapp-barra-status { color: #a7f3d0 !important; }
+
+/* ==========================================================================
+   ACESSIBILIDADE — foco visível para navegação por teclado (D-22.04)
+   Muitos campos do painel usam `outline-none` para não desenhar o contorno do
+   navegador ao clicar; isso também apagava o foco de quem navega por Tab.
+   A regra abaixo devolve um contorno de 3px só em `:focus-visible` (teclado e
+   leitor de tela), com `!important` para vencer o utilitário do Tailwind.
+   ========================================================================== */
+:where(a, button, input, select, textarea, summary, [tabindex]):focus-visible {
+  outline: 3px solid #10b981 !important;
+  outline-offset: 2px !important;
+}
+
+html.tema-claro :where(a, button, input, select, textarea, summary, [tabindex]):focus-visible {
+  outline-color: #047857 !important;
+}

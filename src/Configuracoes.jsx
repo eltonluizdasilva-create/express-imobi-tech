@@ -1,11 +1,14 @@
 import HeroAba from './components/admin/HeroAba';
 import SeletorUF from './components/ui/SeletorUF';
-import { Settings } from 'lucide-react';
+import { Lock, Settings } from 'lucide-react';
 /* eslint-disable react/prop-types */
 import React, { useEffect, useState } from 'react';
 import { doc, getDoc, setDoc, collection, getDocs, deleteDoc } from 'firebase/firestore';
 import { getAuth, deleteUser } from 'firebase/auth';
 import { db } from './lib/firebase';
+import SolicitacaoExclusaoDados from './components/privacidade/SolicitacaoExclusaoDados';
+import { abrirPreferenciasCookies } from './lib/consentimentoCookies';
+import { resumoRastreamento } from './lib/transparenciaDados';
 
 const ESTADO_INICIAL = {
   nome: '',
@@ -29,6 +32,8 @@ export default function Configuracoes({ oficinaId, onSalvo }) {
   const [config, setConfig] = useState(ESTADO_INICIAL);
   const [salvando, setSalvando] = useState(false);
   const [excluindo, setExcluindo] = useState(false);
+  const [exclusaoAberta, setExclusaoAberta] = useState(false);
+  const estadoRastreamento = resumoRastreamento();
 
   useEffect(() => {
     async function carregar() {
@@ -81,18 +86,38 @@ export default function Configuracoes({ oficinaId, onSalvo }) {
     try {
       console.log("Iniciando limpeza em cascata para oficina:", oficinaId);
 
-      // Subcoleções mapeadas do Firestore vinculadas à oficina
+      // Subcoleções operacionais vinculadas à conta. `notas_fiscais_imobi` fica
+      // FORA da exclusão automática: documento fiscal pode ter prazo legal de
+      // guarda e é tratado pelo canal de privacidade (D-22.05).
       const subcolecoes = [
+        // Auto Tech
         'os',
         'estoque',
         'retornos',
         'burocracias',
         'descartes',
         'relatorios_mensais',
+        // Imobi Tech
+        'leads',
+        'leads_imobi',
+        'imoveis_imobi',
+        'imoveis_nicho',
+        'visitas_imobi',
+        'propostas_imobi',
+        'tarefas',
+        'acompanhamentos_imobi',
+        'vistorias',
+        'credito_documentos',
+        'credito_processos',
+        'credito_simulacoes',
+        'agendamentos_retorno',
+        // Comuns
         'configuracoes',
         'funcionarios',
         'despesas',
-        'equipe'
+        'financeiro',
+        'fechamentos_diarios',
+        'equipe',
       ];
 
       // 1. Deleta documentos de cada subcoleção concorrentemente
@@ -136,7 +161,7 @@ export default function Configuracoes({ oficinaId, onSalvo }) {
         }
       }
 
-      alert("Todos os seus dados foram apagados permanentemente em conformidade com a LGPD! Redirecionando...");
+      alert("Conta e dados operacionais excluídos. Documentos fiscais podem permanecer bloqueados pelo prazo legal aplicável. Redirecionando...");
       window.location.href = '/';
     } catch (error) {
       console.error("Erro crítico na deleção cascata LGPD:", error);
@@ -261,11 +286,47 @@ export default function Configuracoes({ oficinaId, onSalvo }) {
       <div className="mt-[30px] border-t border-dashed border-slate-800 pt-[30px]">
         <div className="mb-4">
           <h3 className="mb-1.5 flex items-center gap-2 text-[15px] font-bold text-white">
-            <span style={{ color: '#00E676' }}>🔒</span> Segurança e Privacidade (LGPD)
+            <span style={{ color: '#00E676' }}>🔒</span> Privacidade e seus dados (LGPD)
           </h3>
           <p className="text-xs leading-relaxed text-slate-400">
-            Como titular dos dados, você possui o <strong className="text-slate-200">Direito ao Esquecimento</strong> digital. Você pode solicitar a eliminação permanente e definitiva de todas as suas informações dos nossos servidores a qualquer momento.
+            Você pode pedir acesso, correção, portabilidade ou eliminação dos dados pessoais da conta a qualquer
+            momento. O pedido é registrado e respondido pelo canal de privacidade; o encerramento da conta não gera
+            multa.
           </p>
+        </div>
+
+        <div className="mb-3 rounded-xl border border-slate-800 bg-slate-950 p-3 text-[11px] leading-relaxed text-slate-400">
+          <p className="font-bold text-slate-200">O que a exclusão apaga</p>
+          <p className="mt-1">
+            Cadastro da conta, imóveis, leads, visitas, propostas, tarefas, financeiro, fotos e documentos enviados.
+          </p>
+          <p className="mt-2 font-bold text-slate-200">O que pode ser mantido</p>
+          <p className="mt-1">
+            Nota fiscal e registro de acesso podem ficar bloqueados pelo prazo legal, sem uso para outra finalidade.
+            Exporte a carteira e os leads antes de encerrar.
+          </p>
+          <p className="mt-2 font-bold text-slate-200">Rastreamento hoje</p>
+          <p className="mt-1">
+            {estadoRastreamento.titulo}. {estadoRastreamento.texto}
+          </p>
+        </div>
+
+        <div className="mb-3 grid gap-2 sm:grid-cols-2">
+          <button
+            type="button"
+            onClick={() => setExclusaoAberta(true)}
+            className="flex cursor-pointer items-center justify-center gap-2 rounded-xl border border-slate-700 px-4 py-3 text-[11px] font-black uppercase tracking-wider text-slate-200 transition hover:border-[#10b981] hover:text-white"
+          >
+            <Lock size={13} aria-hidden="true" />
+            Solicitar exclusão pelo canal de privacidade
+          </button>
+          <button
+            type="button"
+            onClick={() => abrirPreferenciasCookies()}
+            className="flex cursor-pointer items-center justify-center gap-2 rounded-xl border border-slate-700 px-4 py-3 text-[11px] font-black uppercase tracking-wider text-slate-200 transition hover:border-[#10b981] hover:text-white"
+          >
+            Revisar preferências de cookies
+          </button>
         </div>
 
         <button
@@ -286,9 +347,21 @@ export default function Configuracoes({ oficinaId, onSalvo }) {
             letterSpacing: '0.5px'
           }}
         >
-          {excluindo ? 'DELETANDO TUDO EM CASCATA...' : '⚠️ Excluir Minha Conta e Dados Permanentemente'}
+          {excluindo ? 'DELETANDO TUDO EM CASCATA...' : '⚠️ Excluir agora a conta e os dados operacionais'}
         </button>
+        <p className="mt-2 text-[10.5px] leading-relaxed text-slate-500">
+          Ação imediata e sem retorno para os dados operacionais. Prefere registrar o pedido com prazo e conferência?
+          Use o botão de exclusão pelo canal de privacidade acima.
+        </p>
       </div>
+
+      <SolicitacaoExclusaoDados
+        aberto={exclusaoAberta}
+        onFechar={() => setExclusaoAberta(false)}
+        contexto="conta"
+        emailConta={config.email || ''}
+        nomeImobiliaria={config.nome || ''}
+      />
     </div>
   );
 }

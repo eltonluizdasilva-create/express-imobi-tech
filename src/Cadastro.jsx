@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { Link } from 'react-router-dom';
 import { useAuth } from './contexts/AuthContext';
 
 const SEU_WHATSAPP = '5534991439845';
@@ -110,7 +111,9 @@ export default function Cadastro() {
             CADASTRO REALIZADO!
           </h1>
           <p style={{ color: '#888', marginBottom: '30px', lineHeight: '1.6' }}>
-            Sua oficina tem <strong style={{ color: 'white' }}>10 dias grátis</strong> com acesso completo a todos os módulos de Inteligência Artificial.
+            Sua conta começa com <strong style={{ color: 'white' }}>10 dias de teste completo</strong>: as 8 ferramentas PRO
+            e a aba 7 Agentes de IA ficam liberadas nesse período. Depois, sem assinatura, essas duas frentes pedem o
+            Plano PRO e o restante continua no plano gratuito.
           </p>
           <div style={{ background: '#111', padding: '20px', borderRadius: '10px', marginBottom: '30px', border: '1px solid #333' }}>
             <p style={{ color: '#888', fontSize: '12px', margin: '0 0 5px 0' }}>ACESSE COM</p>
@@ -140,7 +143,7 @@ export default function Cadastro() {
             EXPRESS<span style={{ color: '#10b981' }}> IA</span>
           </h1>
           <div style={{ background: '#00E67622', border: '1px solid #00E676', padding: '12px 20px', borderRadius: '8px', display: 'inline-block' }}>
-            <span style={{ color: '#00E676', fontWeight: 'bold', fontSize: '14px' }}>✅ 15 DIAS GRÁTIS — SEM CARTÃO</span>
+            <span style={{ color: '#00E676', fontWeight: 'bold', fontSize: '14px' }}>✅ 10 DIAS GRÁTIS — SEM CARTÃO</span>
           </div>
         </div>
 
@@ -149,43 +152,57 @@ export default function Cadastro() {
           <h3 style={{ margin: '0 0 25px 0', color: '#fff', fontSize: '1.1rem' }}>Cadastre sua oficina</h3>
 
           <div style={{ marginBottom: '15px' }}>
-            <label style={{ color: '#888', fontSize: '11px', fontWeight: 'bold', display: 'block', marginBottom: '6px' }}>NOME DA OFICINA *</label>
-            <input value={form.nomeOficina} onChange={e => atualizar('nomeOficina', e.target.value)} placeholder="Ex: Oficina do João" style={{ width: '100%', padding: '14px', background: '#0a0a0a', border: '1px solid #333', color: 'white', borderRadius: '8px', fontSize: '15px' }} />
+            <label htmlFor="cadastro-oficina" style={{ color: '#888', fontSize: '11px', fontWeight: 'bold', display: 'block', marginBottom: '6px' }}>NOME DA OFICINA / EMPRESA *</label>
+            <input id="cadastro-oficina" name="nomeOficina" autoComplete="organization" required value={form.nomeOficina} onChange={e => atualizar('nomeOficina', e.target.value)} placeholder="Ex: Oficina do João" style={{ width: '100%', padding: '14px', background: '#0a0a0a', border: '1px solid #333', color: 'white', borderRadius: '8px', fontSize: '15px' }} />
           </div>
 
           <div style={{ marginBottom: '15px' }}>
-            <label style={{ color: '#888', fontSize: '11px', fontWeight: 'bold', display: 'block', marginBottom: '6px' }}>CIDADE *</label>
-            <input value={form.cidade} onChange={e => atualizar('cidade', e.target.value)} placeholder="Ex: São Paulo - SP" style={{ width: '100%', padding: '14px', background: '#0a0a0a', border: '1px solid #333', color: 'white', borderRadius: '8px', fontSize: '15px' }} />
+            <label htmlFor="cadastro-cidade" style={{ color: '#888', fontSize: '11px', fontWeight: 'bold', display: 'block', marginBottom: '6px' }}>CIDADE (OPCIONAL)</label>
+            <input id="cadastro-cidade" name="cidade" autoComplete="address-level2" value={form.cidade} onChange={e => atualizar('cidade', e.target.value)} placeholder="Ex: Uberlândia - MG" style={{ width: '100%', padding: '14px', background: '#0a0a0a', border: '1px solid #333', color: 'white', borderRadius: '8px', fontSize: '15px' }} />
           </div>
 
           <div style={{ marginBottom: '15px' }}>
-            <label style={{ color: '#888', fontSize: '11px', fontWeight: 'bold', display: 'block', marginBottom: '6px' }}>WHATSAPP *</label>
-            <input type="tel" value={form.telefone} onChange={e => atualizar('telefone', e.target.value)} placeholder="(11) 99999-9999" style={{ width: '100%', padding: '14px', background: '#0a0a0a', border: '1px solid #333', color: 'white', borderRadius: '8px', fontSize: '15px' }} />
+            <label htmlFor="cadastro-whatsapp" style={{ color: '#888', fontSize: '11px', fontWeight: 'bold', display: 'block', marginBottom: '6px' }}>WHATSAPP *</label>
+            <input id="cadastro-whatsapp" name="telefone" type="tel" inputMode="tel" autoComplete="tel" required value={form.telefone} onChange={e => atualizar('telefone', e.target.value)} placeholder="(34) 99999-9999" style={{ width: '100%', padding: '14px', background: '#0a0a0a', border: '1px solid #333', color: 'white', borderRadius: '8px', fontSize: '15px' }} />
           </div>
 
           <div style={{ marginBottom: '15px' }}>
-            <label style={{ color: '#888', fontSize: '11px', fontWeight: 'bold', display: 'block', marginBottom: '6px' }}>E-MAIL *</label>
-            <input type="email" value={form.email} onChange={e => atualizar('email', e.target.value)} placeholder="email@suaoficina.com" style={{ width: '100%', padding: '14px', background: '#0a0a0a', border: '1px solid #333', color: 'white', borderRadius: '8px', fontSize: '15px' }} />
+            <label htmlFor="cadastro-email" style={{ color: '#888', fontSize: '11px', fontWeight: 'bold', display: 'block', marginBottom: '6px' }}>E-MAIL *</label>
+            <input id="cadastro-email" name="email" type="email" inputMode="email" autoComplete="email" required value={form.email} onChange={e => atualizar('email', e.target.value)} placeholder="email@suaempresa.com.br" style={{ width: '100%', padding: '14px', background: '#0a0a0a', border: '1px solid #333', color: 'white', borderRadius: '8px', fontSize: '15px' }} />
           </div>
 
           <div style={{ marginBottom: '15px' }}>
-            <label style={{ color: '#888', fontSize: '11px', fontWeight: 'bold', display: 'block', marginBottom: '6px' }}>SENHA *</label>
-            <input type="password" value={form.senha} onChange={e => atualizar('senha', e.target.value)} placeholder="Mínimo 6 caracteres" style={{ width: '100%', padding: '14px', background: '#0a0a0a', border: '1px solid #333', color: 'white', borderRadius: '8px', fontSize: '15px' }} />
+            <label htmlFor="cadastro-senha" style={{ color: '#888', fontSize: '11px', fontWeight: 'bold', display: 'block', marginBottom: '6px' }}>SENHA *</label>
+            <input id="cadastro-senha" name="senha" type="password" autoComplete="new-password" required minLength={6} aria-describedby="cadastro-senha-dica" value={form.senha} onChange={e => atualizar('senha', e.target.value)} placeholder="Mínimo 6 caracteres" style={{ width: '100%', padding: '14px', background: '#0a0a0a', border: '1px solid #333', color: 'white', borderRadius: '8px', fontSize: '15px' }} />
+            <span id="cadastro-senha-dica" style={{ display: 'block', marginTop: '6px', color: '#777', fontSize: '11px' }}>Use pelo menos 6 caracteres. Não reutilize a senha do seu e-mail.</span>
           </div>
 
           <div style={{ marginBottom: '25px' }}>
-            <label style={{ color: '#888', fontSize: '11px', fontWeight: 'bold', display: 'block', marginBottom: '6px' }}>CONFIRMAR SENHA *</label>
-            <input type="password" value={form.confirmarSenha} onChange={e => atualizar('confirmarSenha', e.target.value)} placeholder="Repita a senha" onKeyDown={e => e.key === 'Enter' && handleCadastro()} style={{ width: '100%', padding: '14px', background: '#0a0a0a', border: `1px solid ${form.confirmarSenha && form.senha !== form.confirmarSenha ? '#10b981' : '#333'}`, color: 'white', borderRadius: '8px', fontSize: '15px' }} />
+            <label htmlFor="cadastro-confirmar-senha" style={{ color: '#888', fontSize: '11px', fontWeight: 'bold', display: 'block', marginBottom: '6px' }}>CONFIRMAR SENHA *</label>
+            <input id="cadastro-confirmar-senha" name="confirmarSenha" type="password" autoComplete="new-password" required value={form.confirmarSenha} onChange={e => atualizar('confirmarSenha', e.target.value)} placeholder="Repita a senha" onKeyDown={e => e.key === 'Enter' && handleCadastro()} style={{ width: '100%', padding: '14px', background: '#0a0a0a', border: `1px solid ${form.confirmarSenha && form.senha !== form.confirmarSenha ? '#f59e0b' : '#333'}`, color: 'white', borderRadius: '8px', fontSize: '15px' }} />
           </div>
 
           {erro && (
-            <div style={{ background: 'rgba(255,0,0,0.1)', border: '1px solid #10b981', padding: '12px', borderRadius: '8px', marginBottom: '20px', color: '#10b981', fontSize: '14px' }}>
+            <div role="alert" aria-live="assertive" style={{ background: 'rgba(255,0,0,0.1)', border: '1px solid #10b981', padding: '12px', borderRadius: '8px', marginBottom: '20px', color: '#10b981', fontSize: '14px' }}>
               {erro}
             </div>
           )}
 
-          <button onClick={handleCadastro} disabled={loading} style={{ width: '100%', padding: '18px', background: loading ? '#333' : '#10b981', color: 'white', border: 'none', borderRadius: '10px', fontSize: '16px', fontWeight: '900', cursor: loading ? 'not-allowed' : 'pointer', letterSpacing: '1px', boxShadow: loading ? 'none' : '0 0 20px #10b98166' }}>
-            {loading ? 'CRIANDO CONTA...' : 'COMEÇAR 15 DIAS GRÁTIS →'}
+          {/* LGPD — coleta mínima + consentimento informado (D-22.04) */}
+          <p style={{ color: '#777', fontSize: '11.5px', lineHeight: 1.6, margin: '0 0 16px 0' }}>
+            Coletamos apenas o necessário para criar e operar a sua conta: nome da empresa, e-mail, WhatsApp, senha e,
+            se você informar, a cidade. Ao continuar, você declara ter lido os{' '}
+            <Link to="/termos" style={{ color: '#10b981' }}>Termos de Uso</Link> e a{' '}
+            <Link to="/privacidade" style={{ color: '#10b981' }}>Política de Privacidade</Link>. Para pedir acesso,
+            correção ou exclusão dos seus dados, escreva para{' '}
+            <a href="mailto:contato@expresstech.com.br?subject=LGPD%20-%20Exclus%C3%A3o%20de%20dados" style={{ color: '#10b981' }}>
+              contato@expresstech.com.br
+            </a>
+            .
+          </p>
+
+          <button type="button" onClick={handleCadastro} disabled={loading} aria-busy={loading} style={{ width: '100%', padding: '18px', background: loading ? '#333' : '#10b981', color: 'white', border: 'none', borderRadius: '10px', fontSize: '16px', fontWeight: '900', cursor: loading ? 'not-allowed' : 'pointer', letterSpacing: '1px', boxShadow: loading ? 'none' : '0 0 20px #10b98166' }}>
+            {loading ? 'CRIANDO CONTA...' : 'COMEÇAR 10 DIAS GRÁTIS →'}
           </button>
 
           <p style={{ textAlign: 'center', color: '#555', fontSize: '12px', marginTop: '20px' }}>

@@ -92,6 +92,107 @@ export function isPlanoPro(plano) {
   return PLANOS_PRO.has(chave);
 }
 
+/* ------------------------------------------------------------------ */
+/* TRIAL DE 10 DIAS (D-22.03)                                          */
+/* ------------------------------------------------------------------ */
+/* Regra comercial: o teste completo dura 10 dias. Dentro da janela o   */
+/* usuário entra nas 8 ferramentas PRO e na aba 7 Agentes de IA. Sem     */
+/* plano ativo depois disso, as duas frentes exigem PRO (R$ 99/mês) —    */
+/* com cadeado no menu e simulador bloqueado. O CRM gratuito não muda.   */
+
+export const DIAS_TRIAL = 10;
+
+/** Tag comercial da aba que entra na faixa PRO com o teste aberto. */
+export const SELO_TRIAL_PRO = '10 DIAS GRÁTIS · PRO';
+
+export const AVISO_TRIAL_ENCERRADO =
+  'Seu período de 10 dias grátis encerrou · Assine o PRO (R$ 99/mês) para destravar seus agentes e ferramentas';
+
+const MS_POR_DIA = 24 * 60 * 60 * 1000;
+
+/** Firestore Timestamp, `{seconds}`, Date, ISO ou epoch → Date (ou null). */
+export function comoData(valor) {
+  if (!valor) return null;
+  if (typeof valor?.toDate === 'function') {
+    const d = valor.toDate();
+    return d instanceof Date && !Number.isNaN(d.getTime()) ? d : null;
+  }
+  if (valor instanceof Date) return Number.isNaN(valor.getTime()) ? null : valor;
+  if (typeof valor === 'number') {
+    const d = new Date(valor);
+    return Number.isNaN(d.getTime()) ? null : d;
+  }
+  if (typeof valor === 'string') {
+    const d = new Date(valor);
+    return Number.isNaN(d.getTime()) ? null : d;
+  }
+  if (typeof valor === 'object' && typeof valor.seconds === 'number') {
+    const d = new Date(valor.seconds * 1000);
+    return Number.isNaN(d.getTime()) ? null : d;
+  }
+  return null;
+}
+
+/**
+ * Fim do teste: o `trialFim`/`dataFimTrial` gravado no cadastro ou, se ele
+ * não existir, `trialInicio + 10 dias`. Sem nenhuma das datas → null (conta
+ * antiga, sem janela de teste registrada).
+ */
+export function fimDoTrial(conta = {}) {
+  const dados = conta || {};
+  const fim =
+    comoData(dados.trialFim) ||
+    comoData(dados.dataFimTrial) ||
+    comoData(dados.trialFimEm);
+  if (fim) return fim;
+
+  const inicio =
+    comoData(dados.trialInicio) ||
+    comoData(dados.dataInicioTrial) ||
+    comoData(dados.trialComeco);
+  if (!inicio) return null;
+  return new Date(inicio.getTime() + DIAS_TRIAL * MS_POR_DIA);
+}
+
+/** `true` enquanto o teste de 10 dias estiver aberto. */
+export function trialAtivo(conta = {}, agora = new Date()) {
+  const fim = fimDoTrial(conta);
+  if (!fim) return false;
+  const referencia = agora instanceof Date ? agora : new Date(agora);
+  if (Number.isNaN(referencia.getTime())) return false;
+  return referencia.getTime() < fim.getTime();
+}
+
+/** Dias inteiros que ainda restam do teste (0 quando encerrado/inexistente). */
+export function diasRestantesTrial(conta = {}, agora = new Date()) {
+  const fim = fimDoTrial(conta);
+  if (!fim) return 0;
+  const referencia = agora instanceof Date ? agora : new Date(agora);
+  const restante = fim.getTime() - referencia.getTime();
+  return restante > 0 ? Math.ceil(restante / MS_POR_DIA) : 0;
+}
+
+function contaPaga(conta = {}) {
+  const dados = conta || {};
+  if (dados.papel === 'master') return true;
+  if (dados.isPro === true || dados.planoAssinante === true) return true;
+  return isPlanoPro(dados.plano);
+}
+
+/**
+ * Acesso às 8 ferramentas PRO e à aba `agentes_ia`: assinatura ativa OU teste
+ * de 10 dias em andamento. Fora disso, exige PRO (D-22.03).
+ */
+export function temAcessoPro(conta = {}, agora = new Date()) {
+  if (contaPaga(conta)) return true;
+  return trialAtivo(conta, agora);
+}
+
+/** Mesma regra do PRO: os 7 Agentes de IA acompanham as ferramentas PRO. */
+export function temAcessoAgentesIA(conta = {}, agora = new Date()) {
+  return temAcessoPro(conta, agora);
+}
+
 /** Chave canónica do catálogo ('gratis' | 'profissional' | 'esquadrao_ia' | ...) */
 export function chaveCanonica(plano) {
   const chave = normalizarPlano(plano);

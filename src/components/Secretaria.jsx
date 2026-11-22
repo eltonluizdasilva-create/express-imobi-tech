@@ -4,13 +4,15 @@ import { db } from "../lib/firebase";
 import { doc, getDoc, updateDoc, collection, getDocs, onSnapshot } from "firebase/firestore";
 import {
     Bot, Sparkles, MessageSquare, PhoneCall, Calculator,
-    CalendarClock, Send, Copy, CheckCircle, Clock, Star,
-    Mic, Save, Settings, Heart, QrCode, Smartphone, Wifi, WifiOff, Printer, ExternalLink, AlertCircle, Flame, Loader2
+    CalendarClock, Send, Copy, CheckCircle, CheckCircle2, Clock, Star,
+    Mic, Save, Settings, Heart, QrCode, Smartphone, Wifi, WifiOff, Printer, ExternalLink, AlertCircle, Flame, Loader2, Zap
 } from "lucide-react";
 import HeroAba from "./admin/HeroAba";
 import { useSecretariaIA } from "../hooks/useSecretariaIA";
 import ControleInteligenciaIA from "./ControleInteligenciaIA";
 import { hostPublico, urlPublica } from '../lib/appUrl';
+import SimuladorPolen from './imobi/SimuladorPolen';
+import { temSofiaWhatsApp } from '../lib/planos';
 
 const STYLES = {
     card: 'bg-zinc-900/40 border border-zinc-800 rounded-[2.5rem] p-6 md:p-8 mb-8 shadow-xl',
@@ -26,6 +28,10 @@ export default function Secretaria({ oficinaId, abrirRecuperacaoFinanceira, dado
 
     // Detecção de Plano Premium e Lógica de Trial (Requisito Novo)
     const isPremium = dadosOficina?.planoAssinante === true || dadosOficina?.plano === 'premium' || dadosOficina?.papel === 'master';
+
+    // Módulo Pólen contratado → simulador sem contador de demonstração.
+    // Mesma autoridade do painel (AdminNovo): plano/módulo, não `isPremium`.
+    const polenLiberada = dadosOficina?.papel === 'master' || temSofiaWhatsApp(dadosOficina || {});
 
     // Lógica do Trial de 3 dias (72 horas)
     const dataInicioTrial = dadosOficina?.secretariaTrialInicio?.toDate ? dadosOficina.secretariaTrialInicio.toDate() 
@@ -80,6 +86,23 @@ export default function Secretaria({ oficinaId, abrirRecuperacaoFinanceira, dado
     const [alertasJuridicos, setAlertasJuridicos] = useState({ semFoto: 0, semAssinatura: 0 });
     const [alertasContabeis, setAlertasContabeis] = useState({ osInadimplentes: 0, valorPendente: 0, nfPendente: 0 });
     const [alertasSecretaria, setAlertasSecretaria] = useState({ orcamentosPerdidosCount: 0, valorPerdido: 0 });
+
+    // Catálogo real da Pólen: o simulador do telemóvel trabalha com os imóveis
+    // do tenant; o motor (`simuladorSofia`) descarta vendido/alugado/inativo
+    // antes de oferecer qualquer coisa ao "cliente".
+    const [catalogoImoveis, setCatalogoImoveis] = useState([]);
+
+    useEffect(() => {
+        if (!oficinaId) return;
+        let ativo = true;
+        getDocs(collection(db, 'oficinas', oficinaId, 'imoveis_imobi'))
+            .then((snap) => {
+                if (!ativo) return;
+                setCatalogoImoveis(snap.docs.map((d) => ({ id: d.id, ...d.data() })));
+            })
+            .catch((erro) => console.warn('Aviso catálogo da Pólen:', erro?.message));
+        return () => { ativo = false; };
+    }, [oficinaId]);
 
     // Escuta tempo real do status de conexão do WhatsApp (Integração OpenCode)
     useEffect(() => {
@@ -443,8 +466,9 @@ export default function Secretaria({ oficinaId, abrirRecuperacaoFinanceira, dado
                                                 <span className="text-zinc-300 font-mono text-sm truncate flex-1">{hostPublico()}/{dadosOficina?.slug || oficinaId?.slice(0, 8) || 'sua-imobiliaria'}</span>
                                                 <button 
                                                     onClick={() => { navigator.clipboard.writeText(urlPublica(dadosOficina?.slug || oficinaId?.slice(0, 8))); alert("Link copiado!"); }}
+                                                    aria-label="Copiar o link do portal do cliente"
                                                     className="text-zinc-500 hover:text-white transition-colors"
-                                                ><Copy size={16} /></button>
+                                                ><Copy size={16} aria-hidden="true" /></button>
                                             </div>
                                             
                                             <button 
@@ -566,7 +590,11 @@ export default function Secretaria({ oficinaId, abrirRecuperacaoFinanceira, dado
                                         <span className="text-xs font-black text-zinc-500 uppercase tracking-widest mb-6 flex items-center gap-2"><WifiOff size={14} /> Aguardando Conexão</span>
 
                                         {/* Molde do QR Code */}
-                                        <div className="relative w-full max-w-[240px] aspect-square bg-white p-4 rounded-3xl shadow-[0_0_40px_rgba(168,85,247,0.25)] border-4 border-purple-900/20 group-hover:shadow-[0_0_60px_rgba(168,85,247,0.4)] transition-all duration-500 group-hover:scale-[1.02]">
+                                        <div
+                                            role="img"
+                                            aria-label="Pré-visualização do QR Code de conexão do WhatsApp — o código real aparece após a ativação"
+                                            className="relative w-full max-w-[240px] aspect-square bg-white p-4 rounded-3xl shadow-[0_0_40px_rgba(168,85,247,0.25)] border-4 border-purple-900/20 group-hover:shadow-[0_0_60px_rgba(168,85,247,0.4)] transition-all duration-500 group-hover:scale-[1.02]"
+                                        >
                                             {/* Simulação visual de QR Code via Pattern, futuramente alimentado dinamicamente via IMG da API */}
                                             <div className="w-full h-full bg-[url('https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=Simulate_WhatsApp_Auth_Link')] bg-cover bg-center rounded-xl opacity-90"></div>
                                             
@@ -578,55 +606,24 @@ export default function Secretaria({ oficinaId, abrirRecuperacaoFinanceira, dado
                                     </div>
                                 )}
 
-                                {/* Simulador de Mensagem (Fake Cellphone) */}
-                                <div className="relative w-full max-w-[320px] mx-auto bg-zinc-950 border-[6px] border-zinc-900 rounded-[2.5rem] shadow-2xl overflow-hidden aspect-[9/16] max-h-[480px] flex flex-col">
-                                    {/* Top notch do celular */}
-                                    <div className="absolute top-0 left-1/2 -translate-x-1/2 w-28 h-6 bg-zinc-900 rounded-b-2xl z-20"></div>
-                                    
-                                    {/* Top Bar Whatsapp style */}
-                                    <div className="bg-[#075E54] pt-7 pb-3 px-4 flex items-center gap-3 shrink-0 z-10">
-                                        <div className="w-8 h-8 rounded-full bg-zinc-200 shrink-0 overflow-hidden">
-                                            <img src="https://api.dicebear.com/7.x/bottts/svg?seed=Office" alt="Secretaria IA" />
-                                        </div>
-                                        <div className="flex-1 min-w-0">
-                                            <h5 className="text-xs font-bold truncate" style={{ color: '#ffffff' }}>Pólen · Atendimento 24h</h5>
-                                            <span className="text-[10px]" style={{ color: '#a7f3d0' }}>online</span>
-                                        </div>
-                                    </div>
-
-                                    {/* Fundo da Conversa */}
-                                    <div className="flex-1 bg-[#E5DDD5] p-4 flex flex-col gap-3 overflow-y-auto bg-[url('https://user-images.githubusercontent.com/15075759/28719144-86dc0f70-73b1-11e7-911d-60d70fcded21.png')] bg-repeat bg-[length:250px]">
-                                        
-                                        {/* Balão do Cliente */}
-                                        <div className="self-end max-w-[85%] bg-[#DCF8C6] p-2.5 rounded-lg rounded-tr-none shadow-sm text-[11px] text-zinc-800 relative animate-in slide-in-from-right duration-700">
-                                            Olá! Queria saber sobre o apartamento que vi no site.
-                                            <span className="text-[9px] text-zinc-500 block text-right mt-1">14:20</span>
-                                        </div>
-
-                                        {/* Balão da IA (Digitando...) */}
-                                        <div className="self-start max-w-[88%] bg-white p-3 rounded-xl rounded-tl-none shadow-md text-[11px] text-zinc-800 relative flex flex-col gap-2 animate-in slide-in-from-left delay-300 duration-700 fill-mode-backwards">
-                                            <div className="flex items-center gap-2 text-purple-600 font-bold text-[9px] uppercase tracking-wider border-b border-zinc-100 pb-1">
-                                                <Sparkles size={10} /> Resposta IA
-                                            </div>
-                                            <p>Olá! Sou a Pólen, atendente da <strong>{dadosOficina?.nome || 'sua imobiliária'}</strong>. 🏠✨</p>
-                                            <p>O imóvel está na fase: <span className="bg-amber-100 text-amber-800 px-1.5 py-0.5 rounded font-bold">Proposta em análise</span>.</p>
-                                            <p>Acompanhe as fotos e o andamento em tempo real aqui no link: </p>
-                                            <div className="bg-zinc-50 border border-zinc-200 p-2 rounded-lg text-blue-600 font-bold text-[10px] flex items-center gap-2">
-                                                <ExternalLink size={12} /> {hostPublico()}/portal
-                                            </div>
-                                            <span className="text-[9px] text-zinc-500 block text-right">14:21</span>
-                                        </div>
-
-                                    </div>
-
-                                    {/* Barra de digitação Whatsapp fake */}
-                                    <div className="bg-[#F0F0F0] p-2 flex items-center gap-2 shrink-0 border-t border-zinc-300 pb-4">
-                                        <div className="bg-white flex-1 h-8 rounded-full px-3"></div>
-                                        <div className="w-8 h-8 rounded-full bg-[#075E54] flex items-center justify-center text-white shrink-0">
-                                            <Mic size={14} />
-                                        </div>
-                                    </div>
-                                </div>
+                                {/* SIMULADOR INTERATIVO DA PÓLEN (telemóvel real).
+                                    Mesmo motor da aba `agentes_ia`: simuladorSofia.js +
+                                    limiteDemo.js (5 mensagens de demonstração) e as 3
+                                    perguntas rápidas de ACOES_POLEN. O mockup estático
+                                    que ficava aqui foi removido em 22/11. */}
+                                <SimuladorPolen
+                                    catalogoImoveis={catalogoImoveis}
+                                    nomeImobiliaria={dadosOficina?.nome || 'Imobiliária parceira'}
+                                    nomeCorretor={dadosOficina?.nomeResponsavel || 'Corretor responsável'}
+                                    liberado={polenLiberada}
+                                    onAbrirPlanos={() => {
+                                        if (typeof setAbaAtiva === 'function') setAbaAtiva('meuplano');
+                                        else window.dispatchEvent(new CustomEvent('mudarAba', { detail: 'meuplano' }));
+                                    }}
+                                    onAbrirCaptacao={() => {
+                                        if (typeof setAbaAtiva === 'function') setAbaAtiva('captacao_imobi');
+                                    }}
+                                />
 
                                 {/* Texto de Conversão Abaixo do Simulador */}
                                 <div className="text-center mt-4 px-4">
@@ -712,8 +709,8 @@ export default function Secretaria({ oficinaId, abrirRecuperacaoFinanceira, dado
                                         placeholder="Ex: Avisa que o apartamento está liberado para visita e o valor é R$ 450 mil..."
                                         className={STYLES.input + " min-h-[120px] pr-14"}
                                     />
-                                    <button onClick={toggleMic} className={`absolute right-4 bottom-4 p-3 rounded-full ${isListening ? 'bg-emerald-600 animate-pulse' : 'bg-zinc-800 text-pink-500'}`}>
-                                        <Mic size={20} />
+                                    <button onClick={toggleMic} aria-label={isListening ? 'Parar o ditado por voz' : 'Ditar a mensagem por voz'} aria-pressed={isListening} className={`absolute right-4 bottom-4 p-3 rounded-full ${isListening ? 'bg-emerald-600 animate-pulse' : 'bg-zinc-800 text-pink-500'}`}>
+                                        <Mic size={20} aria-hidden="true" />
                                     </button>
                                 </div>
                                 <button 

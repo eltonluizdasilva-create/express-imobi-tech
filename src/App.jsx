@@ -23,6 +23,7 @@ const StatusOS = lazy(() => import('./StatusOS'));
 const RevisaoPremium = lazy(() => import('./pages/admin/RevisaoPremium'));
 const Termos = lazy(() => import('./pages/Termos'));
 const Privacidade = lazy(() => import('./pages/Privacidade'));
+const Reembolso = lazy(() => import('./pages/Reembolso'));
 const Home = lazy(() => import('./Home'));
 const Cadastro = lazy(() => import('./Cadastro'));
 const Servicos = lazy(() => import('./Servicos'));
@@ -121,7 +122,7 @@ function AppRoutes() {
     return <TelaCarregamento />;
   }
 
-  const rotasSemLayout = ['/', '/login', '/login-admin', '/portal', '/portal2', '/cadastro', '/servicos', '/sobre', '/acompanhar', '/termos', '/privacidade', '/brain'];
+  const rotasSemLayout = ['/', '/login', '/login-admin', '/portal', '/portal2', '/cadastro', '/servicos', '/sobre', '/acompanhar', '/termos', '/privacidade', '/reembolso', '/brain'];
   const mostrarMenuInferior =
     !rotasSemLayout.includes(location.pathname) &&
     !location.pathname.startsWith('/status/');
@@ -199,6 +200,7 @@ function AppRoutes() {
 
         <Route path="/termos" element={<Termos />} />
         <Route path="/privacidade" element={<Privacidade />} />
+        <Route path="/reembolso" element={<Reembolso />} />
 
         <Route path="*" element={<Navigate to={logado ? '/admin' : '/login-admin'} replace />} />
       </Routes>
