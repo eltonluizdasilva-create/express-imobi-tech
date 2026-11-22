@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { getDoc, doc } from 'firebase/firestore';
 import { db } from "../../lib/firebase";
+import { linkWhatsApp } from '../../lib/contato';
 import {
   Settings, FileText, History, MousePointer2, LayoutDashboard, Package,
   DollarSign, Users, ClipboardList, Receipt, Landmark, Truck,
@@ -722,7 +723,7 @@ export default function BibliotecaTreinamento() {
 
       {/* Botão Flutuante de Suporte WhatsApp */}
       <a
-        href="https://wa.me/5534991439845?text=Olá,%20gostaria%20de%20falar%20com%20o%20Suporte/Secretária%20sobre%20aprovação%20de%20orçamentos."
+        href={linkWhatsApp('Olá, gostaria de falar com o Suporte/Secretária sobre aprovação de orçamentos.')}
         target="_blank"
         rel="noreferrer"
         style={{

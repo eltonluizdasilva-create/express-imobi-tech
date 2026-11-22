@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { db } from './lib/firebase';
+import { WHATSAPP_SUPORTE } from './lib/contato';
 import {
   collectionGroup,
   query,
@@ -1622,7 +1623,7 @@ export default function PortalCliente() {
       });
     }
 
-    const foneCorretor = String(imv?.whatsappCorretor || '5534991439845').replace(/\D/g, '');
+    const foneCorretor = String(imv?.whatsappCorretor || WHATSAPP_SUPORTE).replace(/\D/g, '');
     const msg =
       `Olá! Vi na Vitrine Digital da Imobiliária o imóvel *${imv.codigo || 'IMÓVEL'} - ${imv.titulo}* ` +
       `(${imv.padraoImovel || 'Disponível'}) em *${imv.bairro || 'destaque'}* pelo valor de *${fmtBRL(imv.valor)}* ` +
@@ -2355,7 +2356,7 @@ export default function PortalCliente() {
             <Link to="/reembolso" className="text-[#10b981] underline">
               Política de Reembolso
             </Link>
-            <span className="text-slate-600">Express Tech · Araguari e Uberlândia/MG</span>
+            <span className="text-slate-600">Express Tech · Uberlândia/MG</span>
           </p>
         </div>
       </footer>

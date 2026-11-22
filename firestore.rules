@@ -412,6 +412,30 @@ service cloud.firestore {
         || isAdminPlataforma()
       );
     }
+    // ------------- agenda pública de consultoria (Suporte Especialista) -----
+    // A grade é pública: o visitante vê os horários antes de ter conta.
+    // Regra de ouro: ninguém derruba a reserva de outra pessoa.
+    //   • criar  : qualquer um, mas SÓ como 'ocupado' (agendamento do cliente);
+    //              'livre'/'reservado' é exclusivo do admin da plataforma
+    //   • alterar: admin livre; cliente só de 'livre' → 'ocupado' no mesmo dia
+    //   • apagar : só admin
+    match /agenda_consultoria/{docId} {
+      allow read: if true;
+      allow create: if isAdminPlataforma()
+        || (
+          request.resource.data.status == 'ocupado'
+          && request.resource.data.keys().hasAll(['data', 'horario', 'status', 'clienteNome', 'clienteWhatsApp'])
+        );
+      allow update: if isAdminPlataforma()
+        || (
+          resource.data.status == 'livre'
+          && request.resource.data.status == 'ocupado'
+          && request.resource.data.data == resource.data.data
+          && request.resource.data.horario == resource.data.horario
+        );
+      allow delete: if isAdminPlataforma();
+    }
+
     match /oficinas/{oid}/leads/{leadId} {
       // Anônimo: payload público + oficina existente. Membro do tenant: livre
       // (o painel cria lead com campos internos que a whitelist recusaria).

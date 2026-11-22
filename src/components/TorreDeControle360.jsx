@@ -140,11 +140,11 @@ export default function TorreDeControle360({
         return [
             {
                 id: 'mock1', nomeCliente: 'João Silva', placa: 'ABC-1234', modelo: 'Corolla',
-                checklistRevisao: { pastilhas: 'TROCAR' }, telefone: '34991439845'
+                checklistRevisao: { pastilhas: 'TROCAR' }, telefone: '34999990000'
             },
             {
                 id: 'mock2', nomeCliente: 'Maria Santos', placa: 'XYZ-5678', modelo: 'Civic',
-                checklistRevisao: { suspensao: 'ATENÇÃO' }, telefone: '34991439845'
+                checklistRevisao: { suspensao: 'ATENÇÃO' }, telefone: '34999990000'
             }
         ];
     }, [revisoesComProblemas]);

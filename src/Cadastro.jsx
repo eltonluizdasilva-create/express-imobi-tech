@@ -1,8 +1,9 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from './contexts/AuthContext';
+import { WHATSAPP_SUPORTE } from './lib/contato';
 
-const SEU_WHATSAPP = '5534991439845';
+const SEU_WHATSAPP = WHATSAPP_SUPORTE;
 
 export default function Cadastro() {
   const { cadastrarConta } = useAuth();

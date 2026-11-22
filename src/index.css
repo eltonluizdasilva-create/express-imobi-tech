@@ -206,3 +206,17 @@ html.tema-claro .hero-destaque {
 html.tema-claro :where(a, button, input, select, textarea, summary, [tabindex]):focus-visible {
   outline-color: #047857 !important;
 }
+
+/* ==========================================================================
+   TRILHO DE MÓDULOS — cursor de arrasto (D-22.05)
+   Seta própria, desenhada em SVG inline: contorno escuro + miolo branco para
+   funcionar no tema claro e no escuro, com um traço esmeralda na haste para
+   lembrar a cor da marca. Enquanto arrasta, a mesma seta recebe o acento cheio
+   — é o feedback de "peguei o trilho".
+   ========================================================================== */
+.cursor-arraste {
+  cursor: url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='28' height='28' viewBox='0 0 28 28'%3E%3Cpath d='M4.2 3.4 21.6 13.3 13.3 14.9 9.6 22.4Z' fill='%23ffffff' stroke='%230f172a' stroke-width='1.7' stroke-linejoin='round'/%3E%3Cpath d='M13.3 14.9 9.6 22.4' fill='none' stroke='%2310b981' stroke-width='1.7' stroke-linecap='round'/%3E%3C/svg%3E") 4 3, grab;
+}
+.cursor-arraste.arrastando {
+  cursor: url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='28' height='28' viewBox='0 0 28 28'%3E%3Cpath d='M4.2 3.4 21.6 13.3 13.3 14.9 9.6 22.4Z' fill='%2310b981' stroke='%230f172a' stroke-width='1.7' stroke-linejoin='round'/%3E%3Cpath d='M2.2 9.2 8.4 13.4' fill='none' stroke='%2310b981' stroke-width='1.6' stroke-linecap='round' opacity='.8'/%3E%3C/svg%3E") 4 3, grabbing;
+}

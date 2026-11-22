@@ -1,4 +1,5 @@
 /* eslint-disable react/prop-types */
+import { linkWhatsApp } from '../../lib/contato';
 
 export function TelaTrialExpirou({ setTrialExpirou }) {
   return (
@@ -21,7 +22,7 @@ export function TelaTrialExpirou({ setTrialExpirou }) {
           Volte ao plano contratado para continuar.
         </p>
         <a
-          href={`https://wa.me/5534991439845?text=${encodeURIComponent('Olá! Meu período de teste acabou. Gostaria de fazer upgrade para o Prime IA ou outro plano.')}`}
+          href={linkWhatsApp('Olá! Meu período de teste acabou. Gostaria de fazer upgrade para o Prime IA ou outro plano.')}
           target="_blank"
           rel="noreferrer"
           style={{

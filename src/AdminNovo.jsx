@@ -56,7 +56,7 @@ import { COLORS, formatarMoeda } from './components/admin/constants';
 import { TEMAS } from './DashboardTab';
 import { TelaTrialExpirou, TelaBloqueado, TelaLogin } from './components/admin/TelasDeAcesso';
 import ModuloBloqueado from './components/admin/ModuloBloqueado';
-import BarraModulos from './components/admin/BarraModulos';
+import TrilhoModulos from './components/admin/TrilhoModulos';
 import SofiaWhatsAppTab from './components/admin/SofiaWhatsAppTab';
 import ExpressBrainTab from './components/admin/ExpressBrainTab';
 import ModuloComAbas from './components/admin/ModuloComAbas';
@@ -77,7 +77,8 @@ import MicButton from './components/ui/MicButton';
 import CampoMoeda from './components/ui/CampoMoeda';
 import OnboardingTour from './components/OnboardingTour';
 import OnboardingPrimeiroUso from './components/onboarding/OnboardingPrimeiroUso';
-import { ehMasterPlataforma as ehMasterPlataformaFn, modoProEfetivo, rotuloVisao } from './lib/acesso-plano';
+import { ehMasterPlataforma as ehMasterPlataformaFn } from './lib/acesso-plano';
+import { PLANOS } from './lib/planos';
 import { MODULOS_MAP } from './modulosMap';
 import { setCreditoPrefill } from './lib/credito/prefill';
 import {
@@ -623,14 +624,6 @@ export default function Admin() {
       return 'claro';
     }
   });
-  const [modoPainel, setModoPainel] = useState(() => {
-    try {
-      return localStorage.getItem('modoPainel') || 'completo';
-    } catch {
-      return 'completo';
-    }
-  });
-
   // Estados de dados imobiliários
   const [listaLeads, setListaLeads] = useState([]);
   const [listaImoveis, setListaImoveis] = useState([]);
@@ -743,18 +736,6 @@ export default function Admin() {
   useEffect(() => {
     if (!ehGestorUI && MODULOS_SO_GESTAO.has(abaAtiva)) setAbaAtiva('dashboard_imobi');
   }, [ehGestorUI, abaAtiva]);
-
-  const alternarModoPainel = useCallback((novoModo) => {
-    setModoPainel(novoModo);
-    if (novoModo === 'gratis' || novoModo === 'lite') {
-      setAbaAtiva((abaAtual) => (MODULOS_GRATIS_PLG.has(abaAtual) ? abaAtual : 'dashboard_imobi'));
-    }
-    try {
-      localStorage.setItem('modoPainel', novoModo);
-    } catch (e) {
-      console.error(e);
-    }
-  }, []);
 
   const toggleTema = useCallback(() => {
     setTema((prev) => {
@@ -1495,6 +1476,17 @@ export default function Admin() {
     return valor > 0 ? valor : 1480000;
   }
 
+  // Modo claro: liga a camada de compatibilidade do CSS (src/index.css).
+  // D-22.07 — este efeito estava DEPOIS dos return de auth/login, então o
+  // primeiro render (auth ainda carregando) chamava menos hooks que o segundo
+  // e o React abortava com "Rendered more hooks than during the previous
+  // render" — era a causa real do "Erro de Conexão" ao abrir /admin direto.
+  useEffect(() => {
+    const raiz = document.documentElement;
+    raiz.classList.toggle('tema-claro', tema !== 'escuro');
+    return () => raiz.classList.remove('tema-claro');
+  }, [tema]);
+
   // ─── Telas de Carregamento e Login ───────────────────────────────────────────
 
   if (carregandoAuth || (logado && !dadosImobiliaria)) {
@@ -1524,24 +1516,21 @@ export default function Admin() {
     );
   }
 
+  // Modo claro: a compatibilidade de CSS já foi tratada no efeito acima,
+  // antes das telas de login (D-22.07).
   const t = TEMAS[tema] || TEMAS.escuro;
   const isEscuro = tema === 'escuro';
   const corAba = corDaAba(abaAtiva);
   const textoCta = textoSobreCor(corAba);
 
-  // Modo claro: liga a camada de compatibilidade do CSS (src/index.css)
-  useEffect(() => {
-    const raiz = document.documentElement;
-    raiz.classList.toggle('tema-claro', !isEscuro);
-    return () => raiz.classList.remove('tema-claro');
-  }, [isEscuro]);
   // MASTER e o trial de 10 dias já foram resolvidos acima (claimAdmin,
   // ehMasterPlataforma, acessoProLiberado, bloqueioProAtivo).
 
-  const isModoGratis = modoPainel === 'gratis' || modoPainel === 'lite';
-  // Cliente final não tem rascunho de demo: o painel segue o plano REAL da conta.
-  // O localStorage ('modoPainel') só vale para a conta MASTER.
-  const modoPro = modoProEfetivo({ master: ehMasterPlataforma, isModoGratis, isProConta });
+  // D-22.06 — o modo do painel segue o plano REAL da conta, ponto. O antigo
+  // alternador "Visão Enxuta × Visão Completa" saiu: com uma linha só, os
+  // 22 módulos aparecem para todo mundo (o que trava é o ACESSO), então o
+  // botão não mudava mais nada além do rótulo do banner.
+  const modoPro = Boolean(isProConta || ehMasterPlataforma);
   const isPro = Boolean(isProConta && modoPro);
   // OPERAÇÃO IA tem dois módulos independentes (D-22.01): Sofia WhatsApp
   // (R$ 450+) e Express Brain (R$ 497+ / sob implantação). Uma conta pode
@@ -1549,15 +1538,7 @@ export default function Admin() {
   const contaPlano = dadosImobCtx || dadosLegadoCtx || {};
   const sofiaLiberada = Boolean(ehMasterPlataforma || temSofiaWhatsApp(contaPlano));
   const brainLiberado = Boolean(ehMasterPlataforma || temExpressBrain(contaPlano));
-  const setModoPro = (ativo) => alternarModoPainel(ativo ? 'completo' : 'gratis');
 
-  // Lote 4 — o rascunho 'gratis' gravado no navegador não pode sobreviver a um
-  // plano pago: se a conta é PRO e o registro local diz o contrário, corrige.
-  // É isto que destravava o "MÓDULO PREMIUM" com "Plano PRO Ativo" no topo.
-  useEffect(() => {
-    if (!isProConta || !isModoGratis) return;
-    alternarModoPainel('completo');
-  }, [isProConta, isModoGratis, alternarModoPainel]);
   const infoAbaAtiva = MAPA_DETALHES_ABAS[abaAtiva] || MAPA_DETALHES_ABAS.dashboard_imobi;
 
   // Abas próprias novas vs abas geridas pelo GerenciadorDeModulos
@@ -1581,6 +1562,9 @@ export default function Admin() {
 
   const botoesBloco1Essencial = [
     { id: 'dashboard_imobi', icone: '📊', label: 'Visão Geral' },
+    // D-22.05 — "Meu Plano" saiu da última posição: era o 9º item da faixa e
+    // ficava fora da tela justamente para quem precisa ver o plano e assinar.
+    { id: 'meuplano', icone: '⭐', label: 'Meu Plano', destaquePlano: true },
     { id: 'captacao_imobi', icone: '🏠', label: 'Captação & Imóveis' },
     { id: 'funil_leads', icone: '👥', label: 'Leads & Funil CRM' },
     { id: 'visitas_imobi', icone: '📅', label: 'Agenda de Visitas' },
@@ -1588,7 +1572,6 @@ export default function Admin() {
     { id: 'equipe', icone: '🧑‍💼', label: 'Corretores & Equipe' },
     { id: 'config', icone: '⚙️', label: 'Configurações' },
     { id: 'especialista', icone: '🎧', label: 'Suporte Especialista' },
-    { id: 'meuplano', icone: '⭐', label: 'Meu Plano (10 Dias Grátis)', destaquePlano: true },
   ];
 
   // Degrau 2 — Essencial Plus (R$ 39,90): propostas e anúncios
@@ -1621,7 +1604,7 @@ export default function Admin() {
     // internas de `administrador` e `contador`. As rotas seguem válidas.
   ];
 
-  // Faixa 4 — OPERAÇÃO IA: dois módulos INDEPENDENTES, com preço próprio.
+  // Degrau 4 — OPERAÇÃO IA: dois módulos INDEPENDENTES, com preço próprio.
   // Pólen (ex-Sofia WhatsApp) e Tom (ex-Express Brain) — a badge de cada item
   // diz o preço; um não é brinde do outro.
   const botoesBlocoOperacaoIA = [
@@ -1636,6 +1619,62 @@ export default function Admin() {
       icone: '🧠',
       label: 'Tom · Maestro da Imobiliária',
       badge: 'Independente · R$ 497+ / sob implantação',
+    },
+  ];
+
+  // Preço de cada degrau lido de shared/planos.json (fonte única) e escrito com
+  // os centavos: "R$ 99" ao lado da contagem "9" lia como "R$ 99,99".
+  const precoDoPlano = (key) => {
+    const plano = PLANOS.find((item) => item.key === key);
+    const mensal = plano?.preco?.mensal;
+    if (mensal === null || mensal === undefined) return null;
+    if (!mensal) return null;
+    return `R$ ${mensal.toFixed(2).replace('.', ',')}`;
+  };
+
+  /* D-22.05 — trilho único. Antes eram 4 faixas empilhadas (~450px de tela) com
+     rolagem horizontal invisível: no mouse não havia como alcançar o fim da
+     linha. Agora os 22 módulos vivem numa linha só, cada pílula com o círculo
+     do degrau a que pertence (verde grátis · teal Plus · vinho PRO · âmbar IA),
+     e o cliente alcança o resto arrastando, pela roda do mouse ou pelas setas.
+     A lista de abas é de todo mundo: o acesso é que depende do plano. */
+  const gruposTrilho = [
+    {
+      id: 'gratis',
+      degrau: 'gratis',
+      rotuloCurto: 'Grátis',
+      titulo: 'Essenciais · Grátis',
+      itens: filtrarPorPapel(botoesBloco1Essencial),
+    },
+    {
+      id: 'plus',
+      degrau: 'plus',
+      rotuloCurto: 'Plus',
+      preco: precoDoPlano('essencial_plus'),
+      titulo: `Essencial Plus · ${precoDoPlano('essencial_plus') || ''}`,
+      itens: filtrarPorPapel(botoesBlocoEssencialPlus).map((item) => ({
+        ...item,
+        bloqueado: bloqueioProAtivo,
+      })),
+    },
+    {
+      id: 'pro',
+      degrau: 'pro',
+      rotuloCurto: 'PRO',
+      preco: precoDoPlano('profissional'),
+      titulo: trialEmAndamento && !bloqueioProAtivo ? 'PRO · Teste de 10 dias' : 'PRO · Assinantes',
+      itens: filtrarPorPapel(botoesBloco3Gestao).map((item) => ({
+        ...item,
+        bloqueado: bloqueioProAtivo,
+      })),
+    },
+    {
+      id: 'operacao',
+      degrau: 'operacao',
+      rotuloCurto: 'Operação IA',
+      preco: 'R$ 450+',
+      titulo: 'Operação IA · R$ 450+',
+      itens: filtrarPorPapel(botoesBlocoOperacaoIA),
     },
   ];
 
@@ -1965,13 +2004,25 @@ export default function Admin() {
       style={{ minHeight: '100vh', background: isEscuro ? '#020408' : '#f1f5f9', color: t.texto }}
       className="pb-40 md:pb-24 transition-colors duration-300 font-sans"
     >
-      {/* --- SEÇÃO DO TOPO / ALTERNÂNCIA DE MODO --- */}
+      {/* --- BARRA FIXA: cabeçalho + trilho único de módulos (D-22.05) ---
+          As 4 faixas antigas custavam ~450px de tela e desapareciam ao rolar.
+          Agora ficam presas aqui: 57px de cabeçalho + ~76px de menus. */}
+      <div className="sticky top-0 z-40 shadow-[0_14px_28px_-24px_rgba(0,0,0,0.9)]">
       <header
-        className="sticky top-0 z-40 flex flex-wrap items-center justify-between border-b border-zinc-800 bg-[#020408] px-6 py-3 gap-3"
+        className="flex flex-wrap items-center justify-between gap-2 border-b border-zinc-800 bg-[#020408] px-4 py-2.5 md:gap-3 md:px-6 md:py-3"
       >
         <div className="flex items-center gap-3">
           <LogoExpress />
-          <span className="text-[10px] px-2.5 py-1 rounded-full bg-emerald-950 text-emerald-300 border border-emerald-800/50 sm:text-xs">
+          {/* O crachá do plano é a primeira coisa colorida do topo: verde quando
+              a conta está no grátis, vinho quando é PRO. */}
+          <span
+            className="rounded-full border px-2.5 py-1 text-[10px] font-bold sm:text-xs"
+            style={
+              isProConta
+                ? { borderColor: 'rgba(161,18,63,0.55)', background: 'rgba(161,18,63,0.16)', color: '#fda4af' }
+                : { borderColor: 'rgba(16,185,129,0.45)', background: 'rgba(16,185,129,0.14)', color: '#6ee7b7' }
+            }
+          >
             {isProConta ? '✨ Plano PRO Ativo' : '⚡ Plano Gratuito'}
           </span>
         </div>
@@ -1993,35 +2044,8 @@ export default function Admin() {
             </button>
           )}
 
-          {/* Alternador de visão: quantas abas aparecem no menu */}
-          <div
-            className="flex items-center gap-0.5 rounded-lg border border-zinc-700/60 bg-zinc-800/60 p-0.5"
-            role="group"
-            aria-label={rotuloVisao(modoPro)}
-          >
-            <button
-              type="button"
-              onClick={() => setModoPro(false)}
-              aria-pressed={!modoPro}
-              title="Ver só as abas essenciais (grátis)"
-              className={`cursor-pointer rounded-md px-2.5 py-1 text-[10px] font-black uppercase tracking-wider transition ${
-                !modoPro ? 'bg-[#10b981] text-slate-950' : 'text-zinc-400 hover:text-white'
-              }`}
-            >
-              <span className="hidden lg:inline">Visão </span>Enxuta
-            </button>
-            <button
-              type="button"
-              onClick={() => setModoPro(true)}
-              aria-pressed={modoPro}
-              title="Ver todas as abas (PRO + Esquadrão de IA)"
-              className={`cursor-pointer rounded-md px-2.5 py-1 text-[10px] font-black uppercase tracking-wider transition ${
-                modoPro ? 'bg-[#10b981] text-slate-950' : 'text-zinc-400 hover:text-white'
-              }`}
-            >
-              <span className="hidden lg:inline">Visão </span>Completa
-            </button>
-          </div>
+          {/* Alternador de visão removido (D-22.06): o trilho mostra todos os
+              degraus e o filtro por plano ficou nas pílulas de cima. */}
 
           <button
             onClick={() => setTourManual(true)}
@@ -2051,8 +2075,27 @@ export default function Admin() {
         </div>
       </header>
 
-      {/* --- NAVEGAÇÃO HORIZONTAL: ESSENCIAIS → PRO → ESQUADRÃO DE IA --- */}
-      <nav className="relative border-b border-zinc-800/80 bg-[#020408]">
+      {/* --- TRILHO ÚNICO (uma linha arrastável) --- */}
+      <nav
+        className="relative border-b border-zinc-800/80 bg-[#020408]"
+        aria-label="Módulos do painel"
+      >
+        <div className="relative mx-auto max-w-[1600px]">
+          <TrilhoModulos
+            grupos={gruposTrilho}
+            abaAtiva={abaAtiva}
+            setAbaAtiva={setAbaAtiva}
+            detalhes={MAPA_DETALHES_ABAS}
+            temaClaro={!isEscuro}
+            dataTour="trilho-modulos"
+          />
+        </div>
+      </nav>
+      </div>
+      {/* --- fim da barra fixa --- */}
+
+      {/* --- FAIXA DE DESTAQUE (rola junto com a página) --- */}
+      <section className="relative border-b border-zinc-800/80 bg-[#020408]">
         {/* Fundo com gradientes radiais profundos */}
         <div
           className="pointer-events-none absolute inset-0"
@@ -2114,77 +2157,6 @@ export default function Admin() {
             </button>
           </div>
 
-          {/* Barra 1 — Módulos Essenciais (Grátis) */}
-          <BarraModulos
-            titulo="Essenciais · Grátis"
-            tom="esmeralda"
-            itens={filtrarPorPapel(botoesBloco1Essencial)}
-            abaAtiva={abaAtiva}
-            setAbaAtiva={setAbaAtiva}
-            detalhes={MAPA_DETALHES_ABAS}
-            linhaUnica
-            dataTour="barra-essenciais"
-            temaClaro={!isEscuro}
-          />
-
-          {/* Barra 2 — Essencial Plus (R$ 39,90) */}
-          <BarraModulos
-            titulo="Essencial Plus · R$ 39,90"
-            tom="teal"
-            itens={filtrarPorPapel(botoesBlocoEssencialPlus)}
-            abaAtiva={abaAtiva}
-            setAbaAtiva={setAbaAtiva}
-            detalhes={MAPA_DETALHES_ABAS}
-            dataTour="barra-essencial-plus"
-            temaClaro={!isEscuro}
-          />
-
-          {/* Barra 3 — PRO · Assinantes: 8 ferramentas + 7 Agentes de IA.
-              D-22.03 — sem PRO e com o trial vencido, cada pílula mostra
-              cadeado e leva ao Meu Plano em vez de abrir a aba. */}
-          {modoPro && (
-            <BarraModulos
-              titulo="PRO · Assinantes"
-              subtitulo={
-                bloqueioProAtivo
-                  ? 'Cadeado = exige PRO (R$ 99/mês)'
-                  : trialEmAndamento
-                    ? 'Teste de 10 dias em andamento'
-                    : 'Liberado para a sua conta'
-              }
-              tom="roxo"
-              itens={filtrarPorPapel(botoesBloco3Gestao).map((item) => ({
-                ...item,
-                bloqueado: bloqueioProAtivo,
-              }))}
-              abaAtiva={abaAtiva}
-              setAbaAtiva={setAbaAtiva}
-              detalhes={MAPA_DETALHES_ABAS}
-              dataTour="barra-pro"
-              temaClaro={!isEscuro}
-              onBloqueado={(btn) =>
-                // A aba dos 7 Agentes é vitrine: abre com o simulador
-                // bloqueado e o aviso do PRO. As 8 ferramentas vão ao plano.
-                setAbaAtiva(btn?.id === 'agentes_ia' ? 'agentes_ia' : 'meuplano')
-              }
-            />
-          )}
-
-          {/* Barra 4 — OPERAÇÃO IA (R$ 450+) */}
-          {modoPro && (
-            <BarraModulos
-              titulo="OPERAÇÃO IA · R$ 450+"
-              tom="ambar"
-              itens={filtrarPorPapel(botoesBlocoOperacaoIA)}
-              abaAtiva={abaAtiva}
-              setAbaAtiva={setAbaAtiva}
-              detalhes={MAPA_DETALHES_ABAS}
-              destaque
-              dataTour="barra-ia"
-              temaClaro={!isEscuro}
-            />
-          )}
-
           {/* D-22.03 — trial de 10 dias encerrado sem plano ativo: as 8
               ferramentas PRO e os 7 Agentes de IA exigem assinatura. */}
           {bloqueioProAtivo && (
@@ -2202,39 +2174,8 @@ export default function Admin() {
               </button>
             </div>
           )}
-
-          {/* Convite ao PRO no modo Grátis */}
-          {!modoPro && (
-            <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-amber-500/25 bg-gradient-to-r from-amber-500/[0.08] to-transparent px-4 py-2.5">
-              <div className="flex flex-wrap items-center gap-2 text-xs text-zinc-300">
-                <span className="rounded-full border border-amber-400/40 bg-amber-500/15 px-2 py-0.5 text-[10px] font-black uppercase text-amber-300">
-                  ✨ Ecossistema PRO
-                </span>
-                <span>
-                  Libere os <strong className="text-amber-300">7 Agentes de IA 24h</strong>,{' '}
-                  <strong className="text-amber-300">Automação WhatsApp</strong>,{' '}
-                  <strong className="text-amber-300">Roleta de Leads</strong> e{' '}
-                  <strong className="text-amber-300">Acompanhamento do Cliente</strong>.
-                </span>
-              </div>
-              <div className="flex items-center gap-2">
-                <button
-                  onClick={() => setAbaAtiva('meuplano')}
-                  className="rounded-full border border-amber-500/40 bg-amber-500/10 px-3 py-1.5 text-[11px] font-bold text-amber-200 transition-colors hover:border-amber-300 hover:text-white"
-                >
-                  ⭐ Meu Plano (10 Dias Grátis)
-                </button>
-                <button
-                  onClick={() => setModoPro(true)}
-                  className="rounded-full bg-gradient-to-r from-amber-300 to-amber-500 px-3 py-1.5 text-[11px] font-black text-amber-950 shadow-[0_0_18px_rgba(245,158,11,0.45)] transition-all hover:-translate-y-0.5 hover:shadow-[0_0_28px_rgba(245,158,11,0.65)]"
-                >
-                  🚀 Explorar Recursos PRO
-                </button>
-              </div>
-            </div>
-          )}
         </div>
-      </nav>
+      </section>
 
       {/* ═══════════════════════════════════════════════════════════════════════
           3. ÁREA DE CONTEÚDO PRINCIPAL (NOVAS TELAS IMOBILIÁRIAS + MÓDULOS)

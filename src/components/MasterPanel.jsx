@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { db } from '../lib/firebase';
+import { WHATSAPP_SUPORTE } from '../lib/contato';
 import { collection, getDocs, setDoc, doc, getDoc, updateDoc } from 'firebase/firestore';
 import {
   Play, Save, ShieldCheck, DollarSign, Video, Settings,
@@ -53,7 +54,7 @@ const DEFAULT_PLANOS = {
     'desmanche', 'hibrido_ev', 'veiculo_eletrico', 'contador',
     'fechamento_caixa', 'pagamentos_equipe'
   ],
-  whatsapp: "5534991439845",
+  whatsapp: WHATSAPP_SUPORTE,
   descricaoBase: "Abertura de O.S. Geral e Controle Financeiro."
 };
 
@@ -331,7 +332,7 @@ export default function MasterPanel({ setPlanosGlobais }) {
         planos: planos.combos,
         precosIA: planos.precosIA,
         modulosBase: ['clientes', 'dashboard', 'financeiro'], // Padrão solicitado
-        whatsapp: planos.whatsapp || "5534991439845"
+        whatsapp: planos.whatsapp || WHATSAPP_SUPORTE
       };
       await setDoc(doc(db, 'configuracoes_admin', 'master'), payloadMaster, { merge: true });
 

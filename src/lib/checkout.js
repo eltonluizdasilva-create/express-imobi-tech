@@ -8,7 +8,9 @@
  * ============================================================================
  */
 
-export const WHATSAPP_PADRAO = '5534991439845';
+import { WHATSAPP_SUPORTE } from './contato';
+
+export const WHATSAPP_PADRAO = WHATSAPP_SUPORTE;
 
 /** Remove tudo que não é dígito e prefixa 55 quando falta DDI. */
 export function normalizarWhatsapp(numero) {

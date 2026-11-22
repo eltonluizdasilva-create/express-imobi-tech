@@ -15,7 +15,7 @@ export default function RodapeLegal() {
   return (
     <footer className="w-full px-4 pt-2 pb-6">
       <p className="mx-auto max-w-3xl text-center text-[10px] leading-relaxed text-neutral-600">
-        © {new Date().getFullYear()} Express Tech · Express Imobi Tech — Araguari e Uberlândia/MG. A Inteligência
+        © {new Date().getFullYear()} Express Tech · Express Imobi Tech. A Inteligência
         Artificial otimiza seu tempo, mas não substitui sua expertise. A conferência final das informações e o
         relacionamento humano são os verdadeiros diferenciais do corretor.
       </p>

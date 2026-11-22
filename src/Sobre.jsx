@@ -1,5 +1,6 @@
 import React, { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { linkWhatsApp } from './lib/contato';
 
 export default function Sobre() {
   const navigate = useNavigate();
@@ -35,7 +36,7 @@ export default function Sobre() {
 
         <div className="flex gap-4">
           <button
-            onClick={() => window.open('https://wa.me/5534991439845?text=Olá, quero agendar uma consultoria com a Express AI', '_blank')}
+            onClick={() => window.open(linkWhatsApp('Olá, quero agendar uma consultoria com a Express AI'), '_blank')}
             className="px-5 py-2 text-sm font-bold bg-white text-black rounded-full hover:bg-gray-200 transition-all shadow-[0_0_20px_rgba(255,255,255,0.2)]"
           >
             Falar no WhatsApp
@@ -104,7 +105,7 @@ export default function Sobre() {
 
             <div className="pt-4">
               <button
-                onClick={() => window.open('https://wa.me/5534991439845?text=Olá, Elton. Li sua história no site e gostaria de conversar.', '_blank')}
+                onClick={() => window.open(linkWhatsApp('Olá, Elton. Li sua história no site e gostaria de conversar.'), '_blank')}
                 className="px-8 py-3 border border-white/20 text-white font-bold rounded-full hover:bg-white hover:text-black transition-all"
               >
                 Conversar diretamente comigo

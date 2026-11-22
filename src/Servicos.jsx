@@ -1,5 +1,6 @@
 import React, { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { linkWhatsApp } from './lib/contato';
 
 export default function Servicos() {
   const navigate = useNavigate();
@@ -35,7 +36,7 @@ export default function Servicos() {
 
         <div className="flex gap-4">
           <button
-            onClick={() => window.open('https://wa.me/5534991439845?text=Olá, quero agendar uma consultoria com a Express AI', '_blank')}
+            onClick={() => window.open(linkWhatsApp('Olá, quero agendar uma consultoria com a Express AI'), '_blank')}
             className="px-5 py-2 text-sm font-bold bg-white text-black rounded-full hover:bg-gray-200 transition-all shadow-[0_0_20px_rgba(255,255,255,0.2)]"
           >
             Falar no WhatsApp
@@ -145,7 +146,7 @@ export default function Servicos() {
       <section className="py-20 px-4 text-center mt-12">
         <h2 className="text-3xl font-black mb-6">Pronto para dar o próximo passo?</h2>
         <button
-          onClick={() => window.open('https://wa.me/5534991439845?text=Olá, tenho interesse nos serviços da Express AI', '_blank')}
+          onClick={() => window.open(linkWhatsApp('Olá, tenho interesse nos serviços da Express AI'), '_blank')}
           className="px-10 py-4 bg-white text-black font-extrabold rounded-full hover:bg-gray-200 transition-all shadow-[0_0_30px_rgba(255,255,255,0.2)]"
         >
           SOLICITAR ORÇAMENTO
@@ -154,7 +155,7 @@ export default function Servicos() {
 
       {/* RODAPÉ */}
       <footer className="bg-[#000] border-t border-[#111] py-8 text-center text-gray-600 text-sm mt-10">
-        © {new Date().getFullYear()} Express AI Automações - Araguari, MG. Todos os direitos reservados.
+        © {new Date().getFullYear()} Express AI Automações - Uberlândia, MG. Todos os direitos reservados.
       </footer>
 
     </div>

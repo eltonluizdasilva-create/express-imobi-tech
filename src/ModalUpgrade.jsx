@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { WHATSAPP_SUPORTE } from './lib/contato';
 
 const MAIN_COLOR = '#10b981';
 const GREEN_MONEY = '#00E676';
@@ -80,7 +81,7 @@ const PLANOS = [
 
 const HIERARQUIA = { essencial: 1, profissional: 2, especialista: 3, master: 4, ultimate: 5 };
 
-export default function ModalUpgrade({ aberto, onFechar, planoAtual = 'essencial', whatsapp = '5534988273194' }) {
+export default function ModalUpgrade({ aberto, onFechar, planoAtual = 'essencial', whatsapp = WHATSAPP_SUPORTE }) {
     const [ciclo, setCiclo] = useState('mensal');
 
     if (!aberto) return null;

@@ -209,7 +209,7 @@ export default function Home() {
           <div className="flex items-center gap-2">
             <button
               type="button"
-              onClick={() => navigate('/login')}
+              onClick={() => navigate('/login-admin')}
               className="whitespace-nowrap rounded-full px-3 py-2 text-[13px] font-semibold text-slate-300 transition-colors hover:text-white sm:px-4"
             >
               Entrar
@@ -796,7 +796,7 @@ export default function Home() {
               <li><button type="button" onClick={() => irPara('agentes')} className="hover:text-white">Agentes de IA</button></li>
               <li><button type="button" onClick={() => irPara('planos')} className="hover:text-white">Planos</button></li>
               <li><button type="button" onClick={() => navigate('/portal')} className="hover:text-white">Portal público</button></li>
-              <li><button type="button" onClick={() => navigate('/login')} className="hover:text-white">Entrar</button></li>
+              <li><button type="button" onClick={() => navigate('/login-admin')} className="hover:text-white">Entrar</button></li>
             </ul>
           </div>
 
@@ -826,7 +826,7 @@ export default function Home() {
         <div className="border-t border-white/[0.06] px-4 py-6 sm:px-6">
           <div className="mx-auto flex max-w-6xl flex-col gap-3 text-[11px] text-slate-500 md:flex-row md:items-center md:justify-between">
             <p>
-              © {new Date().getFullYear()} Express Tech · Express Imobi Tech — Araguari e Uberlândia/MG · atendimento digital
+              © {new Date().getFullYear()} Express Tech · Express Imobi Tech — Uberlândia/MG · atendimento digital
               em todo o Brasil.
             </p>
             <p className="flex flex-wrap items-center gap-x-4 gap-y-2">

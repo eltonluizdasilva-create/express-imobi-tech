@@ -1,6 +1,6 @@
 {
   "_comment": "FONTE UNICA DE VERDADE de planos, precos, modulos e limites. Consumido por src/lib/planos.js (frontend) e functions/index.js (backend).",
-  "whatsappComercial": "5534991439845",
+  "whatsappComercial": "8562099640154",
   "modulos": {
     "gratis": [
       "dashboard_imobi",

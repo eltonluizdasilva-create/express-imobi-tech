@@ -38,18 +38,51 @@ const AcompanharProcesso = lazy(() => import('./components/acompanhamento/Acompa
 class ErrorBoundary extends React.Component {
   constructor(props) {
     super(props);
-    this.state = { hasError: false };
+    this.state = { hasError: false, detalhe: '' };
   }
-  static getDerivedStateFromError() {
-    return { hasError: true };
+  static getDerivedStateFromError(error) {
+    return { hasError: true, detalhe: String((error && error.message) || error || '') };
+  }
+  componentDidCatch(error, info) {
+    // Sem isso a tela só dizia "instabilidade na rede" e escondia a causa real.
+    // O erro completo fica no console (e no texto abaixo).
+    console.error('[ErrorBoundary] tela:', window.location.pathname, error, info);
+
+    // Chunk velho/ausente (deploy novo, Vite re-otimizando dependências, cache
+    // do PWA): recarregar uma vez resolve. Guarda a tentativa na sessão para
+    // não entrar em laço quando o problema é de código, não de carregamento.
+    const msg = String((error && error.message) || '');
+    const falhaDeModulo = /dynamically imported module|Loading chunk|Importing a module script failed|error loading dynamically/i.test(msg);
+    if (falhaDeModulo) {
+      const chave = `erro-modulo:${window.location.pathname}`;
+      try {
+        if (!sessionStorage.getItem(chave)) {
+          sessionStorage.setItem(chave, '1');
+          window.location.reload();
+        }
+      } catch { /* sessionStorage bloqueado: só mostra a tela */ }
+    }
   }
   render() {
     if (this.state.hasError) {
       return (
         <div style={{ backgroundColor: '#020408' }} className="h-screen w-full flex flex-col items-center justify-center text-white p-4 text-center">
           <h1 className="text-2xl font-bold text-emerald-400 mb-2">Erro de Conexão</h1>
-          <p className="text-gray-400 mb-6 max-w-md">Ocorreu uma instabilidade na sua rede no momento de carregar os componentes desta tela.</p>
-          <button onClick={() => window.location.reload()} style={{ backgroundColor: '#10b981' }} className="px-6 py-3 font-bold rounded-xl hover:opacity-90 transition-colors text-white">Recarregar Página</button>
+          <p className="text-gray-400 mb-3 max-w-md">Ocorreu uma instabilidade na sua rede no momento de carregar os componentes desta tela.</p>
+          {this.state.detalhe ? (
+            <p className="mb-6 max-w-xl break-words rounded-lg border border-slate-800 bg-black/40 px-3 py-2 text-[11px] text-slate-500">
+              <strong className="text-slate-400">Detalhe técnico:</strong> {this.state.detalhe}
+            </p>
+          ) : null}
+          <div className="flex flex-wrap items-center justify-center gap-3">
+            <button onClick={() => window.location.reload()} style={{ backgroundColor: '#10b981' }} className="px-6 py-3 font-bold rounded-xl hover:opacity-90 transition-colors text-white">Recarregar Página</button>
+            <button
+              onClick={() => { window.location.href = '/login-admin'; }}
+              className="rounded-xl border border-slate-700 px-6 py-3 font-bold text-slate-300 hover:border-slate-500 hover:text-white transition-colors"
+            >
+              Ir para o login
+            </button>
+          </div>
         </div>
       );
     }
