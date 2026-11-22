@@ -36,9 +36,14 @@ export const MODULOS_ESQUADRAO = Object.freeze([
 const MODULOS_POR_PLANO = {
   gratis: MODULOS_GRATIS,
   pro: MODULOS_PRO,
+  plus: MODULOS_PRO,
   essencial_plus: MODULOS_ESSENCIAL_PLUS,
   profissional: MODULOS_PROFISSIONAL,
   esquadrao_ia: MODULOS_ESQUADRAO,
+  // Tom é produto de cérebro operacional, não de módulo do painel: entra com a
+  // base gratuita de módulos e o que ele libera é o uso do agente.
+  tom_autonomo: MODULOS_GRATIS,
+  tom_imobiliaria: MODULOS_GRATIS,
 };
 
 /* ------------------------------------------------------------------ */
@@ -63,6 +68,8 @@ for (const [chave, valor] of Object.entries(dados.limites)) {
     funcionarios: valor.funcionarios === null ? Infinity : valor.funcionarios,
     abas: valor.abas === null ? Infinity : valor.abas,
     os_mes: valor.osMes === null ? Infinity : valor.osMes,
+    // Assentos extras: só o PLUS vende usuário adicional (R$ 19,90/mês).
+    usuario_adicional_preco: Number(valor.usuarioAdicionalPreco || 0),
     descricao: valor.descricao,
   });
 }
@@ -70,6 +77,37 @@ for (const [chave, valor] of Object.entries(dados.limites)) {
 limites.GRATUITO = limites.gratis;
 
 export const LIMITES_PLANOS = Object.freeze(limites);
+
+/* ------------------------------------------------------------------ */
+/* USUÁRIOS (assentos do plano)                                        */
+/* ------------------------------------------------------------------ */
+/* Regra comercial definitiva (23/11/2026):                            */
+/*   Grátis = 1 usuário · PRO = 1 usuário (corretor autônomo)          */
+/*   PLUS = até 3 usuários inclusos + R$ 19,90/mês por usuário extra   */
+
+export function limiteUsuariosDoPlano(plano) {
+  const chave = normalizarPlano(plano);
+  const limite = LIMITES_PLANOS[chave] || LIMITES_PLANOS[chaveCanonica(chave)] || LIMITES_PLANOS.gratis;
+  return limite.funcionarios;
+}
+
+/** Valor mensal de cada assento além dos inclusos (0 quando o plano não vende assento). */
+export function precoUsuarioAdicional(plano) {
+  const chave = normalizarPlano(plano);
+  const limite = LIMITES_PLANOS[chave] || LIMITES_PLANOS[chaveCanonica(chave)] || LIMITES_PLANOS.gratis;
+  return limite.usuario_adicional_preco || 0;
+}
+
+/** Texto padrão de assentos, para card/tela não escrever número na mão. */
+export function rotuloUsuarios(plano) {
+  const inclusos = limiteUsuariosDoPlano(plano);
+  if (!Number.isFinite(inclusos)) return 'Usuários ilimitados';
+  const extra = precoUsuarioAdicional(plano);
+  const base = inclusos === 1 ? '1 usuário' : `Até ${inclusos} usuários inclusos`;
+  if (!extra) return base;
+  const valor = extra.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL', minimumFractionDigits: 2 });
+  return `${base} (+${valor}/usuário extra)`;
+}
 
 /* ------------------------------------------------------------------ */
 /* HELPERS                                                             */
@@ -188,11 +226,20 @@ export function temAcessoAgentesIA(conta = {}, agora = new Date()) {
   return temAcessoPro(conta, agora);
 }
 
-/** Chave canónica do catálogo ('gratis' | 'pro' | 'esquadrao_ia' | ...) */
+/**
+ * Chave canónica do catálogo ('gratis' | 'pro' | 'plus' | 'esquadrao_ia' | ...).
+ *
+ * D-22.09 — a tabela mudou de nome, não de dado no Firestore:
+ *   • docs antigos com `plano: 'essencial_plus'` (pago R$ 39,90) → **pro**
+ *   • docs antigos com `plano: 'profissional'` (pago R$ 99,00) → **plus**
+ * Por isso não é necessária migração: o alias resolve na leitura.
+ */
 export function chaveCanonica(plano) {
   const chave = normalizarPlano(plano);
   if (ALIAS_GRATIS.has(chave)) return DEFAULT_PLANO_KEY;
-  if (['essencial_plus', 'profissional', 'plano_profissional'].includes(chave)) return 'pro';
+  if (['essencial_plus', 'essencialplus'].includes(chave)) return 'pro';
+  if (['profissional', 'plano_profissional'].includes(chave)) return 'plus';
+  if (['polen', 'pólen'].includes(chave)) return 'esquadrao_ia';
   return chave;
 }
 

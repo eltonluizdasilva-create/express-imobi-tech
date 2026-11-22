@@ -1,10 +1,8 @@
 /**
  * checkout.js — destino do botão "Assinar Plano PRO"
  * ============================================================================
- * Regra: nenhum clique sem destino. Se VITE_CHECKOUT_PRO_URL existe, abre o
- * checkout em nova aba. Se está vazia (ou inválida), abre o WhatsApp comercial
- * com mensagem pronta contendo plano, ciclo, e-mail e ID da conta — o que o
- * comercial precisa para ativar sem pedir dado de novo.
+ * Regra: PRO mensal tem link público padrão; PLUS e ciclos anuais exigem URL
+ * própria e, sem ela, seguem para o WhatsApp comercial.
  * ============================================================================
  */
 
@@ -46,9 +44,8 @@ export function urlCheckoutPro(env = {}, ciclo = 'mensal') {
 }
 
 /**
- * Links de pagamento públicos do Asaas — usados quando a variável de ambiente
- * do plano está vazia. São os mesmos links divulgados no site; existem para o
- * botão de upgrade nunca cair no WhatsApp por falta de configuração.
+ * Link público do Asaas para PRO mensal, usado quando não há URL própria.
+ * PLUS e os ciclos anuais não têm fallback público para evitar preço incorreto.
  */
 export const LINK_ASAAS_PADRAO = Object.freeze({
   essencial_plus: 'https://www.asaas.com/000/c/62w4zie9tigrfj5w', // Alias legado do PRO — R$ 39,90/mês
@@ -56,27 +53,38 @@ export const LINK_ASAAS_PADRAO = Object.freeze({
 });
 
 /**
- * Link de pagamento (Asaas) do PRO único.
- * `essencial` é aceito como alias da variável usada pelo plano de R$ 39,90.
+ * Link de pagamento do plano/ciclo. PLUS nunca reutiliza o link do PRO:
+ * sem link próprio, o chamador segue pelo WhatsApp comercial.
  *
- * Variável ausente ou inválida → `LINK_ASAAS_PADRAO` do plano. Só devolve
- * string vazia para planos/serviços consultivos, que continuam indo pelo
- * WhatsApp comercial.
+ * O link público padrão só existe para PRO mensal. PLUS e os ciclos anuais
+ * retornam vazio quando não têm URL própria, evitando cobrar o valor errado.
  *
  * Recebe VALORES (nunca `import.meta.env` inteiro) pelo mesmo motivo de
  * `urlCheckoutPro`: o bundle não pode variar de máquina para máquina.
  */
-export function urlAsaasLink({ essencial = '', pro = '' } = {}, plano = 'pro') {
+export function urlAsaasLink(
+  { essencial = '', pro = '', proAnual = '', plus = '', plusAnual = '' } = {},
+  plano = 'pro',
+  ciclo = 'mensal',
+) {
   const alvo = String(plano || '').toLowerCase();
-  const ehPro = ['essencial_plus', 'profissional', 'pro'].includes(alvo);
-  if (!ehPro) return '';
-  const candidatos = [pro, essencial];
+  const ehPlus = ['profissional', 'plano_profissional', 'plus'].includes(alvo);
+  const ehPro = ['essencial_plus', 'essencialplus', 'pro'].includes(alvo);
+  if (!ehPro && !ehPlus) return '';
+
+  const anual = String(ciclo || 'mensal').toLowerCase() === 'anual';
+  const candidatos = ehPlus
+    ? [anual ? plusAnual : plus]
+    : anual
+      ? [proAnual]
+      : [pro, essencial];
 
   for (const bruto of candidatos) {
     const url = String(bruto || '').trim();
     if (/^https?:\/\//i.test(url)) return url;
   }
-  return LINK_ASAAS_PADRAO.pro;
+
+  return ehPro && !anual ? LINK_ASAAS_PADRAO.pro : '';
 }
 
 /**

@@ -18,10 +18,15 @@ export const EVENTOS_ASAAS_QUE_ATIVAM = Object.freeze(['PAYMENT_CONFIRMED', 'PAY
 
 const EVENTOS_QUE_ATIVAM = new Set(EVENTOS_ASAAS_QUE_ATIVAM);
 
-// Chaves antigas continuam aceitas, mas todas ativam o PRO canônico.
+// D-22.09 — o texto do pagamento identifica o degrau. A ordem importa: o
+// casamento mais específico vem antes do genérico.
 const SINONIMOS_PLANO = [
+  { plano: 'tom_autonomo', rx: /\btom\s*aut[oô]nomo\b/i },
+  { plano: 'tom_imobiliaria', rx: /\btom\s*imobili[áa]ria\b/i },
+  { plano: 'esquadrao_ia', rx: /\b(p[oó]len|opera[çc][aã]o\s*ia)\b/i },
   { plano: 'pro', rx: /\bessencial[\s_-]*plus\b/i },
-  { plano: 'pro', rx: /\bprofissional\b/i },
+  { plano: 'plus', rx: /\bprofissional\b/i },
+  { plano: 'plus', rx: /\bplus\b/i },
   { plano: 'pro', rx: /\bessencial\b/i },
   { plano: 'pro', rx: /\bpro\b/i },
 ];
@@ -43,8 +48,8 @@ export function valorEmReais(bruto) {
 
 /**
  * valor pago → plano/ciclo, montado a partir do catálogo para preços vigentes.
- * Valores de cobranças antigas (R$ 99, R$ 89 e R$ 1.068) continuam mapeados
- * para o PRO para preservar a ativação de assinaturas legadas.
+ * Valores das cobranças antigas do plano Profissional continuam mapeados para
+ * PLUS, preservando a equivalência `profissional` → `plus`.
  */
 export const PLANO_POR_VALOR = (() => {
   const mapa = new Map();
@@ -59,9 +64,9 @@ export const PLANO_POR_VALOR = (() => {
     adicionar(plano.preco.anual, plano.key, 'anual');
   }
   // Valores legados da escada anterior; não são usados em novos checkouts.
-  adicionar(99, 'pro', 'mensal');
-  adicionar(89, 'pro', 'anual');
-  adicionar(1068, 'pro', 'anual');
+  adicionar(99, 'plus', 'mensal');
+  adicionar(89, 'plus', 'anual');
+  adicionar(1068, 'plus', 'anual');
   return mapa;
 })();
 

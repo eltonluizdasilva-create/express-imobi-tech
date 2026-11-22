@@ -20,6 +20,9 @@ export {
   getLimiteOS,
   getLimitesPlano,
   precoNoCiclo,
+  limiteUsuariosDoPlano,
+  precoUsuarioAdicional,
+  rotuloUsuarios,
   WHATSAPP_COMERCIAL,
 } from './planos';
 

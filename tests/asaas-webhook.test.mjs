@@ -21,23 +21,29 @@ ok('valor zero/negativo é null', valorEmReais(0) === null && valorEmReais(-5) =
 ok('39,90 → PRO mensal',
   planoPorValor(39.9)?.plano === 'pro' && planoPorValor(39.9)?.ciclo === 'mensal',
   JSON.stringify(planoPorValor(39.9)));
+ok('34,90 → PRO anual',
+  planoPorValor(34.9)?.plano === 'pro' && planoPorValor(34.9)?.ciclo === 'anual');
+ok('99,90 → PLUS mensal',
+  planoPorValor(99.9)?.plano === 'plus' && planoPorValor(99.9)?.ciclo === 'mensal');
+ok('89,90 → PLUS anual',
+  planoPorValor(89.9)?.plano === 'plus' && planoPorValor(89.9)?.ciclo === 'anual');
 ok('"39.90" em texto → PRO', planoPorValor('39.90')?.plano === 'pro');
-ok('99 → PRO mensal legado',
-  planoPorValor(99)?.plano === 'pro' && planoPorValor(99)?.ciclo === 'mensal',
+ok('99 → PLUS mensal legado',
+  planoPorValor(99)?.plano === 'plus' && planoPorValor(99)?.ciclo === 'mensal',
   JSON.stringify(planoPorValor(99)));
-ok('99.00 com centavos → PRO legado', planoPorValor(99.0)?.plano === 'pro');
+ok('99.00 com centavos → PLUS legado', planoPorValor(99.0)?.plano === 'plus');
 ok('3990 (centavos) → PRO', planoPorValor(3990)?.plano === 'pro');
-ok('89 → PRO anual legado',
-  planoPorValor(89)?.plano === 'pro' && planoPorValor(89)?.ciclo === 'anual',
+ok('89 → PLUS anual legado',
+  planoPorValor(89)?.plano === 'plus' && planoPorValor(89)?.ciclo === 'anual',
   JSON.stringify(planoPorValor(89)));
-ok('1068 (ano inteiro) → PRO anual legado', planoPorValor(1068)?.plano === 'pro');
+ok('1068 (ano inteiro) → PLUS anual legado', planoPorValor(1068)?.plano === 'plus');
 ok('valor fora do catálogo não casa', planoPorValor(12.34) === null && planoPorValor(450) === null);
 
 /* -------------------------------- textos --------------------------------- */
 ok('texto legado "Essencial Plus" ativa PRO', planoPorTexto('Essencial Plus') === 'pro');
 ok('texto legado "essencial_plus" ativa PRO', planoPorTexto('plano essencial_plus') === 'pro');
 ok('texto "PRO"', planoPorTexto('PRO mensal') === 'pro');
-ok('texto legado "Profissional" ativa PRO', planoPorTexto('Plano Profissional anual') === 'pro');
+ok('texto legado "Profissional" ativa PLUS', planoPorTexto('Plano Profissional anual') === 'plus');
 ok('texto com "promoção" não vira PRO', planoPorTexto('promoção de inverno') === null, String(planoPorTexto('promoção de inverno')));
 ok('texto vazio é null', planoPorTexto('') === null && planoPorTexto(undefined) === null);
 
@@ -60,8 +66,9 @@ ok('body vazio não é Asaas', !ehPayloadAsaas({}) && !ehPayloadAsaas(null) && !
 
 const lido = lerPlanoDoEvento(eventoRecebido);
 ok('evento completo → PRO/mensal', lido.plano === 'pro' && lido.ciclo === 'mensal', JSON.stringify(lido));
-ok('valores antigos e nomes legados convergem para PRO',
-  lerPlanoDoEvento({ event: 'PAYMENT_RECEIVED', payment: { value: 99, description: 'Essencial Plus' } }).conflito === false);
+ok('valor e nome legado do Profissional convergem para PLUS',
+  lerPlanoDoEvento({ event: 'PAYMENT_RECEIVED', payment: { value: 99, description: 'Profissional' } }).plano === 'plus' &&
+  lerPlanoDoEvento({ event: 'PAYMENT_RECEIVED', payment: { value: 99, description: 'Profissional' } }).conflito === false);
 ok('sem valor e sem texto → plano null',
   lerPlanoDoEvento({ event: 'PAYMENT_RECEIVED', payment: {} }).plano === null);
 
@@ -80,14 +87,32 @@ ok('oficinaId com dois pontos', extrairOficinaId('imob: oficina_id: abc12345x') 
 ok('descrição sem oficinaId → null', extrairOficinaId('Pedido 123') === null);
 
 /* --------------------------- links do Meu Plano --------------------------- */
-ok('alias legado Plus usa o link unificado PRO',
+ok('alias legado Essencial Plus usa o link do PRO',
   urlAsaasLink({ essencial: 'https://www.asaas.com/i/ess', pro: 'https://www.asaas.com/i/pro' }, 'essencial_plus', 'mensal')
     === 'https://www.asaas.com/i/pro');
+ok('PLUS usa seu link mensal, sem cair no PRO',
+  urlAsaasLink({
+    pro: 'https://www.asaas.com/i/pro',
+    plus: 'https://www.asaas.com/i/plus',
+  }, 'plus', 'mensal') === 'https://www.asaas.com/i/plus');
+ok('alias Profissional usa seu link mensal PLUS',
+  urlAsaasLink({
+    pro: 'https://www.asaas.com/i/pro',
+    plus: 'https://www.asaas.com/i/plus',
+  }, 'profissional', 'mensal') === 'https://www.asaas.com/i/plus');
+ok('PLUS anual usa exclusivamente o link anual PLUS',
+  urlAsaasLink({
+    pro: 'https://www.asaas.com/i/pro',
+    plus: 'https://www.asaas.com/i/plus',
+    plusAnual: 'https://www.asaas.com/i/plus-anual',
+  }, 'plus', 'anual') === 'https://www.asaas.com/i/plus-anual');
+ok('PLUS sem link próprio não cai no checkout PRO',
+  urlAsaasLink({ pro: 'https://www.asaas.com/i/pro' }, 'plus', 'mensal') === '');
 ok('PRO usa o link unificado configurado',
   urlAsaasLink({ essencial: 'https://www.asaas.com/i/ess', pro: 'https://www.asaas.com/i/pro' }, 'pro', 'mensal')
     === 'https://www.asaas.com/i/pro');
-ok('ciclo anual legado não seleciona um checkout de preço antigo',
-  urlAsaasLink({ pro: 'https://x/i/pro' }, 'pro', 'anual') === 'https://x/i/pro');
+ok('PRO anual sem link anual não seleciona checkout mensal',
+  urlAsaasLink({ pro: 'https://x/i/pro' }, 'pro', 'anual') === '');
 
 ok('os dois links públicos do Asaas estão publicados no código',
   LINK_ASAAS_PADRAO.essencial_plus === 'https://www.asaas.com/000/c/62w4zie9tigrfj5w' &&
@@ -97,12 +122,12 @@ ok('sem variável do Essencial usa o link público',
   urlAsaasLink({}, 'essencial_plus', 'mensal') === LINK_ASAAS_PADRAO.essencial_plus);
 ok('sem variável do PRO usa o link público',
   urlAsaasLink({}, 'pro', 'mensal') === LINK_ASAAS_PADRAO.pro);
-ok('PRO anual legado também cai no link unificado',
-  urlAsaasLink({}, 'pro', 'anual') === LINK_ASAAS_PADRAO.pro);
+ok('PRO anual sem configuração não cai no link mensal padrão',
+  urlAsaasLink({}, 'pro', 'anual') === '');
 ok('variável sem protocolo cai no link público',
   urlAsaasLink({ pro: 'asaas.com/i/pro' }, 'pro', 'mensal') === LINK_ASAAS_PADRAO.pro);
-ok('variável em branco cai no link público',
-  urlAsaasLink({ essencial: '   ', pro: '   ' }, 'essencial_plus', 'anual') === LINK_ASAAS_PADRAO.pro);
+ok('variável mensal em branco cai no link público',
+  urlAsaasLink({ essencial: '   ', pro: '   ' }, 'essencial_plus', 'mensal') === LINK_ASAAS_PADRAO.pro);
 ok('plano sem link público devolve vazio',
   urlAsaasLink({}, 'automacao', 'mensal') === '' && urlAsaasLink({}, 'presenca_digital', 'mensal') === '');
 

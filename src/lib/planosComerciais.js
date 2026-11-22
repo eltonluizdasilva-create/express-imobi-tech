@@ -1,12 +1,26 @@
 /**
- * Copy comercial dos três planos e do serviço adicional de Presença Digital.
- * Preços, recursos e limites são lidos de shared/planos.json.
+ * Copy comercial dos degraus e do serviço adicional de Presença Digital.
+ * Preços, recursos e limites são lidos de shared/planos.json — nenhum número
+ * ou texto de plano é escrito na mão aqui.
+ *
+ * Escada vigente (D-22.09 + regra de usuários de 23/11/2026):
+ *   Grátis R$ 0 · PRO R$ 39,90 (1 usuário) · PLUS R$ 99,90 (até 3 usuários
+ *   inclusos, +R$ 19,90/mês por usuário extra) e, contratados à parte, os
+ *   módulos de IA: Pólen (R$ 450), Tom Autônomo (R$ 197) e Tom Imobiliária
+ *   (R$ 497).
  */
-import { getPlano, precoNoCiclo as precoCatalogo } from './planos.js';
+import {
+  getPlano,
+  precoNoCiclo as precoCatalogo,
+  rotuloUsuarios,
+} from './planos.js';
 
 const planoGratis = getPlano('gratis');
 const planoPro = getPlano('pro');
-const planoOperacaoIA = getPlano('esquadrao_ia');
+const planoPlus = getPlano('plus');
+const planoPolen = getPlano('esquadrao_ia');
+const planoTomAutonomo = getPlano('tom_autonomo');
+const planoTomImobiliaria = getPlano('tom_imobiliaria');
 const planoPresencaDigital = getPlano('presenca_digital');
 const textos = (plano) => (plano?.recursos || []).map((recurso) => recurso.texto);
 
@@ -25,6 +39,7 @@ export const DEGRAUS = Object.freeze([
     resumo: planoGratis.subtitulo,
     detalhePreco: precoCatalogo(planoGratis, 'mensal'),
     periodo: planoGratis.periodo,
+    usuarios: rotuloUsuarios('gratis'),
     recursos: textos(planoGratis),
     cta: planoGratis.cta,
   },
@@ -38,20 +53,56 @@ export const DEGRAUS = Object.freeze([
     resumo: planoPro.subtitulo,
     precos: planoPro.preco,
     periodo: planoPro.periodo,
+    usuarios: rotuloUsuarios('pro'),
     recursos: textos(planoPro),
     cta: planoPro.cta,
   },
   {
-    key: 'automacao',
-    nome: planoOperacaoIA.nome,
-    tag: 'OPERAÇÃO IA',
+    key: 'plus',
+    nome: planoPlus.nome,
+    tag: 'PLUS',
+    tipo: 'checkout',
+    resumo: planoPlus.subtitulo,
+    precos: planoPlus.preco,
+    periodo: planoPlus.periodo,
+    usuarios: rotuloUsuarios('plus'),
+    recursos: textos(planoPlus),
+    cta: planoPlus.cta,
+  },
+  {
+    key: 'esquadrao_ia',
+    nome: planoPolen.nome,
+    tag: 'Atendimento 24h',
     tipo: 'consultivo',
-    resumo: planoOperacaoIA.subtitulo,
-    detalhePreco: planoOperacaoIA.precoLabel,
-    periodo: planoOperacaoIA.periodo,
-    implementacao: planoOperacaoIA.setup,
-    recursos: textos(planoOperacaoIA),
-    cta: planoOperacaoIA.cta,
+    resumo: planoPolen.subtitulo,
+    detalhePreco: planoPolen.precoLabel,
+    periodo: planoPolen.periodo,
+    implementacao: planoPolen.setup,
+    recursos: textos(planoPolen),
+    cta: planoPolen.cta,
+  },
+  {
+    key: 'tom_autonomo',
+    nome: planoTomAutonomo.nome,
+    tag: 'Segundo cérebro',
+    tipo: 'consultivo',
+    resumo: planoTomAutonomo.subtitulo,
+    detalhePreco: precoCatalogo(planoTomAutonomo, 'mensal'),
+    periodo: planoTomAutonomo.periodo,
+    recursos: textos(planoTomAutonomo),
+    cta: planoTomAutonomo.cta,
+  },
+  {
+    key: 'tom_imobiliaria',
+    nome: planoTomImobiliaria.nome,
+    tag: 'Operação customizada',
+    tipo: 'consultivo',
+    resumo: planoTomImobiliaria.subtitulo,
+    detalhePreco: precoCatalogo(planoTomImobiliaria, 'mensal'),
+    periodo: planoTomImobiliaria.periodo,
+    implementacao: planoTomImobiliaria.setup,
+    recursos: textos(planoTomImobiliaria),
+    cta: planoTomImobiliaria.cta,
   },
 ]);
 
@@ -71,9 +122,10 @@ export function precoMensal(degrau, ciclo = 'mensal') {
 }
 
 export function detalheCiclo(degrau, ciclo = 'mensal') {
-  if (degrau?.key !== 'pro') return '';
+  if (degrau?.key !== 'pro' && degrau?.key !== 'plus') return '';
   if (ciclo === 'anual') {
-    const total = TOTAL_ANUAL.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL', minimumFractionDigits: 2 });
+    const anual = Number(degrau?.precos?.anual ?? degrau?.precos?.mensal ?? 0);
+    const total = (anual * 12).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL', minimumFractionDigits: 2 });
     return `Cobrado ${total}/ano`;
   }
   return 'Sem fidelidade, cancele quando quiser';

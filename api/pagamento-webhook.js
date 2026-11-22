@@ -56,12 +56,16 @@ function modulosDoPlano(planoKey) {
   const profissional = dados.modulos.profissional_extra || [];
   const esquadrao = dados.modulos.esquadrao_extra || [];
 
-  if (['essencial_plus', 'profissional', 'pro'].includes(chave)) {
+  // D-22.09 — 'pro' (R$ 39,90) e 'plus' (R$ 99,90) liberam o mesmo conjunto de
+  // módulos do painel; os nomes antigos seguem aceitos para contas legadas.
+  if (['essencial_plus', 'profissional', 'pro', 'plus'].includes(chave)) {
     return [...new Set([...gratis, ...essencialPlus, ...profissional])];
   }
-  if (chave === 'esquadrao_ia' || chave === 'presenca_digital') {
+  if (chave === 'esquadrao_ia' || chave === 'polen' || chave === 'presenca_digital') {
     return [...new Set([...gratis, ...essencialPlus, ...profissional, ...esquadrao])];
   }
+  // Tom Autônomo e Tom Imobiliária são produtos de agente: não liberam módulo
+  // extra do painel, então ficam com a base gratuita.
   return [...gratis];
 }
 

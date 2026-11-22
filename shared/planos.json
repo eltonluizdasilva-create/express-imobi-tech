@@ -69,6 +69,10 @@
         {
           "icone": "Lock",
           "texto": "Sem upload de fotos ou publicação de imóveis na vitrine"
+        },
+        {
+          "icone": "Users",
+          "texto": "1 usuário"
         }
       ],
       "cta": "Usar Modo Grátis",
@@ -81,7 +85,7 @@
       "icone": "Crown",
       "preco": {
         "mensal": 39.9,
-        "anual": 39.9
+        "anual": 34.9
       },
       "periodo": "/mês",
       "destaque": true,
@@ -112,22 +116,24 @@
         },
         {
           "icone": "Users",
-          "texto": "Até 3 usuários"
+          "texto": "1 usuário (corretor autônomo)"
         }
       ],
       "cta": "Assinar PRO",
-      "autoAtivavel": true
+      "autoAtivavel": true,
+      "setup": "Implantação R$ 0"
     },
     {
-      "key": "esquadrao_ia",
-      "nome": "OPERAÇÃO IA",
-      "subtitulo": "Pólen Atendimento 24h e Express Brain em um único pacote",
-      "icone": "Bot",
-      "preco": null,
-      "precoLabel": "A partir de R$ 450",
-      "valorMinimoMensal": 450,
+      "key": "plus",
+      "nome": "PLUS",
+      "subtitulo": "Escala operacional completa do corretor ou da imobiliária",
+      "icone": "Rocket",
+      "preco": {
+        "mensal": 99.9,
+        "anual": 89.9
+      },
+      "setup": "Implantação R$ 0",
       "periodo": "/mês",
-      "setup": "Taxa única de implantação",
       "destaque": false,
       "recursos": [
         {
@@ -135,23 +141,125 @@
           "texto": "Tudo do PRO"
         },
         {
-          "icone": "Clock",
-          "texto": "Pólen: atendimento e qualificação 24h no WhatsApp"
+          "icone": "Users",
+          "texto": "Até 3 usuários inclusos (+R$ 19,90/usuário extra)"
+        },
+        {
+          "icone": "TrendingUp",
+          "texto": "Automações da plataforma e teto maior de operação"
         },
         {
           "icone": "Bot",
-          "texto": "Express Brain: regras comerciais, processos e memória operacional"
+          "texto": "7 Agentes de IA e módulos assistidos sem limite do degrau de entrada"
+        }
+      ],
+      "cta": "Assinar PLUS",
+      "autoAtivavel": true
+    },
+    {
+      "key": "esquadrao_ia",
+      "nome": "Pólen — Atendimento 24h no WhatsApp",
+      "subtitulo": "Atendimento comercial automatizado, 24h, no WhatsApp da imobiliária",
+      "icone": "Bot",
+      "preco": {
+        "mensal": 450
+      },
+      "precoLabel": "R$ 450",
+      "valorMinimoMensal": 450,
+      "periodo": "/mês",
+      "setup": "Implantação R$ 497",
+      "destaque": false,
+      "recursos": [
+        {
+          "icone": "Clock",
+          "texto": "Atendimento comercial 24h no WhatsApp oficial"
+        },
+        {
+          "icone": "Check",
+          "texto": "Consulta o catálogo de imóveis e qualifica o lead"
+        },
+        {
+          "icone": "Camera",
+          "texto": "Envia só a Foto 1 (fachada) + resumo + link; as demais fotos sob pedido"
         },
         {
           "icone": "Shuffle",
-          "texto": "Pólen e Express Brain incluídos no mesmo pacote"
-        },
-        {
-          "icone": "MessageCircle",
-          "texto": "Implantação assistida à parte"
+          "texto": "Distribui o lead para o corretor da vez"
         }
       ],
-      "cta": "Falar sobre Operação IA",
+      "cta": "Contratar Pólen",
+      "autoAtivavel": false
+    },
+    {
+      "key": "tom_autonomo",
+      "nome": "Tom Autônomo — Segundo Cérebro Empacotado",
+      "subtitulo": "Molde pronto clonável, conectado por QR Code ao WhatsApp do corretor que trabalha sozinho",
+      "icone": "Smartphone",
+      "preco": {
+        "mensal": 197
+      },
+      "periodo": "/mês",
+      "setup": "Implantação R$ 0",
+      "destaque": false,
+      "recursos": [
+        {
+          "icone": "Check",
+          "texto": "Gestão da rotina diária"
+        },
+        {
+          "icone": "Check",
+          "texto": "Cobrança de follow-up"
+        },
+        {
+          "icone": "Video",
+          "texto": "Roteiros de vídeo"
+        },
+        {
+          "icone": "PenLine",
+          "texto": "Legendas e copy"
+        },
+        {
+          "icone": "Link",
+          "texto": "Integrado ao Express Imobi Tech"
+        }
+      ],
+      "cta": "Contratar Tom Autônomo",
+      "autoAtivavel": false
+    },
+    {
+      "key": "tom_imobiliaria",
+      "nome": "Tom Imobiliária — Operação Customizada",
+      "subtitulo": "Cérebro operacional adaptado sob medida para imobiliárias e equipes",
+      "icone": "Building2",
+      "preco": {
+        "mensal": 497
+      },
+      "periodo": "/mês",
+      "setup": "Implantação R$ 697",
+      "destaque": false,
+      "recursos": [
+        {
+          "icone": "Percent",
+          "texto": "Regras de comissão"
+        },
+        {
+          "icone": "Target",
+          "texto": "Metas"
+        },
+        {
+          "icone": "Search",
+          "texto": "Auditoria de funil"
+        },
+        {
+          "icone": "ShieldCheck",
+          "texto": "Governança de equipe"
+        },
+        {
+          "icone": "Home",
+          "texto": "Imóveis parados"
+        }
+      ],
+      "cta": "Falar sobre Tom Imobiliária",
       "autoAtivavel": false
     },
     {
@@ -194,19 +302,7 @@
       "descricao": "Até 1 Ordem de Serviço por mês"
     },
     "pro": {
-      "funcionarios": 3,
-      "abas": 5,
-      "osMes": null,
-      "descricao": "O.S. ilimitadas"
-    },
-    "profissional": {
-      "funcionarios": 3,
-      "abas": 5,
-      "osMes": null,
-      "descricao": "O.S. ilimitadas"
-    },
-    "essencial_plus": {
-      "funcionarios": 3,
+      "funcionarios": 1,
       "abas": 5,
       "osMes": null,
       "descricao": "O.S. ilimitadas"
@@ -240,10 +336,18 @@
       "abas": null,
       "osMes": null,
       "descricao": "Acesso total + IA Prime"
+    },
+    "plus": {
+      "funcionarios": 3,
+      "usuarioAdicionalPreco": 19.9,
+      "abas": 8,
+      "osMes": null,
+      "descricao": "Até 3 usuários inclusos; +R$ 19,90/mês por usuário extra"
     }
   },
   "planosPro": [
     "pro",
+    "plus",
     "profissional",
     "esquadrao_ia",
     "essencial_plus",
@@ -254,5 +358,26 @@
     "planoprimeia",
     "especialista",
     "ultimate"
+  ],
+  "addons": [
+    {
+      "key": "social_video",
+      "nome": "Add-on Social Vídeo Automático 15s–30s",
+      "subtitulo": "Vídeo bruto pelo WhatsApp; o sistema compacta, corta pausas, legenda e publica em Reels e TikTok",
+      "opcoes": [
+        {
+          "videos": 8,
+          "preco": 247,
+          "label": "+ R$ 247,00/mês"
+        },
+        {
+          "videos": 12,
+          "preco": 347,
+          "label": "+ R$ 347,00/mês"
+        }
+      ],
+      "acimaDe30s": "Consulte preços",
+      "fluxo": "WhatsApp → compacta antes de editar (FFmpeg) → corta pausas → legenda dinâmica + copy → aprovação com \"POSTAR\" → Instagram Reels e TikTok"
+    }
   ]
 }
