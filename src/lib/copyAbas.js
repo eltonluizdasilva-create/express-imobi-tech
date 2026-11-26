@@ -8,7 +8,7 @@
  */
 
 // Selo visível no rodapé: serve para conferir, em produção, qual build está carregado.
-export const VERSAO_COPY = 'v2026.11.18-c';
+export const VERSAO_COPY = 'v2026.11.25-a';
 
 export const DOR_SOLUCAO = {
   dashboard_imobi: {
@@ -56,8 +56,8 @@ export const DOR_SOLUCAO = {
     ganho: 'Enquadramento, parcela e subsídio antes da visita: só leva quem tem chance.',
   },
   agentes_ia: {
-    dor: 'Lead que chega no fim de semana fica sem resposta até segunda.',
-    ganho: 'Agentes respondem, qualificam e agendam 24h — seu WhatsApp para de perder contato.',
+    dor: 'Rotinas do funil e tarefas recorrentes ficam sem coordenação.',
+    ganho: 'Zara coordena Agentes Operacionais; Tom apoia decisões e Pólen atende 24h.',
   },
   radar_captacao: {
     dor: 'Você descobre o imóvel do concorrente quando o cliente já visitou.',
@@ -101,7 +101,7 @@ export const DOR_SOLUCAO = {
   },
   meuplano: {
     dor: 'Contratou um plano e não sabe direito o que está liberado?',
-    ganho: 'Em 1 tela: o que está incluso, quanto falta do trial e o que muda no PRO — ative sem falar com ninguém.',
+    ganho: 'Em 1 tela: o que está incluso, quanto falta do trial e o que muda no PRO e no PLUS — ative sem falar com ninguém.',
   },
   migracao: {
     dor: 'Trocar de CRM dá medo de perder a carteira e o histórico.',
@@ -122,6 +122,16 @@ export const DOR_SOLUCAO = {
   acompanhamento_cliente: {
     dor: 'Cliente liga toda hora perguntando como está o processo.',
     ganho: 'Link com código e senha mostra cada etapa sozinho: menos ligação, mais confiança.',
+  },
+  mapa_inteligencia: {
+    dor: 'Ferramentas soltas: ninguém sabe como o atendimento vira venda.',
+    ganho: 'Uma tela mostra como atendimento, execução, estratégia e dados se conectam na rotina.',
+  },
+  'reunioes-atas': {
+    dor: 'Reunião sem ata vira promessa esquecida e ninguém assume os prazos.',
+    ganho: 'A IA transcreve ao vivo, resume decisões e envia tarefas com prazos direto para a agenda.',
+    instrucoes:
+      '1) Clique em Gravar para transcrição ao vivo via Web Speech API (ou cole o texto da reunião). 2) Clique em "Gerar Ata Executiva com IA" (DeepSeek): a IA gera Resumo Executivo, Decisões Tomadas e Pendências. 3) Envie cada pendência com responsável e prazo para a Agenda & Tarefas em 1 clique. O áudio não sai do navegador e nenhuma chave de API é exposta.',
   },
 };
 

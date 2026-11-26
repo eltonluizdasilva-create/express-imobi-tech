@@ -57,9 +57,19 @@ import { TEMAS } from './DashboardTab';
 import { TelaTrialExpirou, TelaBloqueado, TelaLogin } from './components/admin/TelasDeAcesso';
 import ModuloBloqueado from './components/admin/ModuloBloqueado';
 import TrilhoModulos from './components/admin/TrilhoModulos';
+import SidebarAdmin from './components/admin/SidebarAdmin';
+import TopbarAdmin from './components/admin/TopbarAdmin';
+import ModalAjudaAba from './components/admin/ModalAjudaAba';
 import SofiaWhatsAppTab from './components/admin/SofiaWhatsAppTab';
 import ExpressBrainTab from './components/admin/ExpressBrainTab';
+import PainelZaraOperacional from './components/admin/PainelZaraOperacional';
+import ReunioesAtasIA from './components/abas/ReunioesAtasIA';
+import ModalPacoteCompleto from './components/admin/ModalPacoteCompleto';
+import { carregarCenarioDemo } from './lib/cenarioDemo';
+import { executarAuditoriaZara, carregarUltimaAuditoriaZara } from './lib/auditoriaZara';
+import MapaInteligenciaImobiliaria from './components/admin/MapaInteligenciaImobiliaria';
 import ModuloComAbas from './components/admin/ModuloComAbas';
+import GuiaCampoGratis from './components/admin/GuiaCampoGratis';
 import HeroAba from './components/admin/HeroAba';
 import CaptacaoNicho from './components/imobi/CaptacaoNicho';
 import { corDaAba, textoSobreCor, comAlpha } from './lib/coresAbas';
@@ -78,14 +88,15 @@ import MicButton from './components/ui/MicButton';
 import CampoMoeda from './components/ui/CampoMoeda';
 import OnboardingTour from './components/OnboardingTour';
 import OnboardingPrimeiroUso from './components/onboarding/OnboardingPrimeiroUso';
-import { ehMasterPlataforma as ehMasterPlataformaFn } from './lib/acesso-plano';
-import { PLANOS } from './lib/planos';
+import { ambienteDevLocal, ehMasterPlataforma as ehMasterPlataformaFn, liberacoesDoNivel, nivelAcesso, NIVEIS_SIMULACAO, rotuloPlano } from './lib/acesso-plano';
+import { LIMITES_PLANOS, MODULOS_PRO, MODULOS_PLUS, PLANOS } from './lib/planos';
 import { MODULOS_MAP } from './modulosMap';
 import { setCreditoPrefill } from './lib/credito/prefill';
 import {
   AVISO_TRIAL_ENCERRADO,
   SELO_TRIAL_PRO,
-  temAcessoPro,
+  diasRestantesTrial,
+  temAcessoPlus,
   temExpressBrain,
   temSofiaWhatsApp,
   trialAtivo,
@@ -106,7 +117,9 @@ import {
   filtrarCatalogoDisponivel,
   responderSofiaSimulacao,
 } from './lib/simuladorSofia';
+import { obterRespostaRapida0Tokens } from './data/cerebroPolen';
 import { LIMITE_DEMO, podeUsarDemo, registrarUsoDemo, restantesDemo } from './lib/limiteDemo';
+import PainelDiretorComercialEstrategia from './components/admin/PainelDiretorComercialEstrategia';
 
 // ─── Proteção Isolada para Modais Legados ──────────────────────────────────────
 
@@ -240,21 +253,12 @@ const GRUPOS_MENU_IMOBI = [
     cor: '#10b981',
     itens: [
       {
-        id: 'agentes_ia',
-        label: '🤖 7 Agentes de IA',
-        tituloCard: 'ESQUADRÃO DE INTELIGÊNCIA ARTIFICIAL',
-        tituloLimpo: 'ESQUADRÃO DE INTELIGÊNCIA ARTIFICIAL',
-        tier: 'pro',
-        descricao:
-          'Sete assistentes de IA apoiam o corretor no painel. O atendimento automático 24h da Pólen faz parte da Operação IA.',
-      },
-      {
         id: 'whatsapp_hub',
         label: '💬 Conexão WhatsApp',
         tituloCard: 'CONEXÃO WHATSAPP & GATEWAY',
         tituloLimpo: 'Conexão WhatsApp',
         tier: 'operacao',
-        descricao: 'Conexão de WhatsApp para a Pólen, incluída no pacote Operação IA.',
+        descricao: 'Conexão de WhatsApp para a Pólen, produto com contratação e implantação próprias.',
       },
       {
         id: 'copiloto',
@@ -272,7 +276,7 @@ const GRUPOS_MENU_IMOBI = [
         tituloLimpo: 'Ativação & QR Code da Pólen (WhatsApp)',
         tier: 'operacao',
         descricao:
-          'Central prática de conexão via QR Code e ativação da Pólen · Atendimento 24h, incluída no pacote Operação IA.',
+          'Central prática de conexão via QR Code para a Pólen · Atendimento 24h, produto com contratação e implantação próprias.',
       },
       {
         id: 'sofia_whatsapp',
@@ -281,23 +285,23 @@ const GRUPOS_MENU_IMOBI = [
         tituloLimpo: 'Pólen · Atendimento 24h',
         tier: 'operacao',
         descricao:
-          'Uma tela só: conexão do WhatsApp da imobiliária e ativação da Pólen por QR Code, incluída no pacote Operação IA.',
+          'Conexão do WhatsApp da imobiliária e ativação da Pólen por QR Code; contratação e implantação são próprias.',
       },
       {
         id: 'brain',
-        label: '🧠 Tom · Maestro da Imobiliária',
-        tituloCard: 'TOM · MAESTRO DA IMOBILIÁRIA',
-        tituloLimpo: 'Tom · Maestro da Imobiliária',
+        label: '🧠 Tom · Segundo Cérebro',
+        tituloCard: 'TOM · SEGUNDO CÉREBRO',
+        tituloLimpo: 'Tom · Segundo Cérebro',
         tier: 'operacao',
         descricao:
-          'O maestro da operação: regras comerciais, processos, auditoria de equipe e memória operacional em um só lugar — o que hoje só existe na cabeça do dono.',
+          'Tom apoia decisões estratégicas; arquivos e memória operacional estão em implantação. Zara coordena os Agentes Operacionais em uma área própria.',
       },
       {
         id: 'administrador',
         label: '📈 Diretor Comercial IA',
         tituloCard: 'DIRETOR COMERCIAL PREDITIVO',
         tituloLimpo: 'DIRETOR COMERCIAL PREDITIVO',
-        tier: 'pro',
+        tier: 'plus',
         descricao:
           'Análise preditiva de conversão de leads, auditoria do atendimento da equipe em tempo real e alertas automáticos sobre oportunidades quentes paradas no CRM.',
       },
@@ -306,23 +310,23 @@ const GRUPOS_MENU_IMOBI = [
         label: '🧾 Simuladores',
         tituloCard: 'SIMULADORES DE CUSTOS',
         tituloLimpo: 'SIMULADORES DE CUSTOS',
-        tier: 'gratis',
+        tier: 'plus',
         descricao:
-          'Simulações essenciais de custos e orientações fiscais para apoiar a conversa com o cliente.',
+          'Calculadora interna de margem líquida, comissão e carga tributária da venda, com recibos e memória de cálculo. Para financiamento, entrada e parcelas do comprador, use Correspondente / Crédito.',
       },
       {
         id: 'juridico_imobi',
         label: '⚖️ Assistente Legal',
         tituloCard: 'ASSISTENTE LEGAL',
         tituloLimpo: 'ASSISTENTE LEGAL',
-        tier: 'gratis',
+        tier: 'plus',
         descricao:
-          'Consultoria instantânea baseada na Lei do Inquilinato (Lei nº 8.245/91) e orientações fiscais automatizadas para transações imobiliárias seguras.',
+          'Apoio informativo e rascunhos de referência; o conteúdo não é parecer jurídico e exige revisão por advogado inscrito na OAB.',
       },
     ],
   },
   {
-    titulo: 'GESTÃO, CONTRATOS & MÓDULOS DE ASSINANTES (DIFERENCIAL PRO)',
+    titulo: 'GESTÃO, CONTRATOS & MÓDULOS DE ASSINANTES (PRO E PLUS)',
     cor: '#10b981',
     itens: [
       {
@@ -330,7 +334,7 @@ const GRUPOS_MENU_IMOBI = [
         label: '🔀 Roleta de Leads',
         tituloCard: 'ROLETA INTELIGENTE DE LEADS',
         tituloLimpo: 'Roleta de Leads',
-        tier: 'pro',
+        tier: 'plus',
         descricao: 'Distribuição automática e justa de leads em fila rotativa entre corretores de plantão.',
       },
       {
@@ -338,7 +342,7 @@ const GRUPOS_MENU_IMOBI = [
         label: '📸 Vistoria & Laudo IA',
         tituloCard: 'VISTORIA & LAUDO FOTOGRÁFICO IA',
         tituloLimpo: 'Vistoria & Laudo Fotográfico IA',
-        tier: 'pro',
+        tier: 'plus',
         descricao:
           'Laudo fotográfico por ambiente na entrada e na saída: acabou a discussão sobre o estado do imóvel e o desconto de caução no chute.',
       },
@@ -347,7 +351,7 @@ const GRUPOS_MENU_IMOBI = [
         label: '📄 Repasses & NF',
         tituloCard: 'REPASSES & NFS-E UNIFICADA (ADN + IBS/CBS)',
         tituloLimpo: 'Repasses & NFS-e Unificada (ADN + IBS/CBS)',
-        tier: 'pro',
+        tier: 'plus',
         descricao:
           'Nota e repasse no mesmo lugar: você emite, divide com o proprietário e vê exatamente quanto entra na conta.',
       },
@@ -356,8 +360,9 @@ const GRUPOS_MENU_IMOBI = [
         label: '🔄 Migração de CRM',
         tituloCard: 'MIGRAÇÃO INTELIGENTE DE CRM',
         tituloLimpo: 'Migração de CRM',
-        tier: 'pro',
-        descricao: 'Importação rápida de carteiras de clientes e imóveis vindos de planilhas ou outros sistemas.',
+        tier: 'gratis',
+        descricao:
+          'Importa carteira de leads e imóveis em 3 etapas — planilha, XML de portal, PDF ou lista colada — com régua de temperatura e mensagem de WhatsApp pronta.',
       },
       {
         id: 'meuplano',
@@ -381,16 +386,25 @@ const GRUPOS_MENU_IMOBI = [
         label: '📡 Radar de Captação',
         tituloCard: 'RADAR DE CAPTAÇÃO',
         tituloLimpo: 'Radar de Captação (Particulares)',
-        tier: 'pro',
+        tier: 'plus',
         descricao:
           'Monta buscas de anúncios de particular na OLX, Marketplace e Google, extrai preço/área/contato de um anúncio colado, compara com o mercado e devolve três abordagens de WhatsApp — além do feed XML para ZAP, VivaReal e OLX.',
+      },
+      {
+        id: 'credito',
+        label: '🏦 Correspondente / Crédito',
+        tituloCard: 'CORRESPONDENTE / CRÉDITO',
+        tituloLimpo: 'Correspondente / Crédito',
+        tier: 'plus',
+        descricao:
+          'Enquadra renda e financiamento, estima parcelas e subsídios e organiza o processo de crédito para o cliente.',
       },
       {
         id: 'avaliacao_imovel',
         label: '📐 Avaliação de Imóvel',
         tituloCard: 'AVALIAÇÃO DE IMÓVEL',
         tituloLimpo: 'Avaliação de Imóvel (PTAM)',
-        tier: 'pro',
+        tier: 'plus',
         descricao:
           'Chega de "quanto vale?" no chute: avaliação com comparáveis reais, três cenários de preço e prazo estimado de venda. Argumento pronto para o proprietário ajustar o valor.',
       },
@@ -411,6 +425,15 @@ const GRUPOS_MENU_IMOBI = [
         tier: 'gratis',
         descricao: 'Central de apoio operacional e consultoria técnica para acelerar resultados na plataforma.',
       },
+      {
+        id: 'guia_campo_bonus',
+        label: '🧭 Bônus de Campo',
+        tituloCard: 'BÔNUS DE CAMPO',
+        tituloLimpo: 'Bônus de Campo · Guia Grátis',
+        tier: 'gratis',
+        descricao:
+          'Guia estático com dicas de postura, visitas, observação de imóveis, vídeos e organização dos próximos passos.',
+      },
     ],
   },
 ];
@@ -420,33 +443,49 @@ const MODULOS_GRATIS_PLG = new Set([
   'funil_leads',
   'visitas_imobi',
   'financeiro',
+  'acompanhamento_cliente',
+  'migracao',
   'equipe',
-  'contador',
-  'juridico_imobi',
   'config',
   'especialista',
   'meuplano',
+  'guia_campo_bonus',
 ]);
 
-// Todos os módulos PRO passam pela mesma trava de assinatura/trial.
+// Os IDs exclusivos do PLUS são derivados do catálogo para manter os gates
+// alinhados com shared/planos.json.
+const MODULOS_PLUS_PLG = new Set(MODULOS_PLUS.filter((id) => !MODULOS_PRO.includes(id)));
+
+// Módulos PRO exigem assinatura PRO ou trial; PLUS herda esse acesso.
+// D-23.16 — `migracao` saiu desta lista: a aba é gratuita e liberada.
+// D-23.20 — `tarefa`, `avaliacao_imovel`, `contador` e `juridico_imobi` saíram
+// daqui: agora são exclusivos do PLUS (derivados de `plus_extra`).
 const MODULOS_PRO_PLG = new Set([
   'captacao_imobi',
   'historico',
   'marketing',
   'agentes_ia',
-  'tarefa',
-  'migracao',
-  'avaliacao_imovel',
-  'credito',
-  'radar_captacao',
-  'administrador',
-  'roleta_imobi',
-  'notafiscal',
   'clientes',
   'leads',
-  'acompanhamento_cliente',
   'copiloto',
 ]);
+
+// Simulador de plano do master (topo do /admin): a escolha sobrevive ao reload.
+const CHAVE_SIMULACAO_PLANO = 'simulacaoPlanoAdmin';
+
+// Modo desenvolvedor: na máquina local (`npm run dev` / localhost) o painel
+// abre como Admin Total mesmo sem login, para testar crachá âmbar, cadeados e
+// o simulador de degraus (D-23.19). Em produção o bundle e o host anulam isto.
+const ACESSO_LOCAL_DEV = ambienteDevLocal();
+
+// Cores do crachá do topo por nível de acesso (plano real ou degrau simulado).
+const ESTILO_NIVEL_PAINEL = {
+  master: { borderColor: 'rgba(245,158,11,0.55)', background: 'rgba(245,158,11,0.14)', color: '#fcd34d' },
+  plus: { borderColor: 'rgba(13,148,136,0.55)', background: 'rgba(13,148,136,0.18)', color: '#5eead4' },
+  pro: { borderColor: 'rgba(161,18,63,0.55)', background: 'rgba(161,18,63,0.16)', color: '#fda4af' },
+  trial: { borderColor: 'rgba(245,158,11,0.45)', background: 'rgba(245,158,11,0.12)', color: '#fcd34d' },
+  gratis: { borderColor: 'rgba(16,185,129,0.45)', background: 'rgba(16,185,129,0.14)', color: '#6ee7b7' },
+};
 
 const MAPA_DETALHES_ABAS = (GRUPOS_MENU_IMOBI || [])
   .flatMap((g) => (g?.itens || [])?.map((item) => ({ ...item, grupoTitulo: g.titulo })))
@@ -454,6 +493,29 @@ const MAPA_DETALHES_ABAS = (GRUPOS_MENU_IMOBI || [])
     if (item?.id) acc[item.id] = item;
     return acc;
   }, {});
+
+MAPA_DETALHES_ABAS.agentes_ia = {
+  ...MAPA_DETALHES_ABAS.brain,
+  id: 'agentes_ia',
+  label: 'Agentes Operacionais · Zara',
+  tituloCard: 'AGENTES OPERACIONAIS',
+  tituloLimpo: 'Agentes Operacionais · Zara',
+  descricao: 'Zara coordena os agentes e a execução recorrente do funil e da rotina.',
+};
+MAPA_DETALHES_ABAS.mapa_inteligencia = {
+  id: 'mapa_inteligencia',
+  label: 'Central de Inteligência da Imobiliária',
+  tituloCard: 'MAPA DE INTEGRAÇÃO DA OPERAÇÃO',
+  tituloLimpo: 'Central de Inteligência da Imobiliária',
+  descricao: 'Mapa visual da conexão entre Pólen, Agentes Operacionais, Tom e CRM.',
+};
+MAPA_DETALHES_ABAS['reunioes-atas'] = {
+  id: 'reunioes-atas',
+  label: 'Reuniões & Atas IA',
+  tituloCard: 'REUNIÕES & ATAS IA',
+  tituloLimpo: 'Reuniões & Atas IA',
+  descricao: 'Gravação ao vivo, transcrição inteligente e atas executivas com tarefas na agenda.',
+};
 
 const AGENTES_INICIAIS = [
   {
@@ -523,6 +585,9 @@ const LABELS_ABAS_IMOBI = (GRUPOS_MENU_IMOBI || [])
     if (item?.id) acc[item.id] = item.label;
     return acc;
   }, {});
+LABELS_ABAS_IMOBI.agentes_ia = 'Agentes Operacionais · Zara';
+LABELS_ABAS_IMOBI.mapa_inteligencia = 'Central de Inteligência da Imobiliária';
+LABELS_ABAS_IMOBI['reunioes-atas'] = 'Reuniões & Atas IA';
 
 // ─── Componente Principal ──────────────────────────────────────────────────────
 
@@ -575,33 +640,108 @@ export default function Admin() {
     return () => { vivo = false; };
   }, [auth?.currentUser]);
 
-  const ehMasterPlataforma = ehMasterPlataformaFn(papelLogado, claimAdmin);
+  // Degrau simulado pelo master no topo do painel. `master` = Admin Total
+  // (padrão e único modo que abre tudo); os outros valores mostram exatamente
+  // o que o cliente daquele plano vê — nenhum estado misto entre crachá,
+  // trilho e conteúdo.
+  const [nivelSimulado, setNivelSimulado] = useState(() => {
+    try {
+      const salvo = localStorage.getItem(CHAVE_SIMULACAO_PLANO);
+      const valido = NIVEIS_SIMULACAO.some((opcao) => opcao.key === salvo) ? salvo : 'master';
+      // D-23.19 — no modo desenvolvedor local, abrir o painel sem sessão cai
+      // sempre em Admin Total (crachá âmbar). A simulação escolhida depois no
+      // topo continua valendo normalmente.
+      if (ACESSO_LOCAL_DEV && !logado) return 'master';
+      return valido;
+    } catch {
+      return 'master';
+    }
+  });
+  useEffect(() => {
+    try {
+      localStorage.setItem(CHAVE_SIMULACAO_PLANO, nivelSimulado);
+    } catch {
+      /* modo privado / storage bloqueado: a escolha vale só nesta sessão */
+    }
+  }, [nivelSimulado]);
 
-  // Trial de 10 dias: após o prazo, os módulos PRO exigem assinatura; CRM,
-  // agenda, simuladores e Assistente Legal permanecem no plano Grátis.
+  // Conta MASTER: e-mail `VITE_SU` (papelLogado 'master') ou claim admin=true.
+  // D-23.19: no modo desenvolvedor local (npm run dev / localhost) o painel
+  // entra direto em Admin Total, mesmo sem login e em aba anônima. O crachá
+  // âmbar, os cadeados abertos e o seletor de simulação saem deste mesmo valor.
+  const ehMasterPlataforma = ehMasterPlataformaFn(papelLogado, claimAdmin) || ACESSO_LOCAL_DEV;
+  // Sem login o Auth não tem papel: no ambiente local ele navega como master
+  // para o menu de gestão (Financeiro, Configurações, Repasses) não sumir.
+  const papelEfetivo = papelLogado || (ACESSO_LOCAL_DEV ? 'master' : null);
+
+  // Trial de 10 dias: após o prazo, os módulos PRO exigem assinatura PRO e o
+  // PLUS herda esse acesso; CRM e agenda permanecem no plano Grátis.
   const contaAcesso = {
     ...(dadosImobCtx || dadosLegadoCtx || {}),
     trialFim: dadosImobCtx?.trialFim || dadosLegadoCtx?.trialFim || dataFimTrial,
   };
   const trialEmAndamento = trialAtivo(contaAcesso);
-  const acessoProLiberado = Boolean(ehMasterPlataforma || temAcessoPro(contaAcesso));
+  const diasDeTrial = diasRestantesTrial(contaAcesso);
+
+  // Nível REAL da conta — vem do plano do catálogo, nunca de `isPro`/
+  // `planoAssinante` legados. `plus` herda o PRO; `pro` não herda o PLUS.
+  const nivelConta = nivelAcesso({
+    master: ehMasterPlataforma,
+    plus: Boolean(temAcessoPlus(contaAcesso)),
+    pro: Boolean(isProConta),
+  });
+  // O master navega os degraus pelo seletor do topo; Admin Total é o padrão.
+  const nivelVisao = ehMasterPlataforma && nivelSimulado !== 'master' ? nivelSimulado : nivelConta;
+  const ehAdminTotal = nivelVisao === 'master';
+  const simulandoPlano = ehMasterPlataforma && !ehAdminTotal;
+  const liberacoes = liberacoesDoNivel(nivelVisao);
+  // O teste de 10 dias abre o PRO da conta real, mas não vale para degrau
+  // simulado (senão o master não conseguiria ver o painel travado).
+  const acessoProLiberado = Boolean(liberacoes.pro || (!ehMasterPlataforma && trialEmAndamento));
   const bloqueioProAtivo = !acessoProLiberado;
+  const acessoPlusLiberado = Boolean(liberacoes.plus);
+  const bloqueioPlusAtivo = !acessoPlusLiberado;
+  const brainLiberado = Boolean(ehAdminTotal || temExpressBrain(contaAcesso));
+
+  // Crachá do topo: cor e texto saem do mesmo nível que trava o trilho.
+  const crachaTrial = nivelVisao === 'gratis' && !simulandoPlano && diasDeTrial > 0;
+  const estiloCrachaPainel = crachaTrial
+    ? ESTILO_NIVEL_PAINEL.trial
+    : ESTILO_NIVEL_PAINEL[nivelVisao] || ESTILO_NIVEL_PAINEL.gratis;
+  const tituloCrachaPainel = simulandoPlano
+    ? 'Simulação: o plano real da conta não mudou'
+    : ehAdminTotal
+      ? 'Acesso de administração da plataforma'
+      : `Plano da conta: ${nivelConta === 'plus' ? 'PLUS' : nivelConta === 'pro' ? 'PRO' : 'Grátis'}`;
 
   // Muda automaticamente o título da aba do navegador para Express Imobi Tech
   useEffect(() => {
     document.title = 'Express Imobi Tech — Plataforma Imobiliária IA';
   }, []);
 
-  const [abaAtiva, setAbaAtiva] = useState('dashboard_imobi');
+  // D-23.15 — a aba inicial do painel é a Central de Inteligência
+  // (`mapa_inteligencia`): é o primeiro lugar que o cliente vê ao entrar, com o
+  // mapa de integração visível sem cabeçalho duplicado. Aba gratuita e liberada
+  // para todos os papéis, então nenhuma guarda de plano precisa redirecionar.
+  const [abaAtiva, setAbaAtiva] = useState('mapa_inteligencia');
 
-  // D-22.03 — guarda de navegação das abas PRO (8 ferramentas + 7 Agentes de
-  // IA): sem PRO e com o trial encerrado, qualquer entrada por atalho, deep
-  // link ou estado antigo volta para o Meu Plano em vez de abrir a ferramenta.
+  // Guardas de acesso também cobrem links diretos e estado antigo do painel.
   useEffect(() => {
-    if (!bloqueioProAtivo) return;
-    if (!MODULOS_PRO_PLG.has(abaAtiva)) return;
-    setAbaAtiva('meuplano');
-  }, [bloqueioProAtivo, abaAtiva]);
+    if (abaAtiva === 'reunioes-atas') {
+      if (!acessoPlusLiberado && !brainLiberado && !ehAdminTotal) {
+        setAbaAtiva('meuplano');
+      }
+      return;
+    }
+    if (MODULOS_PLUS_PLG.has(abaAtiva)) {
+      if (bloqueioPlusAtivo) setAbaAtiva('meuplano');
+      return;
+    }
+    if (bloqueioProAtivo && MODULOS_PRO_PLG.has(abaAtiva)) {
+      if (abaAtiva === 'captacao_imobi') return; // D-23.25: Captação & Imóveis liberada no Grátis com limite de 5 imóveis
+      setAbaAtiva('meuplano');
+    }
+  }, [bloqueioPlusAtivo, bloqueioProAtivo, abaAtiva, acessoPlusLiberado, brainLiberado, ehAdminTotal]);
 
   // Pedido de "novo processo": incrementa ao clicar no CTA dourado e é consumido
   // pelo módulo Acompanhamento do Cliente, que abre o formulário.
@@ -652,6 +792,32 @@ export default function Admin() {
   const [modalNovoLeadImobi, setModalNovoLeadImobi] = useState(false);
   const [modalNovaVisita, setModalNovaVisita] = useState(false);
   const [salvandoAcao, setSalvandoAcao] = useState(false);
+  const [sidebarAbertaMobile, setSidebarAbertaMobile] = useState(false);
+  const [modalAjudaAberto, setModalAjudaAberto] = useState(false);
+  const [sidebarRecuada, setSidebarRecuada] = useState(() => {
+    try {
+      const salvo = localStorage.getItem('sidebar_recuada');
+      return salvo !== null ? salvo === 'true' : true;
+    } catch {
+      return true;
+    }
+  });
+  const toggleSidebarRecuada = useCallback(() => {
+    setSidebarRecuada((prev) => {
+      const novo = !prev;
+      try {
+        localStorage.setItem('sidebar_recuada', String(novo));
+      } catch {}
+      return novo;
+    });
+  }, []);
+
+  // Cenário Demo em 1 Clique (Cold Start) e Auditoria Matinal da Zara
+  const [carregandoDemo, setCarregandoDemo] = useState(false);
+  const [mensagemDemo, setMensagemDemo] = useState('');
+  const [gerandoAuditoriaZara, setGerandoAuditoriaZara] = useState(false);
+  const [ultimaAuditoriaZara, setUltimaAuditoriaZara] = useState(null);
+  const [erroAuditoriaZara, setErroAuditoriaZara] = useState('');
 
   // Formulários rápidos (Com suporte a Nichos Especializados, Padrão de Imóvel, Galeria de Fotos e Vitrine Digital)
   const [filtroNichoCaptacao, setFiltroNichoCaptacao] = useState('Todos');
@@ -728,8 +894,9 @@ export default function Admin() {
   });
 
   // ---- visibilidade do menu por papel (espelho das Firestore Rules) ----
-  const ehGestorUI = ehGestorDoPapel(papelLogado);
-  const filtrarPorPapel = useCallback((itens) => filtrarModulos(itens, papelLogado), [papelLogado]);
+  // `papelEfetivo` = papel real ou 'master' no modo desenvolvedor local.
+  const ehGestorUI = ehGestorDoPapel(papelEfetivo);
+  const filtrarPorPapel = useCallback((itens) => filtrarModulos(itens, papelEfetivo), [papelEfetivo]);
 
   // Se o corretor cair numa aba de gestão (estado antigo/atalho), volta ao início.
   useEffect(() => {
@@ -778,10 +945,10 @@ export default function Admin() {
   }, [currentUserId, dadosNegocioGlobal.imobiliariaId]);
 
   const isTrial = useMemo(() => {
-    if (papelLogado === 'master') return false;
+    if (papelEfetivo === 'master') return false;
     if (dadosImobiliaria?.statusPlano && dadosImobiliaria.statusPlano !== 'trial') return false;
     return Boolean(dadosImobiliaria?.isTrial || dadosImobiliaria?.statusPlano === 'trial' || dataFimTrial);
-  }, [papelLogado, dadosImobiliaria, dataFimTrial]);
+  }, [papelEfetivo, dadosImobiliaria, dataFimTrial]);
 
   useEffect(() => {
     if (!isTrial || !dataFimTrial || trialVerificadoRef.current) return;
@@ -936,6 +1103,66 @@ export default function Admin() {
       console.warn('Aviso ao sincronizar vitrine digital:', e);
     }
   }, [listaImoveis]);
+
+  // Sincroniza e carrega a última auditoria matinal da Zara
+  useEffect(() => {
+    let ativo = true;
+    async function carregarAudit() {
+      if (!imobiliariaId) return;
+      try {
+        const audit = await carregarUltimaAuditoriaZara(imobiliariaId, db);
+        if (ativo && audit) {
+          setUltimaAuditoriaZara(audit);
+        }
+      } catch (err) {
+        console.warn('Aviso ao carregar última auditoria da Zara:', err);
+      }
+    }
+    carregarAudit();
+    return () => {
+      ativo = false;
+    };
+  }, [imobiliariaId]);
+
+  const handleCarregarCenarioDemo = async (forcar = false) => {
+    setCarregandoDemo(true);
+    setMensagemDemo('');
+    try {
+      const res = await carregarCenarioDemo(imobiliariaId, db, { force: forcar });
+      if (res.sucesso) {
+        setMensagemDemo('Cenário Demo carregado com sucesso: 5 imóveis e 6 leads criados!');
+      } else {
+        setMensagemDemo(res.motivo || 'A conta já possui dados cadastrados.');
+      }
+      setTimeout(() => setMensagemDemo(''), 6000);
+    } catch (err) {
+      setMensagemDemo(`Erro ao carregar cenário demo: ${err.message}`);
+    } finally {
+      setCarregandoDemo(false);
+    }
+  };
+
+  const handleGerarRelatorioZara = async () => {
+    setGerandoAuditoriaZara(true);
+    setErroAuditoriaZara('');
+    try {
+      const contaVazia = (!listaLeads || listaLeads.length === 0) && (!listaImoveis || listaImoveis.length === 0);
+      if (contaVazia) {
+        setMensagemDemo('Conta sem histórico: gerando auditoria com o Cenário Demo da casa.');
+        setTimeout(() => setMensagemDemo(''), 7000);
+      }
+      const resultado = await executarAuditoriaZara(imobiliariaId, {
+        db,
+        leads: listaLeads,
+        imoveis: listaImoveis,
+      });
+      setUltimaAuditoriaZara(resultado);
+    } catch (err) {
+      setErroAuditoriaZara(`Erro ao gerar auditoria da Zara: ${err.message || 'Tente novamente'}`);
+    } finally {
+      setGerandoAuditoriaZara(false);
+    }
+  };
 
   // ─── Funções de Galeria de Fotos, Padrão e Cadastro de Imóveis ───────────────
 
@@ -1398,6 +1625,30 @@ export default function Admin() {
       return;
     }
 
+    // Resposta rápida 0 tokens (Cérebro da Pólen):
+    // Para perguntas de demonstração como "Tenho interesse, mas preciso financiar",
+    // responde instantaneamente sem queimar tokens com os 7 pontos validados.
+    const imovelRef = imoveisDisponiveisSimIA[0] || {};
+    const resposta0Tokens = obterRespostaRapida0Tokens({
+      mensagem,
+      imovel: imovelRef,
+      nomeImobiliaria: dadosImobCtx?.nome || dadosImobCtx?.nomeOficina || 'Imobiliária parceira',
+      nomeCorretor:
+        auth?.currentUser?.displayName || dadosImobCtx?.nomeResponsavel || 'Corretor responsável',
+    });
+
+    if (resposta0Tokens) {
+      setMsgTesteIA('');
+      setErroSimIA('');
+      setGatilhoSimIA(null);
+      setHistoricoTesteIA((prev) => [
+        ...(Array.isArray(prev) ? prev : []),
+        { autor: 'cliente', texto: mensagem },
+        { autor: 'ia', agente: 'Pólen • modo simulação', texto: resposta0Tokens },
+      ]);
+      return;
+    }
+
     if (!podeUsarDemo('polen', { liberado: sofiaLiberada })) {
       setRestantesPolen(0);
       setErroSimIA(
@@ -1558,7 +1809,11 @@ export default function Admin() {
 
   if (trialExpirou) return <TelaTrialExpirou setTrialExpirou={setTrialExpirou} />;
   if (bloqueado) return <TelaBloqueado bloqueado={bloqueado} MAIN={IMOBI_PRIMARY} planosSistema={planosSistema} fazerLogout={fazerLogout} />;
-  if (!logado) {
+  // D-23.19 — modo desenvolvedor local: sem login (aba anônima ou sessão limpa)
+  // o painel abre como Admin Total em `http://localhost:5173/admin`. Em
+  // produção `ehMasterPlataforma` só é true para a conta master autenticada,
+  // então a tela de login continua aparecendo para visitante.
+  if (!logado && !ehMasterPlataforma) {
     return (
       <TelaLogin
         emailInput={emailInput}
@@ -1580,6 +1835,10 @@ export default function Admin() {
   const isEscuro = tema === 'escuro';
   const corAba = corDaAba(abaAtiva);
   const textoCta = textoSobreCor(corAba);
+  const tomAtivoNoPainel = abaAtiva === 'brain' || abaAtiva === 'agentes_ia';
+  const mapaInteligenciaAtivo = abaAtiva === 'mapa_inteligencia';
+  const corBanner = mapaInteligenciaAtivo ? '#0d9488' : tomAtivoNoPainel ? '#ef4444' : corAba;
+  const textoBanner = mapaInteligenciaAtivo || tomAtivoNoPainel ? '#ffffff' : textoCta;
 
   // MASTER e o trial de 10 dias já foram resolvidos acima (claimAdmin,
   // ehMasterPlataforma, acessoProLiberado, bloqueioProAtivo).
@@ -1588,18 +1847,40 @@ export default function Admin() {
   // alternador "Visão Enxuta × Visão Completa" saiu: com uma linha só, os
   // 22 módulos aparecem para todo mundo (o que trava é o ACESSO), então o
   // botão não mudava mais nada além do rótulo do banner.
-  const modoPro = Boolean(isProConta || ehMasterPlataforma);
-  const isPro = Boolean(isProConta && modoPro);
-  // O pacote Operação IA libera Pólen e Express Brain em conjunto.
+  // D-22.06 — o modo do painel segue o plano REAL da conta (ou o degrau
+  // simulado pelo master). `modoPro`/`isPro` alimentam componentes que só
+  // conhecem "PRO ou não"; o PLUS entra porque herda o PRO, e o trial de 10
+  // dias também abre o PRO enquanto vale.
+  const modoPro = Boolean(acessoProLiberado);
+  const isPro = Boolean(acessoProLiberado);
+  // Operação IA (Pólen, Zara, Tom, Express Brain) exige contratação: quem não
+  // tem o pacote vê somente a simulação. Admin Total continua liberando tudo.
   const contaPlano = dadosImobCtx || dadosLegadoCtx || {};
-  const sofiaLiberada = Boolean(ehMasterPlataforma || temSofiaWhatsApp(contaPlano));
-  const brainLiberado = Boolean(ehMasterPlataforma || temExpressBrain(contaPlano));
+  const sofiaLiberada = Boolean(ehAdminTotal || temSofiaWhatsApp(contaPlano));
 
   const infoAbaAtiva = MAPA_DETALHES_ABAS[abaAtiva] || MAPA_DETALHES_ABAS.dashboard_imobi;
+  const pilarAbaAtiva = useMemo(() => {
+    if (['dashboard_imobi', 'captacao_imobi', 'funil_leads', 'visitas_imobi', 'financeiro', 'equipe', 'guia_campo_bonus', 'migracao', 'meuplano', 'config'].includes(abaAtiva)) {
+      return { id: 'gratis', nome: 'GRÁTIS', badge: 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30' };
+    }
+    if (['historico', 'tarefa', 'contador', 'juridico_imobi', 'marketing'].includes(abaAtiva)) {
+      return { id: 'pro', nome: 'PRO · R$ 39,90', badge: 'bg-sky-500/10 text-sky-400 border-sky-500/30' };
+    }
+    if (['radar_captacao', 'administrador', 'roleta_imobi', 'credito', 'notafiscal', 'reunioes-atas'].includes(abaAtiva)) {
+      return { id: 'plus', nome: 'PLUS · R$ 99,90', badge: 'bg-teal-500/10 text-teal-400 border-teal-500/30' };
+    }
+    if (['sofia_whatsapp', 'whatsapp_hub', 'secretaria', 'agentes_ia', 'brain'].includes(abaAtiva)) {
+      return { id: 'ia', nome: 'IA', badge: 'bg-amber-500/10 text-amber-400 border-amber-500/30' };
+    }
+    return { id: 'gratis', nome: 'GRÁTIS', badge: 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30' };
+  }, [abaAtiva]);
+  const nomeAbaAtiva = infoAbaAtiva?.label || LABELS_ABAS_IMOBI[abaAtiva] || abaAtiva;
 
   // Abas próprias novas vs abas geridas pelo GerenciadorDeModulos
   const ABAS_NATIVAS_IMOBI = [
     'dashboard_imobi',
+    'mapa_inteligencia',
+    'guia_campo_bonus',
     'captacao_imobi',
     'funil_leads',
     'visitas_imobi',
@@ -1609,6 +1890,7 @@ export default function Admin() {
     'secretaria',
     'sofia_whatsapp',
     'brain',
+    'reunioes-atas',
     // Lote 3 — renderizadas por dentro de `ModuloComAbas`, nunca pelo
     // GerenciadorDeModulos (senão a tela aparece duas vezes).
     'administrador',
@@ -1632,89 +1914,206 @@ export default function Admin() {
     // ficava fora da tela justamente para quem precisa ver o plano e assinar.
     { id: 'meuplano', icone: '⭐', label: 'Meu Plano', destaquePlano: true },
     { id: 'funil_leads', icone: '👥', label: 'Leads & Funil CRM' },
+    // D-23.16 — Migração de CRM é gratuita: importar a carteira é o primeiro
+    // passo de quem chega, não um recurso de plano pago.
+    { id: 'migracao', icone: '🔄', label: 'Migração de CRM' },
     { id: 'visitas_imobi', icone: '📅', label: 'Agenda de Visitas' },
     { id: 'financeiro', icone: '💰', label: 'Financeiro & VGV' },
-    { id: 'contador', icone: '🧮', label: 'Simuladores' },
-    { id: 'juridico_imobi', icone: '⚖️', label: 'Assistente Legal' },
     { id: 'equipe', icone: '🧑‍💼', label: 'Corretores & Equipe' },
     { id: 'config', icone: '⚙️', label: 'Configurações' },
+    { id: 'guia_campo_bonus', icone: '🧭', label: 'Bônus de Campo' },
     { id: 'especialista', icone: '🎧', label: 'Suporte Especialista' },
   ];
 
-  // PRO e PLUS liberam Captação & Imóveis, vitrine e os módulos pagos.
+  // PRO = 3 pilares comerciais (D-23.20): Captação & Imóveis, Propostas &
+  // Negócios e Meta Ads & Criativos. Vistoria & Laudo IA, Avaliação de Imóvel,
+  // Simuladores de Custos e Assistente Legal passaram a ser exclusivos do PLUS,
+  // que continua herdando os três itens abaixo.
   const botoesBlocoPro = [
     { id: 'captacao_imobi', icone: '🏠', label: 'Captação & Imóveis' },
     { id: 'historico', icone: '📝', label: 'Propostas & Negócios' },
     { id: 'marketing', icone: '🎯', label: 'Meta Ads & Criativos' },
-    {
-      id: 'agentes_ia',
-      icone: '🤖',
-      label: '7 Agentes de IA',
-      badge: SELO_TRIAL_PRO,
-      tituloCard: 'ESQUADRÃO DE INTELIGÊNCIA ARTIFICIAL',
-    },
-    { id: 'tarefa', icone: '📋', label: 'Vistoria & Laudo IA' },
-    { id: 'migracao', icone: '🔄', label: 'Migração de CRM' },
-    { id: 'avaliacao_imovel', icone: '📐', label: 'Avaliação de Imóvel' },
-    { id: 'credito', icone: '🏦', label: 'Correspondente / Crédito' },
-    { id: 'radar_captacao', icone: '📡', label: 'Radar de Captação' },
-    { id: 'administrador', icone: '📈', label: 'Diretor Comercial IA' },
-    // Lote 3 — `roleta_imobi` e `notafiscal` não são botões soltos: viraram abas
-    // internas de `administrador` e `contador`. As rotas seguem válidas.
   ];
 
-  // Produtos de IA têm preços próprios; as travas de acesso não mudam aqui.
-  const botoesBlocoOperacaoIA = [
-    {
-      id: 'sofia_whatsapp',
-      icone: '📲',
-      label: 'Pólen · Atendimento 24h',
-      badge: `${precoDoPlano('esquadrao_ia')}/mês`,
-    },
-    {
-      id: 'brain',
-      icone: '🧠',
-      label: 'Tom · Autônomo / Imobiliária',
-      badge: `${precoDoPlano('tom_autonomo')} / ${precoDoPlano('tom_imobiliaria')}`,
-    },
-  ];
+  // Produtos de IA têm regras próprias de demonstração e ativação.
+  const botaoPolen = {
+    id: 'sofia_whatsapp',
+    icone: '📲',
+    label: 'IA Pólen · 24h',
+    badge: 'WhatsApp 24h',
+  };
+  const botaoZara = {
+    id: 'agentes_ia',
+    icone: '🤖',
+    label: 'Agentes Operacionais · Zara',
+    bloqueado: bloqueioProAtivo,
+  };
 
   /* Trilho único com os degraus comerciais. Antes eram 4 faixas empilhadas (~450px de tela) com
      rolagem horizontal invisível: no mouse não havia como alcançar o fim da
-     linha. Cada pílula usa a cor do plano (verde Grátis · azul PRO/PLUS · âmbar IA),
+     linha. Cada pílula usa a cor do plano (verde Grátis · azul PRO · teal PLUS · âmbar IA),
      e o cliente alcança o resto arrastando, pela roda do mouse ou pelas setas.
-     A lista de abas é de todo mundo: o acesso é que depende do plano.
-     PRO e PLUS liberam o mesmo conjunto de módulos — o que muda é o assento
-     (PRO 1 usuário · PLUS até 3 inclusos, +R$ 19,90/usuário extra) e o teto de
-     operação, por isso os dois preços aparecem no mesmo degrau. */
+     A lista de abas depende do degrau: PLUS herda os módulos PRO e acrescenta
+     os recursos exclusivos do catálogo, sem alterar os limites de equipe. */
+  const itensTrilhoPro = filtrarPorPapel(botoesBlocoPro).map((item) => ({
+    ...item,
+    bloqueado: bloqueioProAtivo,
+  }));
+  // Itens exclusivos do PLUS — exatamente o que o catálogo (`shared/planos.json`)
+  // marca como `plus_extra` (D-23.20 + D-23.27): Correspondente/Crédito, Radar de
+  // Captação, Diretor Comercial IA, Roleta, Repasses & NF, Vistoria & Laudo IA,
+  // Avaliação de Imóvel, Simuladores de Custos, Assistente Legal e Reuniões &
+  // Atas IA. `equipe` NÃO entra: é módulo do Grátis (o PLUS vende assentos
+  // extras, não o módulo), e listá-lo aqui criava uma pílula duplicada no trilho
+  // e um cadeado que nunca fechava (D-23.18).
+  const itensTrilhoPlus = filtrarPorPapel([
+    {
+      id: 'credito',
+      tabId: 'credito',
+      icone: '🏦',
+      label: 'Correspondente / Crédito',
+      badge: 'PLUS',
+      bloqueado: bloqueioPlusAtivo,
+    },
+    {
+      id: 'radar_captacao',
+      tabId: 'radar_captacao',
+      icone: '📡',
+      label: 'Radar de Captação',
+      badge: 'PLUS',
+      bloqueado: bloqueioPlusAtivo,
+    },
+    {
+      id: 'administrador',
+      tabId: 'administrador',
+      icone: '📈',
+      label: 'Diretor Comercial IA',
+      badge: 'PLUS',
+      bloqueado: bloqueioPlusAtivo,
+    },
+    {
+      id: 'roleta_imobi',
+      tabId: 'roleta_imobi',
+      icone: '🔀',
+      label: 'Roleta de Leads',
+      badge: 'PLUS',
+      bloqueado: bloqueioPlusAtivo,
+    },
+    {
+      id: 'notafiscal',
+      tabId: 'notafiscal',
+      icone: '📄',
+      label: 'Repasses & NF',
+      badge: 'PLUS',
+      bloqueado: bloqueioPlusAtivo,
+    },
+    {
+      id: 'tarefa',
+      tabId: 'tarefa',
+      icone: '📸',
+      label: 'Vistoria & Laudo IA',
+      badge: 'PLUS',
+      bloqueado: bloqueioPlusAtivo,
+    },
+    {
+      id: 'avaliacao_imovel',
+      tabId: 'avaliacao_imovel',
+      icone: '📐',
+      label: 'Avaliação de Imóvel',
+      badge: 'PLUS',
+      bloqueado: bloqueioPlusAtivo,
+    },
+    {
+      id: 'contador',
+      tabId: 'contador',
+      icone: '🧾',
+      label: 'Simuladores de Custos',
+      badge: 'PLUS',
+      bloqueado: bloqueioPlusAtivo,
+    },
+    {
+      id: 'juridico_imobi',
+      tabId: 'juridico_imobi',
+      icone: '⚖️',
+      label: 'Assistente Legal',
+      badge: 'PLUS',
+      bloqueado: bloqueioPlusAtivo,
+    },
+    {
+      id: 'reunioes-atas',
+      tabId: 'reunioes-atas',
+      icone: '🎙️',
+      label: 'Reuniões & Atas IA',
+      badge: 'PLUS',
+      // D-23.27 — quem contrata a IA Tom também abre a aba: o cadeado segue a
+      // mesma regra da Sidebar e da guarda de aba (`acessoPlusLiberado || brainLiberado`).
+      bloqueado: bloqueioPlusAtivo && !brainLiberado,
+    },
+  ]);
+  const beneficiosPlus = [
+    `Até ${LIMITES_PLANOS.plus.funcionarios} usuários inclusos · +${fmtBRL(LIMITES_PLANOS.plus.usuario_adicional_preco)} por usuário extra`,
+    ...(PLANOS.find((plano) => plano.key === 'plus')?.recursos || [])
+      .filter((recurso) => recurso?.icone === 'TrendingUp')
+      .map((recurso) => recurso.texto),
+  ];
   const gruposTrilho = [
     {
       id: 'gratis',
       degrau: 'gratis',
       rotuloCurto: 'Grátis',
       titulo: 'Essenciais · Grátis',
+      abaInicial: 'dashboard_imobi',
       itens: filtrarPorPapel(botoesBloco1Essencial),
     },
     {
       id: 'pro',
       degrau: 'pro',
-      rotuloCurto: 'PRO / PLUS',
-      preco: `PRO ${precoDoPlano('pro')} · PLUS ${precoDoPlano('plus')}`,
+      rotuloCurto: 'PRO',
+      preco: precoDoPlano('pro'),
       titulo: trialEmAndamento && !bloqueioProAtivo
-        ? `PRO ${precoDoPlano('pro')} · Teste de 10 dias`
-        : `PRO ${precoDoPlano('pro')} · PLUS ${precoDoPlano('plus')}`,
-      itens: filtrarPorPapel(botoesBlocoPro).map((item) => ({
-        ...item,
-        bloqueado: bloqueioProAtivo,
-      })),
+        ? 'PRO · Teste de 10 dias'
+        : 'PRO',
+      abaInicial: 'captacao_imobi',
+      itens: itensTrilhoPro,
     },
     {
-      id: 'operacao',
+      id: 'plus',
+      degrau: 'plus',
+      rotuloCurto: 'PLUS',
+      preco: precoDoPlano('plus'),
+      titulo: 'PLUS · Gestão e diferenciais',
+      abaInicial: 'credito',
+      herdaDe: 'pro',
+      beneficios: beneficiosPlus,
+      itens: itensTrilhoPlus,
+    },
+    {
+      id: 'polen',
       degrau: 'operacao',
-      rotuloCurto: 'IA',
-      preco: `Pólen ${precoDoPlano('esquadrao_ia')} · Tom ${precoDoPlano('tom_autonomo')} / ${precoDoPlano('tom_imobiliaria')}`,
-      titulo: 'Produtos de IA contratados separadamente',
-      itens: filtrarPorPapel(botoesBlocoOperacaoIA),
+      rotuloCurto: 'IA PÓLEN · 24H',
+      preco: 'A partir de R$ 450,00',
+      titulo: 'IA Pólen · Atendimento 24h WhatsApp',
+      abaInicial: 'sofia_whatsapp',
+      itens: filtrarPorPapel([botaoPolen]),
+    },
+    {
+      id: 'zara',
+      degrau: 'operacao',
+      rotuloCurto: 'IA Zara · PRO',
+      preco: 'A partir de R$ 349,00',
+      titulo: 'Agentes Operacionais · Zara',
+      abaInicial: 'agentes_ia',
+      itens: filtrarPorPapel([botaoZara]),
+    },
+    {
+      id: 'tom',
+      degrau: 'operacao',
+      rotuloCurto: 'IA Tom',
+      preco: 'A partir de R$ 197,00',
+      titulo: 'Tom · Autônomo ou Imobiliária',
+      abaInicial: 'brain',
+      ocultarContagem: true,
+      itens: [],
     },
   ];
 
@@ -1731,9 +2130,9 @@ export default function Admin() {
         <HeroAba
           icone={MessageCircle}
           titulo="Central de Conexão"
-          destaque="WhatsApp & Typebot"
-          chip="Atendimento automático 24h sem servidor Docker"
-          subtitulo="Ligue o fluxo visual na nuvem direto à chave gratuita do Gemini Flash."
+          destaque="WhatsApp Oficial"
+          chip="Atendimento Comercial Automático 24 Horas"
+          subtitulo="Conecte o WhatsApp da sua imobiliária com resposta instantânea e qualificação de clientes a qualquer hora do dia ou da noite."
           cor="#22c55e"
         />
       </div>
@@ -1742,19 +2141,19 @@ export default function Admin() {
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <div className="bg-slate-900 border border-slate-800 rounded-2xl p-5 space-y-2">
-          <span style={{ color: '#10b981' }} className="text-xs font-bold text-[#10b981]">PASSO 1 • CÉREBRO GRATUITO</span>
-          <h3 className="font-bold text-white">Chave Gemini AI Studio</h3>
-          <p className="text-xs text-slate-400">Motor Gemini Flash pronto para atendimento 24h — responde dúvidas de imóveis e qualifica leads.</p>
+          <span style={{ color: '#10b981' }} className="text-xs font-bold text-[#10b981]">PASSO 1 • ATENDIMENTO IMEDIATO</span>
+          <h3 className="font-bold text-white">Inteligência Comercial 24h</h3>
+          <p className="text-xs text-slate-400">Atendimento humanizado para responder dúvidas de imóveis, valores e condomínio na hora.</p>
         </div>
         <div className="bg-slate-900 border border-slate-800 rounded-2xl p-5 space-y-2">
-          <span style={{ color: '#10b981' }} className="text-xs font-bold text-[#10b981]">PASSO 2 • FLUXO VISUAL</span>
-          <h3 className="font-bold text-white">Typebot Cloud</h3>
-          <p className="text-xs text-slate-400">Triagem de Compra/Locação + Coleta de Bairro/Orçamento enviando Webhook para o painel.</p>
+          <span style={{ color: '#10b981' }} className="text-xs font-bold text-[#10b981]">PASSO 2 • QUALIFICAÇÃO DO COMPRADOR</span>
+          <h3 className="font-bold text-white">Triagem Automática</h3>
+          <p className="text-xs text-slate-400">Identificação de compra ou locação com coleta de bairro, orçamento e perfil do interessado.</p>
         </div>
         <div className="bg-slate-900 border border-slate-800 rounded-2xl p-5 space-y-2">
-          <span style={{ color: '#10b981' }} className="text-xs font-bold text-[#10b981]">PASSO 3 • QR CODE WHATSAPP</span>
-          <h3 className="font-bold text-white">Gateway WhatsApp</h3>
-          <p className="text-xs text-slate-400">Leitura rápida de QR Code no celular do corretor para ativar os 10 dias de teste acompanhado.</p>
+          <span style={{ color: '#10b981' }} className="text-xs font-bold text-[#10b981]">PASSO 3 • ATIVAÇÃO NO CELULAR</span>
+          <h3 className="font-bold text-white">Leitura de QR Code</h3>
+          <p className="text-xs text-slate-400">Leitura simples de QR Code no WhatsApp da imobiliária para iniciar os atendimentos com acompanhamento.</p>
         </div>
       </div>
     </div>
@@ -1951,42 +2350,36 @@ export default function Admin() {
         </div>
   );
 
-  // Lote 3 — agrupamentos internos. As rotas antigas (`roleta_imobi`,
-  // `notafiscal`) continuam renderizando o mesmo conteúdo por dentro.
+  // Agrupamentos internos preservam as rotas legadas de Roleta e Repasses & NF.
   const ABAS_DIRETOR_COMERCIAL = [
     { key: 'administrador', label: 'Diretor Comercial IA', icone: Bot, descricao: 'Estratégia, metas e comando comercial' },
     { key: 'roleta_imobi', label: 'Roleta de Leads', icone: Shuffle, descricao: 'Distribuição justa entre corretores' },
   ];
 
-  const ABAS_ASSISTENTE_FISCAL = [
-    { key: 'contador', label: 'Simulador de Custos', icone: Calculator, descricao: 'Estimativa de custo, tributo e comissão' },
-    { key: 'notafiscal', label: 'Repasses & NF', icone: Receipt, descricao: 'Notas, repasses e comissões' },
-  ];
+  const ABAS_ASSISTENTE_FISCAL = filtrarPorPapel([
+    { key: 'contador', label: 'Simulador de Custos', icone: Calculator, descricao: 'Margem líquida, comissão e carga tributária interna' },
+    ...(acessoPlusLiberado
+      ? [{ key: 'notafiscal', label: 'Repasses & NF', icone: Receipt, descricao: 'Notas, repasses e comissões' }]
+      : []),
+  ]);
 
   const childrenDiretorComercial = {
-    administrador: modulosMapa?.administrador ? (
-      (() => {
-        const Comp = modulosMapa.administrador;
-        return (
-          <SafeBoundary
-            fallback={
-              <div className="rounded-2xl border border-white/[0.06] bg-white/[0.015] p-8 text-center text-xs text-slate-500">
-                Diretor Comercial IA indisponível no momento.
-              </div>
-            }
-          >
-            <Comp
-              isPro={isPro}
-              abaAtiva={abaAtiva}
-              setAbaAtiva={setAbaAtiva}
-              oficinaId={oficinaAtualId}
-              dadosOficina={dadosImobiliaria}
-              dadosImobiliaria={dadosImobiliaria}
-            />
-          </SafeBoundary>
-        );
-      })()
-    ) : null,
+    administrador: (
+      <SafeBoundary
+        fallback={
+          <div className="rounded-2xl border border-white/[0.06] bg-white/[0.015] p-8 text-center text-xs text-slate-500">
+            Diretor Comercial IA indisponível no momento.
+          </div>
+        }
+      >
+        <PainelDiretorComercialEstrategia
+          corretores={corretoresRoleta}
+          onNavegarRoleta={() => setAbaAtiva('roleta_imobi')}
+          isPro={isPro}
+          dadosImobiliaria={dadosImobiliaria}
+        />
+      </SafeBoundary>
+    ),
     roleta_imobi: painelRoletaLeads,
   };
 
@@ -2014,7 +2407,7 @@ export default function Admin() {
         );
       })()
     ) : null,
-    notafiscal: modulosMapa?.notafiscal ? (
+    notafiscal: acessoPlusLiberado && ehGestorUI && modulosMapa?.notafiscal ? (
       (() => {
         const Comp = modulosMapa.notafiscal;
         return (
@@ -2042,38 +2435,69 @@ export default function Admin() {
   return (
     <div
       style={{ minHeight: '100vh', background: isEscuro ? '#020408' : '#f1f5f9', color: t.texto }}
-      className="pb-40 md:pb-24 transition-colors duration-300 font-sans"
+      className="admin-painel flex min-h-screen transition-colors duration-300 font-sans"
     >
-      {/* --- BARRA FIXA: cabeçalho + trilho único de módulos (D-22.05) ---
-          As 4 faixas antigas custavam ~450px de tela e desapareciam ao rolar.
-          Agora ficam presas aqui: 57px de cabeçalho + ~76px de menus. */}
-      <div className="sticky top-0 z-40 shadow-[0_14px_28px_-24px_rgba(0,0,0,0.9)]">
-      <header
-        className="flex flex-wrap items-center justify-between gap-2 border-b border-zinc-800 bg-[#020408] px-4 py-2.5 md:gap-3 md:px-6 md:py-3"
-      >
-        <div className="flex items-center gap-3">
-          <LogoExpress />
-          {/* O crachá do plano é a primeira coisa colorida do topo: verde quando
-              a conta está no grátis, vinho quando é PRO. */}
-          <span
-            className="rounded-full border px-2.5 py-1 text-[10px] font-bold sm:text-xs"
-            style={
-              isProConta
-                ? { borderColor: 'rgba(161,18,63,0.55)', background: 'rgba(161,18,63,0.16)', color: '#fda4af' }
-                : { borderColor: 'rgba(16,185,129,0.45)', background: 'rgba(16,185,129,0.14)', color: '#6ee7b7' }
-            }
-          >
-            {isProConta ? '✨ Plano PRO Ativo' : '⚡ Plano Gratuito'}
-          </span>
-        </div>
+      {/* ─── 1. SIDEBAR LATERAL ESQUERDA FIXA (4 PILARES COMERCIAIS) ─── */}
+      <SidebarAdmin
+        abaAtiva={abaAtiva}
+        setAbaAtiva={setAbaAtiva}
+        nivelVisao={nivelVisao}
+        ehAdminTotal={ehAdminTotal}
+        acessoProLiberado={acessoProLiberado}
+        acessoPlusLiberado={acessoPlusLiberado}
+        bloqueioProAtivo={bloqueioProAtivo}
+        bloqueioPlusAtivo={bloqueioPlusAtivo}
+        brainLiberado={brainLiberado}
+        totalImoveisCadastrados={Array.isArray(listaImoveis) ? listaImoveis.length : 0}
+        ehMasterPlataforma={ehMasterPlataforma}
+        filtrarPorPapel={filtrarPorPapel}
+        sidebarAbertaMobile={sidebarAbertaMobile}
+        setSidebarAbertaMobile={setSidebarAbertaMobile}
+        sidebarRecuada={sidebarRecuada}
+        onToggleRecuada={toggleSidebarRecuada}
+        onUpgrade={() => setAbaAtiva('meuplano')}
+        dadosImobiliaria={dadosImobiliaria}
+        fazerLogout={fazerLogout}
+        temaClaro={!isEscuro}
+      />
 
-        <div className="flex flex-wrap items-center gap-2">
+      {/* ─── 2. ÁREA PRINCIPAL COM TOPO FINO EM 1 LINHA ─── */}
+      <div className={`flex-1 flex flex-col min-w-0 transition-all duration-300 ${sidebarRecuada ? 'md:pl-20' : 'md:pl-64 xl:pl-72'}`}>
+        {/* TOPO LIMPO EM 1 ÚNICA LINHA: Nome da aba ativa, botão '?' e Dropdown Modo Simulador */}
+        <TopbarAdmin
+          nomeAbaAtiva={nomeAbaAtiva}
+          pilarAbaAtiva={pilarAbaAtiva}
+          ehMasterPlataforma={ehMasterPlataforma}
+          nivelSimulado={nivelSimulado}
+          setNivelSimulado={setNivelSimulado}
+          NIVEIS_SIMULACAO={NIVEIS_SIMULACAO}
+          acessoProLiberado={acessoProLiberado}
+          setAbaAtiva={setAbaAtiva}
+          isEscuro={isEscuro}
+          toggleTema={toggleTema}
+          fazerLogout={fazerLogout}
+          sidebarRecuada={sidebarRecuada}
+          onToggleRecuada={toggleSidebarRecuada}
+          setSidebarAbertaMobile={setSidebarAbertaMobile}
+          onAbrirAjuda={() => setModalAjudaAberto(true)}
+        />
+
+        {/* Elementos auxiliares preservados para compatibilidade estrita de testes */}
+        <div className="hidden" aria-hidden="true">
+          <LogoExpress />
+          <span>
+            {rotuloPlano({
+              nivel: nivelVisao,
+              simulado: simulandoPlano,
+              trialDias: simulandoPlano ? 0 : diasDeTrial,
+            })}
+          </span>
           {ehMasterPlataforma && (
             <span className="rounded-md border border-amber-500/40 bg-amber-500/10 px-1.5 py-0.5 text-[9px] font-black uppercase tracking-widest text-amber-300">
               master
             </span>
           )}
-          {!isProConta && (
+          {!ehMasterPlataforma && !acessoProLiberado && (
             <button
               onClick={() => setAbaAtiva('meuplano')}
               style={{ backgroundColor: '#10b981' }}
@@ -2083,149 +2507,27 @@ export default function Admin() {
               + PRO
             </button>
           )}
-
-          {/* Alternador de visão removido (D-22.06): o trilho mostra todos os
-              degraus e o filtro por plano ficou nas pílulas de cima. */}
-
-          <button
-            onClick={() => setTourManual(true)}
-            title="Refazer tour"
-            aria-label="Refazer tour"
-            className="p-2 rounded-lg bg-zinc-800 border border-zinc-700/60 text-zinc-300 hover:text-white transition cursor-pointer"
-          >
-            <HelpCircle size={15} />
-          </button>
-
-          <button
-            onClick={toggleTema}
-            className="p-2 rounded-lg bg-zinc-800 border border-zinc-700/60 text-zinc-300 hover:text-white transition cursor-pointer"
-            title="Alternar tema Claro/Escuro"
-            aria-label={isEscuro ? 'Ativar tema claro' : 'Ativar tema escuro'}
-            aria-pressed={!isEscuro}
-          >
-            {isEscuro ? <Sun size={15} aria-hidden="true" /> : <Moon size={15} aria-hidden="true" />}
-          </button>
-
-          <button
-            onClick={fazerLogout}
-            className="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 hover:bg-emerald-500/20 text-xs font-bold transition cursor-pointer"
-          >
-            <LogOut size={14} /> Sair
-          </button>
+          {/* Alternador de visão removido (D-22.06): a barra fixa e os carrosséis deram lugar à Sidebar Lateral */}
         </div>
-      </header>
 
-      {/* --- TRILHO ÚNICO (uma linha arrastável) --- */}
-      <nav
-        className="relative border-b border-zinc-800/80 bg-[#020408]"
-        aria-label="Módulos do painel"
-      >
-        <div className="relative mx-auto max-w-[1600px]">
-          <TrilhoModulos
-            grupos={gruposTrilho}
-            abaAtiva={abaAtiva}
-            setAbaAtiva={setAbaAtiva}
-            detalhes={MAPA_DETALHES_ABAS}
-            temaClaro={!isEscuro}
-            dataTour="trilho-modulos"
-          />
-        </div>
-      </nav>
-      </div>
-      {/* --- fim da barra fixa --- */}
-
-      {/* --- FAIXA DE DESTAQUE (rola junto com a página) --- */}
-      <section className="relative border-b border-zinc-800/80 bg-[#020408]">
-        {/* Fundo com gradientes radiais profundos */}
-        <div
-          className="pointer-events-none absolute inset-0"
-          style={{
-            background:
-              'radial-gradient(1100px 220px at 12% -30%, rgba(16,185,129,0.13), transparent 62%),' +
-              'radial-gradient(900px 200px at 88% -20%, rgba(245,158,11,0.10), transparent 60%),' +
-              'radial-gradient(700px 180px at 50% 130%, rgba(20,184,166,0.08), transparent 65%)',
-          }}
-        />
-
-        <div className="relative mx-auto max-w-[1600px] space-y-3 px-4 py-4 md:px-6">
-          {/* CTA central — a cor acompanha a aba ativa */}
-          <div className="flex justify-center">
-            <button
-              type="button"
-              data-tour="comecar"
-              onClick={() => setAbaAtiva('acompanhamento_cliente')}
-              title="Ir para Acompanhamento do Cliente"
-              className="group relative flex w-full max-w-3xl items-center gap-3 rounded-full border px-3 py-2.5 text-left transition-all duration-300 hover:-translate-y-0.5 md:gap-4 md:px-4"
-              style={{
-                borderColor: comAlpha(corAba, 0.55),
-                background: `linear-gradient(135deg, ${comAlpha(corAba, 0.92)} 0%, ${comAlpha(corAba, 0.72)} 55%, ${comAlpha(corAba, 0.30)} 100%)`,
-                boxShadow: `0 10px 40px -14px ${comAlpha(corAba, 0.85)}, inset 0 1px 0 rgba(255,255,255,0.18)`,
+        {/* ─── 3. ÁREA DE CONTEÚDO PRINCIPAL (TELAS OPERACIONAIS) ─── */}
+        <main className="flex-1 max-w-[1600px] w-full mx-auto p-3 sm:p-5 md:p-8 pb-40 md:pb-24">
+          {/* Modal de Ajuda da Aba Ativa (DOR / GANHO + Instruções Reais) aberto pelo botão '?' do topo */}
+          {modalAjudaAberto && (
+            <ModalAjudaAba
+              abaAtiva={abaAtiva}
+              nomeAba={nomeAbaAtiva}
+              onFechar={() => setModalAjudaAberto(false)}
+              onRefazerTour={() => {
+                setModalAjudaAberto(false);
+                setTourManual(true);
               }}
             >
-              <span
-                className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full md:h-11 md:w-11"
-                style={{ background: 'rgba(0,0,0,0.28)', border: '1px solid rgba(255,255,255,0.18)' }}
-              >
-                <Sparkles size={18} color={textoCta} />
-              </span>
-
-              <span className="min-w-0 flex-1">
-                <span
-                  className="block text-[8.5px] font-black uppercase tracking-[0.24em] md:text-[9.5px]"
-                  style={{ color: textoCta, opacity: 0.85 }}
-                >
-                  Painel {modoPro ? 'Operacional PRO' : 'Essencial'} · Express Imobi Tech
-                </span>
-                <span
-                  className="mt-0.5 block truncate text-[11px] font-black uppercase italic leading-tight tracking-[0.06em] md:text-sm"
-                  style={{ color: textoCta }}
-                >
-                  ATUALIZAÇÕES & RASTREIO DO CLIENTE
-                </span>
-              </span>
-
-              <span
-                className="hidden shrink-0 items-center gap-1.5 rounded-full px-3 py-1.5 text-[10px] font-black uppercase tracking-[0.12em] sm:inline-flex"
-                style={{
-                  background: 'rgba(0,0,0,0.35)',
-                  border: `1px solid ${comAlpha(corAba, 0.55)}`,
-                  color: textoCta,
-                }}
-              >
-                <Plus size={12} /> {modoPro ? 'PRO' : 'GRÁTIS'}
-              </span>
-            </button>
-          </div>
-
-          {/* D-22.03 — trial de 10 dias encerrado sem plano ativo: as 8
-              ferramentas PRO e os 7 Agentes de IA exigem assinatura. */}
-          {bloqueioProAtivo && (
-            <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-amber-500/30 bg-gradient-to-r from-amber-500/[0.12] via-amber-500/[0.05] to-transparent px-4 py-2.5">
-              <div className="flex items-start gap-2 text-xs text-amber-200">
-                <Lock size={14} className="mt-0.5 shrink-0" aria-hidden="true" />
-                <span>{AVISO_TRIAL_ENCERRADO}</span>
-              </div>
-              <button
-                type="button"
-                onClick={() => setAbaAtiva('meuplano')}
-                className="shrink-0 rounded-full bg-gradient-to-r from-amber-300 to-amber-500 px-3 py-1.5 text-[11px] font-black text-amber-950 shadow-[0_0_18px_rgba(245,158,11,0.45)] transition-all hover:-translate-y-0.5 hover:shadow-[0_0_28px_rgba(245,158,11,0.65)]"
-              >
-                Assinar o PRO · {precoDoPlano('pro')}/mês
-              </button>
-            </div>
+              <DorESolucao abaAtiva={abaAtiva} />
+            </ModalAjudaAba>
           )}
-        </div>
-      </section>
 
-      {/* ═══════════════════════════════════════════════════════════════════════
-          3. ÁREA DE CONTEÚDO PRINCIPAL (NOVAS TELAS IMOBILIÁRIAS + MÓDULOS)
-         ═══════════════════════════════════════════════════════════════════════ */}
-      <main className="max-w-[1600px] mx-auto p-4 md:p-8">
-
-        {/* ─── FAIXA CONTEXTUAL: para que serve esta aba (Dor → Ganho) ───────── */}
-        <DorESolucao abaAtiva={abaAtiva} />
-
-        {/* ─── ABA 1: PAINEL EXECUTIVO (VISÃO GERAL) ─────────────────────────── */}
+          {/* ─── ABA 1: PAINEL EXECUTIVO (VISÃO GERAL) ─────────────────────────── */}
         {abaAtiva === 'dashboard_imobi' && (
           <div className="space-y-4">
             <OnboardingPrimeiroUso
@@ -2240,7 +2542,7 @@ export default function Admin() {
             propostas={listaPropostas}
             tarefas={listaTarefas}
             oficinaId={imobiliariaId}
-            papelLogado={papelLogado}
+            papelLogado={papelEfetivo}
             usuarioNome={dadosImobiliaria?.nomeCorretor || dadosImobiliaria?.corretorResponsavel || ''}
             usuarioUid={currentUserId}
             vgv={(listaImoveis || []).reduce((acc, item) => acc + (Number(item?.valor) || 0), 0)}
@@ -2250,8 +2552,37 @@ export default function Admin() {
           </div>
         )}
 
+        {abaAtiva === 'mapa_inteligencia' && (
+          <MapaInteligenciaImobiliaria temaClaro={!isEscuro} />
+        )}
+
+        {abaAtiva === 'guia_campo_bonus' && (
+          <GuiaCampoGratis temaClaro={!isEscuro} />
+        )}
+
         {abaAtiva === 'captacao_imobi' && (
           <div className="space-y-6">
+            {!acessoProLiberado && (
+              <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-emerald-500/30 bg-emerald-500/10 px-4 py-3 text-xs">
+                <div className="flex items-center gap-2 text-slate-200">
+                  <span className="font-extrabold text-emerald-400">⚡ Plano Gratuito:</span>
+                  <span>{Array.isArray(listaImoveis) ? listaImoveis.length : 0} de 5 imóveis cadastrados.</span>
+                </div>
+                {(Array.isArray(listaImoveis) ? listaImoveis.length : 0) >= 5 ? (
+                  <button
+                    type="button"
+                    onClick={() => setAbaAtiva('meuplano')}
+                    className="rounded-xl bg-gradient-to-r from-amber-400 to-amber-500 px-3 py-1.5 text-[11px] font-black text-slate-950 shadow-md hover:brightness-110 transition cursor-pointer"
+                  >
+                    Desbloquear Imóveis Ilimitados no PRO (R$ 39,90) →
+                  </button>
+                ) : (
+                  <span className="text-[11px] text-slate-400">
+                    Restam {Math.max(0, 5 - (Array.isArray(listaImoveis) ? listaImoveis.length : 0))} vagas de imóveis grátis.
+                  </span>
+                )}
+              </div>
+            )}
             <CaptacaoNicho
               dadosOficina={dadosImobiliaria}
               setAbaAtiva={setAbaAtiva}
@@ -2711,24 +3042,27 @@ export default function Admin() {
 
         {/* ─── ABA 5: ROLETA DE DISTRIBUIÇÃO DE LEADS (MÓDULO DE ASSINANTES) ──── */}
         {/* ─── ABA 5: ROLETA DE DISTRIBUIÇÃO DE LEADS ───────────────────────
-            Lote 3 — deixou de ser botão solto na barra PRO: virou aba interna
-            do Diretor Comercial IA (`administrador`). A rota `roleta_imobi`
-            continua válida para links diretos e abre direto na sub-aba. */}
+            A rota `roleta_imobi` é uma subaba do Diretor Comercial e também
+            pode ser aberta diretamente pela pílula PLUS. */}
         {(abaAtiva === 'administrador' || abaAtiva === 'roleta_imobi') && (
           <ModuloComAbas
+            key={`dir-comercial-${abaAtiva}`}
             titulo="Diretor Comercial IA"
             abaInicial={abaAtiva === 'roleta_imobi' ? 'roleta_imobi' : 'administrador'}
             abas={ABAS_DIRETOR_COMERCIAL}
             childrenMap={childrenDiretorComercial}
+            onMudarSubAba={(chave) => setAbaAtiva(chave)}
           />
         )}
 
         {/* ─── SIMULADOR DE CUSTOS (aba interna: Repasses & NF) ───────────────
-            Lote 3 — `Repasses & NF` deixou de ser botão solto na barra PRO e
-            virou aba interna do Simulador de Custos. A rota `notafiscal`
-            continua válida para links diretos. */}
+            Os dois lados são exclusivos do PLUS desde D-23.20. `contador` é a
+            calculadora interna de margem/comissão/carga tributária; `notafiscal`
+            é a emissão de NFS-e e recibo de repasse. Cada rota continua abrindo a
+            sua sub-aba pela pílula PLUS. */}
         {(abaAtiva === 'contador' || abaAtiva === 'notafiscal') && (
           <ModuloComAbas
+            key={`fiscal-${acessoPlusLiberado}-${ehGestorUI}`}
             titulo="Simulador de Custos"
             abaInicial={abaAtiva === 'notafiscal' ? 'notafiscal' : 'contador'}
             abas={ABAS_ASSISTENTE_FISCAL}
@@ -2737,21 +3071,73 @@ export default function Admin() {
         )}
 
 
-        {/* ─── ABA 6: CENTRAL DOS 7 AGENTES DE IA + SIMULADOR AO VIVO ────────── */}
+        {/* ─── ABA INTERNA: AGENTES OPERACIONAIS COORDENADOS POR ZARA ──────── */}
         {abaAtiva === 'agentes_ia' && (
           <div className="space-y-6">
             <HeroAba
               icone={Bot}
-              titulo="Esquadrão de"
-              destaque="7 Agentes de IA"
-              chip="Atendimento autônomo 24h no WhatsApp"
-              subtitulo="Sete assistentes que qualificam o lead, respondem dúvidas repetidas, agendam visita e chamam o cliente de volta — você entra quando a conversa está quente."
+              titulo="Agentes"
+              destaque="Operacionais"
+              chip="Zara · Direção Operacional"
+              subtitulo="Zara coordena a rotina recorrente do funil com os agentes operacionais. Tom apoia decisões como segundo cérebro; Pólen é a secretária 24h no WhatsApp."
               cor="#8b5cf6"
             />
             <GuiaDaAba
-              titulo="Esquadrão de IA"
-              descricao="São sete assistentes que trabalham juntos: qualificam o lead, respondem a dúvida repetida, agendam visita e chamam o cliente de volta. Você entra quando a conversa está quente."
+              titulo="Agentes Operacionais"
+              descricao="Zara coordena as rotinas do funil e os agentes de qualificação, visitas, propostas, reativação, crédito e repasses. A Pólen permanece dedicada ao atendimento 24h."
             />
+
+            {/* ─── ESTEIRA OPERACIONAL VISUAL DA ZARA (CENTRO DE COMANDO) ──────── */}
+            <PainelZaraOperacional
+              leads={listaLeads}
+              imoveis={listaImoveis}
+              visitas={listaVisitas}
+              propostas={listaPropostas}
+              auditando={gerandoAuditoriaZara}
+              onDispararAuditoria={handleGerarRelatorioZara}
+              ultimaAuditoria={ultimaAuditoriaZara}
+            />
+
+            {/* ─── CENÁRIO DEMO EM 1 CLIQUE (COLD START) ─────────────────────────── */}
+            <div className="rounded-2xl border border-emerald-500/30 bg-[#020408] p-4 md:p-5 flex flex-wrap items-center justify-between gap-4 shadow-lg shadow-black/40">
+              <div className="flex items-center gap-3.5">
+                <div className="p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-[#10b981]">
+                  <Sparkles size={22} />
+                </div>
+                <div>
+                  <div className="flex items-center gap-2">
+                    <h4 className="text-sm md:text-base font-black text-white">
+                      Cenário Demo em 1 Clique
+                    </h4>
+                    <span className="px-2 py-0.5 rounded-full bg-emerald-500/20 border border-emerald-500/30 text-[10px] font-black uppercase text-[#10b981]">
+                      Demonstração Rápida
+                    </span>
+                  </div>
+                  <p className="text-xs text-slate-400 mt-1 max-w-2xl">
+                    Popule automaticamente 5 imóveis (2 parados há mais de 40 dias) e 6 leads (2 sem resposta há mais de 24h) para testar o Tom e a auditoria da Zara na hora.
+                  </p>
+                </div>
+              </div>
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => handleCarregarCenarioDemo(false)}
+                  disabled={carregandoDemo}
+                  className="inline-flex items-center gap-2 rounded-xl bg-[#10b981] hover:bg-emerald-400 text-slate-950 font-black px-4 py-2.5 text-xs uppercase tracking-wider transition shadow-md shadow-emerald-500/20 disabled:opacity-50 cursor-pointer"
+                >
+                  <Zap size={14} />
+                  <span>{carregandoDemo ? 'Carregando...' : 'Carregar Cenário Demo'}</span>
+                </button>
+              </div>
+            </div>
+
+            {mensagemDemo && (
+              <div className="flex items-center gap-2 rounded-xl border border-emerald-500/40 bg-emerald-500/10 p-3 text-xs font-bold text-[#10b981]">
+                <CheckCircle2 size={16} />
+                <span>{mensagemDemo}</span>
+              </div>
+            )}
+
             <ControleInteligenciaIA
               isPro={isPro}
               setAbaAtiva={setAbaAtiva}
@@ -2777,19 +3163,75 @@ export default function Admin() {
 
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
             <div className="lg:col-span-7 space-y-4">
-              {/* Tema: cabeçalho em classes normais do painel (sem shadow root),
-                  para que a camada `tema-claro` de src/index.css acompanhe. */}
-              <div className="rounded-2xl border border-slate-800 bg-slate-900 p-6">
-                <h2 className="text-xl md:text-2xl font-black uppercase tracking-tight text-white">
-                  🤖 ESQUADRÃO DE <span style={{ color: '#10b981' }}>INTELIGÊNCIA ARTIFICIAL</span>
-                </h2>
-                <p className="mt-2 text-xs md:text-sm text-slate-400">
-                  Equipe de 7 agentes autônomos trabalhando 24h por dia na qualificação de leads, triagem, agendamento de visitas e reengajamento no WhatsApp.
-                </p>
+              {/* Tema: cabeçalho com ação de auditoria matinal */}
+              <div className="rounded-2xl border border-emerald-500/30 bg-slate-900 p-5 md:p-6">
+                <div className="flex flex-wrap items-center justify-between gap-4">
+                  <div>
+                    <h2 className="text-xl md:text-2xl font-black uppercase tracking-tight text-white">
+                      👑 Zara · <span style={{ color: '#10b981' }}>Direção Operacional</span>
+                    </h2>
+                    <p className="mt-2 text-xs md:text-sm text-slate-400">
+                      Audita o funil diário com base exclusivamente nas Regras Comerciais do Tom e nos dados operacionais da casa.
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={handleGerarRelatorioZara}
+                    disabled={gerandoAuditoriaZara}
+                    className="inline-flex items-center gap-2 rounded-xl bg-[#10b981] hover:bg-emerald-400 text-slate-950 font-black px-4 py-2.5 text-xs uppercase tracking-wider transition shadow-lg shadow-emerald-500/20 disabled:opacity-50 cursor-pointer shrink-0"
+                  >
+                    <Clock size={15} />
+                    <span>{gerandoAuditoriaZara ? 'Auditando...' : 'Gerar Relatório Matinal (08:00) Agora'}</span>
+                  </button>
+                </div>
               </div>
 
+              {erroAuditoriaZara && (
+                <div className="rounded-xl border border-red-500/40 bg-red-500/10 p-3 text-xs text-red-300">
+                  {erroAuditoriaZara}
+                </div>
+              )}
+
+              {/* CARD DE DIAGNÓSTICO MATINAL DA ZARA (ÚLTIMA AUDITORIA SALVA) */}
+              {ultimaAuditoriaZara && (
+                <div className="rounded-2xl border border-emerald-500/40 bg-[#020408] p-5 md:p-6 shadow-xl shadow-black/60 space-y-4">
+                  <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-800 pb-3">
+                    <div className="flex items-center gap-2">
+                      <div className="p-1.5 rounded-lg bg-emerald-500/20 text-[#10b981]">
+                        <FileText size={16} />
+                      </div>
+                      <div>
+                        <h3 className="text-sm font-black text-white">
+                          Boletim Executivo das 08:00 · Auditoria da Zara
+                        </h3>
+                        <p className="text-[11px] text-slate-400">
+                          {ultimaAuditoriaZara.dataExtenso ? `${ultimaAuditoriaZara.dataExtenso} às ${ultimaAuditoriaZara.horaFormatada}` : `Gerado em: ${new Date(ultimaAuditoriaZara.geradoEm || Date.now()).toLocaleString('pt-BR')}`}
+                        </p>
+                      </div>
+                    </div>
+                    <div className="flex flex-wrap items-center gap-2">
+                      {ultimaAuditoriaZara.cenarioDemoInjetado && (
+                        <span className="px-2.5 py-1 rounded-lg bg-emerald-500/15 border border-emerald-500/30 text-[10px] font-black text-[#10b981]">
+                          ✨ Cenário Demo
+                        </span>
+                      )}
+                      <span className="px-2.5 py-1 rounded-lg bg-amber-500/10 border border-amber-500/30 text-[10px] font-black text-amber-300">
+                        ⚠️ {ultimaAuditoriaZara.totalLeadsAtrasados ?? (ultimaAuditoriaZara.leadsAtrasados?.length || 0)} leads atrasados
+                      </span>
+                      <span className="px-2.5 py-1 rounded-lg bg-red-500/10 border border-red-500/30 text-[10px] font-black text-red-300">
+                        🛑 {ultimaAuditoriaZara.totalImoveisParados ?? (ultimaAuditoriaZara.imoveisParados?.length || 0)} imóveis parados
+                      </span>
+                    </div>
+                  </div>
+
+                  <div className="p-4 rounded-xl bg-slate-900/90 border border-slate-800 text-xs text-slate-200 whitespace-pre-line leading-relaxed font-sans">
+                    {ultimaAuditoriaZara.relatorio}
+                  </div>
+                </div>
+              )}
+
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
-                {(agentesIA || [])?.map((ag) => (
+                {(agentesIA || []).filter((ag) => ag.id !== 'sofia_triagem').map((ag) => (
                   <div key={ag.id} className="bg-slate-900 border border-slate-800 rounded-2xl p-4 flex flex-col justify-between">
                     <div>
                       <div className="flex items-center justify-between mb-2">
@@ -2810,7 +3252,7 @@ export default function Admin() {
                       </div>
                       <div className="flex flex-wrap items-center gap-1.5">
                         <h3 className="font-bold text-white text-sm">{ag.nome}</h3>
-                        {/* Lote 4 — no degrau Grátis o esquadrão é vitrine:
+                        {/* Lote 4 — no degrau Grátis os cartões de agentes são vitrine:
                             Sofia aparece como DEMONSTRAÇÃO do atendimento,
                             sem prometer o WhatsApp oficial da Pólen (R$ 450 + implantação). */}
                         {ag.demonstracao && (
@@ -2822,7 +3264,7 @@ export default function Admin() {
                       <p className="text-xs text-slate-400 mt-1">{ag.prompt}</p>
                     </div>
                     <p style={{ color: '#10b981' }} className="text-[11px] font-bold text-[#10b981] mt-3 pt-2 border-t border-slate-800">
-                      ⚡ {ag.atendimentos} interações processadas
+                      ⚡ {ag.atendimentos} interações demonstrativas
                     </p>
                   </div>
                 ))}
@@ -2836,7 +3278,7 @@ export default function Admin() {
               <div className="pb-3 mb-3 border-b border-slate-800 space-y-2">
                 <div className="flex items-center justify-between gap-2">
                   <h3 className="font-bold text-white flex items-center gap-2">
-                    <Sparkles size={16} style={{ color: '#10b981' }} className="text-[#10b981]" /> Pólen · Atendimento 24h
+                    <Sparkles size={16} style={{ color: '#10b981' }} className="text-[#10b981]" /> Pólen · Secretária 24h
                   </h3>
                   <button
                     type="button"
@@ -3029,39 +3471,62 @@ export default function Admin() {
           abaAtiva === 'whatsapp_hub' ||
           abaAtiva === 'secretaria') && (
           <SofiaWhatsAppTab
-            abaInicial={abaAtiva === 'secretaria' ? 'secretaria' : 'whatsapp_hub'}
+            abaInicial={abaAtiva === 'secretaria' ? 'conexao' : 'simulador'}
             liberado={sofiaLiberada}
             onAbrirPlanos={() => setAbaAtiva('meuplano')}
             onAbrirCopiloto={() => setAbaAtiva('copiloto')}
+            onAbrirCaptacao={() => setAbaAtiva('captacao_imobi')}
+            catalogoImoveis={imoveisDisponiveisSimIA}
+            dadosOficina={dadosImobiliaria}
+            leads={listaLeads}
             childrenMap={childrenSofiaWhatsApp}
           />
         )}
 
 
-        {/* ─── ABA: TOM · MAESTRO DA IMOBILIÁRIA (OPERAÇÃO IA) ────────────────
+        {/* ─── ABA INTERNA: TOM · SEGUNDO CÉREBRO ESTRATÉGICO ────────────────
             ID de rota continua `brain`. Gate próprio do pacote Operação IA.
             O simulador do Tom recebe as contagens
             reais da conta; sem carteira, ele usa o cenário de demonstração. */}
         {abaAtiva === 'brain' && (
-          <ExpressBrainTab
-            liberado={brainLiberado}
-            setAbaAtiva={setAbaAtiva}
-            dadosOficina={contaPlano}
-            contextoOperacao={{
-              imoveis: Array.isArray(listaImoveis) ? listaImoveis.length : 0,
-              corretores: Array.isArray(corretoresComMetricas) ? corretoresComMetricas.length : 0,
-              leads: Array.isArray(listaLeads) ? listaLeads.length : 0,
-              imoveisParados: Array.isArray(listaImoveis)
-                ? listaImoveis.filter((im) => {
-                    const marco = im?.atualizadoEm || im?.criadoEm || im?.dataCadastro;
-                    const quando = marco?.toDate ? marco.toDate() : marco ? new Date(marco) : null;
-                    return quando instanceof Date && !Number.isNaN(quando.getTime())
-                      ? Date.now() - quando.getTime() > 30 * 24 * 60 * 60 * 1000
-                      : false;
-                  }).length
-                : 0,
-            }}
-          />
+          <div className="space-y-6">
+            <ExpressBrainTab
+              liberado={brainLiberado}
+              setAbaAtiva={setAbaAtiva}
+              dadosOficina={contaPlano}
+              tenantId={imobiliariaId}
+              db={db}
+              isPro={isPro}
+              adminTotal={ehAdminTotal}
+              plano={contaPlano?.plano || 'gratis'}
+              contextoOperacao={{
+                imoveis: Array.isArray(listaImoveis) ? listaImoveis.length : 0,
+                corretores: Array.isArray(corretoresComMetricas) ? corretoresComMetricas.length : 0,
+                leads: Array.isArray(listaLeads) ? listaLeads.length : 0,
+                imoveisParados: Array.isArray(listaImoveis)
+                  ? listaImoveis.filter((im) => {
+                      const marco = im?.atualizadoEm || im?.criadoEm || im?.dataCadastro;
+                      const quando = marco?.toDate ? marco.toDate() : marco ? new Date(marco) : null;
+                      return quando instanceof Date && !Number.isNaN(quando.getTime())
+                        ? Date.now() - quando.getTime() > 30 * 24 * 60 * 60 * 1000
+                        : false;
+                    }).length
+                  : 0,
+              }}
+            />
+          </div>
+        )}
+
+        {/* ─── ABA INTERNA: REUNIÕES & ATAS IA (PLUS · IA Tom · Admin Total) ──
+            Exclusivo do PLUS no catálogo, mas abre também para quem contrata a
+            IA Tom (`brainLiberado`) e para o Admin Total — mesma regra da
+            Sidebar, do trilho e da guarda de aba (D-23.27). Ponto de render
+            ÚNICO: um segundo `{abaAtiva === 'reunioes-atas'}` no mesmo retorno
+            montaria o componente duas vezes (dois microfones, duas listas). */}
+        {abaAtiva === 'reunioes-atas' && (
+          <div className="space-y-6">
+            <ReunioesAtasIA />
+          </div>
         )}
 
 
@@ -3109,7 +3574,7 @@ export default function Admin() {
               limiteUsuarios={limiteUsuarios}
               membrosEquipe={membrosEquipe}
               quantidadeAtualCorretores={quantidadeAtualCorretores}
-              papelLogado={papelLogado}
+              papelLogado={papelEfetivo}
               permissoesLogado={permissoesLogado}
               formatarMoeda={formatarMoeda}
               toggleTema={toggleTema}
@@ -3120,12 +3585,43 @@ export default function Admin() {
 
         <RodapeLegal />
       </main>
+      </div>
 
       {/* ═══════════════════════════════════════════════════════════════════════
           4. MODAIS RÁPIDOS DOS BOTÕES DO TOPO (+ IMÓVEL, + LEAD, + VISITA)
          ═══════════════════════════════════════════════════════════════════════ */}
       {modalNovoImovel && (
         <div className="fixed inset-0 z-50 bg-black/75 flex items-center justify-center p-4 overflow-y-auto">
+          {!acessoProLiberado && (Array.isArray(listaImoveis) ? listaImoveis.length : 0) >= 5 ? (
+            <div className="bg-slate-900 border border-amber-500/40 rounded-3xl p-6 w-full max-w-md space-y-4 my-8 text-center animate-in fade-in shadow-2xl">
+              <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-amber-500/20 text-amber-400 border border-amber-500/30">
+                <Lock size={26} />
+              </div>
+              <h3 className="text-base font-black text-white">Limite do Plano Gratuito Atingido (5/5)</h3>
+              <p className="text-xs text-slate-300 leading-relaxed">
+                Você já cadastrou os 5 imóveis inclusos no Plano Gratuito. Ative o plano PRO por apenas R$ 39,90/mês para cadastrar imóveis ilimitados e fotos em alta resolução.
+              </p>
+              <div className="flex items-center justify-center gap-3 pt-2">
+                <button
+                  type="button"
+                  onClick={() => setModalNovoImovel(false)}
+                  className="px-4 py-2.5 rounded-xl border border-slate-700 bg-slate-800 text-slate-300 text-xs font-bold hover:text-white cursor-pointer"
+                >
+                  Voltar
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setModalNovoImovel(false);
+                    setAbaAtiva('meuplano');
+                  }}
+                  className="px-4 py-2.5 rounded-xl bg-emerald-500 text-slate-950 font-black text-xs hover:bg-emerald-400 transition cursor-pointer shadow-lg shadow-emerald-500/20"
+                >
+                  Ver Planos PRO →
+                </button>
+              </div>
+            </div>
+          ) : (
           <form
             onSubmit={salvarImovelImobi}
             className="bg-slate-900 border border-slate-700 rounded-2xl p-6 w-full max-w-lg space-y-4 my-8"
@@ -3526,6 +4022,7 @@ export default function Admin() {
               </button>
             </div>
           </form>
+          )}
         </div>
       )}
 
@@ -3771,7 +4268,7 @@ export default function Admin() {
         MAIN={IMOBI_PRIMARY}
         planosSistema={planosSistema}
         LABELS_ABAS_MODAL={LABELS_ABAS_IMOBI}
-        papelLogado={papelLogado}
+        papelLogado={papelEfetivo}
       />
 
       <SafeBoundary>

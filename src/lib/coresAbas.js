@@ -6,6 +6,7 @@
 
 export const CORES_ABAS = {
   dashboard_imobi: { cor: '#10b981', nome: 'Esmeralda' },
+  mapa_inteligencia: { cor: '#0d9488', nome: 'Teal' },
   avaliacao_imovel: { cor: '#0ea5e9', nome: 'Azul-céu' },
   radar_captacao: { cor: '#f97316', nome: 'Laranja' },
   credito: { cor: '#0ea5e9', nome: 'Azul-céu' },
@@ -26,14 +27,14 @@ export const CORES_ABAS = {
   roleta_imobi: { cor: '#ef4444', nome: 'Vermelho' },
   tarefa: { cor: '#eab308', nome: 'Amarelo' },
   notafiscal: { cor: '#fb923c', nome: 'Laranja claro' },
-  migracao: { cor: '#94a3b8', nome: 'Cinza azulado' },
+  'reunioes-atas': { cor: '#0d9488', nome: 'Teal' },
+  migracao: { cor: '#10b981', nome: 'Esmeralda' },
   acompanhamento_cliente: { cor: '#06b6d4', nome: 'Ciano' },
   config: { cor: '#64748b', nome: 'Cinza' },
   especialista: { cor: '#10b981', nome: 'Esmeralda' },
   meuplano: { cor: '#fbbf24', nome: 'Dourado' },
   burocracias: { cor: '#f59e0b', nome: 'Âmbar' },
   youtube: { cor: '#ef4444', nome: 'Vermelho' },
-  especialista: { cor: '#10b981', nome: 'Esmeralda' },
 };
 
 export const COR_PADRAO = '#10b981';
@@ -126,9 +127,9 @@ export const HERO_ABAS = {
     subtitulo: 'Copy e criativo gerados a partir do imóvel, com link direto para o corretor.',
   },
   agentes_ia: {
-    chip: 'ESQUADRÃO DE IA',
-    titulo: 'Sete assistentes trabalhando 24 horas.',
-    subtitulo: 'Qualificam, respondem e agendam — você entra quando o cliente está quente.',
+    chip: 'AGENTES OPERACIONAIS · ZARA',
+    titulo: 'A rotina do funil com direção operacional.',
+    subtitulo: 'Zara coordena os agentes; Tom apoia decisões e Pólen atende clientes 24h.',
   },
   whatsapp_hub: {
     chip: 'CONEXÃO WHATSAPP',
@@ -147,7 +148,7 @@ export const HERO_ABAS = {
   },
   meuplano: {
     chip: 'PLANOS & ASSINATURA',
-    titulo: 'O que está liberado hoje e o que muda no PRO.',
+    titulo: 'O que está liberado hoje e o que muda no PRO e no PLUS.',
     subtitulo: 'Compare recursos, veja o trial e ative o plano sem sair do painel.',
   },
 };

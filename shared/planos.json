@@ -5,14 +5,13 @@
     "gratis": [
       "dashboard_imobi",
       "funil_leads",
+      "migracao",
       "visitas_imobi",
       "financeiro",
       "equipe",
       "config",
       "ajuda",
-      "meuplano",
-      "contador",
-      "juridico_imobi"
+      "meuplano"
     ],
     "profissional_extra": [],
     "essencial_plus_extra": [
@@ -22,16 +21,20 @@
       "agentes_ia",
       "clientes",
       "leads",
-      "tarefa",
-      "notafiscal",
-      "migracao",
       "acompanhamento_cliente",
-      "copiloto",
+      "copiloto"
+    ],
+    "plus_extra": [
+      "credito",
+      "radar_captacao",
       "administrador",
       "roleta_imobi",
+      "notafiscal",
+      "tarefa",
       "avaliacao_imovel",
-      "credito",
-      "radar_captacao"
+      "contador",
+      "juridico_imobi",
+      "reunioes-atas"
     ],
     "esquadrao_extra": [
       "whatsapp_hub",
@@ -57,10 +60,6 @@
         {
           "icone": "Users",
           "texto": "CRM de leads, funil e agenda de visitas"
-        },
-        {
-          "icone": "Calculator",
-          "texto": "Simuladores essenciais e Assistente Legal"
         },
         {
           "icone": "ShieldCheck",
@@ -95,7 +94,7 @@
           "texto": "Tudo do plano Grátis"
         },
         {
-          "icone": "Check",
+          "icone": "Home",
           "texto": "Captação & Imóveis e vitrine pública"
         },
         {
@@ -104,15 +103,15 @@
         },
         {
           "icone": "FileBarChart",
-          "texto": "Propostas, histórico, Meta Ads e demais módulos PRO"
+          "texto": "Propostas & Negócios, Meta Ads & Criativos e demais módulos PRO"
         },
         {
           "icone": "Bot",
-          "texto": "7 Agentes de IA do painel, avaliação PTAM, Correspondente / Crédito e Vistoria digital"
+          "texto": "Agentes Operacionais coordenados por Zara e acompanhamento do cliente"
         },
         {
           "icone": "FileBarChart",
-          "texto": "NFS-e e publicação em Portais XML"
+          "texto": "Publicação em Portais XML"
         },
         {
           "icone": "Users",
@@ -150,7 +149,11 @@
         },
         {
           "icone": "Bot",
-          "texto": "7 Agentes de IA e módulos assistidos sem limite do degrau de entrada"
+          "texto": "Agentes Operacionais + Zara e módulos assistidos sem limite do degrau de entrada"
+        },
+        {
+          "icone": "Check",
+          "texto": "PLUS exclusivo: Correspondente / Crédito, Radar de Captação, Diretor Comercial IA, Roleta de Leads, Repasses & NF, Vistoria & Laudo IA, Avaliação de Imóvel, Reuniões & Atas IA, Simuladores e Assistente Legal"
         }
       ],
       "cta": "Assinar PLUS",
@@ -158,7 +161,7 @@
     },
     {
       "key": "esquadrao_ia",
-      "nome": "Pólen — Atendimento 24h no WhatsApp",
+      "nome": "IA Pólen · 24H",
       "subtitulo": "Atendimento comercial automatizado, 24h, no WhatsApp da imobiliária",
       "icone": "Bot",
       "preco": {

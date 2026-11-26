@@ -1,6 +1,6 @@
 # 01 — Identidade e Produtos · Express Tech
 
-> **Verdade atual:** 2026-11-20 · Fonte: auditoria do ambiente local + regras definidas pelo fundador.
+> **Verdade atual:** 2026-11-24 · Fonte: auditoria do ambiente local + regras definidas pelo fundador.
 > Alterou algo? Registre em `05-decisoes-ativas.md` com a data.
 
 ---
@@ -47,22 +47,28 @@ Micro-SaaS e automação WhatsApp multi-agente para corretores e imobiliárias.
 | App em produção | `express-imobi-tech-dqgx.vercel.app` · host do painel `imobi.expresstech.com.br` |
 | Repositório | `github.com/eltonluizdasilva-create/express-imobi-tech` (branch `main`) |
 | Entrada | modo gratuito com trial de 14 dias (tela **Meu Plano**) |
-| Módulos PRO | Meta Ads & Criativos · Gestão · Contratos & Assinantes · **7 Agentes de IA** · Hermes Copiloto de Negociação · Diretor Comercial Preditivo (análise **LC 214/2025**) · Assistente Fiscal & Jurídico com motor legal de **27 UFs** · Radar de Captação **OLX/Facebook** · **PTAM ABNT NBR 14.653** · prospecção por região (**Google Maps** → hoje operando por OpenStreetMap) |
+| Módulos PRO | Captação & Imóveis · Propostas & Negócios (histórico) · Meta Ads & Criativos · **Agentes Operacionais (direção de Zara)** · Hermes Copiloto de Negociação · prospecção por região (**Google Maps** → hoje operando por OpenStreetMap) |
 
-**Os 7 agentes do produto** (definidos em `src/AdminNovo.jsx`, `AGENTES_INICIAIS`):
+**Módulos exclusivos do PLUS (10):** Correspondente / Crédito · Radar de Captação OLX/Facebook ·
+Diretor Comercial IA · Roleta de Leads · Repasses & NF · Vistoria & Laudo IA (`tarefa`) ·
+Avaliação de Imóvel PTAM ABNT NBR 14.653 (`avaliacao_imovel`) · Simuladores de Custos (`contador`) ·
+Assistente Legal com motor legal de **27 UFs** (`juridico_imobi`) · Reuniões & Atas IA
+(`reunioes-atas`: transcrição ao vivo no navegador + ata executiva com pendências enviadas à agenda;
+também liberado para quem contrata a IA Tom — D-23.27). O PLUS herda todos os módulos
+PRO e Grátis (D-23.20).
 
-| Agente | Função |
+**Papéis de IA do produto** (sem alteração de preço ou regra de contratação):
+
+| Papel | Função |
 |---|---|
-| Sofia | recepção 24 h no WhatsApp (triagem multi-nicho: urbano, loteamento, rural, locação) |
-| Iago | qualificação (orçamento, metragem, hectares, garantias) |
-| Téo | agendamento de visitas |
-| Lara | estruturação de propostas |
-| Heitor | reativação de base fria |
-| Nina | onboarding e checklist de crédito |
-| Hermes | copiloto operacional dentro do painel |
+| Sofia | secretária de suporte e pré-vendas da plataforma Express Tech (atende dúvidas sobre planos, suporte, onboarding e configuração); paleta Azul-Ciano (`#0EA5E9` / `#38BDF8`) em fundo escuro (`#080C10`) |
+| Zara | direção operacional: coordena agentes e a execução recorrente do funil e da rotina |
+| Agentes Operacionais | Iago (qualificação), Téo (visitas), Lara (propostas), Heitor (reativação), Nina (crédito) e Mônica (VGV/repasses) |
+| Tom | segundo cérebro/sócio estratégico para arquivos, memória operacional e apoio decisório; recursos de arquivos e memória estão em implantação |
+| Pólen | secretária comercial 24 h no WhatsApp da imobiliária (atende compradores, tira dúvidas de imóveis e agenda visitas); paleta Verde-Esmeralda (`#10B981`) + Âmbar (`#F59E0B`) em fundo `#05070A`; pílula `IA PÓLEN · 24H` com abordagem de curiosidade comercial (sem menção explícita de R$ 450). **Roteiro Oficial de Pré-Simulação Bancária:** Nunca pede CPF no WhatsApp (corretor usa o próprio CPF na simulação inicial); preenche automaticamente dados do imóvel pelo cadastro (tipo residencial/comercial, valor, localização cidade/UF/bairro, novo/usado); nunca calcula parcelas (responsabilidade do corretor/correspondente); nunca cita preço da plataforma para o comprador; para clientes à vista pula o checklist e agenda a visita direto; para financiamento envia fechamento acolhedor e opcional com os **7 itens validados** (1. data de nascimento do mais velho, 2. moradia/trabalho na cidade, 3. renda bruta familiar, 4. 3+ anos de FGTS, 5. saldo FGTS > 10% do valor do imóvel para ajudar na entrada, 6. subsídio da União/FGTS após 02/05/2005, 7. composição de renda ou dependente sem renda até 21 anos / 24 universitário). |
 
-Complementam o plano: assistentes de gestão **Diretor Comercial IA**, **Assistente Fiscal** e
-**Assistente Jurídico (Lei do Inquilinato)**.
+O PRO inclui os assistentes **Fiscal** e **Jurídico (Lei do Inquilinato)**; o PLUS acrescenta o
+**Diretor Comercial IA** e os demais módulos exclusivos listados acima.
 
 ### 2.3 Express Agro Tech
 Automação comercial e atendimento inteligente para revendas agropecuárias, insumos, maquinários e

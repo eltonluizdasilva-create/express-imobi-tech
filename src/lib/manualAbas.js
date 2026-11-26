@@ -85,14 +85,14 @@ export const MANUAL_ABAS = {
     dica: 'Anúncio bom com atendimento lento é dinheiro jogado fora.',
   },
   agentes_ia: {
-    titulo: 'Esquadrão de IA',
-    resumo: 'Sete assistentes que atendem, qualificam e chamam o cliente de volta.',
+    titulo: 'Agentes Operacionais · Zara',
+    resumo: 'Zara coordena os agentes e a execução recorrente do funil; Tom apoia decisões e a Pólen atende 24h.',
     passos: [
-      'Ative só os agentes que você vai usar — agente ativo sem supervisão confunde o cliente.',
-      'Revise as conversas da madrugada de manhã: a IA qualifica, você decide.',
-      'Ajuste o tom de voz do agente para o jeito da sua imobiliária.',
+      'Consulte os papéis dos agentes operacionais coordenados por Zara.',
+      'Os estados e contadores exibidos nesta área são demonstrativos; a execução depende das integrações contratadas.',
+      'Abra Tom para apoio estratégico ou Pólen para atendimento 24h no WhatsApp.',
     ],
-    dica: 'A IA faz o primeiro atendimento; a assinatura do negócio continua sendo sua.',
+    dica: 'Zara coordena a rotina; Tom apoia decisões e Pólen é a secretária 24h.',
   },
   whatsapp_hub: {
     titulo: 'Conexão WhatsApp',
@@ -148,13 +148,23 @@ export const MANUAL_ABAS = {
   },
   meuplano: {
     titulo: 'Meu Plano',
-    resumo: 'O que está liberado hoje e o que muda no PRO.',
+    resumo: 'O que está liberado hoje e o que muda no PRO e no PLUS.',
     passos: [
       'Veja o plano atual e a data do período de teste.',
       'Compare os recursos antes de decidir o upgrade.',
       'Ao assinar, o plano é aplicado na hora — sem precisar sair do painel.',
     ],
     dica: 'O que você usa no dia a dia (CRM, visitas, imóveis) já está no plano gratuito.',
+  },
+  'reunioes-atas': {
+    titulo: 'Reuniões & Atas IA',
+    resumo: 'Gravação ao vivo, transcrição inteligente e geração de atas executivas com envio de pendências para a agenda.',
+    passos: [
+      'Clique em "Gravar" para ativar o microfone e transcrever a reunião ao vivo pelo navegador (ou cole o texto da transcrição no campo).',
+      'Clique em "Gerar Ata Executiva com IA": a inteligência artificial analisa a reunião e estrutura o resumo, as decisões e os prazos.',
+      'Revise a ata gerada e envie cada tarefa diretamente para a Agenda & Tarefas com o corretor responsável.',
+    ],
+    dica: 'Privacidade garantida: o áudio não sai do seu navegador. Apenas o texto transcrito é enviado com segurança para a IA.',
   },
 };
 
