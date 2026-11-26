@@ -17,6 +17,14 @@ import {
 import { useGroq } from './hooks/useGroq';
 import SolicitacaoExclusaoDados from './components/privacidade/SolicitacaoExclusaoDados';
 import { FOTOS_EXEMPLO, ehFotoExemplo } from './lib/fotosExemplo';
+// D-23.37 — motores internos reaproveitados no portal público (sem duplicar regra):
+// checklist de certidões/ITBI/escritura, andamento de cartório, laudo de chaves,
+// parcelas SAC/Price e rentabilidade do investidor.
+import { docIdDe, etapaAtual, etapasDoTipo, progresso } from './lib/acompanhamento';
+import { CHECKLIST_CERTIDOES, CHECKLIST_ESCRITURA } from './lib/cartorioEscritura';
+import { AMBIENTES_PADRAO, calcularResumoChecklist } from './lib/vistoriaChaves';
+import { parcelaPrice, parcelaSac, prazoMaximoPorIdade } from './lib/travas-legais';
+import { TAXA_VACANCIA_ADMINISTRACAO, calcularRentabilidadeImovel } from './lib/rentabilidade';
 import {
   ArrowLeft,
   Building2,
@@ -65,6 +73,182 @@ const fmtBRL = (valor) =>
   });
 
 const limparNumero = (val) => Number(String(val || '').replace(/[^\d.,]/g, '').replace(',', '.')) || 0;
+
+const formatarDataPortal = (valor) => {
+  if (!valor) return '';
+  if (valor?.toDate) return valor.toDate().toLocaleDateString('pt-BR');
+  if (typeof valor === 'string' && /^\d{4}-\d{2}-\d{2}/.test(valor)) {
+    const [ano, mes, dia] = valor.slice(0, 10).split('-');
+    return `${dia}/${mes}/${ano}`;
+  }
+  const data = new Date(valor);
+  return Number.isNaN(data.getTime()) ? String(valor) : data.toLocaleDateString('pt-BR');
+};
+
+// ==========================================
+// 🔗 CONSULTA PÚBLICA POR CÓDIGO + PIN
+// Duas fontes reais, nesta ordem:
+//   1. `acompanhamentos_publicos/{CODIGO_PIN}` — espelho público autorizado em
+//      firestore.rules (`get: if true`), usado pela esteira de cartório e pelo
+//      laudo de vistoria publicado pelo corretor.
+//   2. `oficinas/{imob}/vistorias_chaves/{codigo}` — laudo privado do tenant.
+//      Só resolve na sessão da imobiliária (as rules exigem autenticação e
+//      vínculo); para visitante anónimo o Firestore devolve permission-denied e
+//      a interface explica que o laudo é protegido em vez de inventar dados.
+// ==========================================
+function lerImobiliariaIdDaUrl() {
+  try {
+    const params = new URLSearchParams(window.location.search);
+    return (params.get('imobiliariaId') || params.get('imob') || params.get('oficinaId') || '').trim();
+  } catch {
+    return '';
+  }
+}
+
+async function consultarDocumentosPublicos({ codigo = '', pin = '', imobiliariaId = '' } = {}) {
+  const cod = String(codigo || '').trim().toUpperCase();
+  const chave = String(pin || '').replace(/\D/g, '') || String(pin || '').trim();
+  const resultado = { acompanhamento: null, laudoChaves: null, restrito: false };
+
+  if (!cod) return resultado;
+
+  const idPublico = chave ? docIdDe(cod, chave) : '';
+
+  if (idPublico) {
+    try {
+      const snap = await getDoc(doc(db, 'acompanhamentos_publicos', idPublico));
+      if (snap.exists()) {
+        const dados = snap.data() || {};
+        const registro = { id: snap.id, ...dados };
+        if (dados.tipo === 'vistoria_chaves' || Array.isArray(dados.checklist)) {
+          resultado.laudoChaves = registro;
+        } else {
+          resultado.acompanhamento = registro;
+        }
+      }
+    } catch (erro) {
+      console.warn('[Portal] Espelho público indisponível, tentando cache local:', erro?.message);
+      try {
+        const local = localStorage.getItem(`public_acompanhamento_${idPublico}`);
+        if (local) {
+          const dados = JSON.parse(local);
+          const registro = { id: idPublico, ...dados };
+          if (dados.tipo === 'vistoria_chaves' || Array.isArray(dados.checklist)) {
+            resultado.laudoChaves = registro;
+          } else {
+            resultado.acompanhamento = registro;
+          }
+        }
+      } catch {
+        // storage bloqueado: segue sem cache
+      }
+    }
+  }
+
+  if (!resultado.laudoChaves && imobiliariaId) {
+    try {
+      const snap = await getDoc(doc(db, 'oficinas', imobiliariaId, 'vistorias_chaves', cod));
+      if (snap.exists()) {
+        resultado.laudoChaves = { id: snap.id, ...(snap.data() || {}) };
+      }
+    } catch (erro) {
+      // permission-denied é o esperado para visitante anónimo (regra do tenant).
+      resultado.restrito = true;
+      console.warn('[Portal] Laudo privado do tenant exige sessão da imobiliária:', erro?.code || erro?.message);
+    }
+  }
+
+  return resultado;
+}
+
+/** Normaliza o espelho público do laudo de chaves para a tela do portal. */
+function normalizarLaudoVistoria(dados = {}) {
+  const checklist = Array.isArray(dados.checklist) ? dados.checklist : [];
+  const resumo = dados.resumo && typeof dados.resumo === 'object'
+    ? dados.resumo
+    : calcularResumoChecklist(checklist);
+  const medidores = dados.medidores || {};
+
+  const linhasMedidores = [
+    medidores.energiaNumero || medidores.energiaLeitura
+      ? `Energia: medidor ${medidores.energiaNumero || 'S/N'} · leitura ${medidores.energiaLeitura || '0'} kWh`
+      : null,
+    medidores.aguaNumero || medidores.aguaLeitura
+      ? `Água: hidrômetro ${medidores.aguaNumero || 'S/N'} · leitura ${medidores.aguaLeitura || '0'} m³`
+      : null,
+    medidores.gasNumero || medidores.gasLeitura
+      ? `Gás: relógio ${medidores.gasNumero || 'S/N'} · leitura ${medidores.gasLeitura || 'N/A'} m³`
+      : null,
+  ].filter(Boolean);
+
+  return {
+    modo: 'laudo',
+    codigo: dados.codigoImovel || dados.codigo || '',
+    imovel: dados.imovelTitulo || dados.codigoImovel || dados.codigo || 'Imóvel',
+    tipo: dados.modalidade || 'Laudo de Vistoria',
+    data: formatarDataPortal(dados.dataVistoria || dados.atualizadoEm) || '—',
+    totalFotos: Number(dados.totalFotos) || 0,
+    status:
+      Number(resumo.pendentes || 0) > 0
+        ? 'Laudo concluído com reparo pendente'
+        : Number(resumo.ressalvas || 0) > 0
+        ? 'Laudo concluído com ressalvas registadas'
+        : 'Laudo de vistoria concluído e validado',
+    laudo:
+      `Chaves entregues: ${Number(dados.qtdChaves || 0)} · Controles: ${Number(dados.qtdControles || 0)} · ` +
+      `Tags de acesso: ${Number(dados.qtdTags || 0)}.` +
+      (linhasMedidores.length ? `\n${linhasMedidores.join('\n')}` : '') +
+      (dados.observacoesGerais ? `\n${dados.observacoesGerais}` : ''),
+    resumo: {
+      percentualAprovado: Number(resumo.percentualAprovado) || 0,
+      aprovados: Number(resumo.aprovados) || 0,
+      total: Number(resumo.total) || checklist.length,
+      ressalvas: Number(resumo.ressalvas) || 0,
+      pendentes: Number(resumo.pendentes) || 0,
+    },
+    divisoes: checklist.map((item) => ({
+      nome: item.ambiente || 'Ambiente',
+      estado: item.status || 'Verificado',
+      observacao: item.observacao || '',
+    })),
+  };
+}
+
+/** Normaliza o espelho de cartório (acompanhamentos_publicos) para a tela. */
+function normalizarAcompanhamentoPublico(dados = {}) {
+  const etapas = Array.isArray(dados.etapas) && dados.etapas.length ? dados.etapas : etapasDoTipo(dados.tipo);
+  const processo = { ...dados, etapas };
+  const concluidas = Array.isArray(dados.concluidas) ? dados.concluidas : [];
+  const atual = etapaAtual(processo);
+  const pct = progresso(processo);
+
+  return {
+    modo: 'processo',
+    codigo: dados.codigo || '',
+    imovel: dados.imovel || dados.codigo || 'Processo imobiliário',
+    tipo: dados.etapaLabel || 'Cartório & Escritura / Crédito',
+    data: formatarDataPortal(dados.atualizadoEm) || '—',
+    totalFotos: 0,
+    status: dados.status === 'concluido' ? 'Processo concluído' : `Andamento real: ${pct}% concluído`,
+    laudo:
+      `Acompanhamento oficial${dados.tenantNome ? ` da ${dados.tenantNome}` : ''}` +
+      `${dados.corretor ? ` · corretor ${dados.corretor}` : ''}. ` +
+      `Etapa atual: ${etapas[atual] || 'todas as etapas concluídas'}.` +
+      (dados.telefoneContato ? `\nContacto da imobiliária: ${dados.telefoneContato}.` : ''),
+    resumo: {
+      percentualAprovado: pct,
+      aprovados: concluidas.length,
+      total: etapas.length,
+      ressalvas: 0,
+      pendentes: Math.max(0, etapas.length - concluidas.length),
+    },
+    divisoes: etapas.map((nome, indice) => ({
+      nome,
+      estado: concluidas.includes(indice) ? 'Concluída' : indice === atual ? 'Em andamento' : 'Pendente',
+      observacao: '',
+    })),
+  };
+}
 
 // ==========================================
 // 🎯 INTEGRAÇÃO IMEDIATA COM O CRM DO CORRETOR
@@ -363,11 +547,11 @@ function SimuladorFinanciamentoIA({ onBack, leadInicial, oficinaIdPortal }) {
   const [resultado, setResultado] = useState(null);
   const [enviandoLead, setEnviandoLead] = useState(false);
 
-  // Cálculo automático do prazo máximo permitido pela regra bancária (Idade + Prazo <= 80 anos e 6 meses, limitado a 35 anos)
+  // Regra bancária única do sistema (idade + prazo <= 80,5 anos, teto 35) — `travas-legais.js`.
   const idadeNum = Math.max(18, Math.min(80, Math.floor(limparNumero(idadeComprador) || 35)));
-  const prazoMaximoPorIdade = Math.max(1, Math.min(35, Math.floor(80.5 - idadeNum)));
+  const prazoMaximo = prazoMaximoPorIdade(idadeNum);
   const prazoSolicitado = Math.max(1, Math.floor(limparNumero(prazoAnos) || 30));
-  const prazoExcedeIdade = prazoSolicitado > prazoMaximoPorIdade;
+  const prazoExcedeIdade = prazoSolicitado > prazoMaximo;
 
   const handleTrocarModalidade = (novaMod) => {
     setModalidadeCredito(novaMod);
@@ -388,7 +572,7 @@ function SimuladorFinanciamentoIA({ onBack, leadInicial, oficinaIdPortal }) {
 
     const vImovel = limparNumero(valorImovel);
     const vEntrada = limparNumero(entrada);
-    const anosEfetivos = Math.max(1, Math.min(prazoMaximoPorIdade, prazoSolicitado));
+    const anosEfetivos = Math.max(1, Math.min(prazoMaximo, prazoSolicitado));
     const taxaAnual = Math.max(1, limparNumero(jurosAnual) || 10.5);
 
     if (vImovel <= 0 || vEntrada >= vImovel) {
@@ -403,19 +587,13 @@ function SimuladorFinanciamentoIA({ onBack, leadInicial, oficinaIdPortal }) {
     setEnviandoLead(true);
     const financiado = vImovel - vEntrada;
     const meses = anosEfetivos * 12;
-    const taxaMensal = taxaAnual / 100 / 12;
 
-    let primeiraParcela = 0;
-    let ultimaParcela = 0;
-    if (sistema === 'SAC') {
-      const amortizacao = financiado / meses;
-      primeiraParcela = amortizacao + financiado * taxaMensal;
-      ultimaParcela = amortizacao + amortizacao * taxaMensal;
-    } else {
-      const fator = Math.pow(1 + taxaMensal, meses);
-      primeiraParcela = (financiado * (taxaMensal * fator)) / (fator - 1);
-      ultimaParcela = primeiraParcela;
-    }
+    // Mesmo motor de cálculo do restante do sistema (src/lib/travas-legais.js):
+    // SAC por amortização constante e Price pela tabela francesa. Antes a conta
+    // estava duplicada aqui dentro (D-23.37).
+    const parcelasSac = sistema === 'SAC' ? parcelaSac(financiado, taxaAnual, meses) : null;
+    const primeiraParcela = parcelasSac ? parcelasSac.primeira : parcelaPrice(financiado, taxaAnual, meses);
+    const ultimaParcela = parcelasSac ? parcelasSac.ultima : primeiraParcela;
 
     const rendaMinima = primeiraParcela / 0.3;
 
@@ -581,7 +759,7 @@ function SimuladorFinanciamentoIA({ onBack, leadInicial, oficinaIdPortal }) {
           {/* PRAZO EM ANOS COM AJUDA (?) */}
           <div>
             <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 block mb-1.5">
-              Prazo Desejado (Anos — Máx. p/ sua idade: {prazoMaximoPorIdade} anos)
+              Prazo Desejado (Anos — Máx. p/ sua idade: {prazoMaximo} anos)
               <BotaoAjudaCampo
                 id="prazo_bancos"
                 topicoAtivo={topicoAjudaAtivo}
@@ -638,10 +816,10 @@ function SimuladorFinanciamentoIA({ onBack, leadInicial, oficinaIdPortal }) {
             </p>
             <p className="text-slate-300 mt-0.5">
               Para a idade informada de <strong className="text-white">{idadeNum} anos</strong>, o prazo máximo permitido pelas instituições financeiras é de{' '}
-              <strong className="text-[#10b981]">{prazoMaximoPorIdade} anos ({prazoMaximoPorIdade * 12} meses)</strong>.
+              <strong className="text-[#10b981]">{prazoMaximo} anos ({prazoMaximo * 12} meses)</strong>.
               {prazoExcedeIdade && (
                 <span className="block mt-1 text-amber-400 font-bold">
-                  ⚠️ O prazo digitado ({prazoSolicitado} anos) ultrapassa o teto para a sua idade e será ajustado automaticamente para {prazoMaximoPorIdade} anos no cálculo.
+                  ⚠️ O prazo digitado ({prazoSolicitado} anos) ultrapassa o teto para a sua idade e será ajustado automaticamente para {prazoMaximo} anos no cálculo.
                 </span>
               )}
             </p>
@@ -714,41 +892,84 @@ function SimuladorFinanciamentoIA({ onBack, leadInicial, oficinaIdPortal }) {
 // ==========================================
 // 2. GUIA DE DOCUMENTAÇÃO IMOBILIÁRIA
 // ==========================================
-const GUIAS_DOCUMENTACAO = {
+// 📋 GUIA DE DOCUMENTAÇÃO — reaproveita a base interna (D-23.37)
+// Certidões, ITBI, escritura e registro vêm de `src/lib/cartorioEscritura.js`
+// (mesma base da Esteira de Cartório & Escritura do painel); a vistoria de
+// locação vem de `AMBIENTES_PADRAO` (Vistoria & Entrega de Chaves). Aqui ficam
+// só os rótulos comerciais e os documentos pessoais do banco.
+// ==========================================
+const TITULOS_GUIA_DOCUMENTACAO = {
   compra_venda: {
     titulo: 'Compra e Venda de Imóvel (À Vista ou Financiado)',
     custos: 'ITBI (2% a 3% do valor venal/transação) + Escritura Pública + Registro no Cartório de Imóveis.',
-    itens: [
-      'Matrícula Atualizada do Imóvel com Certidão de Ônus Reais (validade 30 dias)',
-      'Certidão Negativa de Débitos de IPTU (Prefeitura) e Condomínio',
-      'RG, CPF, Comprovante de Residência e Certidão de Estado Civil (Comprador e Vendedor)',
-      'Certidões Negativas Cíveis, Trabalhistas e Federais dos Vendedores',
-      'Contrato Particular de Promessa de Compra e Venda assinado',
-    ],
   },
   financiamento_fgts: {
     titulo: 'Financiamento Bancário & Uso de FGTS',
     custos: 'Taxa de Avaliação de Engenharia do Banco + Seguro MIP/DFI embutido nas parcelas.',
-    itens: [
-      'Comprovantes de Renda dos últimos 3 meses (Holerites, Extratos ou DECORE)',
-      'Declaração Completa de Imposto de Renda (IRPF) com Recibo de Entrega',
-      'Extrato Atualizado do FGTS e Carteira de Trabalho (para uso do FGTS)',
-      'Laudo de Vistoria de Engenharia do Banco financiador',
-      'Declaração de 1º imóvel (caso utilize benefício de redução de emolumentos)',
-    ],
   },
   locacao: {
     titulo: 'Locação Residencial ou Comercial',
     custos: 'Garantia locatícia (Caução até 3 aluguéis, Seguro-Fiança ou Fiador com imóvel quitado).',
-    itens: [
-      'Documento de Identidade (RG/CNH), CPF e Comprovante de Renda (> 3x o valor do aluguel)',
-      'Certidão de Nada Consta (SPC/Serasa) e referências comerciais',
-      'Laudo de Vistoria de Entrada assinado pelas partes com registo fotográfico',
-      'Contrato de Locação nos termos da Lei do Inquilinato (Lei 8.245/91)',
-      'Comprovante de transferência de titularidade de Energia e Água/Saneamento',
-    ],
   },
 };
+
+const DOCUMENTOS_PESSOAIS = [
+  'RG, CPF, Comprovante de Residência e Certidão de Estado Civil (Comprador e Vendedor)',
+  'Contrato Particular de Promessa de Compra e Venda assinado',
+];
+
+const DOCUMENTOS_FINANCIAMENTO = [
+  'Comprovantes de Renda dos últimos 3 meses (Holerites, Extratos ou DECORE)',
+  'Declaração Completa de Imposto de Renda (IRPF) com Recibo de Entrega',
+  'Extrato Atualizado do FGTS e Carteira de Trabalho (para uso do FGTS)',
+  'Laudo de Vistoria de Engenharia do Banco financiador',
+  'Declaração de 1º imóvel (caso utilize benefício de redução de emolumentos)',
+];
+
+const DOCUMENTOS_LOCACAO = [
+  'Documento de Identidade (RG/CNH), CPF e Comprovante de Renda (> 3x o valor do aluguel)',
+  'Certidão de Nada Consta (SPC/Serasa) e referências comerciais',
+  'Contrato de Locação nos termos da Lei do Inquilinato (Lei 8.245/91)',
+  'Comprovante de transferência de titularidade de Energia e Água/Saneamento',
+];
+
+/** Etapa 1 da esteira interna (certidões/CNDs) já formatada com prazo. */
+function itensCertidoesInternas() {
+  return CHECKLIST_CERTIDOES.map(
+    (item) => `${item.rotulo} — ${item.detalhe}${item.validadeDias ? ` (validade ${item.validadeDias} dias)` : ''}`,
+  );
+}
+
+/** Etapa 2 da esteira interna (ITBI, escritura e registro) já formatada. */
+function itensEscrituraInternas() {
+  return CHECKLIST_ESCRITURA.map((item) => `${item.rotulo} — ${item.detalhe}`);
+}
+
+function montarGuiaDocumentacao(modalidade = 'compra_venda') {
+  const base = TITULOS_GUIA_DOCUMENTACAO[modalidade] || TITULOS_GUIA_DOCUMENTACAO.compra_venda;
+
+  if (modalidade === 'locacao') {
+    return {
+      ...base,
+      itens: [
+        ...DOCUMENTOS_LOCACAO,
+        `Laudo de Vistoria de Entrada com registo fotográfico dos ${AMBIENTES_PADRAO.length} ambientes: ${AMBIENTES_PADRAO.join(', ')}`,
+      ],
+    };
+  }
+
+  if (modalidade === 'financiamento_fgts') {
+    return {
+      ...base,
+      itens: [...itensCertidoesInternas(), ...itensEscrituraInternas(), ...DOCUMENTOS_FINANCIAMENTO],
+    };
+  }
+
+  return {
+    ...base,
+    itens: [...itensCertidoesInternas(), ...itensEscrituraInternas(), ...DOCUMENTOS_PESSOAIS],
+  };
+}
 
 function GuiaDocumentacaoImobi({ onBack, leadInicial, oficinaIdPortal }) {
   const { analyzeText, loading } = useGroq();
@@ -769,7 +990,7 @@ function GuiaDocumentacaoImobi({ onBack, leadInicial, oficinaIdPortal }) {
     }
     setErroQualificacao('');
 
-    const guia = GUIAS_DOCUMENTACAO[modalidade] || GUIAS_DOCUMENTACAO.compra_venda;
+    const guia = montarGuiaDocumentacao(modalidade);
 
     await registrarLeadNoCRM({
       nome,
@@ -796,7 +1017,7 @@ function GuiaDocumentacaoImobi({ onBack, leadInicial, oficinaIdPortal }) {
     setRelatorioLiberado(true);
   };
 
-  const guiaAtual = GUIAS_DOCUMENTACAO[modalidade] || GUIAS_DOCUMENTACAO.compra_venda;
+  const guiaAtual = montarGuiaDocumentacao(modalidade);
 
   return (
     <div className="w-full max-w-3xl mx-auto pb-20 px-4 mt-8">
@@ -916,8 +1137,9 @@ function GuiaDocumentacaoImobi({ onBack, leadInicial, oficinaIdPortal }) {
 // ==========================================
 // 3. STATUS DE VISTORIA IMOBILIÁRIA
 // ==========================================
-function ConsultaStatusVistoria({ onBack, leadInicial, codigoInicial, oficinaIdPortal }) {
+function ConsultaStatusVistoria({ onBack, leadInicial, codigoInicial, pinInicial, oficinaIdPortal }) {
   const [codigoBusca, setCodigoBusca] = useState(codigoInicial || '');
+  const [pinBusca, setPinBusca] = useState(pinInicial || '');
   const [tipoVistoria, setTipoVistoria] = useState('Vistoria de Entrada');
   const [nome, setNome] = useState(leadInicial?.nome || '');
   const [telefone, setTelefone] = useState(leadInicial?.telefone || '');
@@ -925,14 +1147,23 @@ function ConsultaStatusVistoria({ onBack, leadInicial, codigoInicial, oficinaIdP
   const [buscando, setBuscando] = useState(false);
   const [resultadoVistoria, setResultadoVistoria] = useState(null);
 
+  // D-23.37 — a consulta deixa de ser "procura por texto" e passa a abrir o
+  // documento real: laudo de chaves do tenant (`vistorias_chaves`) ou o espelho
+  // público do processo (`acompanhamentos_publicos`), sempre com código + PIN.
   const consultarVistoria = async () => {
     const telDigitos = String(telefone || '').replace(/\D/g, '');
     if (!nome.trim() || telDigitos.length < 8) {
       setErroQualificacao('Informe o seu Nome e WhatsApp/Telemóvel para visualizar o Relatório de Status de Vistoria.');
       return;
     }
-    if (!codigoBusca.trim()) {
-      alert('Digite o Código do Imóvel, Endereço ou CPF/WhatsApp vinculado à vistoria.');
+    const codigo = codigoBusca.trim();
+    const pin = String(pinBusca || '').replace(/\D/g, '');
+    if (!codigo) {
+      alert('Digite o Código do Imóvel/processo que a imobiliária enviou (ex.: IMB-1024).');
+      return;
+    }
+    if (pin.length !== 4) {
+      alert('Digite o PIN de 4 dígitos que acompanha o código (normalmente os 4 últimos dígitos do seu WhatsApp).');
       return;
     }
     setErroQualificacao('');
@@ -942,16 +1173,32 @@ function ConsultaStatusVistoria({ onBack, leadInicial, codigoInicial, oficinaIdP
       nome,
       telefone,
       interesse: `Status de Vistoria (${tipoVistoria})`,
-      bairro: codigoBusca.trim(),
+      bairro: codigo.toUpperCase(),
       orcamento: 0,
-      detalhes: `Consulta pública de ${tipoVistoria} para a referência: ${codigoBusca.trim()}`,
+      detalhes: `Consulta pública de ${tipoVistoria} com código ${codigo.toUpperCase()} + PIN de 4 dígitos.`,
       oficinaIdPreferencial: oficinaIdPortal,
     });
 
+    const imobiliariaId = oficinaIdPortal || lerImobiliariaIdDaUrl();
+    const documentos = await consultarDocumentosPublicos({ codigo, pin, imobiliariaId });
+
+    if (documentos.laudoChaves) {
+      setResultadoVistoria({ encontrada: true, ...normalizarLaudoVistoria(documentos.laudoChaves) });
+      setBuscando(false);
+      return;
+    }
+
+    if (documentos.acompanhamento) {
+      setResultadoVistoria({ encontrada: true, ...normalizarAcompanhamentoPublico(documentos.acompanhamento) });
+      setBuscando(false);
+      return;
+    }
+
+    // Legado: vistorias antigas publicadas em `vistorias` com `publico: true`.
     let encontrada = null;
     try {
       const snap = await getDocs(query(collectionGroup(db, 'vistorias'), where('publico', '==', true), limit(30)));
-      const termo = codigoBusca.trim().toLowerCase();
+      const termo = codigo.toLowerCase();
       snap.forEach((docSnap) => {
         const d = docSnap.data() || {};
         const textoAlvo = `${d.imovel || ''} ${d.proprietario || ''} ${d.inquilino || ''} ${docSnap.id}`.toLowerCase();
@@ -966,34 +1213,35 @@ function ConsultaStatusVistoria({ onBack, leadInicial, codigoInicial, oficinaIdP
     if (encontrada) {
       setResultadoVistoria({
         encontrada: true,
-        imovel: encontrada.imovel || codigoBusca.toUpperCase(),
+        modo: 'legado',
+        imovel: encontrada.imovel || codigo.toUpperCase(),
         tipo: encontrada.tipo || tipoVistoria,
-        data: encontrada.data || new Date().toLocaleDateString('pt-BR'),
+        data: formatarDataPortal(encontrada.data || encontrada.dataCriacao) || new Date().toLocaleDateString('pt-BR'),
         totalFotos: encontrada.totalFotos || (encontrada.divisoes || []).length * 3,
-        status: 'Laudo Fotográfico Concluído e Validado',
+        status: 'Laudo fotográfico concluído e validado',
         laudo:
           encontrada.laudo ||
-          'Vistoria registada por divisão (Sala, Cozinha, Quartos, W.C. e Exterior) com fotos anexadas e conferência de medidores e chaves.',
+          'Vistoria registada por divisão com fotos anexadas e conferência de medidores e chaves.',
         divisoes: Array.isArray(encontrada.divisoes) ? encontrada.divisoes : [],
       });
     } else {
       setResultadoVistoria({
         encontrada: false,
-        imovel: codigoBusca.toUpperCase(),
+        modo: 'nao_encontrado',
+        imovel: codigo.toUpperCase(),
         tipo: tipoVistoria,
         data: new Date().toLocaleDateString('pt-BR'),
         totalFotos: 0,
-        status: 'Solicitação de Laudo Registada — Em Conferência pelo Corretor',
-        laudo:
-          `Recebemos a sua consulta referente a "${codigoBusca.toUpperCase()}" (${tipoVistoria}). ` +
-          `O corretor responsável já recebeu a sua identificação no CRM e enviará o link do Laudo Fotográfico com IA diretamente para o seu WhatsApp (${telefone}).`,
-        divisoes: [
-          { nome: 'Sala & Estar', estado: 'Em conferência' },
-          { nome: 'Cozinha & Área Técnica', estado: 'Em conferência' },
-          { nome: 'Quartos / Suítes', estado: 'Em conferência' },
-          { nome: 'W.C. & Instalações Hidráulicas', estado: 'Em conferência' },
-          { nome: 'Exterior / Entrega de Chaves', estado: 'Em conferência' },
-        ],
+        status: documentos.restrito
+          ? 'Documento protegido — pedido registado'
+          : 'Documento não localizado — pedido registado',
+        laudo: documentos.restrito
+          ? `O código ${codigo.toUpperCase()} existe na base privada da imobiliária, mas esse laudo está protegido: ` +
+            `as regras do sistema só o abrem para a própria imobiliária autenticada. Registámos o seu pedido no CRM e o corretor ` +
+            `liberta o acesso (ou reenvia o laudo) para o seu WhatsApp (${telefone}).`
+          : `Não encontrámos nenhum laudo ou processo com o código ${codigo.toUpperCase()} e o PIN informado. ` +
+            `Confirme os 4 dígitos enviados pela imobiliária — registámos o seu pedido no CRM e o corretor responde no WhatsApp (${telefone}).`,
+        divisoes: [],
       });
     }
 
@@ -1016,17 +1264,35 @@ function ConsultaStatusVistoria({ onBack, leadInicial, codigoInicial, oficinaIdP
       </div>
 
       <div className="rounded-3xl border border-slate-800 bg-slate-950/90 p-6 md:p-8 space-y-6 shadow-2xl">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div>
-            <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 block mb-1.5">
-              Código do Imóvel, Endereço ou CPF *
+            <label htmlFor="portal-vistoria-codigo" className="text-[10px] font-black uppercase tracking-widest text-slate-400 block mb-1.5">
+              Código do Imóvel / Processo *
             </label>
             <input
+              id="portal-vistoria-codigo"
               type="text"
-              placeholder="Ex: IMOB-204, Apto 302 ou CPF"
+              autoComplete="off"
+              placeholder="Ex: IMB-1024"
               value={codigoBusca}
               onChange={(e) => setCodigoBusca(e.target.value)}
               className="w-full p-3.5 rounded-xl bg-[#020408] border border-slate-800 text-white font-bold outline-none focus:border-[#10b981]"
+            />
+          </div>
+          <div>
+            <label htmlFor="portal-vistoria-pin" className="text-[10px] font-black uppercase tracking-widest text-slate-400 block mb-1.5">
+              PIN de 4 dígitos *
+            </label>
+            <input
+              id="portal-vistoria-pin"
+              type="password"
+              inputMode="numeric"
+              autoComplete="off"
+              maxLength={4}
+              placeholder="••••"
+              value={pinBusca}
+              onChange={(e) => setPinBusca(e.target.value.replace(/\D/g, '').slice(0, 4))}
+              className="w-full p-3.5 rounded-xl bg-[#020408] border border-slate-800 text-white font-bold text-center tracking-[0.4em] outline-none focus:border-[#10b981]"
             />
           </div>
           <div>
@@ -1045,6 +1311,10 @@ function ConsultaStatusVistoria({ onBack, leadInicial, codigoInicial, oficinaIdP
             </select>
           </div>
         </div>
+        <p className="text-[10.5px] leading-relaxed text-slate-500">
+          O código e o PIN de 4 dígitos são enviados pela imobiliária por WhatsApp. O mesmo formulário abre o
+          andamento do processo de cartório/escritura e o laudo de entrega de chaves.
+        </p>
 
         <BlocoQualificacaoLead
           nome={nome}
@@ -1079,6 +1349,30 @@ function ConsultaStatusVistoria({ onBack, leadInicial, codigoInicial, oficinaIdP
           </div>
 
           <p className="text-sm text-slate-300 leading-relaxed whitespace-pre-line">{resultadoVistoria.laudo}</p>
+
+          {resultadoVistoria.resumo && (
+            <div className="rounded-2xl border border-slate-800 bg-[#020408] p-4">
+              <div className="flex flex-wrap items-center justify-between gap-2 text-[11px] font-black uppercase tracking-wider">
+                <span className="text-[#10b981]">
+                  {resultadoVistoria.modo === 'processo' ? 'Progresso do processo' : 'Conformidade do laudo'}
+                </span>
+                <span className="text-white">{resultadoVistoria.resumo.percentualAprovado}%</span>
+              </div>
+              <div className="mt-2 h-2 w-full overflow-hidden rounded-full bg-slate-800">
+                <div
+                  className="h-full rounded-full bg-[#10b981] transition-all"
+                  style={{ width: `${Math.min(100, Math.max(0, resultadoVistoria.resumo.percentualAprovado))}%` }}
+                />
+              </div>
+              <p className="mt-2 text-[10.5px] leading-relaxed text-slate-500">
+                {resultadoVistoria.modo === 'processo'
+                  ? `${resultadoVistoria.resumo.aprovados} de ${resultadoVistoria.resumo.total} etapas concluídas.`
+                  : `${resultadoVistoria.resumo.aprovados} de ${resultadoVistoria.resumo.total} ambientes aprovados` +
+                    `${resultadoVistoria.resumo.ressalvas ? ` · ${resultadoVistoria.resumo.ressalvas} com ressalva` : ''}` +
+                    `${resultadoVistoria.resumo.pendentes ? ` · ${resultadoVistoria.resumo.pendentes} com reparo pendente` : ''}.`}
+              </p>
+            </div>
+          )}
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
             {(resultadoVistoria.divisoes || [])?.map((div, i) => (
@@ -1130,13 +1424,15 @@ function CalculadoraRentabilidadeROI({ onBack, leadInicial, oficinaIdPortal }) {
       return;
     }
 
-    const receitaLiquidaMensal = Math.max(0, vAluguel - vDespesas);
-    const receitaLiquidaAnual = receitaLiquidaMensal * 12;
-    const yieldMensal = (receitaLiquidaMensal / vCompra) * 100;
-    const yieldAnual = (receitaLiquidaAnual / vCompra) * 100;
-    const retornoTotalAnual = yieldAnual + taxaVal;
-    const paybackAnos = receitaLiquidaAnual > 0 ? vCompra / receitaLiquidaAnual : 0;
-    const patrimonio5Anos = vCompra * Math.pow(1 + taxaVal / 100, 5) + receitaLiquidaAnual * 5;
+    // Motor único do sistema (`src/lib/rentabilidade.js`): mesma regra do laudo
+    // executivo — cap rate líquido de 8% de vacância/administração e ROI de
+    // 5 anos somando valorização + renda acumulada (D-23.37).
+    const relatorio = calcularRentabilidadeImovel({
+      valorCompra: vCompra,
+      aluguelMensal: vAluguel,
+      despesasMensais: vDespesas,
+      valorizacaoAnualPct: taxaVal,
+    });
 
     await registrarLeadNoCRM({
       nome,
@@ -1144,19 +1440,21 @@ function CalculadoraRentabilidadeROI({ onBack, leadInicial, oficinaIdPortal }) {
       interesse: 'Investimento Imobiliário (ROI)',
       bairro: 'Calculadora de Rentabilidade',
       orcamento: vCompra,
-      detalhes: `ROI calculado: Imóvel ${fmtBRL(vCompra)}, Aluguel líquido ${fmtBRL(receitaLiquidaMensal)}/mês, Yield Anual ${yieldAnual.toFixed(2)}% a.a., Retorno Total c/ valorização ${retornoTotalAnual.toFixed(2)}% a.a.`,
+      detalhes:
+        `ROI calculado: Imóvel ${fmtBRL(vCompra)}, Aluguel líquido ${fmtBRL(relatorio.receitaLiquidaMensal)}/mês ` +
+        `(vacância + administração ${(relatorio.taxaVacanciaAdministracao * 100).toFixed(0)}% já descontada), ` +
+        `Yield Anual ${relatorio.yieldAnual.toFixed(2)}% a.a., Retorno Total c/ valorização ${relatorio.retornoTotalAnual.toFixed(2)}% a.a.`,
       oficinaIdPreferencial: oficinaIdPortal,
     });
 
     setRelatorioROI({
+      ...relatorio,
       vCompra,
-      receitaLiquidaMensal,
-      receitaLiquidaAnual,
-      yieldMensal,
-      yieldAnual,
-      retornoTotalAnual,
-      paybackAnos,
-      patrimonio5Anos,
+      yieldMensal: relatorio.yieldMensal,
+      yieldAnual: relatorio.yieldAnual,
+      retornoTotalAnual: relatorio.retornoTotalAnual,
+      paybackAnos: relatorio.paybackAnos,
+      patrimonio5Anos: relatorio.patrimonioFinal,
     });
   };
 
@@ -1267,10 +1565,19 @@ function CalculadoraRentabilidadeROI({ onBack, leadInicial, oficinaIdPortal }) {
             <div className="rounded-2xl bg-[#020408] border border-slate-800 p-4">
               <p className="text-xs text-slate-400">Renda Passiva Anual Líquida</p>
               <p className="text-2xl font-black text-white mt-1">{fmtBRL(relatorioROI.receitaLiquidaAnual)}</p>
+              <p className="mt-1 text-[10.5px] leading-relaxed text-slate-500">
+                Já descontados {fmtBRL(relatorioROI.custoVacanciaAdministracao)}/mês de vacância e administração
+                ({Math.round((relatorioROI.taxaVacanciaAdministracao || TAXA_VACANCIA_ADMINISTRACAO) * 100)}%) e{' '}
+                {fmtBRL(relatorioROI.despesasMensais)} de custos fixos — mesma regra do laudo executivo.
+              </p>
             </div>
             <div className="rounded-2xl bg-[#020408] border border-slate-800 p-4">
-              <p className="text-xs text-slate-400">Património + Rendas Acumuladas em 5 Anos</p>
+              <p className="text-xs text-slate-400">Património + Rendas Acumuladas em {relatorioROI.anos} Anos</p>
               <p className="text-2xl font-black text-[#10b981] mt-1">{fmtBRL(relatorioROI.patrimonio5Anos)}</p>
+              <p className="mt-1 text-[10.5px] leading-relaxed text-slate-500">
+                ROI total de {relatorioROI.roiTotalPct.toFixed(1)}% no período · valorização estimada de{' '}
+                {fmtBRL(relatorioROI.lucroPatrimonial)} sobre o valor de compra.
+              </p>
             </div>
           </div>
         </div>
@@ -1556,6 +1863,11 @@ export default function PortalCliente() {
   const [imoveisVitrine, setImoveisVitrine] = useState([]);
   const [filtroVitrine, setFiltroVitrine] = useState('Todos');
   const [fotoAtivaPorCard, setFotoAtivaPorCard] = useState({});
+  // D-23.37 — filtros reais da vitrine: cidade (gerada dos imóveis publicados),
+  // busca livre por título/bairro/código e vínculo por imobiliária (?imob=).
+  const [cidadeFiltro, setCidadeFiltro] = useState('Todas');
+  const [buscaVitrine, setBuscaVitrine] = useState('');
+  const [filtroImobiliaria, setFiltroImobiliaria] = useState('');
   // Vitrine sem imóvel real publicado cai nos exemplos de tela: a página avisa
   // e cada cartão ganha selo "Exemplo" (D-22.04 — nada de anúncio fictício).
   const [vitrineEmDemonstracao, setVitrineEmDemonstracao] = useState(false);
@@ -1568,6 +1880,20 @@ export default function PortalCliente() {
       const salvo = JSON.parse(localStorage.getItem('lead_qualificado_imobi') || 'null');
       if (salvo?.nome) setNomePortal(salvo.nome);
       if (salvo?.telefone) setWhatsappPortal(salvo.telefone);
+    } catch (e) {
+      console.warn(e);
+    }
+
+    // Link direto de consulta (?c=CODIGO&s=PIN) abre a ferramenta de vistoria.
+    try {
+      const params = new URLSearchParams(window.location.search);
+      const codigoLink = (params.get('c') || '').trim();
+      const pinLink = (params.get('s') || '').replace(/\D/g, '');
+      if (codigoLink && pinLink.length === 4) {
+        setIdentificador(codigoLink);
+        setSenha(pinLink);
+        setAbaAtiva('vistoria');
+      }
     } catch (e) {
       console.warn(e);
     }
@@ -1646,6 +1972,20 @@ export default function PortalCliente() {
         unicos.push(item);
       });
 
+      // ?imob= (ou ?imobiliariaId=) restringe a vitrine àquela imobiliária.
+      // Com filtro de tenant NÃO cai no cenário de demonstração: mostrar imóvel
+      // fictício de outra carteira seria anúncio enganoso (D-22.04/D-23.37).
+      const porImobiliaria = imobiliariaIdDireto
+        ? unicos.filter((item) => String(item?.oficinaId || '') === imobiliariaIdDireto)
+        : unicos;
+
+      if (imobiliariaIdDireto) {
+        setFiltroImobiliaria(imobiliariaIdDireto);
+        setImoveisVitrine(porImobiliaria);
+        setVitrineEmDemonstracao(porImobiliaria.length === 0);
+        return;
+      }
+
       setImoveisVitrine(unicos.length > 0 ? unicos : IMOVEIS_VITRINE_DEMONSTRACAO);
       setVitrineEmDemonstracao(unicos.length === 0);
     };
@@ -1713,9 +2053,49 @@ export default function PortalCliente() {
       const resultados = [];
       let idDaImobiliaria = null;
       const termo = idTrim.toLowerCase();
-      const digitosBusca = idTrim.replace(/\D/g, '');
+      const imobiliariaIdUrl = oficinaIdPortal || lerImobiliariaIdDaUrl();
 
-      // 1. Procura em vistorias
+      // 1. Documentos reais por código + PIN (D-23.37):
+      //    acompanhamentos_publicos (processo de cartório) e vistorias_chaves
+      //    (laudo de entrega de chaves do tenant).
+      if (String(senha || '').replace(/\D/g, '').length === 4) {
+        const documentos = await consultarDocumentosPublicos({
+          codigo: idTrim,
+          pin: senha,
+          imobiliariaId: imobiliariaIdUrl,
+        });
+
+        if (documentos.acompanhamento) {
+          const andamento = normalizarAcompanhamentoPublico(documentos.acompanhamento);
+          resultados.push({
+            id: documentos.acompanhamento.id,
+            categoria: 'Andamento do Processo • Cartório & Crédito',
+            titulo: andamento.imovel,
+            resumo: andamento.laudo,
+            data: documentos.acompanhamento.atualizadoEm,
+            valor: null,
+            divisoes: andamento.divisoes,
+            resumoProgresso: andamento.resumo,
+          });
+          if (!idDaImobiliaria) idDaImobiliaria = documentos.acompanhamento.tenantId || null;
+        }
+
+        if (documentos.laudoChaves) {
+          const laudo = normalizarLaudoVistoria(documentos.laudoChaves);
+          resultados.push({
+            id: documentos.laudoChaves.id || `laudo_${idTrim}`,
+            categoria: 'Laudo de Vistoria & Entrega de Chaves',
+            titulo: laudo.imovel,
+            resumo: laudo.laudo,
+            data: documentos.laudoChaves.dataVistoria || documentos.laudoChaves.atualizadoEm,
+            valor: null,
+            divisoes: laudo.divisoes,
+            resumoProgresso: laudo.resumo,
+          });
+        }
+      }
+
+      // 2. Procura em vistorias (legado público)
       try {
         const snapVist = await getDocs(query(collectionGroup(db, 'vistorias'), where('publico', '==', true), limit(40)));
         snapVist.forEach((docSnap) => {
@@ -1811,6 +2191,42 @@ export default function PortalCliente() {
     imoveisVitrine.length > 0 &&
     !imoveisVitrine.some((imovel) => String(imovel?.id || '') === imovelIdDireto);
 
+  // D-23.37 — cidade e busca são geradas/derivadas dos imóveis realmente
+  // publicados (publico: true). Cartão de demonstração nunca alimenta o filtro.
+  const imoveisReaisPublicados = imoveisVitrine.filter((imovel) => !String(imovel?.id || '').startsWith('vit_demo'));
+  const temImovelRealPublicado = imoveisReaisPublicados.length > 0;
+  const cidadesVitrine = Array.from(
+    new Set(
+      imoveisReaisPublicados
+        .map((imovel) => String(imovel?.cidade || imovel?.municipio || '').trim())
+        .filter(Boolean),
+    ),
+  ).sort((a, b) => a.localeCompare(b, 'pt-BR'));
+
+  const imoveisFiltrados = (imoveisVitrine || []).filter((imv) => {
+    if (imovelIdDireto && String(imv?.id || '') !== imovelIdDireto) return false;
+
+    if (cidadeFiltro !== 'Todas') {
+      const cidadeImovel = String(imv?.cidade || imv?.municipio || '').trim();
+      if (cidadeImovel !== cidadeFiltro) return false;
+    }
+
+    const termoBusca = buscaVitrine.trim().toLowerCase();
+    if (termoBusca) {
+      const alvo = `${imv?.titulo || ''} ${imv?.bairro || ''} ${imv?.codigo || ''} ${imv?.tipo || ''} ${imv?.cidade || ''}`.toLowerCase();
+      if (!alvo.includes(termoBusca)) return false;
+    }
+
+    if (filtroVitrine === 'Todos') return true;
+    if (filtroVitrine === 'MCMV') return /minha casa|social/i.test(imv?.padraoImovel || '');
+    if (filtroVitrine === 'Medio') return /m[eé]dio/i.test(imv?.padraoImovel || 'Médio Padrão');
+    if (filtroVitrine === 'Alto') return /alto|luxo/i.test(imv?.padraoImovel || '');
+    if (filtroVitrine === 'Locacao') return imv?.finalidade === 'Locação';
+    if (filtroVitrine === 'LotesRurais')
+      return /lote|terreno|fazenda|rural|ch[aá]cara|s[ií]tio/i.test(imv?.tipo || '');
+    return true;
+  });
+
   return (
     <div className="flex flex-col min-h-screen bg-[#020408] text-white font-sans overflow-x-hidden pt-14">
       {/* HEADER SECUNDÁRIO */}
@@ -1870,36 +2286,72 @@ export default function PortalCliente() {
                 </div>
 
                 {/* Filtros da Vitrine Digital */}
-                <div className="flex flex-wrap items-center gap-1.5">
-                  {[
-                    { id: 'Todos', label: 'Todos' },
-                    { id: 'MCMV', label: 'Minha Casa, Minha Vida' },
-                    { id: 'Medio', label: 'Médio Padrão' },
-                    { id: 'Alto', label: 'Alto Padrão / Luxo' },
-                    { id: 'LotesRurais', label: 'Lotes & Fazendas' },
-                    { id: 'Locacao', label: 'Locação' },
-                  ]?.map((f) => {
-                    const ativo = filtroVitrine === f.id;
-                    return (
-                      <button
-                        key={f.id}
-                        type="button"
-                        onClick={() => setFiltroVitrine(f.id)}
-                        aria-pressed={ativo}
-                        className={`px-3 py-1.5 rounded-xl text-[11px] font-black transition cursor-pointer border ${
-                          ativo
-                            ? 'bg-[#10b981] text-[#020408] border-[#10b981]'
-                            : 'bg-slate-950 text-slate-300 border-slate-800 hover:border-[#10b981]'
-                        }`}
-                      >
-                        {f.label}
-                      </button>
-                    );
-                  })}
+                <div className="flex w-full flex-col gap-2.5 sm:w-auto">
+                  <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+                    <label htmlFor="vitrine-busca" className="sr-only">Buscar por bairro ou título</label>
+                    <div className="relative">
+                      <Search size={13} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" />
+                      <input
+                        id="vitrine-busca"
+                        type="search"
+                        value={buscaVitrine}
+                        onChange={(e) => setBuscaVitrine(e.target.value)}
+                        placeholder="Buscar bairro ou título"
+                        className="w-full sm:w-56 rounded-xl border border-slate-800 bg-slate-950 py-1.5 pl-8 pr-3 text-[11px] font-bold text-white outline-none placeholder:text-slate-500 focus:border-[#10b981]"
+                      />
+                    </div>
+                    <label htmlFor="vitrine-cidade" className="sr-only">Filtrar por cidade</label>
+                    <select
+                      id="vitrine-cidade"
+                      value={cidadeFiltro}
+                      onChange={(e) => setCidadeFiltro(e.target.value)}
+                      disabled={cidadesVitrine.length === 0}
+                      className="rounded-xl border border-slate-800 bg-slate-950 px-3 py-1.5 text-[11px] font-bold text-white outline-none focus:border-[#10b981] disabled:opacity-50"
+                    >
+                      <option value="Todas">Todas as cidades</option>
+                      {cidadesVitrine.map((cidade) => (
+                        <option key={cidade} value={cidade}>{cidade}</option>
+                      ))}
+                    </select>
+                  </div>
+                  <div className="flex flex-wrap items-center gap-1.5">
+                    {[
+                      { id: 'Todos', label: 'Todos' },
+                      { id: 'MCMV', label: 'Minha Casa, Minha Vida' },
+                      { id: 'Medio', label: 'Médio Padrão' },
+                      { id: 'Alto', label: 'Alto Padrão / Luxo' },
+                      { id: 'LotesRurais', label: 'Lotes & Fazendas' },
+                      { id: 'Locacao', label: 'Locação' },
+                    ]?.map((f) => {
+                      const ativo = filtroVitrine === f.id;
+                      return (
+                        <button
+                          key={f.id}
+                          type="button"
+                          onClick={() => setFiltroVitrine(f.id)}
+                          aria-pressed={ativo}
+                          className={`px-3 py-1.5 rounded-xl text-[11px] font-black transition cursor-pointer border ${
+                            ativo
+                              ? 'bg-[#10b981] text-[#020408] border-[#10b981]'
+                              : 'bg-slate-950 text-slate-300 border-slate-800 hover:border-[#10b981]'
+                          }`}
+                        >
+                          {f.label}
+                        </button>
+                      );
+                    })}
+                  </div>
+                  {filtroImobiliaria && (
+                    <p className="text-[10.5px] leading-relaxed text-slate-500">
+                      Vitrine filtrada pela imobiliária do link (<code className="text-slate-400">{filtroImobiliaria}</code>).
+                    </p>
+                  )}
                 </div>
               </div>
 
-              {vitrineEmDemonstracao && (
+              {/* O aviso de demonstração só existe quando NÃO há nenhum imóvel
+                  real publicado (D-22.04). Um único anúncio real já o remove. */}
+              {vitrineEmDemonstracao && !temImovelRealPublicado && (
                 <div
                   role="status"
                   className="rounded-2xl border border-amber-500/40 bg-amber-500/10 px-4 py-3 text-xs leading-relaxed text-amber-200"
@@ -1916,19 +2368,16 @@ export default function PortalCliente() {
                 </p>
               )}
 
+              {imoveisFiltrados.length === 0 && (
+                <p role="status" className="rounded-2xl border border-slate-700 bg-slate-900 px-4 py-3 text-xs text-slate-300">
+                  {filtroImobiliaria || buscaVitrine.trim() || cidadeFiltro !== 'Todas'
+                    ? 'Nenhum imóvel publicado corresponde a estes filtros. Ajuste a cidade, a busca ou o padrão.'
+                    : 'Ainda não há imóveis publicados nesta vitrine.'}
+                </p>
+              )}
+
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                {(imoveisVitrine || [])
-                  .filter((imv) => {
-                    if (imovelIdDireto && String(imv?.id || '') !== imovelIdDireto) return false;
-                    if (filtroVitrine === 'Todos') return true;
-                    if (filtroVitrine === 'MCMV') return /minha casa|social/i.test(imv?.padraoImovel || '');
-                    if (filtroVitrine === 'Medio') return /m[eé]dio/i.test(imv?.padraoImovel || 'Médio Padrão');
-                    if (filtroVitrine === 'Alto') return /alto|luxo/i.test(imv?.padraoImovel || '');
-                    if (filtroVitrine === 'Locacao') return imv?.finalidade === 'Locação';
-                    if (filtroVitrine === 'LotesRurais')
-                      return /lote|terreno|fazenda|rural|ch[aá]cara|s[ií]tio/i.test(imv?.tipo || '');
-                    return true;
-                  })
+                {(imoveisFiltrados || [])
                   ?.map((imv) => {
                     const tagPadrao = obterEstiloTagPadraoVitrine(imv?.padraoImovel);
                     const fotosArr = Array.isArray(imv?.fotos) && imv.fotos.length > 0
@@ -2230,6 +2679,7 @@ export default function PortalCliente() {
           <ConsultaStatusVistoria
             leadInicial={leadAtual}
             codigoInicial={identificador}
+            pinInicial={senha}
             oficinaIdPortal={oficinaIdPortal}
             onBack={() => {
               setAbaAtiva('home');

@@ -1,9 +1,0 @@
-﻿2: import React, { useState } from 'react';
-3: import {
-24: import { processarTriagemCreditoIA } from '../../agent/triagemCreditoPrompt';
-25: import { setCreditoPrefill } from '../../lib/credito/prefill';
-34: export default function TriagemCredito({ setAbaAtiva, onEncaminhado }) {
-161: Simulação de capacidade de parcela (30%), regras de idade (80,5 anos), FGTS e enquadramento MCMV/SBPE.
-206: Parcela máxima (30%): {brl(parseFloat(form.rendaFamiliar || 0) * 0.3)}
-468: <span className="text-[9px] text-slate-500 uppercase font-bold block">Parcela Máx (30%)</span>
-470: {brl(resultado.estimativaFinanceira.capacidadeParcelaMaxima)}

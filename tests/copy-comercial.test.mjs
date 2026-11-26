@@ -85,9 +85,12 @@ const admin = readFileSync(new URL('../src/AdminNovo.jsx', import.meta.url), 'ut
 ok('AdminNovo usa a lib de gate', admin.includes('ehMasterPlataformaFn(papelLogado, claimAdmin)'));
 ok('AdminNovo usa modoProEfetivo', admin.includes('modoProEfetivo({'));
 ok('AdminNovo usa rotuloVisao', admin.includes('rotuloVisao(modoPro)'));
-ok('alternador de visão para todos (não é mais só do MASTER)',
-   admin.includes('onClick={() => setModoPro(false)}') && admin.includes('onClick={() => setModoPro(true)}'));
-ok('alternador tem os dois rótulos', admin.includes('Enxuta') && admin.includes('Completa'));
+// D-22.06 removeu o alternador manual de visão: o modo segue o plano REAL da
+// conta (ou o degrau simulado pelo master). A asserção antiga exigia o botão
+// `setModoPro` e contradizia `tests/tour.test.mjs`, que exige a remoção.
+ok('alternador manual de visão removido (D-22.06)', !admin.includes('setModoPro'));
+ok('rótulos Enxuta/Completa continuam centralizados na lib de gate',
+   rotuloVisao(true).includes('Completa') && rotuloVisao(false).includes('Enxuta'));
 ok('pílula do topo mostra o plano real',
    admin.includes('rotuloPlano({') && admin.includes('nivel: nivelVisao'));
 ok('selo MASTER preservado', /border-amber-500\/40[\s\S]{0,240}?master/.test(admin));

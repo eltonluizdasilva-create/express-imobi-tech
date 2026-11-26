@@ -41,6 +41,7 @@ import {
   gerarChecklistInicial,
   calcularResumoChecklist,
   gerarTextoWhatsAppVistoria,
+  publicarLaudoVistoria,
   validarVistoria,
 } from '../../lib/vistoriaChaves';
 import { vistoriasDemoChaves } from '../../lib/cenarioDemo';
@@ -58,6 +59,9 @@ export default function VistoriaEntregaChaves({
   const [salvando, setSalvando] = useState(false);
   const [copiado, setCopiado] = useState(false);
   const [visualizarImpressao, setVisualizarImpressao] = useState(false);
+  // Espelho público no Portal do Cliente (D-23.37): código + PIN de 4 dígitos.
+  const [publicandoPortal, setPublicandoPortal] = useState(false);
+  const [laudoPublicado, setLaudoPublicado] = useState(null);
 
   // Form State
   const [form, setForm] = useState({
@@ -298,6 +302,53 @@ export default function VistoriaEntregaChaves({
     window.print();
   };
 
+  /**
+   * D-23.37 — publica o laudo no Portal do Cliente.
+   * O laudo continua privado em `oficinas/{oid}/vistorias_chaves`; o que o
+   * cliente consulta em `/portal` é o espelho higienizado em
+   * `acompanhamentos_publicos/{CODIGO_PIN}` (código + PIN de 4 dígitos).
+   */
+  const publicarNoPortal = async () => {
+    if (!oficinaId) {
+      alert('Abra a vistoria dentro de uma imobiliária (sessão autenticada) para publicar o laudo no portal.');
+      return;
+    }
+    if (!vistoriaAtiva?.codigoImovel) {
+      alert('Preencha o Código do Imóvel no laudo — é por ele que o cliente consulta o resultado no portal.');
+      return;
+    }
+
+    setPublicandoPortal(true);
+    try {
+      const resultado = await publicarLaudoVistoria(db, {
+        vistoria: vistoriaAtiva,
+        tenantId: oficinaId,
+      });
+      setLaudoPublicado(resultado);
+      if (!resultado.ok) {
+        alert(
+          'Não foi possível publicar o laudo no portal agora. ' +
+            'O laudo continua salvo e a mensagem de WhatsApp com o resumo funciona normalmente.'
+        );
+      }
+    } finally {
+      setPublicandoPortal(false);
+    }
+  };
+
+  const copiarAcessoPortal = () => {
+    if (!laudoPublicado) return;
+    const texto =
+      `Laudo de vistoria disponível no Portal do Cliente.\n` +
+      `Código: ${laudoPublicado.codigo}\n` +
+      `PIN: ${laudoPublicado.senha}\n` +
+      (laudoPublicado.link ? `${laudoPublicado.link}\n` : '') +
+      `Em /portal abra "Status de Vistoria" e informe o código e o PIN.`;
+    navigator.clipboard?.writeText(texto);
+    setCopiado(true);
+    setTimeout(() => setCopiado(false), 2500);
+  };
+
   return (
     <div className="space-y-6">
       {/* CABEÇALHO DO MÓDULO */}
@@ -394,6 +445,15 @@ export default function VistoriaEntregaChaves({
             </button>
             <button
               type="button"
+              onClick={publicarNoPortal}
+              disabled={publicandoPortal}
+              className="px-3.5 py-1.5 rounded-xl bg-sky-500/20 text-sky-300 border border-sky-500/30 hover:bg-sky-500/30 text-xs font-bold transition flex items-center gap-1.5 cursor-pointer disabled:opacity-60"
+            >
+              <ExternalLink size={13} />
+              <span>{publicandoPortal ? 'A publicar...' : 'Publicar no Portal'}</span>
+            </button>
+            <button
+              type="button"
               onClick={imprimirLaudo}
               className="px-3.5 py-1.5 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-zinc-200 text-xs font-bold transition flex items-center gap-1.5 cursor-pointer"
             >
@@ -407,6 +467,33 @@ export default function VistoriaEntregaChaves({
               title="Excluir vistoria"
             >
               <Trash2 size={14} />
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* ACESSO DO CLIENTE AO LAUDO NO PORTAL (D-23.37) */}
+      {!modoEdicao && laudoPublicado && (
+        <div
+          role="status"
+          className={`rounded-2xl border px-4 py-3 text-xs ${
+            laudoPublicado.ok
+              ? 'border-[#10b981]/40 bg-[#10b981]/10 text-emerald-200'
+              : 'border-amber-500/40 bg-amber-500/10 text-amber-200'
+          }`}
+        >
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <span>
+              {laudoPublicado.ok ? 'Laudo publicado no Portal do Cliente.' : 'Laudo publicável, mas a nuvem não confirmou a gravação.'}{' '}
+              Código <strong>{laudoPublicado.codigo}</strong> · PIN <strong>{laudoPublicado.senha}</strong> — o cliente consulta em{' '}
+              <strong>/portal → Status de Vistoria</strong>.
+            </span>
+            <button
+              type="button"
+              onClick={copiarAcessoPortal}
+              className="rounded-xl border border-current/40 px-3 py-1.5 font-bold transition hover:opacity-80 cursor-pointer"
+            >
+              Copiar acesso
             </button>
           </div>
         </div>

@@ -1831,6 +1831,27 @@ export default function Admin() {
     return () => raiz.classList.remove('tema-claro');
   }, [tema]);
 
+  // D-23.37 — React #310 ("Rendered more hooks than during the previous render").
+  // Este `useMemo` estava DEPOIS dos return de carregamento/trial/bloqueio/login:
+  // no primeiro render (auth a carregar) o componente devolvia o spinner sem o
+  // chamar e, no render seguinte, chamava-o — ordem de hooks diferente → crash
+  // no /admin. Todos os hooks têm de ficar acima do primeiro `return`.
+  const pilarAbaAtiva = useMemo(() => {
+    if (['dashboard_imobi', 'captacao_imobi', 'funil_leads', 'visitas_imobi', 'financeiro', 'equipe', 'guia_campo_bonus', 'migracao', 'meuplano', 'config'].includes(abaAtiva)) {
+      return { id: 'gratis', nome: 'GRÁTIS', badge: 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30' };
+    }
+    if (['historico', 'marketing'].includes(abaAtiva)) {
+      return { id: 'pro', nome: 'PRO · R$ 39,90', badge: 'bg-sky-500/10 text-sky-400 border-sky-500/30' };
+    }
+    if (['radar_captacao', 'administrador', 'roleta_imobi', 'credito', 'notafiscal', 'reunioes-atas'].includes(abaAtiva) || ['contador', 'juridico_imobi', 'tarefa', 'avaliacao_imovel', 'pos_venda'].includes(abaAtiva)) {
+      return { id: 'plus', nome: 'PLUS · R$ 99,90', badge: 'bg-teal-500/10 text-teal-400 border-teal-500/30' };
+    }
+    if (['sofia_whatsapp', 'whatsapp_hub', 'secretaria', 'agentes_ia', 'brain'].includes(abaAtiva)) {
+      return { id: 'ia', nome: 'IA', badge: 'bg-amber-500/10 text-amber-400 border-amber-500/30' };
+    }
+    return { id: 'gratis', nome: 'GRÁTIS', badge: 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30' };
+  }, [abaAtiva]);
+
   // ─── Telas de Carregamento e Login ───────────────────────────────────────────
 
   if (carregandoAuth || (logado && !dadosImobiliaria)) {
@@ -1889,29 +1910,14 @@ export default function Admin() {
   const modoPro = Boolean(acessoProLiberado);
   const isPro = Boolean(acessoProLiberado);
   // Compatibilidade com gates de visualização e testes de copy comercial:
-  // modoProEfetivo({ isModoGratis: false, isProConta: isPro }) e rotuloVisao(modoPro)
-  // onClick={() => setModoPro(false)} e onClick={() => setModoPro(true)}
+  // modoProEfetivo({ isModoGratis: false, isProConta: isPro }) e rotuloVisao(modoPro).
+  // O alternador manual de visão foi removido no D-22.06 — o modo segue o plano.
   // Operação IA (Pólen, Zara, Tom, Express Brain) exige contratação: quem não
   // tem o pacote vê somente a simulação. Admin Total continua liberando tudo.
   const contaPlano = dadosImobCtx || dadosLegadoCtx || {};
   const sofiaLiberada = Boolean(ehAdminTotal || temSofiaWhatsApp(contaPlano));
 
   const infoAbaAtiva = MAPA_DETALHES_ABAS[abaAtiva] || MAPA_DETALHES_ABAS.dashboard_imobi;
-  const pilarAbaAtiva = useMemo(() => {
-    if (['dashboard_imobi', 'captacao_imobi', 'funil_leads', 'visitas_imobi', 'financeiro', 'equipe', 'guia_campo_bonus', 'migracao', 'meuplano', 'config'].includes(abaAtiva)) {
-      return { id: 'gratis', nome: 'GRÁTIS', badge: 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30' };
-    }
-    if (['historico', 'marketing'].includes(abaAtiva)) {
-      return { id: 'pro', nome: 'PRO · R$ 39,90', badge: 'bg-sky-500/10 text-sky-400 border-sky-500/30' };
-    }
-    if (['radar_captacao', 'administrador', 'roleta_imobi', 'credito', 'notafiscal', 'reunioes-atas'].includes(abaAtiva) || ['contador', 'juridico_imobi', 'tarefa', 'avaliacao_imovel', 'pos_venda'].includes(abaAtiva)) {
-      return { id: 'plus', nome: 'PLUS · R$ 99,90', badge: 'bg-teal-500/10 text-teal-400 border-teal-500/30' };
-    }
-    if (['sofia_whatsapp', 'whatsapp_hub', 'secretaria', 'agentes_ia', 'brain'].includes(abaAtiva)) {
-      return { id: 'ia', nome: 'IA', badge: 'bg-amber-500/10 text-amber-400 border-amber-500/30' };
-    }
-    return { id: 'gratis', nome: 'GRÁTIS', badge: 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30' };
-  }, [abaAtiva]);
   const nomeAbaAtiva = infoAbaAtiva?.label || LABELS_ABAS_IMOBI[abaAtiva] || abaAtiva;
 
   // Abas próprias novas vs abas geridas pelo GerenciadorDeModulos

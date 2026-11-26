@@ -1,7 +1,0 @@
-﻿onboarding-checkout.test.mjs:4: deveExibir, proximoPasso, linkVitrine, lerOculto, salvarOculto, lerPasso3, marcarPasso3,
-onboarding-checkout.test.mjs:59: ok('link da vitrine', linkVitrine('https://app.vercel.app') === 'https://app.vercel.app/portal');
-onboarding-checkout.test.mjs:60: ok('link com barra final', linkVitrine('https://app.vercel.app/') === 'https://app.vercel.app/portal');
-sofia-prompt.test.mjs:68: assert.match(linha, /Link direto da vitrine: https:\/\/[^ ]+\/portal\?imovel=imv-123&imobiliariaId=tenant-456/);
-sofia-prompt.test.mjs:75: assert.match(linha, /imóvel não publicado na vitrine pública/);
-sofia-prompt.test.mjs:124: assert.match(prompt, /link direto da vitrine/);
-trilho-degraus.test.mjs:117: test('herança de módulos permanece nos dados do PLUS, fora da vitrine da pílula', () => {

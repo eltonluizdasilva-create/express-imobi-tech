@@ -226,6 +226,32 @@ export function parcelaPrice(valorFinanciado, jurosAnualPct, meses = 360) {
   return Math.round(parcela * 100) / 100;
 }
 
+/**
+ * SAC (Sistema de Amortização Constante): a amortização é fixa e a prestação
+ * decresce. Fonte única usada pelo Simulador de Financiamento do portal
+ * (D-23.37) — antes a mesma conta estava duplicada dentro de PortalCliente.
+ */
+export function parcelaSac(valorFinanciado, jurosAnualPct, meses = 360) {
+  const principal = Math.max(0, Number(valorFinanciado) || 0);
+  const i = (Number(jurosAnualPct) || 0) / 100 / 12;
+  const n = Math.max(1, Number(meses) || 360);
+  if (!principal) return { primeira: 0, ultima: 0, amortizacao: 0 };
+  const amortizacao = principal / n;
+  const primeira = amortizacao + principal * i;
+  const ultima = amortizacao + amortizacao * i;
+  return {
+    primeira: Math.round(primeira * 100) / 100,
+    ultima: Math.round(ultima * 100) / 100,
+    amortizacao: Math.round(amortizacao * 100) / 100,
+  };
+}
+
+/** Prazo máximo pela regra bancária: idade + prazo <= 80,5 anos, teto de 35. */
+export function prazoMaximoPorIdade(idade, tetoAnos = 35) {
+  const idadeNum = Math.max(18, Math.min(80, Math.floor(Number(idade) || 0) || 35));
+  return Math.max(1, Math.min(tetoAnos, Math.floor(80.5 - idadeNum)));
+}
+
 /* ───────────────────── metadados dos nichos ───────────────────── */
 
 export const NICHOS_CAPTACAO = [

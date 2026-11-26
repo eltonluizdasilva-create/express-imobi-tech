@@ -33,9 +33,41 @@ const AcompanharProcesso = lazy(() => import('./components/acompanhamento/Acompa
 
 // ============================================================
 // ERROR BOUNDARY
-// Previne que o app quebre completamente se a internet cair
-// durante um lazy load (Failed to fetch dynamically imported module)
+// Previne que o app quebre completamente se um chunk falhar (deploy novo,
+// cache do PWA) — e também mostra a causa real quando o erro é de renderização.
+// D-23.37: a tela culpava sempre a rede do utilizador, o que era falso em
+// erros de código (ex.: React #310 / ordem de hooks). Agora o texto separa
+// falha de carregamento de módulo de exceção de renderização JavaScript.
 // ============================================================
+const ERRO_MODULO = /dynamically imported module|Loading chunk|Importing a module script failed|error loading dynamically|Failed to fetch/i;
+const ERRO_REACT = /Minified React error|Rendered more hooks|Rendered fewer hooks|Invalid hook call|Objects are not valid as a React child|Cannot read propert|is not a function|undefined is not/i;
+
+function classificarErro(mensagem) {
+  const msg = String(mensagem || '');
+  if (ERRO_MODULO.test(msg)) {
+    return {
+      tipo: 'modulo',
+      titulo: 'Não foi possível carregar esta tela',
+      texto:
+        'O navegador não conseguiu descarregar os ficheiros desta parte do sistema — normalmente é cache antigo depois de uma atualização ou ligação instável. Recarregue a página para tentar novamente.',
+    };
+  }
+  if (ERRO_REACT.test(msg)) {
+    return {
+      tipo: 'render',
+      titulo: 'Erro ao renderizar esta tela',
+      texto:
+        'Não é a sua internet: a interface encontrou um erro inesperado de programação e interrompeu a renderização para não mostrar dados errados. Recarregue a página; se o erro voltar, envie o detalhe técnico abaixo para o suporte.',
+    };
+  }
+  return {
+    tipo: 'desconhecido',
+    titulo: 'Erro inesperado nesta tela',
+    texto:
+      'A aplicação encontrou um erro que não conseguiu tratar. Recarregue a página; se o erro voltar, envie o detalhe técnico abaixo para o suporte.',
+  };
+}
+
 class ErrorBoundary extends React.Component {
   constructor(props) {
     super(props);
@@ -53,7 +85,7 @@ class ErrorBoundary extends React.Component {
     // do PWA): recarregar uma vez resolve. Guarda a tentativa na sessão para
     // não entrar em laço quando o problema é de código, não de carregamento.
     const msg = String((error && error.message) || '');
-    const falhaDeModulo = /dynamically imported module|Loading chunk|Importing a module script failed|error loading dynamically/i.test(msg);
+    const falhaDeModulo = ERRO_MODULO.test(msg);
     if (falhaDeModulo) {
       const chave = `erro-modulo:${window.location.pathname}`;
       try {
@@ -66,10 +98,11 @@ class ErrorBoundary extends React.Component {
   }
   render() {
     if (this.state.hasError) {
+      const diagnostico = classificarErro(this.state.detalhe);
       return (
         <div style={{ backgroundColor: '#020408' }} className="h-screen w-full flex flex-col items-center justify-center text-white p-4 text-center">
-          <h1 className="text-2xl font-bold text-emerald-400 mb-2">Erro de Conexão</h1>
-          <p className="text-gray-400 mb-3 max-w-md">Ocorreu uma instabilidade na sua rede no momento de carregar os componentes desta tela.</p>
+          <h1 className="text-2xl font-bold text-emerald-400 mb-2">{diagnostico.titulo}</h1>
+          <p className="text-gray-400 mb-3 max-w-md">{diagnostico.texto}</p>
           {this.state.detalhe ? (
             <p className="mb-6 max-w-xl break-words rounded-lg border border-slate-800 bg-black/40 px-3 py-2 text-[11px] text-slate-500">
               <strong className="text-slate-400">Detalhe técnico:</strong> {this.state.detalhe}

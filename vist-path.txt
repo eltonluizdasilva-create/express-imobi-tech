@@ -1,6 +1,0 @@
-﻿
-FullName                                                                               
---------                                                                               
-C:\Users\User\Desktop\express-imobi-tech\src\components\imobi\VistoriaEntregaChaves.jsx
-
-

@@ -161,3 +161,133 @@ export function validarVistoria(vistoria = {}) {
     erros,
   };
 }
+
+/* ==========================================================================
+ * ESPELHO PÚBLICO DO LAUDO (Portal do Cliente)
+ * O laudo vive em `oficinas/{oid}/vistorias_chaves`, coleção privada do
+ * tenant (firestore.rules: subcolecaoOperacional). Para o cliente consultar o
+ * resultado sem login, o corretor publica um espelho higienizado em
+ * `acompanhamentos_publicos/{CODIGO_PIN}` — mesma coleção com `get: if true`
+ * usada pelo rastreio de cartório (D-23.35/D-23.37).
+ * ========================================================================== */
+
+/** PIN de 4 dígitos: últimos 4 dígitos do telefone do cliente ou sorteio. */
+export function gerarPinLaudo(telefone = '') {
+  const digitos = String(telefone || '').replace(/\D/g, '');
+  const pin = digitos.slice(-4);
+  if (pin.length === 4) return pin;
+  return String(Math.floor(1000 + Math.random() * 9000));
+}
+
+/** docId do espelho público: CÓDIGO_PIN (mesmo contrato de acompanhamento). */
+export function docIdLaudoPublico(codigo = '', pin = '') {
+  return `${String(codigo || '').trim().toUpperCase()}_${String(pin || '').trim()}`;
+}
+
+const primeiroNome = (nome = '') => {
+  const limpo = String(nome || '').trim();
+  return limpo ? limpo.split(/\s+/)[0] : '';
+};
+
+/**
+ * Payload público do laudo: sem telefone, sem CPF e sem sobrenome do cliente.
+ * Contém o mínimo para o cliente confirmar chaves, medidores e ressalvas.
+ */
+export function derivarLaudoPublicoVistoria(vistoria = {}, {
+  tenantId = '',
+  tenantNome = '',
+  pin = '',
+  agora = Date.now(),
+} = {}) {
+  const checklist = Array.isArray(vistoria.checklist) ? vistoria.checklist : [];
+  const resumo = calcularResumoChecklist(checklist);
+  const codigo = String(vistoria.codigoImovel || vistoria.id || '').trim().toUpperCase() || 'LAUDO';
+  const senha = String(pin || '').trim() || gerarPinLaudo(vistoria.telefone);
+
+  return {
+    // Chaves exigidas por firestore.rules em acompanhamentos_publicos
+    codigo,
+    senha,
+    tenantId: String(tenantId || ''),
+    // Identificação do tipo de documento público
+    tipo: 'vistoria_chaves',
+    modalidade: vistoria.modalidade || MODALIDADES_VISTORIA.ENTREGA_CHAVES_VENDA,
+    imovelTitulo: String(vistoria.imovelTitulo || 'Imóvel'),
+    codigoImovel: codigo,
+    tenantNome: String(tenantNome || ''),
+    cliente: primeiroNome(vistoria.nomeCliente),
+    corretor: String(vistoria.corretor || ''),
+    dataVistoria: String(vistoria.dataVistoria || ''),
+    qtdChaves: Number(vistoria.qtdChaves ?? 0),
+    qtdControles: Number(vistoria.qtdControles ?? 0),
+    qtdTags: Number(vistoria.qtdTags ?? 0),
+    medidores: {
+      energiaNumero: vistoria.medidores?.energiaNumero || '',
+      energiaLeitura: vistoria.medidores?.energiaLeitura || '',
+      aguaNumero: vistoria.medidores?.aguaNumero || '',
+      aguaLeitura: vistoria.medidores?.aguaLeitura || '',
+      gasNumero: vistoria.medidores?.gasNumero || '',
+      gasLeitura: vistoria.medidores?.gasLeitura || '',
+    },
+    checklist: checklist.map((item) => ({
+      ambiente: item.ambiente || '',
+      status: item.status || STATUS_CHECKLIST.APROVADO,
+      observacao: item.observacao || '',
+    })),
+    resumo: {
+      total: resumo.total,
+      aprovados: resumo.aprovados,
+      ressalvas: resumo.ressalvas,
+      pendentes: resumo.pendentes,
+      percentualAprovado: resumo.percentualAprovado,
+    },
+    status: resumo.is100PorcentoAprovado ? 'concluido' : 'concluido_com_ressalvas',
+    atualizadoEm: new Date(Number(agora)).toISOString(),
+  };
+}
+
+/**
+ * Publica (ou atualiza) o espelho público do laudo.
+ * Devolve `{ ok, id, codigo, senha, link, payload }` — `ok: false` quando não
+ * há Firestore ou o tenant não está identificado (nenhuma escrita anónima).
+ */
+export async function publicarLaudoVistoria(db, {
+  vistoria = {},
+  tenantId = '',
+  tenantNome = '',
+  pin = '',
+} = {}) {
+  const payload = derivarLaudoPublicoVistoria(vistoria, { tenantId, tenantNome, pin });
+  const id = docIdLaudoPublico(payload.codigo, payload.senha);
+
+  try {
+    if (typeof localStorage !== 'undefined') {
+      localStorage.setItem(`public_acompanhamento_${id}`, JSON.stringify(payload));
+    }
+  } catch {
+    // navegador com storage bloqueado: segue para o Firestore
+  }
+
+  if (!db || typeof db !== 'object' || !payload.tenantId) {
+    return { ok: false, motivo: 'sem-tenant', id, codigo: payload.codigo, senha: payload.senha, payload };
+  }
+
+  try {
+    const { doc, setDoc } = await import('firebase/firestore');
+    await setDoc(doc(db, 'acompanhamentos_publicos', id), payload, { merge: true });
+  } catch (err) {
+    console.warn('[publicarLaudoVistoria] gravação no Firestore falhou:', err?.message);
+    return { ok: false, motivo: 'firestore', id, codigo: payload.codigo, senha: payload.senha, payload };
+  }
+
+  return {
+    ok: true,
+    id,
+    codigo: payload.codigo,
+    senha: payload.senha,
+    link: typeof window !== 'undefined'
+      ? `${window.location.origin}/portal?c=${encodeURIComponent(payload.codigo)}&s=${encodeURIComponent(payload.senha)}`
+      : `/portal?c=${payload.codigo}&s=${payload.senha}`,
+    payload,
+  };
+}
