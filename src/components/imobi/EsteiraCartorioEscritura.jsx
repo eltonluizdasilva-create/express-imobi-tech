@@ -19,10 +19,16 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { collection, doc, onSnapshot, setDoc } from 'firebase/firestore';
 import {
   AlertTriangle, CheckCircle2, Copy, Landmark, Lock, ScrollText, Unlock,
+  ShieldCheck, Share2, ExternalLink,
 } from 'lucide-react';
 import { db } from '../../lib/firebase';
 import { corDaAba } from '../../lib/coresAbas';
 import { obterCenarioCartorioDemo } from '../../lib/cenarioDemo';
+import {
+  sincronizarAcompanhamentoCartorio,
+  textoWhatsAppRastreioCartorio,
+  linkPublico,
+} from '../../lib/acompanhamento';
 import {
   CHECKLIST_CERTIDOES, CHECKLIST_ESCRITURA, ETAPA_CERTIDOES, ETAPA_ESCRITURA,
   JUSTIFICATIVA_MINIMA, LIMITE_ALERTA_DIAS, STATUS_OPCOES,
@@ -190,6 +196,8 @@ export default function EsteiraCartorioEscritura({
   const [erro, setErro] = useState('');
   const [aviso, setAviso] = useState('');
   const [copiou, setCopiou] = useState(false);
+  const [copiouRastreio, setCopiouRastreio] = useState(false);
+  const [sincronizandoRastreio, setSincronizandoRastreio] = useState(false);
 
   useEffect(() => {
     if (controlado) return undefined;
@@ -332,6 +340,35 @@ export default function EsteiraCartorioEscritura({
     setTimeout(() => setAviso(''), 4500);
   }
 
+  async function compartilharRastreioPublico() {
+    if (!selecionada) return;
+    setSincronizandoRastreio(true);
+    try {
+      const res = await sincronizarAcompanhamentoCartorio(db, {
+        negociacao: selecionada,
+        tenantId: oficinaId || 'demo',
+        tenantNome: nomeImobiliaria || 'Express Imobi Tech',
+        corretorPadrao,
+        agora: referencia,
+      });
+
+      const textoMsg = textoWhatsAppRastreioCartorio(selecionada, {
+        nomeImobiliaria: nomeImobiliaria || 'Express Imobi Tech',
+        link: res.link,
+      });
+
+      await navigator.clipboard.writeText(textoMsg);
+      setCopiouRastreio(true);
+      setAviso(`Link e PIN de rastreio sincronizados e copiados! (/acompanhar?c=${res.codigo}&s=${res.senha})`);
+      setTimeout(() => setCopiouRastreio(false), 3000);
+    } catch {
+      setAviso('Rastreio sincronizado. Compartilhe o link /acompanhar com o comprador e vendedor.');
+    } finally {
+      setSincronizandoRastreio(false);
+      setTimeout(() => setAviso(''), 5000);
+    }
+  }
+
   function liberar() {
     if (!selecionada) return;
     const resultado = liberarComJustificativa(selecionada, {
@@ -396,6 +433,16 @@ export default function EsteiraCartorioEscritura({
             <span className="rounded-full border border-emerald-500/40 bg-emerald-500/10 px-3 py-1 text-[9px] font-black uppercase tracking-wider text-emerald-300">
               {fila.liberadas} liberada(s)
             </span>
+            <button
+              type="button"
+              onClick={compartilharRastreioPublico}
+              disabled={sincronizandoRastreio}
+              className={`${botaoSecundario} inline-flex items-center gap-1.5 border-emerald-500/40 text-emerald-300 hover:border-emerald-400`}
+              title="Compartilhar link de rastreio com comprador e vendedor"
+            >
+              {copiouRastreio ? <CheckCircle2 size={13} aria-hidden="true" /> : <Share2 size={13} aria-hidden="true" />}
+              {copiouRastreio ? 'Rastreio Copiado!' : 'Rastreio Público (/acompanhar)'}
+            </button>
             <button
               type="button"
               onClick={copiarStatus}
@@ -535,6 +582,53 @@ export default function EsteiraCartorioEscritura({
             <p className="mt-1 text-[10px] text-slate-500">
               {progresso.concluidos} de {progresso.total} documentos concluídos
             </p>
+          </div>
+        </div>
+
+        <div className="mt-4 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-emerald-500/30 bg-emerald-500/5 p-3">
+          <div className="flex items-center gap-2.5">
+            <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-[#10b981]/20 text-[#10b981]">
+              <ShieldCheck size={16} />
+            </div>
+            <div>
+              <p className="text-[10px] font-black uppercase tracking-widest text-[#10b981]">
+                Portal de Rastreio Público (/acompanhar)
+              </p>
+              <p className="text-xs text-slate-300">
+                Código: <span className="font-mono font-bold text-white">{selecionada.codigoRastreio || selecionada.codigoImovel}</span>
+                {' · '}PIN: <span className="font-mono font-bold text-white">{selecionada.senhaRastreio || '••••'}</span>
+              </p>
+            </div>
+          </div>
+          <div className="flex flex-wrap items-center gap-2">
+            <button
+              type="button"
+              onClick={compartilharRastreioPublico}
+              disabled={sincronizandoRastreio}
+              className="inline-flex items-center gap-1.5 rounded-xl bg-[#10b981] px-3 py-2 text-[11px] font-black uppercase tracking-wider text-slate-950 transition hover:brightness-110 disabled:opacity-50"
+            >
+              {copiouRastreio ? <CheckCircle2 size={13} /> : <Share2 size={13} />}
+              {copiouRastreio ? 'Copiado p/ WhatsApp!' : 'Compartilhar Link Seguro (WhatsApp)'}
+            </button>
+            <a
+              href={`/acompanhar?c=${encodeURIComponent(selecionada.codigoRastreio || selecionada.codigoImovel)}&s=${encodeURIComponent(selecionada.senhaRastreio || '')}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              onClick={() => {
+                sincronizarAcompanhamentoCartorio(db, {
+                  negociacao: selecionada,
+                  tenantId: oficinaId || 'demo',
+                  tenantNome: nomeImobiliaria || 'Express Imobi Tech',
+                  corretorPadrao,
+                  agora: referencia,
+                });
+              }}
+              className={`${botaoSecundario} inline-flex items-center gap-1`}
+              title="Abrir página pública do comprador e vendedor"
+            >
+              <ExternalLink size={12} />
+              Ver Portal
+            </a>
           </div>
         </div>
 

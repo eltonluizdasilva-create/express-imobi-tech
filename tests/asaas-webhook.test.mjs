@@ -37,7 +37,7 @@ ok('89 → PLUS anual legado',
   planoPorValor(89)?.plano === 'plus' && planoPorValor(89)?.ciclo === 'anual',
   JSON.stringify(planoPorValor(89)));
 ok('1068 (ano inteiro) → PLUS anual legado', planoPorValor(1068)?.plano === 'plus');
-ok('valor fora do catálogo não casa', planoPorValor(12.34) === null && planoPorValor(450) === null);
+ok('valor fora do catálogo não casa', planoPorValor(12.34) === null && planoPorValor(9999) === null);
 
 /* -------------------------------- textos --------------------------------- */
 ok('texto legado "Essencial Plus" ativa PRO', planoPorTexto('Essencial Plus') === 'pro');

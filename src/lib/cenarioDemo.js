@@ -1,5 +1,129 @@
 import { collection, addDoc, doc, getDocs, setDoc, Timestamp } from 'firebase/firestore';
 import { negociacoesDemoCartorio } from './cartorioEscritura.js';
+import { MODALIDADES_VISTORIA, STATUS_CHECKLIST } from './vistoriaChaves.js';
+import { CATEGORIAS_RADAR, IMPACTOS_RADAR, calcularIndiceLiquidez } from './radarEntorno.js';
+
+export const cenarioDemoRadarEntorno = [
+  {
+    id: 'radar_demo_1',
+    codigoImovel: 'IMB-3041',
+    bairro: 'Jardins',
+    cidade: 'São Paulo',
+    uf: 'SP',
+    ancoras: [
+      { id: 'anc_1', nome: 'Supermercado Pão de Açúcar', categoria: CATEGORIAS_RADAR.COMERCIO, distancia: '250m', impacto: IMPACTOS_RADAR.CONVENIENCIA, pesoBase: 15 },
+      { id: 'anc_2', nome: 'Colégio Dante Alighieri', categoria: CATEGORIAS_RADAR.EDUCACAO, distancia: '350m', impacto: IMPACTOS_RADAR.ALTA_VALORIZACAO, pesoBase: 18 },
+      { id: 'anc_3', nome: 'Complexo Hospitalar & Clínicas', categoria: CATEGORIAS_RADAR.SAUDE, distancia: '600m', impacto: IMPACTOS_RADAR.CONVENIENCIA, pesoBase: 15 },
+      { id: 'anc_4', nome: 'Parque Ibirapuera', categoria: CATEGORIAS_RADAR.LAZER, distancia: '800m', impacto: IMPACTOS_RADAR.ALTA_VALORIZACAO, pesoBase: 20 },
+      { id: 'anc_5', nome: 'Estação de Metrô Oscar Freire', categoria: CATEGORIAS_RADAR.MOBILIDADE, distancia: '400m', impacto: IMPACTOS_RADAR.ALTA_VALORIZACAO, pesoBase: 20 },
+    ],
+    indice: calcularIndiceLiquidez([
+      { distancia: '250m', impacto: IMPACTOS_RADAR.CONVENIENCIA, pesoBase: 15 },
+      { distancia: '350m', impacto: IMPACTOS_RADAR.ALTA_VALORIZACAO, pesoBase: 18 },
+      { distancia: '600m', impacto: IMPACTOS_RADAR.CONVENIENCIA, pesoBase: 15 },
+      { distancia: '800m', impacto: IMPACTOS_RADAR.ALTA_VALORIZACAO, pesoBase: 20 },
+      { distancia: '400m', impacto: IMPACTOS_RADAR.ALTA_VALORIZACAO, pesoBase: 20 },
+    ]),
+  },
+  {
+    id: 'radar_demo_2',
+    codigoImovel: 'IMB-1180',
+    bairro: 'Centro',
+    cidade: 'Uberlândia',
+    uf: 'MG',
+    ancoras: [
+      { id: 'anc_1', nome: 'Supermercado Bretas', categoria: CATEGORIAS_RADAR.COMERCIO, distancia: '300m', impacto: IMPACTOS_RADAR.CONVENIENCIA, pesoBase: 14 },
+      { id: 'anc_2', nome: 'Escola Estadual & Cursos', categoria: CATEGORIAS_RADAR.EDUCACAO, distancia: '400m', impacto: IMPACTOS_RADAR.CONVENIENCIA, pesoBase: 14 },
+      { id: 'anc_3', nome: 'Praça Tubal Vilela', categoria: CATEGORIAS_RADAR.LAZER, distancia: '300m', impacto: IMPACTOS_RADAR.ALTA_VALORIZACAO, pesoBase: 16 },
+      { id: 'anc_4', nome: 'Av. Afonso Pena (Corredor BRT)', categoria: CATEGORIAS_RADAR.MOBILIDADE, distancia: '150m', impacto: IMPACTOS_RADAR.ALTA_VALORIZACAO, pesoBase: 16 },
+      { id: 'anc_5', nome: 'Corredor Central de Alto Tráfego / Ruído', categoria: CATEGORIAS_RADAR.RUIDO_ATENCAO, distancia: '100m', impacto: IMPACTOS_RADAR.PONTO_ATENCAO, pesoBase: -20 },
+    ],
+    indice: calcularIndiceLiquidez([
+      { distancia: '300m', impacto: IMPACTOS_RADAR.CONVENIENCIA, pesoBase: 14 },
+      { distancia: '400m', impacto: IMPACTOS_RADAR.CONVENIENCIA, pesoBase: 14 },
+      { distancia: '300m', impacto: IMPACTOS_RADAR.ALTA_VALORIZACAO, pesoBase: 16 },
+      { distancia: '150m', impacto: IMPACTOS_RADAR.ALTA_VALORIZACAO, pesoBase: 16 },
+      { distancia: '100m', impacto: IMPACTOS_RADAR.PONTO_ATENCAO, pesoBase: -20 },
+    ]),
+  },
+];
+
+export const vistoriasDemoChaves = [
+  {
+    id: 'vistoria_demo_1',
+    modalidade: MODALIDADES_VISTORIA.ENTREGA_CHAVES_VENDA,
+    codigoImovel: 'IMB-3041',
+    imovelTitulo: 'Apartamento 3 Suítes — Residencial Jardins',
+    endereco: 'Rua das Palmeiras, 450, Apto 82 — Jardins, São Paulo/SP',
+    nomeCliente: 'Marcelo Vasconcelos',
+    telefone: '11999887766',
+    nomeProprietario: 'Construtora & Incorporadora Horizonte',
+    corretor: 'Rodrigo Almeida',
+    creciCorretor: 'CRECI 189204-F',
+    dataVistoria: '2026-11-26',
+    qtdChaves: 4,
+    qtdControles: 2,
+    qtdTags: 3,
+    obsChaves: '2 chaves da porta principal (fechadura multiponto), 2 de serviço, 2 controles PPA e 3 tags prediais.',
+    medidores: {
+      energiaNumero: 'MED-784912',
+      energiaLeitura: '14280',
+      aguaNumero: 'HID-33019',
+      aguaLeitura: '318',
+      gasNumero: 'GAS-99120',
+      gasLeitura: '104',
+    },
+    checklist: [
+      { id: 'amb_1', ambiente: 'Sala & Estar', status: STATUS_CHECKLIST.APROVADO, observacao: 'Piso porcelanato polido sem trincas, pintura nova branco neve.', fotoUrl: '' },
+      { id: 'amb_2', ambiente: 'Cozinha & Área de Serviço', status: STATUS_CHECKLIST.APROVADO, observacao: 'Bancadas de granito intactas, torneiras sem vazamento, cuba inox perfeita.', fotoUrl: '' },
+      { id: 'amb_3', ambiente: 'Quartos & Suítes', status: STATUS_CHECKLIST.APROVADO, observacao: 'Esquadrias de alumínio com persianas integradas funcionando perfeitamente.', fotoUrl: '' },
+      { id: 'amb_4', ambiente: 'Banheiros', status: STATUS_CHECKLIST.APROVADO, observacao: 'Louças e metais Deca testados, ralos limpos e com vazão plena.', fotoUrl: '' },
+      { id: 'amb_5', ambiente: 'Parte Elétrica & Quadro', status: STATUS_CHECKLIST.APROVADO, observacao: 'Quadro de disjuntores DIN identificado com DR e DPS instalados.', fotoUrl: '' },
+      { id: 'amb_6', ambiente: 'Hidráulica & Registros', status: STATUS_CHECKLIST.APROVADO, observacao: 'Pressurizador funcionando normalmente, registros gerais testados.', fotoUrl: '' },
+      { id: 'amb_7', ambiente: 'Esquadrias, Portas & Fechaduras', status: STATUS_CHECKLIST.APROVADO, observacao: 'Portas maciças com fechaduras La Fonte e chaves testadas.', fotoUrl: '' },
+    ],
+    observacoesGerais: 'Imóvel novo entregue conforme memorial descritivo da incorporadora.',
+  },
+  {
+    id: 'vistoria_demo_2',
+    modalidade: MODALIDADES_VISTORIA.ENTRADA_LOCACAO,
+    codigoImovel: 'IMB-1180',
+    imovelTitulo: 'Casa em Condomínio Fechado — Quadra B Lote 14',
+    endereco: 'Al. dos Ipês, 120 — Condomínio Bosque Imperial',
+    nomeCliente: 'Fernanda Ribeiro',
+    telefone: '11988776655',
+    nomeProprietario: 'Dr. Eduardo Vasques',
+    corretor: 'Camila Rocha',
+    creciCorretor: 'CRECI 215430-F',
+    dataVistoria: '2026-11-25',
+    qtdChaves: 3,
+    qtdControles: 1,
+    qtdTags: 2,
+    obsChaves: '3 chaves do portão/porta social e 1 controle de garagem.',
+    medidores: {
+      energiaNumero: 'MED-415820',
+      energiaLeitura: '28950',
+      aguaNumero: 'HID-88412',
+      aguaLeitura: '542',
+      gasNumero: 'N/A (Botijão P13)',
+      gasLeitura: '0',
+    },
+    checklist: [
+      { id: 'amb_1', ambiente: 'Sala & Estar', status: STATUS_CHECKLIST.COM_RESSALVA, observacao: 'Pequena marca de quadro na parede oeste; proprietário ciente.', fotoUrl: '' },
+      { id: 'amb_2', ambiente: 'Cozinha & Área de Serviço', status: STATUS_CHECKLIST.APROVADO, observacao: 'Armários embutidos bem alinhados, torneira gourmet operando.', fotoUrl: '' },
+      { id: 'amb_3', ambiente: 'Quartos & Suítes', status: STATUS_CHECKLIST.APROVADO, observacao: 'Pintura geral em bom estado de conservação.', fotoUrl: '' },
+      { id: 'amb_4', ambiente: 'Banheiros', status: STATUS_CHECKLIST.REPARO_PENDENTE, observacao: 'Leve gotejamento na ducha higiênica da suíte master; reparo agendado para 28/11.', fotoUrl: '' },
+      { id: 'amb_5', ambiente: 'Parte Elétrica & Quadro', status: STATUS_CHECKLIST.APROVADO, observacao: 'Todas as tomadas e interruptores testados.', fotoUrl: '' },
+      { id: 'amb_6', ambiente: 'Hidráulica & Registros', status: STATUS_CHECKLIST.APROVADO, observacao: 'Caixa d\'água limpa e registros funcionando.', fotoUrl: '' },
+      { id: 'amb_7', ambiente: 'Esquadrias, Portas & Fechaduras', status: STATUS_CHECKLIST.APROVADO, observacao: 'Portas e janelas em bom estado com vedação correta.', fotoUrl: '' },
+    ],
+    observacoesGerais: 'Locação com garantia de caução; reparo do gotejamento fica por conta do locador.',
+  },
+];
+
+export function obterCenarioVistoriasDemo() {
+  return vistoriasDemoChaves;
+}
 
 /**
  * Esteira de Cartório & Escritura (Repasses & NF) em modo demonstração:
@@ -212,11 +336,13 @@ export async function carregarCenarioDemo(tenantId, db, { force = false } = {}) 
 
   const { imoveisDemo, leadsDemo } = obterDadosCenarioDemoMemoria();
   const cartorioDemo = obterCenarioCartorioDemo();
+  const vistoriasDemo = obterCenarioVistoriasDemo();
 
   // Inserir no Firestore
   const imoveisInseridos = [];
   const leadsInseridos = [];
   const cartorioInseridos = [];
+  const vistoriasInseridas = [];
 
   if (db && tenantId) {
     for (const imovel of imoveisDemo) {
@@ -250,6 +376,20 @@ export async function carregarCenarioDemo(tenantId, db, { force = false } = {}) 
         console.warn('Erro ao inserir negociação de cartório demo:', err.message);
       }
     }
+
+    // IDs fixos: vistorias de entrega de chaves não duplicam
+    for (const vistoria of vistoriasDemo) {
+      try {
+        await setDoc(
+          doc(db, 'oficinas', tenantId, 'vistorias_chaves', vistoria.id),
+          vistoria,
+          { merge: true },
+        );
+        vistoriasInseridas.push(vistoria);
+      } catch (err) {
+        console.warn('Erro ao inserir vistoria demo:', err.message);
+      }
+    }
   }
 
   return {
@@ -257,8 +397,10 @@ export async function carregarCenarioDemo(tenantId, db, { force = false } = {}) 
     totalImoveis: imoveisInseridos.length || imoveisDemo.length,
     totalLeads: leadsInseridos.length || leadsDemo.length,
     totalCartorio: cartorioInseridos.length || cartorioDemo.length,
+    totalVistorias: vistoriasInseridas.length || vistoriasDemo.length,
     imoveis: imoveisInseridos.length ? imoveisInseridos : imoveisDemo,
     leads: leadsInseridos.length ? leadsInseridos : leadsDemo,
     cartorio: cartorioInseridos.length ? cartorioInseridos : cartorioDemo,
+    vistorias: vistoriasInseridas.length ? vistoriasInseridas : vistoriasDemo,
   };
 }

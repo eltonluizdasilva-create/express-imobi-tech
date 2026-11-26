@@ -1,0 +1,58 @@
+﻿acompanhamento.js:9: export const ETAPAS_CARTORIO_CREDITO = [
+acompanhamento.js:15: export const TIPOS_OPERACAO = [
+acompanhamento.js:102: export const TIPO_POR_KEY = Object.fromEntries(TIPOS_OPERACAO.map((t) => [t.key, t]));
+acompanhamento.js:104: export function etapasDoTipo(tipoKey) {
+acompanhamento.js:108: export function labelDoTipo(tipoKey) {
+acompanhamento.js:115: export function gerarCodigo(prefixo = 'IMB') {
+acompanhamento.js:120: export function gerarSenha() {
+acompanhamento.js:124: export function docIdDe(codigo, senha) {
+acompanhamento.js:129: export function etapaAtual(processo) {
+acompanhamento.js:136: export function progresso(processo) {
+acompanhamento.js:143: export function linkPublico(codigo, senha) {
+acompanhamento.js:149: export function textoWhatsApp(processo) {
+acompanhamento.js:163: export function sanitizarClientePrimeiroNome(nomeCompleto = '') {
+acompanhamento.js:173: export function derivarDadosRastreioCartorio(negociacao = {}, {
+acompanhamento.js:268: export async function sincronizarAcompanhamentoCartorio(db, {
+acompanhamento.js:318: export function textoWhatsAppRastreioCartorio(negociacao = {}, {
+vistoriaChaves.js:14: export const MODALIDADES_VISTORIA = {
+vistoriaChaves.js:20: export const STATUS_CHECKLIST = {
+vistoriaChaves.js:26: export const AMBIENTES_PADRAO = [
+vistoriaChaves.js:39: export function gerarChecklistInicial() {
+vistoriaChaves.js:52: export function calcularResumoChecklist(checklist = []) {
+vistoriaChaves.js:87: export function gerarTextoWhatsAppVistoria(vistoria = {}) {
+vistoriaChaves.js:151: export function validarVistoria(vistoria = {}) {
+cartorioEscritura.js:30: export const LIMITE_ALERTA_DIAS = 5;
+cartorioEscritura.js:33: export const JUSTIFICATIVA_MINIMA = 10;
+cartorioEscritura.js:35: export const ETAPA_CERTIDOES = 'certidoes';
+cartorioEscritura.js:36: export const ETAPA_ESCRITURA = 'escritura';
+cartorioEscritura.js:37: export const ETAPA_REPASSE = 'repasse';
+cartorioEscritura.js:39: export const STATUS_PENDENTE = 'pendente';
+cartorioEscritura.js:40: export const STATUS_EMITIDA = 'emitida';
+cartorioEscritura.js:41: export const STATUS_VENCIDA = 'vencida';
+cartorioEscritura.js:43: export const TRAVA_CARTORIO = 'aguardando_cartorio';
+cartorioEscritura.js:46: export const STATUS_OPCOES = [
+cartorioEscritura.js:57: export const CHECKLIST_CERTIDOES = [
+cartorioEscritura.js:110: export const CHECKLIST_ESCRITURA = [
+cartorioEscritura.js:170: export function dataISO(valor) {
+cartorioEscritura.js:177: export function somarDias(iso, dias) {
+cartorioEscritura.js:185: export function diasRestantes(validadeAte, agora = Date.now()) {
+cartorioEscritura.js:195: export function dataBR(valor) {
+cartorioEscritura.js:203: export function dataHoraISO(valor) {
+cartorioEscritura.js:217: export function criarItem(status = STATUS_PENDENTE) {
+cartorioEscritura.js:239: export function normalizarNegociacao(negociacao = {}) {
+cartorioEscritura.js:281: export function negociacaoVazia(base = {}) {
+cartorioEscritura.js:291: export function atualizarItem(negociacao, etapa, itemId, dados = {}, { agora = Date.now() } = {}) {
+cartorioEscritura.js:322: export function pendenciasCartorio(negociacao, agora = Date.now()) {
+cartorioEscritura.js:353: export function alertasVencimento(negociacao, agora = Date.now()) {
+cartorioEscritura.js:382: export function podeLiberarRepasse(negociacao, agora = Date.now()) {
+cartorioEscritura.js:414: export function liberarComJustificativa(negociacao, { justificativa = '', por = '', agora = Date.now() } = {}) {
+cartorioEscritura.js:441: export function revogarLiberacaoManual(negociacao, { agora = Date.now() } = {}) {
+cartorioEscritura.js:470: export function mensagemWhatsAppCartorio(negociacao, { agora = Date.now(), nomeImobiliaria = '' } = {}) {
+cartorioEscritura.js:539: export function ehPropostaFechada(proposta = {}) {
+cartorioEscritura.js:552: export function criarNegociacaoDeProposta(proposta = {}, { agora = Date.now() } = {}) {
+cartorioEscritura.js:582: export function mesclarNegociacoes({ persistidas = [], propostas = [], agora = Date.now() } = {}) {
+cartorioEscritura.js:655: export function negociacoesDemoCartorio(agora = Date.now()) {
+cartorioEscritura.js:769: export function statusCertidao(certidao = {}, agora = Date.now()) {
+cartorioEscritura.js:850: export function rotuloItem(itemId, negociacao = {}) {
+cartorioEscritura.js:860: export function itemConcluido(item, agora = Date.now()) {
+cartorioEscritura.js:865: export function progressoNegociacao(negociacao, agora = Date.now()) {

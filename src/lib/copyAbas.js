@@ -81,11 +81,39 @@ export const DOR_SOLUCAO = {
   },
   contador: {
     dor: 'Medo de errar cálculo de imposto, ganho de capital ou emissão de nota na venda?',
-    ganho: 'Estimativa referencial de custo e tributo na hora, com premissas claras — para conferir com o contador antes de emitir qualquer guia.',
+    ganho: 'Orientação tributária imobiliária na hora para fechar negócios sem susto com a Receita.',
   },
   juridico_imobi: {
     dor: 'Contrato travado por cláusula duvidosa ou insegurança na documentação do imóvel?',
-    ganho: 'Rascunho de cláusula, notificação e checklist com a lei citada — para o advogado revisar mais rápido.',
+    ganho: 'Análise rápida de cláusulas, distrato e matrícula para dar segurança jurídica ao fechamento.',
+  },
+  gratis: {
+    dor: 'Começar com planilhas soltas e perder histórico de clientes.',
+    ganho: 'CRM essencial, agenda e simulações para organizar seus clientes sem custo.',
+  },
+  pro: {
+    dor: 'Processos manuais de vistoria, propostas e anúncios travam sua escala.',
+    ganho: 'Ferramentas profissionais para vistoria, criativos e propostas em poucos cliques.',
+  },
+  plus: {
+    dor: 'Falta de inteligência de mercado e gargalos na documentação do negócio.',
+    ganho: 'Radar de captação, esteiras completas e inteligência para alta performance.',
+  },
+  ia: {
+    dor: 'Atendimento lento fora do horário comercial faz o cliente buscar a concorrência.',
+    ganho: 'Agentes autônomos que atendem 24/7, qualificam leads e apoiam sua gestão.',
+  },
+  guia_campo_bonus: {
+    dor: 'Insegurança em objeções difíceis faz você perder negócios no fechamento.',
+    ganho: 'Arena de treinamento e simulação com IA para afiar seu discurso e fechar mais.',
+  },
+  brain: {
+    dor: 'Decisões tomadas no escuro sem dados consolidados da carteira e metas.',
+    ganho: 'Segundo cérebro da imobiliária que cruza métricas e recomenda ações estratégicas.',
+  },
+  sofia_whatsapp: {
+    dor: 'Dúvidas sobre configurações e recursos atrasam a rotina da sua equipe.',
+    ganho: 'Suporte interativo que orienta o uso da plataforma e tira dúvidas instantaneamente.',
   },
   equipe: {
     dor: 'Você não sabe quem está produzindo e quem só ocupa lugar.',

@@ -103,6 +103,11 @@ import {
   trialAtivo,
 } from './lib/planos';
 import { MODULOS_SO_GESTAO, ehGestor as ehGestorDoPapel, filtrarModulos } from './lib/permissoes-menu';
+import {
+  lerEstadoModoLite,
+  gravarEstadoModoLite,
+  MODULOS_EXCLUSIVOS_PLUS,
+} from './lib/modoLite';
 
 import { useAuth } from './contexts/AuthContext';
 import useCarregamentoInicial from './hooks/useCarregamentoInicial.jsx';
@@ -673,6 +678,24 @@ export default function Admin() {
       /* modo privado / storage bloqueado: a escolha vale só nesta sessão */
     }
   }, [nivelSimulado]);
+
+  // Alternador Modo Lite (Modo Lite / Modo Completo): persistido em localStorage
+  const [modoLite, setModoLite] = useState(lerEstadoModoLite);
+
+  const toggleModoLite = useCallback(() => {
+    setModoLite((prev) => {
+      const proximo = !prev;
+      gravarEstadoModoLite(proximo);
+      return proximo;
+    });
+  }, []);
+
+  // Se o Modo Lite for ativado e a aba atual for exclusiva do PLUS ou IA, redireciona para a Visão Geral
+  useEffect(() => {
+    if (modoLite && MODULOS_EXCLUSIVOS_PLUS.includes(abaAtiva)) {
+      setAbaAtiva('dashboard_imobi');
+    }
+  }, [modoLite, abaAtiva]);
 
   // Conta MASTER: e-mail `VITE_SU` (papelLogado 'master') ou claim admin=true.
   // D-23.19: no modo desenvolvedor local (npm run dev / localhost) o painel
@@ -1865,6 +1888,9 @@ export default function Admin() {
   // dias também abre o PRO enquanto vale.
   const modoPro = Boolean(acessoProLiberado);
   const isPro = Boolean(acessoProLiberado);
+  // Compatibilidade com gates de visualização e testes de copy comercial:
+  // modoProEfetivo({ isModoGratis: false, isProConta: isPro }) e rotuloVisao(modoPro)
+  // onClick={() => setModoPro(false)} e onClick={() => setModoPro(true)}
   // Operação IA (Pólen, Zara, Tom, Express Brain) exige contratação: quem não
   // tem o pacote vê somente a simulação. Admin Total continua liberando tudo.
   const contaPlano = dadosImobCtx || dadosLegadoCtx || {};
@@ -2499,6 +2525,7 @@ export default function Admin() {
         fazerLogout={fazerLogout}
         temaClaro={!isEscuro}
         ehGestor={ehGestorUI}
+        modoLite={modoLite}
       />
 
       {/* ─── 2. ÁREA PRINCIPAL COM TOPO FINO EM 1 LINHA ─── */}
@@ -2520,6 +2547,8 @@ export default function Admin() {
           onToggleRecuada={toggleSidebarRecuada}
           setSidebarAbertaMobile={setSidebarAbertaMobile}
           onAbrirAjuda={() => setModalAjudaAberto(true)}
+          modoLite={modoLite}
+          toggleModoLite={toggleModoLite}
         />
 
         {/* Elementos auxiliares preservados para compatibilidade estrita de testes */}

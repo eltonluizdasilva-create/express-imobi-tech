@@ -1,0 +1,14 @@
+﻿28: export const TIPOLOGIAS = [
+36: export const PADROES = [
+44: export const ESTADOS_CONSERVACAO = [
+54: export const TOPOGRAFIAS = [
+62: export const CONDICOES_TESTADA = [
+69: export const FINALIDADES_PTAM = [
+76: export function fatorUF(uf) {
+88: export function homogeneizarComparaveis(comparaveis = []) {
+130: export function avaliarImovel({
+241: export function formatarCnai(valor) {
+260: export function gerarResumoComercial(dados = {}, av = {}) {
+299: export function identidadeDocumento(dados = {}) {
+344: export function gerarPTAM(dados = {}, av = {}) {
+408: export function gerarDocumentoHtmlPTAM(dados = {}, av = {}) {

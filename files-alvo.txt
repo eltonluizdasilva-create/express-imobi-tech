@@ -1,0 +1,10 @@
+﻿
+FullName                                                                           Length
+--------                                                                           ------
+C:\Users\User\Desktop\express-imobi-tech\src\App.jsx                                10497
+C:\Users\User\Desktop\express-imobi-tech\src\LoginAdmin.jsx                          9246
+C:\Users\User\Desktop\express-imobi-tech\src\PortalCliente.jsx                     113533
+C:\Users\User\Desktop\express-imobi-tech\src\components\PATCH_PortalCliente.jsx      4537
+C:\Users\User\Desktop\express-imobi-tech\src\components\admin\SofiaWhatsAppTab.jsx  32502
+
+

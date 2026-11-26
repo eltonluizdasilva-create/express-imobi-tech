@@ -21,8 +21,10 @@ ok('CSS escurece o degradê no tema claro', /\.tema-claro \.logo-accent\s*\{[\s\
 ok('logo escala pequeno/grande', logo.includes("tamanho === 'sm'") && logo.includes("tamanho === 'lg'"));
 
 /* --------------------- hub flutuante unificado (sofia • zara • tom) ------- */
-ok('hub tem botão único no canto inferior direito',
-   flutuantes.includes('bottom-4 right-4') && flutuantes.includes('md:bottom-6 md:right-6'));
+ok('hub recolhido fica acima da barra inferior mobile/pilares',
+   flutuantes.includes('bottom-20 right-4') && flutuantes.includes('md:bottom-6 md:right-6'));
+ok('hub abre recolhido: só o círculo, sem rótulo fixo na tela',
+   flutuantes.includes('h-14 w-14') && !flutuantes.includes('Assistentes de IA • Suporte & Operação'));
 ok('rótulo do botão destaca Sofia • Zara • Tom',
    flutuantes.includes('Sofia • Zara • Tom'));
 ok('possui as 3 personas configuradas',
@@ -41,6 +43,26 @@ ok('sofia integra guia contextual da aba ativa',
 /* ------------------- espaço no fim da página (mobile) ------------------- */
 ok('conteúdo não fica embaixo dos botões',
    admin.includes('pb-40 md:pb-24') && !admin.includes("paddingBottom: '90px'"));
+
+/* --------------------- menu lateral mobile (drawer) --------------------- */
+const sidebar = readFileSync(new URL('../src/components/admin/SidebarAdmin.jsx', import.meta.url), 'utf8');
+const topbar = readFileSync(new URL('../src/components/admin/TopbarAdmin.jsx', import.meta.url), 'utf8');
+const mapa = readFileSync(new URL('../src/components/admin/MapaInteligenciaImobiliaria.jsx', import.meta.url), 'utf8');
+
+ok('hambúrguer da topbar controla o drawer lateral',
+   topbar.includes('setSidebarAbertaMobile') && sidebar.includes('sidebarAbertaMobile = false'));
+ok('drawer mobile cobre a tela e fecha pelo fundo escurecido',
+   sidebar.includes('md:hidden fixed inset-0 z-[130]') && sidebar.includes('onClick={fecharSidebarMobile}'));
+ok('drawer lista as abas e os planos do sistema',
+   sidebar.includes('secao.tituloComPreco') && sidebar.includes('precoBadge') && sidebar.includes('Ver planos e upgrade'));
+ok('escolher uma aba ou plano fecha o drawer',
+   sidebar.includes('fecharSidebarMobile();') && sidebar.includes('aria-label="Fechar menu"'));
+
+/* --------------- cards 2×2 do mapa de inteligência (títulos) ------------ */
+ok('títulos dos 4 módulos não truncam no mobile',
+   !mapa.includes('block truncate text-xs font-bold') && mapa.includes('CRM · Base de Imóveis e Leads'));
+ok('grade 2×2 mantém folga inferior (pb-24)',
+   mapa.includes('mapa-inteligencia space-y-5 pb-24'));
 
 /* --------------------- contraste das pílulas (tema claro) ---------------- */
 ok('pílula inativa clara tem fundo branco e texto escuro',

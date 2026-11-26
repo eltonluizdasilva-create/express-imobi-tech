@@ -11,7 +11,7 @@
 import { useCallback, useState } from 'react';
 import { resumirParaIA } from '../services/vizinhancaService.js';
 
-import { cabecalhosIA } from '../lib/aiAuth';
+import { cabecalhosIA } from '../lib/aiAuth.js';
 export const PESOS_AGENTES = {
   comparaveis: 0.25,
   investimento: 0.25,

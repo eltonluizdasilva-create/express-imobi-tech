@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   Lock,
   X,
@@ -39,6 +39,7 @@ import {
 import LogoExpress from '../ui/LogoExpress';
 import { DOR_SOLUCAO } from '../../lib/copyAbas';
 import { AVISO_ABA_GESTAO } from '../../lib/permissoes-menu';
+import { filtrarSecoesModoLite } from '../../lib/modoLite';
 
 /**
  * SimboloPrismaE — marca vetorial da Express Imobi Tech.
@@ -248,9 +249,12 @@ export default function SidebarAdmin({
   filtrarPorPapel = (x) => x,
   sidebarRecuada = true,
   onToggleRecuada = () => {},
+  sidebarAbertaMobile = false,
+  setSidebarAbertaMobile = () => {},
   onUpgrade = () => {},
   temaClaro = false,
   ehGestor = false,
+  modoLite = false,
 }) {
   const ehGestorEfetivo = Boolean(
     ehGestor ||
@@ -262,6 +266,11 @@ export default function SidebarAdmin({
   // Grupo selecionado para o Painel Central de Ferramentas (aberto tanto no PC quanto no celular)
   const [grupoCentralAtivo, setGrupoCentralAtivo] = useState(null);
 
+  // Fecha o drawer lateral mobile (aberto pelo hambúrguer ☰ da Topbar)
+  const fecharSidebarMobile = useCallback(() => {
+    if (typeof setSidebarAbertaMobile === 'function') setSidebarAbertaMobile(false);
+  }, [setSidebarAbertaMobile]);
+
   // Fecha o modal central com tecla Escape
   useEffect(() => {
     const handleKeyDown = (e) => {
@@ -272,6 +281,21 @@ export default function SidebarAdmin({
       return () => window.removeEventListener('keydown', handleKeyDown);
     }
   }, [grupoCentralAtivo]);
+
+  // Drawer mobile: fechar no Escape e travar o scroll do fundo enquanto aberto
+  useEffect(() => {
+    if (!sidebarAbertaMobile) return undefined;
+    const handleKeyDown = (e) => {
+      if (e.key === 'Escape') fecharSidebarMobile();
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    const overflowAnterior = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+      document.body.style.overflow = overflowAnterior;
+    };
+  }, [sidebarAbertaMobile, fecharSidebarMobile]);
 
   // Os 4 Pilares Comerciais do Sistema com Ícones Tecnológicos Modernos (sem emojis)
   const SECOES = [
@@ -575,6 +599,8 @@ export default function SidebarAdmin({
   ];
 
   const handleItemClick = (item) => {
+    // Toda escolha fecha o drawer mobile, mesmo quando abre o painel de upgrade.
+    fecharSidebarMobile();
     if (item.bloqueadoGestao) {
       alert(item.avisoGestao || 'Área de gestão: pergunte ao dono da conta.');
       return;
@@ -593,7 +619,8 @@ export default function SidebarAdmin({
     setGrupoCentralAtivo(null);
   };
 
-  const secaoModalCentral = SECOES.find((s) => s.key === grupoCentralAtivo);
+  const secoesVisiveis = filtrarSecoesModoLite(SECOES, modoLite);
+  const secaoModalCentral = secoesVisiveis.find((s) => s.key === grupoCentralAtivo) || SECOES.find((s) => s.key === grupoCentralAtivo);
 
   return (
     <>
@@ -729,7 +756,7 @@ export default function SidebarAdmin({
             {sidebarRecuada ? 'Pilares' : 'Pilares Comerciais'}
           </span>
 
-          {SECOES.map((secao) => {
+          {secoesVisiveis.map((secao) => {
             const grupoTemAbaAtiva = secao.itens.some((it) => it.id === abaAtiva);
             const IconPilar = secao.iconePilar;
 
@@ -857,6 +884,198 @@ export default function SidebarAdmin({
           </SpotlightCard>
         </div>
       </aside>
+      {/* ─── 1.b DRAWER LATERAL MOBILE (ABERTO PELO HAMBÚRGUER ☰ DA TOPBAR) ─── */}
+      {sidebarAbertaMobile && (
+        <div className="md:hidden fixed inset-0 z-[130] flex">
+          {/* Fundo escurecido: toque fora fecha o menu */}
+          <div
+            role="presentation"
+            onClick={fecharSidebarMobile}
+            className="absolute inset-0 bg-slate-950/70 backdrop-blur-sm"
+          />
+
+          <aside
+            role="dialog"
+            aria-modal="true"
+            aria-label="Menu de navegação, abas e planos"
+            style={{ backgroundColor: temaClaro ? '#ffffff' : '#020408' }}
+            className={`relative z-10 flex h-full w-[86%] max-w-xs flex-col border-r shadow-2xl ${
+              temaClaro ? 'border-slate-200 text-slate-800' : 'border-slate-800 text-white'
+            }`}
+          >
+            {/* Cabeçalho do drawer: marca + fechar */}
+            <div
+              className={`flex items-center justify-between gap-2 border-b px-3 py-3 ${
+                temaClaro ? 'border-slate-200 bg-slate-50/80' : 'border-slate-800 bg-[#04070c]'
+              }`}
+            >
+              <div className="flex min-w-0 items-center gap-2.5">
+                <SimboloPrismaE tamanho="sm" temaClaro={temaClaro} />
+                <div className="flex min-w-0 flex-col">
+                  <div className="flex items-center gap-1 leading-none">
+                    <span className={`text-xs font-black tracking-wider ${temaClaro ? 'text-slate-900' : 'text-white'}`}>
+                      EXPRESS
+                    </span>
+                    <span className="text-xs font-bold text-emerald-500">Imobi</span>
+                    <span className={`text-xs font-light ${temaClaro ? 'text-slate-500' : 'text-slate-300'}`}>
+                      Tech
+                    </span>
+                  </div>
+                  <span
+                    className={`mt-0.5 text-[9px] font-bold uppercase tracking-widest ${
+                      temaClaro ? 'text-slate-500' : 'text-slate-400'
+                    }`}
+                  >
+                    Menu · Abas · Planos
+                  </span>
+                </div>
+              </div>
+
+              <button
+                type="button"
+                onClick={fecharSidebarMobile}
+                className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border transition cursor-pointer ${
+                  temaClaro
+                    ? 'border-slate-200 bg-white text-slate-500 hover:border-emerald-400 hover:text-emerald-600'
+                    : 'border-slate-800 bg-[#060a10] text-slate-400 hover:border-emerald-500/50 hover:text-emerald-400'
+                }`}
+                aria-label="Fechar menu"
+                title="Fechar menu"
+              >
+                <X size={16} />
+              </button>
+            </div>
+
+            {/* Navegação: Início + os 4 pilares com suas abas e o preço do plano */}
+            <nav className="flex-1 space-y-3 overflow-y-auto px-2 py-3" aria-label="Abas e planos">
+              <button
+                type="button"
+                onClick={() => {
+                  setAbaAtiva('dashboard_imobi');
+                  setGrupoCentralAtivo(null);
+                  fecharSidebarMobile();
+                }}
+                aria-current={abaAtiva === 'dashboard_imobi' ? 'page' : undefined}
+                className={`flex w-full items-center gap-2 rounded-xl border px-2.5 py-2 text-left transition cursor-pointer ${
+                  abaAtiva === 'dashboard_imobi'
+                    ? temaClaro
+                      ? 'border-emerald-500 bg-emerald-50/90 text-emerald-900'
+                      : 'border-emerald-500/60 bg-emerald-500/15 text-emerald-300'
+                    : temaClaro
+                      ? 'border-slate-200 bg-white text-slate-700 hover:bg-slate-50'
+                      : 'border-slate-800 bg-[#060a10] text-slate-300 hover:border-slate-700'
+                }`}
+              >
+                <LayoutDashboard size={15} aria-hidden="true" className="shrink-0" />
+                <span className="text-[11px] font-black uppercase tracking-wide">Início · Visão Geral</span>
+              </button>
+
+              {secoesVisiveis.map((secao) => {
+                const IconePilar = secao.iconePilar;
+                const rotuloPlano = secao.tituloComPreco || secao.titulo;
+                const precoCurto = rotuloPlano.includes('·')
+                  ? rotuloPlano.split('·').pop().trim()
+                  : rotuloPlano;
+                const precoBadge = precoCurto.startsWith('R$')
+                  ? precoCurto
+                  : secao.incluso
+                    ? 'Incluso'
+                    : precoCurto;
+
+                return (
+                  <section key={secao.key} className="space-y-1.5" aria-label={`Plano ${secao.titulo}`}>
+                    <div className="flex items-center justify-between gap-2 px-1.5">
+                      <span
+                        className="flex min-w-0 items-center gap-1.5 text-[10px] font-black uppercase tracking-wider"
+                        style={{ color: secao.corPilar }}
+                      >
+                        <IconePilar size={13} aria-hidden="true" className="shrink-0" />
+                        <span className="truncate">{secao.titulo}</span>
+                      </span>
+                      <span className={`shrink-0 rounded-md border px-1.5 py-0.5 text-[9px] font-extrabold ${secao.corBadge}`}>
+                        {precoBadge}
+                      </span>
+                    </div>
+
+                    {secao.itens.map((item) => {
+                      const IconeItem = item.icone;
+                      const ativo = abaAtiva === item.id;
+                      return (
+                        <button
+                          key={item.id}
+                          type="button"
+                          onClick={() => handleItemClick(item)}
+                          aria-current={ativo ? 'page' : undefined}
+                          className={`flex w-full items-center justify-between gap-2 rounded-xl border px-2.5 py-2 text-left transition cursor-pointer ${
+                            ativo
+                              ? temaClaro
+                                ? 'border-emerald-500 bg-emerald-50/90 text-emerald-900'
+                                : 'border-emerald-500/60 bg-emerald-500/15 text-emerald-300'
+                              : temaClaro
+                                ? 'border-slate-200 bg-white text-slate-700 hover:bg-slate-50'
+                                : 'border-slate-800 bg-[#060a10] text-slate-300 hover:border-slate-700'
+                          }`}
+                        >
+                          <span className="flex min-w-0 items-center gap-2">
+                            {IconeItem ? <IconeItem size={14} aria-hidden="true" className="shrink-0" /> : null}
+                            <span className="min-w-0 text-[11px] font-bold leading-tight">{item.label}</span>
+                          </span>
+                          <span className="flex shrink-0 items-center gap-1">
+                            {item.badge ? (
+                              <span
+                                className={`rounded border px-1 py-0.5 text-[8px] font-black uppercase tracking-wide ${
+                                  item.badgeCor ||
+                                  (temaClaro
+                                    ? 'border-slate-300 bg-slate-50 text-slate-600'
+                                    : 'border-slate-700 bg-slate-900 text-slate-400')
+                                }`}
+                              >
+                                {item.badge}
+                              </span>
+                            ) : null}
+                            {item.bloqueado ? (
+                              <Lock size={11} aria-hidden="true" className="text-amber-500" />
+                            ) : null}
+                          </span>
+                        </button>
+                      );
+                    })}
+                  </section>
+                );
+              })}
+            </nav>
+
+            {/* Rodapé do drawer: plano atual + atalho para a tela de planos */}
+            <div
+              className={`border-t px-3 py-3 ${
+                temaClaro ? 'border-slate-200 bg-slate-50/80' : 'border-slate-800 bg-[#04070c]'
+              }`}
+            >
+              <div className="flex items-center justify-between gap-2">
+                <span className={`text-[10px] font-bold uppercase tracking-wider ${temaClaro ? 'text-slate-500' : 'text-slate-400'}`}>
+                  Plano atual
+                </span>
+                <span className="rounded-md border border-amber-500/40 bg-amber-500/10 px-1.5 py-0.5 text-[9px] font-black uppercase tracking-wider text-amber-500">
+                  {ehAdminTotal ? 'Admin Total' : nivelVisao}
+                </span>
+              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  setAbaAtiva('meuplano');
+                  setGrupoCentralAtivo(null);
+                  fecharSidebarMobile();
+                }}
+                className="mt-2 flex w-full items-center justify-center gap-1.5 rounded-xl border border-emerald-500/50 bg-emerald-500/15 px-3 py-2 text-[11px] font-black uppercase tracking-wider text-emerald-500 transition cursor-pointer hover:bg-emerald-500/25"
+              >
+                <Award size={14} aria-hidden="true" /> Ver planos e upgrade
+              </button>
+            </div>
+          </aside>
+        </div>
+      )}
+
+
 
       {/* ─── 2. BARRA INFERIOR FIXA NO CELULAR (< 768px) ────────────────── */}
       {/* 4 pilares tecnológicos + Início com experiência limpa e moderna */}
@@ -886,8 +1105,8 @@ export default function SidebarAdmin({
           <span className="text-[10px] font-bold mt-0.5 tracking-tight">Início</span>
         </button>
 
-        {/* Os 4 Pilares: Grátis, Pro, Plus, IA */}
-        {SECOES.map((secao) => {
+        {/* Os 4 Pilares: Grátis, Pro, Plus, IA (ou Grátis e Pro no Modo Lite) */}
+        {secoesVisiveis.map((secao) => {
           const isAtivo = secao.itens.some((it) => it.id === abaAtiva);
           const IconPilar = secao.iconePilar;
 
@@ -995,11 +1214,11 @@ export default function SidebarAdmin({
               </button>
             </div>
 
-            {/* Abas de Navegação Rápida entre os 4 Pilares no Topo do Modal */}
+            {/* Abas de Navegação Rápida entre os Pilares no Topo do Modal */}
             <div className={`px-3 sm:px-4 py-2 border-b flex items-center gap-1.5 overflow-x-auto scrollbar-none ${
               temaClaro ? 'border-slate-200 bg-slate-50/50' : 'border-slate-800/80 bg-[#090f13]'
             }`}>
-              {SECOES.map((sec) => {
+              {secoesVisiveis.map((sec) => {
                 const ativo = sec.key === grupoCentralAtivo;
                 const IconSec = sec.iconePilar;
 

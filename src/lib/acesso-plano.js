@@ -113,8 +113,7 @@ export function rotuloPlano({ nivel = 'gratis', simulado = false, trialDias = 0 
  * — a pílula do topo dizia "Plano PRO Ativo" e os módulos pagos apareciam como
  * "MÓDULO PREMIUM" (Diretor Comercial IA, agora exclusivo do PLUS).
  */
-export function modoProEfetivo({ isModoGratis, isProConta }) {
-  if (isProConta) return true;
+export function modoProEfetivo({ isModoGratis }) {
   return !isModoGratis;
 }
 

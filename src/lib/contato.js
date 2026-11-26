@@ -14,7 +14,7 @@
  * ============================================================================
  */
 
-import { EMAIL_INSTITUCIONAL } from './appUrl';
+import { EMAIL_INSTITUCIONAL } from './appUrl.js';
 
 /** Número para `wa.me` — só dígitos, com DDI (USADO NO CÓDIGO). */
 export const WHATSAPP_SUPORTE = '8562099640154';

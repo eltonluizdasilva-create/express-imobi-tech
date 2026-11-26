@@ -1,0 +1,103 @@
+﻿1: import React, { Component, useState, useEffect, useMemo, useRef, useCallback } from 'react';
+608: export default function Admin() {
+646: const [claimAdmin, setClaimAdmin] = useState(false);
+647: useEffect(() => {
+654: return () => { vivo = false; };
+661: const [nivelSimulado, setNivelSimulado] = useState(() => {
+674: useEffect(() => {
+683: const [modoLite, setModoLite] = useState(lerEstadoModoLite);
+685: const toggleModoLite = useCallback(() => {
+694: useEffect(() => {
+750: useEffect(() => {
+758: const [abaAtiva, setAbaAtiva] = useState('mapa_inteligencia');
+761: useEffect(() => {
+780: const [pedidoNovoProcesso, setPedidoNovoProcesso] = useState(0);
+781: const abrirNovoProcesso = useCallback(() => {
+785: const consumirPedidoNovoProcesso = useCallback(() => setPedidoNovoProcesso(0), []);
+788: const [tema, setTema] = useState(() => {
+797: const [listaLeads, setListaLeads] = useState([]);
+798: const [listaImoveis, setListaImoveis] = useState([]);
+799: const [listaVisitas, setListaVisitas] = useState([]);
+800: const [listaPropostas, setListaPropostas] = useState([]);
+803: const [prestacaoFoco, setPrestacaoFoco] = useState(null);
+804: const [listaTarefas, setListaTarefas] = useState([]);
+805: const [listaFinanceiro, setListaFinanceiro] = useState([]);
+806: const [config, setConfig] = useState({});
+807: const [planosSistema, setPlanosSistema] = useState({});
+808: const [agentesIA, setAgentesIA] = useState(AGENTES_INICIAIS);
+811: const [roletaAtiva, setRoletaAtiva] = useState(true);
+812: const [tempoRepasseMin, setTempoRepasseMin] = useState(15);
+813: const [ponteiroRoleta, setPonteiroRoleta] = useState(0);
+814: const [statusRoletaMsg, setStatusRoletaMsg] = useState('');
+815: const [novoCorretorNome, setNovoCorretorNome] = useState('');
+816: const [novoCorretorZap, setNovoCorretorZap] = useState('');
+817: const [corretoresRoleta, setCorretoresRoleta] = useState([
+824: const [modalNovoImovel, setModalNovoImovel] = useState(false);
+826: const [tourManual, setTourManual] = useState(false);
+827: const [modalNovoLeadImobi, setModalNovoLeadImobi] = useState(false);
+828: const [modalNovaVisita, setModalNovaVisita] = useState(false);
+829: const [salvandoAcao, setSalvandoAcao] = useState(false);
+830: const [sidebarAbertaMobile, setSidebarAbertaMobile] = useState(false);
+831: const [modalAjudaAberto, setModalAjudaAberto] = useState(false);
+832: const [sidebarRecuada, setSidebarRecuada] = useState(() => {
+840: const toggleSidebarRecuada = useCallback(() => {
+851: const [carregandoDemo, setCarregandoDemo] = useState(false);
+852: const [mensagemDemo, setMensagemDemo] = useState('');
+853: const [gerandoAuditoriaZara, setGerandoAuditoriaZara] = useState(false);
+854: const [ultimaAuditoriaZara, setUltimaAuditoriaZara] = useState(null);
+855: const [erroAuditoriaZara, setErroAuditoriaZara] = useState('');
+858: const [filtroNichoCaptacao, setFiltroNichoCaptacao] = useState('Todos');
+859: const [novaFotoInput, setNovaFotoInput] = useState('');
+860: const [avisoFotosImovel, setAvisoFotosImovel] = useState('');
+861: const [formImovel, setFormImovel] = useState({
+886: const [formLead, setFormLead] = useState({
+894: const [formVisita, setFormVisita] = useState({
+905: const [msgTesteIA, setMsgTesteIA] = useState('');
+906: const [enviandoSimIA, setEnviandoSimIA] = useState(false);
+907: const [erroSimIA, setErroSimIA] = useState('');
+908: const [gatilhoSimIA, setGatilhoSimIA] = useState(null);
+909: const [historicoTesteIA, setHistoricoTesteIA] = useState(historicoInicialSimulador);
+911: const [restantesPolen, setRestantesPolen] = useState(() => restantesDemo('polen'));
+915: const imoveisDisponiveisSimIA = useMemo(() => filtrarCatalogoDisponivel(listaImoveis), [listaImoveis]);
+918: const [trialExpirou, setTrialExpirou] = useState(false);
+919: const trialVerificadoRef = useRef(false);
+920: const [toastModuloBloqueado, setToastModuloBloqueado] = useState(null);
+921: const [modalUpgradeAba, setModalUpgradeAba] = useState(null);
+923: const [dadosNegocioGlobal, setDadosNegocioGlobal] = useState({
+934: const filtrarPorPapel = useCallback((itens) => filtrarModulos(itens, papelEfetivo), [papelEfetivo]);
+937: useEffect(() => {
+941: const toggleTema = useCallback(() => {
+953: const imobiliariaId = useMemo(() => {
+955: return (
+966: useEffect(() => {
+982: const isTrial = useMemo(() => {
+988: useEffect(() => {
+1007: useEffect(() => {
+1042: return (tB || 0) - (tA || 0);
+1114: return () => {
+1124: useEffect(() => {
+1129: useEffect(() => {
+1143: useEffect(() => {
+1157: return () => {
+1413: const corretoresComMetricas = useMemo(() => {
+1436: const corretoresAtivos = useMemo(
+1442: const proximoCorretorDaVez = useMemo(() => {
+1637: const reiniciarSimuladorIA = useCallback(() => {
+1744: const moduloLiberado = useCallback(() => true, []);
+1745: const lidarModuloBloqueado = useCallback((aba) => {
+1751: const metricas = useMemo(() => {
+1791: const dadosGraficoVGV = useMemo(() => {
+1828: useEffect(() => {
+1831: return () => raiz.classList.remove('tema-claro');
+1837: return (
+1852: return (
+1900: const pilarAbaAtiva = useMemo(() => {
+2215: return (
+2344: return (
+2436: return (
+2459: return (
+2500: return (
+2712: return (
+2768: return (
+2976: return (
+3924: return (

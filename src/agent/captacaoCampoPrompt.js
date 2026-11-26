@@ -63,14 +63,27 @@ export function converterNumeroSeguro(valor) {
   if (typeof valor === 'string') {
     const limpo = valor.trim().replace(/[^\d.,-]/g, '');
     if (!limpo) return null;
-    const padronizado = limpo.includes(',') && !limpo.includes('.')
-      ? limpo.replace(',', '.')
-      : limpo.replace(/,/g, '');
+
+    let padronizado = limpo;
+    if (limpo.includes('.') && limpo.includes(',')) {
+      if (limpo.indexOf('.') < limpo.indexOf(',')) {
+        // Formato BR: 1.250,50 -> 1250.50
+        padronizado = limpo.replace(/\./g, '').replace(',', '.');
+      } else {
+        // Formato US: 1,250.50 -> 1250.50
+        padronizado = limpo.replace(/,/g, '');
+      }
+    } else if (limpo.includes(',')) {
+      padronizado = limpo.replace(',', '.');
+    }
+
     const num = Number(padronizado);
     return Number.isFinite(num) ? num : null;
   }
   return null;
 }
+
+export const toNum = converterNumeroSeguro;
 
 /**
  * Normaliza e faz o parse seguro da resposta da IA, tratando eventuais blocos

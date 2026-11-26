@@ -1,0 +1,4 @@
+﻿LaudoExecutivo.jsx:120: <div class="box"><strong>Aluguel estimado</strong><br>${brl(a2.aluguelMensal)}/mês</div>
+LaudoExecutivo.jsx:121: <div class="box"><strong>Cap Rate · ROI 5 anos</strong><br>${pct(a2.capRateAnual)} · ${pct(a2.roi5Anos)}</div>
+LaudoExecutivo.jsx:236: <p className="text-lg font-black text-white">{pct(a2.capRateAnual)}</p>
+LaudoExecutivo.jsx:249: Aluguel {brl(a2.aluguelMensal)}/mês · ROI 5 anos {pct(a2.roi5Anos)}

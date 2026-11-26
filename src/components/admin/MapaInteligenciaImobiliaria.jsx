@@ -91,7 +91,7 @@ export default function MapaInteligenciaImobiliaria({
 
 
   return (
-    <div className="mapa-inteligencia space-y-5">
+    <div className="mapa-inteligencia space-y-5 pb-24">
       <style>{`
         .mapa-inteligencia .mapa-stage {
           box-shadow: 0 20px 60px -25px rgba(16, 185, 129, 0.45), inset 0 1px 0 rgba(255,255,255,0.08);
@@ -192,7 +192,7 @@ export default function MapaInteligenciaImobiliaria({
                 type="button"
                 aria-pressed={ativo}
                 onClick={() => setSelecionado(no.id)}
-                className={`mapa-node flex items-center gap-2.5 rounded-xl border p-2.5 text-left transition sm:p-3 ${
+                className={`mapa-node flex items-start gap-2 rounded-xl border p-2.5 text-left transition sm:items-center sm:gap-2.5 sm:p-3 ${
                   ativo
                     ? 'border-emerald-500 bg-emerald-500/15 shadow-lg shadow-emerald-500/20'
                     : temaClaro
@@ -204,16 +204,18 @@ export default function MapaInteligenciaImobiliaria({
                 }}
               >
                 <div
-                  className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg transition-transform"
+                  className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg transition-transform sm:h-8 sm:w-8"
                   style={{ backgroundColor: `${no.cor}22`, color: no.cor }}
                 >
-                  <Icone size={17} aria-hidden="true" />
+                  <Icone size={15} aria-hidden="true" className="sm:hidden" />
+                  <Icone size={17} aria-hidden="true" className="hidden sm:block" />
                 </div>
-                <div className="min-w-0">
-                  <span className={`block truncate text-xs font-bold ${temaClaro ? 'text-slate-900' : 'text-white'}`}>
+                <div className="min-w-0 flex-1">
+                  {/* Sem truncate: no mobile os títulos longos quebram em 2–3 linhas */}
+                  <span className={`block text-[11px] font-bold leading-tight sm:text-xs ${temaClaro ? 'text-slate-900' : 'text-white'}`}>
                     {no.titulo}
                   </span>
-                  <span className="block truncate text-[10px] text-slate-400">
+                  <span className="mt-0.5 block text-[10px] leading-tight text-slate-400">
                     {no.papel}
                   </span>
                 </div>

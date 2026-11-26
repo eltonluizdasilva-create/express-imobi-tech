@@ -367,35 +367,28 @@ export default function FloatingButtons({
 
   return (
     <>
-      {/* ─── BOTÃO FLUTUANTE ÚNICO: CANTO INFERIOR DIREITO ─────────────── */}
-      <div className="fixed bottom-4 right-4 md:bottom-6 md:right-6 z-[60] flex items-center">
+      {/* ─── BOTÃO FLUTUANTE ÚNICO: RECOLHIDO POR PADRÃO (APENAS O CÍRCULO) ─── */}
+      {/* Mobile: `bottom-20` mantém o botão acima da barra inferior fixa (Início/pilares) */}
+      {/* para não cobrir o atalho "Início" — o rótulo só aparece dentro do hub aberto. */}
+      <div className="fixed bottom-20 right-4 md:bottom-6 md:right-6 z-[60] flex items-center">
         <button
           type="button"
           onClick={() => setChatAberto((v) => !v)}
-          className="group relative flex items-center gap-2.5 rounded-full border border-emerald-500/40 bg-[#020408]/95 px-4 py-2.5 shadow-[0_0_25px_rgba(16,185,129,0.35)] backdrop-blur-md transition-all duration-300 hover:scale-105 hover:border-emerald-400 hover:shadow-[0_0_35px_rgba(16,185,129,0.5)] active:scale-95 cursor-pointer"
-          aria-label="Abrir Hub de Assistentes IA (Sofia, Zara, Tom)"
+          className="group relative flex h-14 w-14 items-center justify-center rounded-full border border-emerald-500/40 bg-[#020408]/95 shadow-[0_0_25px_rgba(16,185,129,0.35)] backdrop-blur-md transition-all duration-300 hover:scale-105 hover:border-emerald-400 hover:shadow-[0_0_35px_rgba(16,185,129,0.5)] active:scale-95 cursor-pointer"
+          aria-label="Sofia • Zara • Tom — abrir assistentes de IA"
+          aria-expanded={chatAberto}
           title="Assistentes de IA • Sofia • Zara • Tom"
         >
           {/* Micro-indicador pulsante */}
-          <span className="relative flex h-2.5 w-2.5">
+          <span aria-hidden="true" className="absolute -right-0.5 -top-0.5 flex h-2.5 w-2.5">
             <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75" />
             <span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-emerald-500" />
           </span>
 
-          {/* Ícone com gradiente */}
-          <div className="flex h-7 w-7 items-center justify-center rounded-full bg-gradient-to-tr from-emerald-500 via-teal-400 to-sky-400 text-[#020408] shadow-sm">
-            <Sparkles size={14} className="animate-spin-slow" />
-          </div>
-
-          {/* Rótulo discreto conforme especificação do usuário */}
-          <div className="flex flex-col text-left">
-            <span className="text-[11px] font-black uppercase tracking-wider text-white group-hover:text-emerald-400 transition">
-              Sofia • Zara • Tom
-            </span>
-            <span className="text-[9px] font-bold text-slate-400">
-              Assistentes de IA • Suporte & Operação
-            </span>
-          </div>
+          {/* Ícone com gradiente — único elemento visível no estado recolhido */}
+          <span className="flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-tr from-emerald-500 via-teal-400 to-sky-400 text-[#020408] shadow-sm">
+            <Sparkles size={18} />
+          </span>
         </button>
       </div>
 

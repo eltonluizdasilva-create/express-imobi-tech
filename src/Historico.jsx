@@ -15,8 +15,10 @@ import {
   Send,
   Trash2,
   Calculator,
+  Key,
 } from 'lucide-react';
 import TriagemCredito from './components/imobi/TriagemCredito';
+import VistoriaEntregaChaves from './components/imobi/VistoriaEntregaChaves';
 
 const PROPOSTAS_DEMONSTRACAO = [
   {
@@ -50,7 +52,8 @@ const PROPOSTAS_DEMONSTRACAO = [
 ];
 
 export default function Historico({ oficinaId, setAbaAtiva }) {
-  const [subAba, setSubAba] = useState('propostas'); // 'propostas' | 'triagem'
+  const [subAba, setSubAba] = useState('propostas'); // 'propostas' | 'triagem' | 'vistoria'
+  const [propostaVistoriaFoco, setPropostaVistoriaFoco] = useState(null);
   const [propostas, setPropostas] = useState(PROPOSTAS_DEMONSTRACAO);
   const [searchTerm, setSearchTerm] = useState('');
   const [filtroStatus, setFiltroStatus] = useState('Todos');
@@ -293,10 +296,35 @@ export default function Historico({ oficinaId, setAbaAtiva }) {
             PRO · IA
           </span>
         </button>
+
+        <button
+          type="button"
+          onClick={() => {
+            setPropostaVistoriaFoco(null);
+            setSubAba('vistoria');
+          }}
+          className={`px-4 py-2 rounded-xl text-xs font-black transition cursor-pointer flex items-center gap-2 ${
+            subAba === 'vistoria'
+              ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 shadow-sm'
+              : 'text-zinc-400 hover:text-white hover:bg-zinc-900 border border-transparent'
+          }`}
+        >
+          <Key size={15} className={subAba === 'vistoria' ? 'text-emerald-400' : ''} />
+          <span>Vistoria & Entrega de Chaves</span>
+          <span className="text-[9px] px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 font-black">
+            PRO · Laudo
+          </span>
+        </button>
       </div>
 
       {subAba === 'triagem' ? (
         <TriagemCredito setAbaAtiva={setAbaAtiva} />
+      ) : subAba === 'vistoria' ? (
+        <VistoriaEntregaChaves
+          oficinaId={oficinaId}
+          propostaInicial={propostaVistoriaFoco}
+          onVoltarParaPropostas={() => setSubAba('propostas')}
+        />
       ) : (
         <>
       {/* FORMULÁRIO DE NOVA PROPOSTA IMOBILIÁRIA */}
@@ -509,14 +537,25 @@ export default function Historico({ oficinaId, setAbaAtiva }) {
                 )}
               </div>
 
-              <div className="flex items-center justify-between gap-2 pt-3 border-t border-zinc-800">
+              <div className="flex flex-wrap items-center justify-between gap-2 pt-3 border-t border-zinc-800">
                 <button
                   type="button"
                   onClick={() => enviarPropostaWhatsApp(p)}
                   style={{ backgroundColor: '#10b981' }}
-                  className="flex-1 py-2.5 px-4 rounded-xl text-slate-950 font-black text-xs uppercase tracking-wider flex items-center justify-center gap-2 hover:opacity-90 transition cursor-pointer"
+                  className="flex-1 py-2.5 px-3 rounded-xl text-slate-950 font-black text-xs uppercase tracking-wider flex items-center justify-center gap-1.5 hover:opacity-90 transition cursor-pointer"
                 >
-                  <Send size={13} /> Enviar Proposta no WhatsApp
+                  <Send size={13} /> WhatsApp
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setPropostaVistoriaFoco(p);
+                    setSubAba('vistoria');
+                  }}
+                  className="py-2.5 px-3 rounded-xl bg-zinc-800 hover:bg-emerald-500/20 text-zinc-300 hover:text-emerald-300 border border-zinc-700/80 text-xs font-bold flex items-center justify-center gap-1.5 transition cursor-pointer"
+                  title="Abrir laudo de vistoria para este imóvel"
+                >
+                  <Key size={13} className="text-[#10b981]" /> Vistoria de Chaves
                 </button>
                 <button
                   type="button"

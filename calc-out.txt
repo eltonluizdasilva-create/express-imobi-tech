@@ -1,0 +1,10 @@
+﻿simuladorSofia.js:5: * juros e fichas fictícias. Aqui nada é inventado:
+travas-legais.js:150: jurosReferencia: 4.0,
+travas-legais.js:151: descricao: 'Renda mensal até R$ 2.850 — maior subsídio, menor juros',
+travas-legais.js:158: jurosReferencia: 5.5,
+travas-legais.js:166: jurosReferencia: 7.5,
+travas-legais.js:210: jurosReferencia: faixa?.jurosReferencia || null,
+travas-legais.js:214: ? parcelaPrice(Number(valorImovel) - (faixa.subsidioReferencia || 0), faixa.jurosReferencia, 360)
+travas-legais.js:219: /** Parcela pela Tabela Price (juros anual → mensal). */
+travas-legais.js:220: export function parcelaPrice(valorFinanciado, jurosAnualPct, meses = 360) {
+travas-legais.js:222: const i = (Number(jurosAnualPct) || 0) / 100 / 12;

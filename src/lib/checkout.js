@@ -6,7 +6,7 @@
  * ============================================================================
  */
 
-import { WHATSAPP_SUPORTE } from './contato';
+import { WHATSAPP_SUPORTE } from './contato.js';
 
 export const WHATSAPP_PADRAO = WHATSAPP_SUPORTE;
 

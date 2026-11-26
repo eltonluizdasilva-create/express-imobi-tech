@@ -3,6 +3,7 @@ import {
   Ruler, Copy, Check, Printer, Sparkles, AlertTriangle, TrendingUp,
   Building2, MapPin, Gauge, FileText, MessageSquare, Info, ChevronDown, ChevronUp, Stamp,
   Camera, X, Loader2, ScanSearch, Mic, Trash2, Video, ArrowRight,
+  Compass, Navigation, Plus,
 } from 'lucide-react';
 import HeroAba from '../admin/HeroAba';
 import GuiaDaAba from '../ui/GuiaDaAba';
@@ -17,6 +18,10 @@ import {
   TIPOLOGIAS, PADROES, ESTADOS_CONSERVACAO, TOPOGRAFIAS, CONDICOES_TESTADA, FINALIDADES_PTAM,
 } from '../../lib/avaliacao';
 import { processarCaptacaoCampoIA } from '../../agent/captacaoCampoPrompt';
+import {
+  CATEGORIAS_RADAR, IMPACTOS_RADAR, ANCORAS_PREDEFINIDAS,
+  calcularIndiceLiquidez, gerarParecerFatorLocalizacao, gerarArgumentoWhatsAppLocalizacao,
+} from '../../lib/radarEntorno';
 
 const card = 'bg-[#020408] border border-slate-800 rounded-3xl';
 const labelCls = 'block text-[10px] font-black uppercase tracking-widest text-slate-400 mb-1.5';
@@ -80,6 +85,30 @@ export default function AvaliacaoImovel({ setAbaAtiva, onExportarCaptacao }) {
   const [okAudio, setOkAudio] = useState('');
   const reconhecimentoRef = useRef(null);
   const gravacaoAtivaRef = useRef(false);
+
+  // ─── Radar de Valorização & Amenidades do Entorno (Fator Localização) ───────
+  const [ancorasEntorno, setAncorasEntorno] = useState([
+    { id: 'anc_1', nome: 'Supermercado / Atacadista', categoria: CATEGORIAS_RADAR.COMERCIO, distancia: '300m', impacto: IMPACTOS_RADAR.CONVENIENCIA, pesoBase: 14 },
+    { id: 'anc_2', nome: 'Escola / Colégio de Referência', categoria: CATEGORIAS_RADAR.EDUCACAO, distancia: '400m', impacto: IMPACTOS_RADAR.ALTA_VALORIZACAO, pesoBase: 18 },
+  ]);
+  const [novaAncoraNome, setNovaAncoraNome] = useState('');
+  const [novaAncoraDistancia, setNovaAncoraDistancia] = useState('500m');
+  const [novaAncoraCategoria, setNovaAncoraCategoria] = useState(CATEGORIAS_RADAR.COMERCIO);
+  const [novaAncoraImpacto, setNovaAncoraImpacto] = useState(IMPACTOS_RADAR.CONVENIENCIA);
+  const [copiadoLocalizacao, setCopiadoLocalizacao] = useState(false);
+  const [copiadoParecer, setCopiadoParecer] = useState(false);
+  const [refinandoPitchIA, setRefinandoPitchIA] = useState(false);
+  const [pitchIARefinado, setPitchIARefinado] = useState('');
+
+  const indiceLiquidez = useMemo(() => calcularIndiceLiquidez(ancorasEntorno), [ancorasEntorno]);
+  const parecerLocalizacaoSugerido = useMemo(() => {
+    return gerarParecerFatorLocalizacao({
+      bairro,
+      cidade,
+      ancoras: ancorasEntorno,
+      indice: indiceLiquidez,
+    });
+  }, [bairro, cidade, ancorasEntorno, indiceLiquidez]);
 
   useEffect(() => {
     return () => {
@@ -304,8 +333,100 @@ export default function AvaliacaoImovel({ setAbaAtiva, onExportarCaptacao }) {
     setComparaveis((atual) => atual.map((c, i) => (i === idx ? { ...c, [campo]: valor } : c)));
   }
 
+  const documentoComLocalizacao = useMemo(() => {
+    if (!temArea) return 'Informe a área do imóvel para gerar o documento.';
+    if (abaSaida === 'resumo') {
+      return ancorasEntorno.length > 0
+        ? `${resumo}\n\n📍 VETOR DE LOCALIZAÇÃO & LIQUIDEZ:\nÍndice de Liquidez: ${indiceLiquidez.score}/100 (${indiceLiquidez.classificacao.rotulo})\n${pitchIARefinado || parecerLocalizacaoSugerido}`
+        : resumo;
+    }
+    return ancorasEntorno.length > 0
+      ? `${documento}\n\n6. ANÁLISE DO ENTORNO & FATOR LOCALIZAÇÃO (ABNT NBR 14653)\nÍndice de Liquidez e Atratividade Mercadológica: ${indiceLiquidez.score}/100 (${indiceLiquidez.classificacao.rotulo})\n${pitchIARefinado || parecerLocalizacaoSugerido}`
+      : documento;
+  }, [abaSaida, temArea, resumo, documento, ancorasEntorno, indiceLiquidez, parecerLocalizacaoSugerido, pitchIARefinado]);
+
+  function adicionarAncoraPredefinida(anc) {
+    const id = `anc_${Date.now()}_${Math.floor(Math.random() * 1000)}`;
+    setAncorasEntorno((prev) => [...prev, { id, ...anc }]);
+  }
+
+  function adicionarAncoraCustomizada(e) {
+    if (e) e.preventDefault();
+    if (!novaAncoraNome.trim()) return;
+    const id = `anc_cust_${Date.now()}`;
+    const peso = novaAncoraImpacto === IMPACTOS_RADAR.ALTA_VALORIZACAO ? 18 : novaAncoraImpacto === IMPACTOS_RADAR.CONVENIENCIA ? 14 : -20;
+    setAncorasEntorno((prev) => [
+      ...prev,
+      {
+        id,
+        nome: novaAncoraNome.trim(),
+        distancia: novaAncoraDistancia.trim() || '500m',
+        categoria: novaAncoraCategoria,
+        impacto: novaAncoraImpacto,
+        pesoBase: peso,
+      },
+    ]);
+    setNovaAncoraNome('');
+  }
+
+  function removerAncora(id) {
+    setAncorasEntorno((prev) => prev.filter((a) => a.id !== id));
+  }
+
+  function copiarWhatsAppLocalizacao() {
+    const txt = gerarArgumentoWhatsAppLocalizacao({
+      bairro,
+      cidade,
+      ancoras: ancorasEntorno,
+      indice: indiceLiquidez,
+      valorPedido,
+    });
+    try {
+      navigator.clipboard?.writeText(txt);
+      setCopiadoLocalizacao(true);
+      setTimeout(() => setCopiadoLocalizacao(false), 2200);
+    } catch {}
+  }
+
+  function copiarParecerTecnico() {
+    try {
+      navigator.clipboard?.writeText(pitchIARefinado || parecerLocalizacaoSugerido);
+      setCopiadoParecer(true);
+      setTimeout(() => setCopiadoParecer(false), 2200);
+    } catch {}
+  }
+
+  async function refinarPitchComIA() {
+    if (refinandoPitchIA) return;
+    setRefinandoPitchIA(true);
+    try {
+      const res = await fetch('/api/ai', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          provider: 'gemini',
+          systemPrompt: 'Você é um avaliador e copywriter imobiliário sênior especialista em ABNT NBR 14653. Escreva um pitch persuasivo de valorização do entorno do imóvel.',
+          prompt: `Imóvel situado em ${[bairro, cidade].filter(Boolean).join(', ') || 'região metropolitana'}.
+Índice de Liquidez: ${indiceLiquidez.score}/100 (${indiceLiquidez.classificacao.rotulo}).
+Amenidades do entorno: ${ancorasEntorno.map((a) => `${a.nome} a ${a.distancia} (${a.impacto})`).join(', ')}.
+Escreva 2 parágrafos objetivos defendendo a localização e o valor pedido perante um comprador exigente ou proprietário.`,
+        }),
+      });
+      const data = await res.json();
+      if (data && data.text) {
+        setPitchIARefinado(data.text);
+      } else {
+        setPitchIARefinado(parecerLocalizacaoSugerido);
+      }
+    } catch {
+      setPitchIARefinado(parecerLocalizacaoSugerido);
+    } finally {
+      setRefinandoPitchIA(false);
+    }
+  }
+
   async function copiar() {
-    const texto = abaSaida === 'resumo' ? resumo : documento;
+    const texto = documentoComLocalizacao;
     try {
       await navigator.clipboard.writeText(texto);
       setCopiado(true);
@@ -810,6 +931,176 @@ export default function AvaliacaoImovel({ setAbaAtiva, onExportarCaptacao }) {
               </div>
             )}
           </div>
+
+          {/* Radar de Valorização & Amenidades do Entorno (Fator Localização — ABNT NBR 14653) */}
+          <div className="rounded-2xl border border-slate-800 p-4 space-y-4 bg-slate-950/40">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-800 pb-3">
+              <div className="flex items-center gap-2">
+                <Compass size={15} className="text-[#10b981]" />
+                <span className="text-[10px] font-black uppercase tracking-widest text-slate-300">
+                  Radar de Valorização & Entorno (Fator Localização)
+                </span>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="text-[10px] font-bold text-slate-400">Índice:</span>
+                <span
+                  style={{ color: indiceLiquidez.classificacao.cor }}
+                  className="text-sm font-black"
+                >
+                  {indiceLiquidez.score}/100
+                </span>
+                <span
+                  className={`text-[9px] font-extrabold uppercase px-2 py-0.5 rounded-full border ${indiceLiquidez.classificacao.badge}`}
+                >
+                  {indiceLiquidez.classificacao.rotulo}
+                </span>
+              </div>
+            </div>
+
+            <p className="text-[11px] text-slate-400 leading-relaxed">
+              Pondere o impacto da infraestrutura urbana de <strong>{[bairro, cidade].filter(Boolean).join(', ') || 'seu bairro'}</strong> no valor de mercado (ABNT NBR 14653).
+            </p>
+
+            {/* Botões de Seleção Rápida */}
+            <div>
+              <label className="block text-[10px] font-black uppercase tracking-wider text-slate-500 mb-2">
+                Adicionar Amenidade Rápida:
+              </label>
+              <div className="flex flex-wrap gap-1.5">
+                {ANCORAS_PREDEFINIDAS.map((anc, idx) => (
+                  <button
+                    key={idx}
+                    type="button"
+                    onClick={() => adicionarAncoraPredefinida(anc)}
+                    className="px-2.5 py-1 rounded-lg bg-slate-900 hover:bg-slate-800 border border-slate-800 text-[11px] text-slate-300 hover:text-white transition cursor-pointer flex items-center gap-1.5"
+                  >
+                    <Plus size={11} className="text-[#10b981]" />
+                    <span>{anc.nome}</span>
+                    <span className="text-[9px] text-slate-500">({anc.distancia})</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Lista de Âncoras Ativas */}
+            {ancorasEntorno.length > 0 && (
+              <div className="space-y-2 pt-1">
+                <label className="block text-[10px] font-black uppercase tracking-wider text-slate-500">
+                  Âncoras & Condicionantes Consideradas ({ancorasEntorno.length}):
+                </label>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                  {ancorasEntorno.map((a) => {
+                    const isAtencao = a.categoria === CATEGORIAS_RADAR.RUIDO_ATENCAO || a.impacto === IMPACTOS_RADAR.PONTO_ATENCAO;
+                    return (
+                      <div
+                        key={a.id}
+                        className="flex items-center justify-between gap-2 p-2 rounded-xl bg-[#020408] border border-slate-800/80 text-xs"
+                      >
+                        <div className="min-w-0 flex-1">
+                          <p className="font-bold text-white truncate text-[11px]">{a.nome}</p>
+                          <div className="flex items-center gap-2 text-[10px] text-slate-500 mt-0.5">
+                            <span className="text-slate-400">{a.distancia}</span>
+                            <span>•</span>
+                            <span className={isAtencao ? 'text-rose-400 font-bold' : 'text-emerald-400'}>
+                              {a.impacto}
+                            </span>
+                          </div>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => removerAncora(a.id)}
+                          className="p-1 rounded-lg hover:bg-slate-800 text-slate-500 hover:text-red-400 transition cursor-pointer"
+                          title="Remover âncora"
+                        >
+                          <X size={13} />
+                        </button>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
+            {/* Adicionar Âncora Personalizada */}
+            <div className="pt-2 border-t border-slate-800/80">
+              <label className="block text-[10px] font-black uppercase tracking-wider text-slate-500 mb-1.5">
+                Personalizar Âncora / Ponto de Atenção:
+              </label>
+              <div className="grid grid-cols-1 sm:grid-cols-4 gap-2">
+                <input
+                  type="text"
+                  value={novaAncoraNome}
+                  onChange={(e) => setNovaAncoraNome(e.target.value)}
+                  placeholder="Ex: Polo Tecnológico, Estádio..."
+                  className="sm:col-span-2 bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white placeholder-slate-600 focus:outline-none focus:border-[#10b981]"
+                />
+                <input
+                  type="text"
+                  value={novaAncoraDistancia}
+                  onChange={(e) => setNovaAncoraDistancia(e.target.value)}
+                  placeholder="Ex: 500m ou 1.2km"
+                  className="bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white placeholder-slate-600 focus:outline-none focus:border-[#10b981]"
+                />
+                <select
+                  value={novaAncoraImpacto}
+                  onChange={(e) => setNovaAncoraImpacto(e.target.value)}
+                  className="bg-slate-950 border border-slate-800 rounded-xl px-2 py-2 text-xs text-white focus:outline-none focus:border-[#10b981]"
+                >
+                  <option value={IMPACTOS_RADAR.ALTA_VALORIZACAO}>Alta Valorização</option>
+                  <option value={IMPACTOS_RADAR.CONVENIENCIA}>Conveniência</option>
+                  <option value={IMPACTOS_RADAR.PONTO_ATENCAO}>Ponto de Atenção</option>
+                </select>
+              </div>
+              <button
+                type="button"
+                onClick={adicionarAncoraCustomizada}
+                disabled={!novaAncoraNome.trim()}
+                className="mt-2 w-full sm:w-auto px-4 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 disabled:opacity-40 text-xs font-bold text-white transition cursor-pointer flex items-center justify-center gap-1.5"
+              >
+                <Plus size={13} /> Inserir no Radar
+              </button>
+            </div>
+
+            {/* Parecer Técnico Automático & Ações Rápidas */}
+            <div className="pt-2 border-t border-slate-800 space-y-2.5">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                <span className="text-[10px] font-black uppercase tracking-wider text-emerald-400 flex items-center gap-1.5">
+                  <Check size={12} /> Parecer Técnico ABNT NBR 14653 (Injetável no Laudo)
+                </span>
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={copiarParecerTecnico}
+                    className="px-2.5 py-1 rounded-lg bg-emerald-500/15 hover:bg-emerald-500/25 text-emerald-300 border border-emerald-500/30 text-[10px] font-bold transition cursor-pointer flex items-center gap-1"
+                  >
+                    {copiadoParecer ? <Check size={11} /> : <Copy size={11} />}
+                    <span>{copiadoParecer ? 'Copiado!' : 'Copiar Parecer'}</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={copiarWhatsAppLocalizacao}
+                    className="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 text-[10px] font-bold transition cursor-pointer flex items-center gap-1"
+                  >
+                    {copiadoLocalizacao ? <Check size={11} /> : <Copy size={11} />}
+                    <span>{copiadoLocalizacao ? 'Copiado!' : 'WhatsApp Defesa de Preço'}</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={refinarPitchComIA}
+                    disabled={refinandoPitchIA}
+                    className="px-2.5 py-1 rounded-lg bg-emerald-500 text-slate-950 hover:bg-emerald-400 disabled:opacity-50 text-[10px] font-black uppercase transition cursor-pointer flex items-center gap-1"
+                  >
+                    {refinandoPitchIA ? <Loader2 size={11} className="animate-spin" /> : <Sparkles size={11} />}
+                    <span>{refinandoPitchIA ? 'Refinando...' : 'Pitch com IA'}</span>
+                  </button>
+                </div>
+              </div>
+
+              <div className="p-3 rounded-xl bg-[#020408] border border-slate-800/80 text-xs text-slate-300 leading-relaxed">
+                {pitchIARefinado || parecerLocalizacaoSugerido}
+              </div>
+            </div>
+          </div>
         </div>
 
         {/* Resultado */}
@@ -989,7 +1280,7 @@ export default function AvaliacaoImovel({ setAbaAtiva, onExportarCaptacao }) {
         </div>
 
         <pre className="max-h-[420px] overflow-auto whitespace-pre-wrap rounded-2xl border border-slate-800 bg-slate-950/60 p-4 text-[11px] leading-relaxed text-slate-300">
-          {temArea ? (abaSaida === 'resumo' ? resumo : documento) : 'Informe a área do imóvel para gerar o documento.'}
+          {documentoComLocalizacao}
         </pre>
 
         <p className="mt-2 flex items-center gap-1.5 text-[10px] text-slate-500">

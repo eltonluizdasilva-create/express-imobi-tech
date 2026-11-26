@@ -1,0 +1,21 @@
+﻿radarMaps.js:372: return `Olá! Vi o destaque e a sólida reputação da ${nomeEmpresa} na nossa região. Pelo perfil de patrimônio e reserva de valor do setor, selecionei com exclusividade o ${imovelNome}${imovelBairro}${imovelPreco}: imóvel de alta liquidez e retorno acima do CDI. Posso te enviar a ficha executiva de 1 página com o cálculo de rentabilidade?`;
+retornos.js:160: if (temAlgum(servicosEstetica, ['polimentoSimples', 'polimentoCompleto', 'cristalizacao', 'envelopamentoTotal', 'envelopamentoParcial', 'peliculaPPF', 'coatingCeramico', 'vitrificacao', 'restauracaoFarois', 'polimentoTeto'])) {
+travas-legais.js:183: possuiOutroImovel = false,
+travas-legais.js:195: if (possuiOutroImovel) impedimentos.push('Já possui imóvel residencial — regra geral de vedação ao segundo imóvel.');
+CaptacaoNicho.jsx:121: const [outroImovel, setOutroImovel] = useState(false);
+CaptacaoNicho.jsx:160: possuiOutroImovel: outroImovel,
+CaptacaoNicho.jsx:165: [rendaFamiliar, outroImovel, usaFgts, valor, prefs.porteMunicipioPadrao],
+CaptacaoNicho.jsx:365: return { ...base, rendaFamiliar: parseMoedaBR(rendaFamiliar), usaFgts, possuiOutroImovel: outroImovel, faixa: mcmv.faixa?.key || null };
+CaptacaoNicho.jsx:948: checked={outroImovel}
+CaptacaoNicho.jsx:949: onChange={(e) => setOutroImovel(e.target.checked)}
+LaudoExecutivo.jsx:121: <div class="box"><strong>Cap Rate · ROI 5 anos</strong><br>${pct(a2.capRateAnual)} · ${pct(a2.roi5Anos)}</div>
+LaudoExecutivo.jsx:249: Aluguel {brl(a2.aluguelMensal)}/mês · ROI 5 anos {pct(a2.roi5Anos)}
+PrestacaoContasProprietario.jsx:93: const [erroIA, setErroIA] = useState('');
+PrestacaoContasProprietario.jsx:146: setErroIA('');
+PrestacaoContasProprietario.jsx:155: setErroIA('');
+PrestacaoContasProprietario.jsx:184: setErroIA('');
+PrestacaoContasProprietario.jsx:189: else setErroIA(resposta.erro);
+PrestacaoContasProprietario.jsx:192: setErroIA(`Não foi possível refinar agora (${erro?.message || 'falha inesperada'}). O texto calculado continua abaixo.`);
+PrestacaoContasProprietario.jsx:464: onClick={() => { setTextoIA(''); setErroIA(''); }}
+PrestacaoContasProprietario.jsx:489: {erroIA ? (
+PrestacaoContasProprietario.jsx:491: {erroIA}

@@ -1,5 +1,5 @@
 import React from 'react';
-import { Menu, HelpCircle, Sun, Moon, LogOut } from 'lucide-react';
+import { Menu, HelpCircle, Sun, Moon, LogOut, Sparkles } from 'lucide-react';
 
 export default function TopbarAdmin({
   nomeAbaAtiva,
@@ -17,6 +17,8 @@ export default function TopbarAdmin({
   sidebarRecuada = false,
   onToggleRecuada = () => {},
   onAbrirAjuda = () => {},
+  modoLite = false,
+  toggleModoLite = () => {},
 }) {
   return (
     <header
@@ -95,7 +97,7 @@ export default function TopbarAdmin({
               <option value="master">Admin Total</option>
               <option value="gratis">Simular Grátis</option>
               <option value="pro">Simular Pro</option>
-              <option value="plus">Simular Plus</option>
+              {!modoLite && <option value="plus">Simular Plus</option>}
             </select>
             <span className={`hidden md:inline-block rounded-md border px-1.5 py-0.5 text-[9px] font-black uppercase tracking-widest ${
               isEscuro
@@ -149,6 +151,31 @@ export default function TopbarAdmin({
           aria-pressed={!isEscuro}
         >
           {isEscuro ? <Sun size={15} aria-hidden="true" /> : <Moon size={15} aria-hidden="true" />}
+        </button>
+
+        {/* Alternador Modo Lite (Modo Lite / Modo Completo) */}
+        <button
+          type="button"
+          onClick={toggleModoLite}
+          className={`flex items-center gap-1.5 px-2 sm:px-2.5 py-1 h-8 rounded-lg border text-xs font-bold transition cursor-pointer ${
+            modoLite
+              ? 'border-emerald-500/60 bg-emerald-500/20 text-emerald-300 ring-1 ring-emerald-500/30'
+              : isEscuro
+                ? 'border-slate-700/80 bg-slate-800/60 text-slate-300 hover:text-white hover:bg-slate-800'
+                : 'border-slate-200 bg-slate-100 text-slate-600 hover:text-slate-900 hover:bg-slate-200 shadow-sm'
+          }`}
+          title={
+            modoLite
+              ? 'Modo Lite ativo (focado no dia a dia do corretor) — clique para ativar o Modo Completo'
+              : 'Modo Completo ativo — clique para ativar o Modo Lite'
+          }
+          aria-label={modoLite ? 'Mudar para Modo Completo' : 'Mudar para Modo Lite'}
+          aria-pressed={modoLite}
+        >
+          <Sparkles size={13} className={modoLite ? 'text-emerald-400 fill-emerald-400' : 'text-slate-400'} aria-hidden="true" />
+          <span className="font-black uppercase text-[10px] sm:text-[11px] tracking-wider whitespace-nowrap">
+            {modoLite ? 'Modo Lite' : 'Modo Completo'}
+          </span>
         </button>
 
         {/* Botão Sair */}

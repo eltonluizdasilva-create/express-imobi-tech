@@ -536,7 +536,7 @@ service cloud.firestore {
         'agendamentos_retorno', 'estoque', 'acompanhamentos_imobi',
         'descartes', 'revisoes_premium', 'burocracias',
         'desmanche_pecas', 'desmanche_veiculos', 'desmanche_parceiros',
-        'notificacoes_desmanche'
+        'notificacoes_desmanche', 'vistorias_chaves'
       ];
     }
 

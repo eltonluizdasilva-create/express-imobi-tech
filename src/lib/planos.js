@@ -11,7 +11,7 @@
  * REGRA: não duplicar preço, módulo ou limite em componente nenhum.
  */
 
-import dados from '../../shared/planos.json';
+import dados from '../../shared/planos.json' with { type: 'json' };
 
 export const WHATSAPP_COMERCIAL = dados.whatsappComercial;
 
