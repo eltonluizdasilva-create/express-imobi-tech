@@ -1,8 +1,8 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import {
   Ruler, Copy, Check, Printer, Sparkles, AlertTriangle, TrendingUp,
-  Building2, MapPin, Gauge, FileText, MessageSquare, Info, ChevronDown, Stamp,
-  Camera, X, Loader2, ScanSearch,
+  Building2, MapPin, Gauge, FileText, MessageSquare, Info, ChevronDown, ChevronUp, Stamp,
+  Camera, X, Loader2, ScanSearch, Mic, Trash2, Video, ArrowRight,
 } from 'lucide-react';
 import HeroAba from '../admin/HeroAba';
 import GuiaDaAba from '../ui/GuiaDaAba';
@@ -16,13 +16,14 @@ import {
   avaliarImovel, gerarPTAM, gerarResumoComercial, gerarDocumentoHtmlPTAM, identidadeDocumento,
   TIPOLOGIAS, PADROES, ESTADOS_CONSERVACAO, TOPOGRAFIAS, CONDICOES_TESTADA, FINALIDADES_PTAM,
 } from '../../lib/avaliacao';
+import { processarCaptacaoCampoIA } from '../../agent/captacaoCampoPrompt';
 
 const card = 'bg-[#020408] border border-slate-800 rounded-3xl';
 const labelCls = 'block text-[10px] font-black uppercase tracking-widest text-slate-400 mb-1.5';
 const inputCls = 'w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2.5 text-sm text-white placeholder-slate-600 focus:outline-none focus:border-[#10b981]';
 const brl = (v) => (Number(v) || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL', maximumFractionDigits: 0 });
 
-export default function AvaliacaoImovel() {
+export default function AvaliacaoImovel({ setAbaAtiva, onExportarCaptacao }) {
   const corAba = corDaAba('avaliacao_imovel');
   const prefs = lerPreferencias();
 
@@ -65,6 +66,219 @@ export default function AvaliacaoImovel() {
     fase, carregando: gerandoLaudo, erro: erroLaudo, laudo,
     analiseFotos, vizinhanca, meta, gerar: gerarLaudoIA, setVizinhanca,
   } = useLaudoImobi();
+
+  // ─── Captação de Campo por Áudio com IA (ABNT NBR 14653 / COFECI) ───────────
+  const [audioCampoAberto, setAudioCampoAberto] = useState(false);
+  const [transcricaoAudio, setTranscricaoAudio] = useState('');
+  const [gravandoCampo, setGravandoCampo] = useState(false);
+  const [processandoIA, setProcessandoIA] = useState(false);
+  const [resultadoIA, setResultadoIA] = useState(null);
+  const [copiadoCampo, setCopiadoCampo] = useState(null);
+  const [blocoMaterialAberto, setBlocoMaterialAberto] = useState(true);
+  const [exportadoOk, setExportadoOk] = useState(false);
+  const [erroAudio, setErroAudio] = useState('');
+  const [okAudio, setOkAudio] = useState('');
+  const reconhecimentoRef = useRef(null);
+  const gravacaoAtivaRef = useRef(false);
+
+  useEffect(() => {
+    return () => {
+      gravacaoAtivaRef.current = false;
+      try {
+        reconhecimentoRef.current?.stop?.();
+      } catch {}
+    };
+  }, []);
+
+  function alternarGravacaoAudio() {
+    if (gravandoCampo) {
+      gravacaoAtivaRef.current = false;
+      try {
+        reconhecimentoRef.current?.stop?.();
+      } catch {}
+      setGravandoCampo(false);
+      return;
+    }
+
+    const Reconhecimento = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!Reconhecimento) {
+      alert('Reconhecimento de voz direto não suportado pelo navegador. Digite ou cole a transcrição do áudio.');
+      return;
+    }
+
+    try {
+      const rec = new Reconhecimento();
+      rec.lang = 'pt-BR';
+      rec.continuous = true;
+      rec.interimResults = true;
+
+      rec.onstart = () => {
+        gravacaoAtivaRef.current = true;
+        setGravandoCampo(true);
+      };
+
+      rec.onresult = (evento) => {
+        let falaFinal = '';
+        for (let i = evento.resultIndex; i < evento.results.length; i += 1) {
+          const res = evento.results[i];
+          if (res.isFinal) {
+            falaFinal += (res[0]?.transcript || '') + ' ';
+          }
+        }
+        if (falaFinal.trim()) {
+          setTranscricaoAudio((prev) => (prev ? `${prev} ${falaFinal.trim()}` : falaFinal.trim()));
+        }
+      };
+
+      rec.onerror = (e) => {
+        if (e.error === 'not-allowed') {
+          alert('Microfone bloqueado pelo navegador. Conceda permissão ou cole a transcrição manualmente.');
+          gravacaoAtivaRef.current = false;
+          setGravandoCampo(false);
+        }
+      };
+
+      rec.onend = () => {
+        if (gravacaoAtivaRef.current) {
+          try {
+            rec.start();
+          } catch {
+            setGravandoCampo(false);
+          }
+        } else {
+          setGravandoCampo(false);
+        }
+      };
+
+      reconhecimentoRef.current = rec;
+      rec.start();
+    } catch (err) {
+      console.warn('Erro ao iniciar reconhecimento:', err);
+      setGravandoCampo(false);
+    }
+  }
+
+  async function processarAudioComIA() {
+    if (!transcricaoAudio.trim()) {
+      setErroAudio('Grave ou cole a transcrição do áudio gravado em campo antes de processar com a IA.');
+      return;
+    }
+    if (gravandoCampo) {
+      alternarGravacaoAudio();
+    }
+
+    setProcessandoIA(true);
+    setErroAudio('');
+    setOkAudio('');
+
+    try {
+      const dados = await processarCaptacaoCampoIA({
+        transcricao: transcricaoAudio,
+        endereco: [bairro, cidade].filter(Boolean).join(', '),
+        valorPedido,
+      });
+
+      setResultadoIA(dados);
+
+      // Preenchimento automático dos campos da Avaliação de Imóvel
+      const dt = dados.dadosTecnicos || {};
+
+      // 1. Cidade e Bairro
+      if (dt.cidade) setCidade(dt.cidade);
+      if (dt.bairro) setBairro(dt.bairro);
+
+      // 2. Tipologia
+      if (dt.tipologia || dt.subtipo) {
+        const tL = String(dt.tipologia || '').toLowerCase();
+        const sL = String(dt.subtipo || '').toLowerCase();
+        if (tL.includes('rural') || sL.includes('chácara') || sL.includes('chacara') || sL.includes('fazenda')) {
+          setTipologia('rural');
+        } else if (sL.includes('lote') || sL.includes('terreno')) {
+          setTipologia('loteamento');
+        } else if (dt.padraoConstrutivo === 'Luxo' || dt.padraoConstrutivo === 'Alto') {
+          setTipologia('alto_padrao');
+        } else if (dt.padraoConstrutivo === 'Popular') {
+          setTipologia('mcmv');
+        } else {
+          setTipologia('urbano');
+        }
+      }
+
+      // 3. Áreas
+      if (dt.areaTotal) setAreaTotal(String(dt.areaTotal));
+      if (dt.areaConstruida) setAreaConstruida(String(dt.areaConstruida));
+
+      // 4. Padrão Construtivo
+      if (dt.padraoConstrutivo) {
+        const pL = String(dt.padraoConstrutivo).toLowerCase();
+        if (pL.includes('luxo')) setPadrao('luxo');
+        else if (pL.includes('alto')) setPadrao('alto');
+        else if (pL.includes('popular')) setPadrao('popular');
+        else if (pL.includes('simples')) setPadrao('simples');
+        else setPadrao('normal');
+      }
+
+      // 5. Estado de Conservação
+      if (dt.conservacao) {
+        const cL = String(dt.conservacao).toLowerCase();
+        if (cL.includes('novo')) setEstado('novo');
+        else if (cL.includes('ótimo') || cL.includes('otimo')) setEstado('otimo');
+        else if (cL.includes('reforma') || cL.includes('reparo')) setEstado('reparos');
+        else if (cL.includes('regular')) setEstado('regular');
+        else if (cL.includes('ruim') || cL.includes('condenado')) setEstado('ruina');
+        else setEstado('bom');
+      }
+
+      // 6. Valor Pedido
+      if (dt.valorPedido) setValorPedido(String(dt.valorPedido));
+
+      setOkAudio('Ficha técnica do imóvel preenchida automaticamente com base no áudio de campo!');
+    } catch (e) {
+      setErroAudio(`Falha ao analisar áudio de campo: ${e?.message || 'erro inesperado'}`);
+    } finally {
+      setProcessandoIA(false);
+    }
+  }
+
+  function copiarParaClipboard(texto, chave) {
+    if (!texto) return;
+    try {
+      navigator.clipboard?.writeText(texto);
+      setCopiadoCampo(chave);
+      setTimeout(() => setCopiadoCampo(null), 2500);
+    } catch {}
+  }
+
+  function exportarParaCaptacao() {
+    const rascunho = {
+      cidade: [cidade, bairro].filter(Boolean).join(' - ') || cidade,
+      valor: valorPedido || (resultadoIA?.dadosTecnicos?.valorPedido ? String(resultadoIA.dadosTecnicos.valorPedido) : ''),
+      referencia: `${(tipologia || 'IMOVEL').toUpperCase()}-${(bairro || cidade || 'CAMPO').toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 6)}`,
+      areaM2: areaTotal,
+      areaConstruida,
+      nicho: tipologia === 'rural' ? 'rural' : tipologia === 'loteamento' ? 'loteamento' : tipologia === 'alto_padrao' ? 'alto_padrao' : tipologia === 'mcmv' ? 'mcmv' : 'locacao',
+      observacoes: [
+        resultadoIA?.materialComercial?.descricaoPortal,
+        resultadoIA?.analiseMercado?.observacaoTecnica,
+        resultadoIA?.materialComercial?.fichaTecnica,
+      ].filter(Boolean).join('\n\n').slice(0, 600),
+    };
+
+    try {
+      localStorage.setItem('express_imobi_rascunho_captacao', JSON.stringify(rascunho));
+    } catch {}
+
+    setExportadoOk(true);
+    setTimeout(() => {
+      if (typeof onExportarCaptacao === 'function') {
+        onExportarCaptacao(rascunho);
+      } else if (typeof setAbaAtiva === 'function') {
+        setAbaAtiva('captacao_imobi');
+      } else {
+        alert('Dados preparados para Captação! Navegue para a aba Captação & Imóveis.');
+      }
+    }, 400);
+  }
 
   const avaliacao = useMemo(() => avaliarImovel({
     uf, cidade, bairro, tipologia, padrao, estado, topografia, condicoes,
@@ -172,6 +386,256 @@ export default function AvaliacaoImovel() {
         subtitulo="Comparativo direto com fatores de topografia e testada e três cenários de preço. Sem nome e CRECI do corretor preenchidos, a saída é Estudo Estimativo de Valor de Mercado — não é PTAM nem laudo."
         cor={corAba}
       />
+
+      {/* ─── BLOCO DE CAPTAÇÃO POR VOZ EM CAMPO (IA NBR 14653) ────────────────── */}
+      <div className="rounded-3xl border border-emerald-500/30 bg-[#020408] p-5 shadow-[0_0_30px_rgba(16,185,129,0.08)]">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 pb-3 border-b border-slate-800/80">
+          <div className="flex items-center gap-3">
+            <div className="h-10 w-10 rounded-2xl bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-center text-emerald-400">
+              <Mic size={20} />
+            </div>
+            <div>
+              <div className="flex items-center gap-2">
+                <h3 className="text-sm font-black text-white">Captação por Voz em Campo</h3>
+                <span className="rounded-md border border-emerald-500/30 bg-emerald-500/10 px-1.5 py-0.5 text-[9px] font-black uppercase text-emerald-400">
+                  IA NBR 14653
+                </span>
+              </div>
+              <p className="text-xs text-slate-400 mt-0.5">
+                Grave um áudio relatando os detalhes do imóvel em campo para preencher a avaliação e gerar materiais comerciais.
+              </p>
+            </div>
+          </div>
+
+          <button
+            type="button"
+            onClick={() => setAudioCampoAberto((prev) => !prev)}
+            className="w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-xl border border-emerald-500/40 bg-emerald-500/10 hover:bg-emerald-500/20 px-3.5 py-2 text-xs font-black text-emerald-300 transition cursor-pointer"
+          >
+            <Mic size={14} className={gravandoCampo ? 'animate-pulse text-red-400' : 'text-emerald-400'} />
+            <span>{audioCampoAberto ? 'Recuar Gravador' : 'Gravar Captação por Voz (Campo)'}</span>
+            {audioCampoAberto ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
+          </button>
+        </div>
+
+        {audioCampoAberto && (
+          <div className="mt-4 space-y-4 animate-in fade-in duration-200">
+            {/* Status de gravação */}
+            {gravandoCampo && (
+              <div className="flex items-center gap-2 rounded-xl border border-red-500/40 bg-red-500/10 px-3.5 py-2 text-xs font-bold text-red-300">
+                <span className="h-2 w-2 rounded-full bg-red-400 animate-ping" />
+                <span>Microfone gravando ao vivo... Fale sobre localização, tipologia, metragem, padrão, conservação e valor pedido.</span>
+              </div>
+            )}
+
+            {/* Campo de transcrição editável */}
+            <div>
+              <label className="block text-[10px] font-black uppercase tracking-wider text-slate-400 mb-1.5">
+                Transcrição do Áudio de Campo (editável):
+              </label>
+              <textarea
+                rows={4}
+                value={transcricaoAudio}
+                onChange={(e) => setTranscricaoAudio(e.target.value)}
+                placeholder="Exemplo falado: 'Estou aqui no Centro de Uberlândia avaliando uma casa em padrão normal, ótimo estado, lote de 360m² e área construída de 210m². Proprietário pede 650 mil reais...'"
+                className="w-full rounded-2xl border border-slate-800 bg-slate-950 p-3.5 text-xs text-white placeholder-slate-600 focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500/40 leading-relaxed"
+              />
+            </div>
+
+            {/* Barra de ações do áudio */}
+            <div className="flex flex-wrap items-center justify-between gap-2.5 pt-1">
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={alternarGravacaoAudio}
+                  className={`inline-flex items-center gap-2 rounded-xl px-3.5 py-2 text-xs font-black transition cursor-pointer ${
+                    gravandoCampo
+                      ? 'border border-red-500/60 bg-red-500/20 text-red-200 hover:bg-red-500/30'
+                      : 'border border-emerald-500/40 bg-emerald-500/15 text-emerald-300 hover:bg-emerald-500/25'
+                  }`}
+                >
+                  <Mic size={14} className={gravandoCampo ? 'animate-pulse text-red-400' : 'text-emerald-400'} />
+                  <span>{gravandoCampo ? 'Parar Gravação' : 'Gravar com Microfone'}</span>
+                </button>
+
+                {transcricaoAudio && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (gravandoCampo) alternarGravacaoAudio();
+                      setTranscricaoAudio('');
+                      setResultadoIA(null);
+                      setErroAudio('');
+                      setOkAudio('');
+                    }}
+                    className="inline-flex items-center gap-1.5 rounded-xl border border-slate-800 bg-slate-900/80 px-3 py-2 text-xs font-bold text-slate-400 hover:text-white transition cursor-pointer"
+                  >
+                    <Trash2 size={13} />
+                    <span>Limpar</span>
+                  </button>
+                )}
+              </div>
+
+              <button
+                type="button"
+                onClick={processarAudioComIA}
+                disabled={processandoIA || !transcricaoAudio.trim()}
+                className="w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-xl bg-emerald-500 hover:bg-emerald-400 disabled:opacity-50 text-slate-950 px-4 py-2 text-xs font-black uppercase tracking-wider transition cursor-pointer shadow-lg shadow-emerald-500/20"
+              >
+                {processandoIA ? <Loader2 size={14} className="animate-spin" /> : <Sparkles size={14} />}
+                <span>{processandoIA ? 'Analisando com IA...' : 'Preencher Ficha & Gerar Material'}</span>
+              </button>
+            </div>
+
+            {/* Mensagens de feedback */}
+            {erroAudio && (
+              <div className="rounded-xl border border-red-500/40 bg-red-500/10 p-3 text-xs text-red-300">
+                {erroAudio}
+              </div>
+            )}
+            {okAudio && (
+              <div className="rounded-xl border border-emerald-500/40 bg-emerald-500/10 p-3 text-xs text-emerald-300">
+                {okAudio}
+              </div>
+            )}
+
+            {/* Bloco de Resultados Extraídos pela IA */}
+            {resultadoIA && (
+              <div className="mt-4 space-y-4 rounded-2xl border border-slate-800 bg-slate-950/80 p-4">
+                {/* Resumo Técnico Extraído */}
+                <div>
+                  <h4 className="text-xs font-black uppercase tracking-wider text-emerald-400 mb-2 flex items-center gap-1.5">
+                    <Check size={14} /> Dados Técnicos Extraídos & Injetados
+                  </h4>
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs">
+                    <div className="rounded-xl border border-slate-800/80 bg-[#020408] p-2.5">
+                      <span className="text-[10px] text-slate-500 block uppercase font-bold">Localização</span>
+                      <span className="font-bold text-white truncate block">
+                        {[resultadoIA.dadosTecnicos?.bairro, resultadoIA.dadosTecnicos?.cidade].filter(Boolean).join(', ') || 'Não inf.'}
+                      </span>
+                    </div>
+                    <div className="rounded-xl border border-slate-800/80 bg-[#020408] p-2.5">
+                      <span className="text-[10px] text-slate-500 block uppercase font-bold">Tipologia</span>
+                      <span className="font-bold text-white truncate block">
+                        {[resultadoIA.dadosTecnicos?.tipologia, resultadoIA.dadosTecnicos?.subtipo].filter(Boolean).join(' · ') || 'Urbano'}
+                      </span>
+                    </div>
+                    <div className="rounded-xl border border-slate-800/80 bg-[#020408] p-2.5">
+                      <span className="text-[10px] text-slate-500 block uppercase font-bold">Áreas (Total / Const.)</span>
+                      <span className="font-bold text-white truncate block">
+                        {resultadoIA.dadosTecnicos?.areaTotal || 0}m² / {resultadoIA.dadosTecnicos?.areaConstruida || 0}m²
+                      </span>
+                    </div>
+                    <div className="rounded-xl border border-slate-800/80 bg-[#020408] p-2.5">
+                      <span className="text-[10px] text-slate-500 block uppercase font-bold">Padrão / Estado</span>
+                      <span className="font-bold text-white truncate block">
+                        {resultadoIA.dadosTecnicos?.padraoConstrutivo || 'Normal'} · {resultadoIA.dadosTecnicos?.conservacao || 'Bom'}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Análise de Mercado Calculada */}
+                {resultadoIA.analiseMercado && (
+                  <div className="rounded-xl border border-emerald-500/20 bg-emerald-500/5 p-3 text-xs">
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="font-bold text-emerald-400">Análise de Mercado</span>
+                      {resultadoIA.analiseMercado.valorM2Pedido > 0 && (
+                        <span className="font-black text-white bg-emerald-500/20 border border-emerald-500/30 px-2 py-0.5 rounded-md">
+                          {brl(resultadoIA.analiseMercado.valorM2Pedido)} / m²
+                        </span>
+                      )}
+                    </div>
+                    {resultadoIA.analiseMercado.observacaoTecnica && (
+                      <p className="mt-1.5 text-slate-300 leading-relaxed">
+                        {resultadoIA.analiseMercado.observacaoTecnica}
+                      </p>
+                    )}
+                  </div>
+                )}
+
+                {/* Material Comercial Gerado */}
+                {resultadoIA.materialComercial && (
+                  <div className="space-y-3 pt-2 border-t border-slate-800">
+                    <div className="flex items-center justify-between gap-2">
+                      <h4 className="text-xs font-black uppercase tracking-wider text-slate-300 flex items-center gap-1.5">
+                        <Sparkles size={13} className="text-emerald-400" /> Material Comercial Gerado
+                      </h4>
+                      <button
+                        type="button"
+                        onClick={() => setBlocoMaterialAberto((p) => !p)}
+                        className="text-[11px] text-slate-400 hover:text-white transition cursor-pointer"
+                      >
+                        {blocoMaterialAberto ? 'Recuar Material' : 'Expandir Material'}
+                      </button>
+                    </div>
+
+                    {blocoMaterialAberto && (
+                      <div className="space-y-3">
+                        {/* Botões de Cópia Rápida */}
+                        <div className="flex flex-wrap items-center gap-2">
+                          <button
+                            type="button"
+                            onClick={() => copiarParaClipboard(resultadoIA.materialComercial.descricaoPortal, 'portal')}
+                            className="inline-flex items-center gap-1.5 rounded-xl border border-emerald-500/40 bg-emerald-500/10 hover:bg-emerald-500/20 px-3 py-1.5 text-xs font-bold text-emerald-300 transition cursor-pointer"
+                          >
+                            {copiadoCampo === 'portal' ? <Check size={13} /> : <Copy size={13} />}
+                            <span>{copiadoCampo === 'portal' ? 'Copiado!' : 'Copiar Anúncio Portal'}</span>
+                          </button>
+
+                          <button
+                            type="button"
+                            onClick={() => copiarParaClipboard(resultadoIA.materialComercial.roteiroReels35s, 'reels')}
+                            className="inline-flex items-center gap-1.5 rounded-xl border border-purple-500/40 bg-purple-500/10 hover:bg-purple-500/20 px-3 py-1.5 text-xs font-bold text-purple-300 transition cursor-pointer"
+                          >
+                            {copiadoCampo === 'reels' ? <Check size={13} /> : <Video size={13} />}
+                            <span>{copiadoCampo === 'reels' ? 'Copiado!' : 'Copiar Roteiro Reels 35s'}</span>
+                          </button>
+                        </div>
+
+                        {/* Título de Portal */}
+                        {resultadoIA.materialComercial.tituloAnuncio && (
+                          <div className="rounded-xl border border-slate-800/80 bg-[#020408] p-3 text-xs">
+                            <span className="text-[10px] uppercase font-bold text-slate-500 block mb-1">Título de Alta Conversão</span>
+                            <p className="font-bold text-white">{resultadoIA.materialComercial.tituloAnuncio}</p>
+                          </div>
+                        )}
+
+                        {/* Roteiro de Reels */}
+                        {resultadoIA.materialComercial.roteiroReels35s && (
+                          <div className="rounded-xl border border-slate-800/80 bg-[#020408] p-3 text-xs">
+                            <span className="text-[10px] uppercase font-bold text-purple-400 block mb-1 flex items-center gap-1">
+                              <Video size={11} /> Roteiro Reels / TikTok (35s)
+                            </span>
+                            <p className="text-slate-300 whitespace-pre-line leading-relaxed font-mono text-[11px]">
+                              {resultadoIA.materialComercial.roteiroReels35s}
+                            </p>
+                          </div>
+                        )}
+
+                        {/* Botão de Exportação para Captação & Imóveis */}
+                        <div className="pt-2 flex flex-col sm:flex-row items-center justify-between gap-3 border-t border-slate-800/80">
+                          <span className="text-[11px] text-slate-400">
+                            Pronto para cadastrar na vitrine e nos portais?
+                          </span>
+                          <button
+                            type="button"
+                            onClick={exportarParaCaptacao}
+                            className="w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 px-4 py-2.5 text-xs font-black uppercase tracking-wider transition shadow-lg shadow-emerald-500/20 cursor-pointer"
+                          >
+                            {exportadoOk ? <Check size={14} /> : <ArrowRight size={14} />}
+                            <span>{exportadoOk ? 'Redirecionando...' : 'Exportar para Captação & Imóveis'}</span>
+                          </button>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        )}
+      </div>
 
       <SeletorUF onChange={(p) => setUf(p.ufPadrao)} />
 

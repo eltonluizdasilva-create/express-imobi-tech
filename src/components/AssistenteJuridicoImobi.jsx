@@ -3,6 +3,7 @@ import React, { useState, useMemo } from 'react';
 import HeroAba from './admin/HeroAba';
 import SeletorUF from './ui/SeletorUF';
 import SucessaoPatrimonial from './imobi/SucessaoPatrimonial';
+import DueDiligenceMatricula from './imobi/DueDiligenceMatricula';
 import AceiteLegalGate from './admin/AceiteLegalGate';
 import { AVISO_JURIDICO } from '../lib/assistidos-legais';
 import {
@@ -195,6 +196,9 @@ export default function AssistenteJuridicoImobi({ oficinaId }) {
     <AceiteLegalGate chave="juridico_imobi" oficinaId={oficinaId}>
     <div style={{ backgroundColor: '#020408' }} className="space-y-6 text-slate-100 font-sans">
       <SeletorUF />
+
+      {/* ─── DUE DILIGENCE & RAIO-X DE MATRÍCULA COM IA (PLANO PLUS) ────────── */}
+      <DueDiligenceMatricula />
 
       {/* ═══════════════════════════════════════════════════════════════════════
           1. CABEÇALHO DO ASSISTENTE JURÍDICO IMOBILIÁRIO (LEI 8.245/91 & CC)

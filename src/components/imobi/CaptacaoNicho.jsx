@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import {
-  AlertTriangle, Check, Landmark, MapPin, ShieldCheck, Home, KeyRound,
+  AlertTriangle, Check, ClipboardList, Landmark, MapPin, ShieldCheck, Home, KeyRound,
   HelpCircle, LoaderCircle, Save, Trash2, X,
 } from 'lucide-react';
 import { db } from '../../lib/firebase';
@@ -27,7 +27,35 @@ const ICONES = { rural: Landmark, loteamento: MapPin, mcmv: Home, alto_padrao: S
 
 const fmtBRL = (v) => (Number(v) || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 
-export default function CaptacaoNicho({ dadosOficina, setAbaAtiva }) {
+const ROTULO_NICHO = {
+  locacao: 'Locação',
+  rural: 'Rural',
+  loteamento: 'Loteamento',
+  mcmv: 'Minha Casa Minha Vida',
+  alto_padrao: 'Alto padrão',
+};
+
+/**
+ * Registro de `imoveis_nicho` → forma que a Prestação de Contas entende
+ * (mesmos nomes de campo de `imoveis_imobi`). Sem tradução o relatório
+ * mostraria "sem código" e "sem metragem" mesmo com o dado digitado.
+ */
+function paraPrestacao(registro = {}) {
+  const areaM2 = Number(registro.areaM2) || 0;
+  const areaHa = Number(registro.areaHa) || 0;
+  return {
+    ...registro,
+    codigo: registro.referencia || registro.codigo || '',
+    titulo: [ROTULO_NICHO[registro.nicho], registro.cidade].filter(Boolean).join(' · ') || 'Captação por nicho',
+    tipo: ROTULO_NICHO[registro.nicho] || 'Imóvel',
+    metragemTerreno: areaM2 || Number(registro.metragemTerreno) || 0,
+    hectares: areaHa || Number(registro.hectares) || 0,
+    areaConstruida: Number(registro.areaConstruida) || 0,
+    valor: Number(registro.valor) || Number(registro.valorAluguel) || 0,
+  };
+}
+
+export default function CaptacaoNicho({ dadosOficina, setAbaAtiva, onAbrirPrestacao }) {
   const tenantId = dadosOficina?.id || dadosOficina?.uid || null;
 
   const [nicho, setNicho] = useState('locacao');
@@ -70,6 +98,25 @@ export default function CaptacaoNicho({ dadosOficina, setAbaAtiva }) {
   // alto padrão
   const [areaConstruida, setAreaConstruida] = useState('');
   const [condominio, setCondominio] = useState('');
+
+  // Carrega rascunho exportado da Avaliação de Imóvel (se houver)
+  useEffect(() => {
+    try {
+      const salvo = localStorage.getItem('express_imobi_rascunho_captacao');
+      if (salvo) {
+        const dados = JSON.parse(salvo);
+        if (dados.cidade) setCidade(dados.cidade);
+        if (dados.valor) setValor(String(dados.valor));
+        if (dados.referencia) setReferencia(dados.referencia);
+        if (dados.areaM2) setAreaM2(String(dados.areaM2));
+        if (dados.areaConstruida) setAreaConstruida(String(dados.areaConstruida));
+        if (dados.nicho) setNicho(dados.nicho);
+        if (dados.observacoes) setObservacoes(dados.observacoes);
+        setOk('Dados importados com sucesso da Avaliação de Imóvel!');
+        localStorage.removeItem('express_imobi_rascunho_captacao');
+      }
+    } catch {}
+  }, []);
 
   useEffect(() => {
     if (!tenantId) return undefined;
@@ -549,6 +596,32 @@ export default function CaptacaoNicho({ dadosOficina, setAbaAtiva }) {
               </div>
             ))}
           </div>
+          {onAbrirPrestacao ? (
+            <div className="mt-3 flex flex-wrap items-center justify-between gap-2 rounded-xl border border-teal-500/30 bg-teal-500/5 px-3 py-2">
+              <p className="text-[10px] leading-snug text-teal-200/80">
+                Prestação de contas ao proprietário: use a captação salva como base do relatório.
+              </p>
+              <div className="flex flex-wrap items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    const ultima = salvos[0];
+                    if (ultima) onAbrirPrestacao(paraPrestacao(ultima));
+                  }}
+                  className="inline-flex shrink-0 items-center gap-1.5 rounded-lg border border-teal-500/50 px-2.5 py-1.5 text-[10px] font-black uppercase tracking-widest text-teal-300 transition hover:bg-teal-500/10"
+                >
+                  <ClipboardList size={12} /> Abrir prestação
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setAbaAtiva?.('mapa_inteligencia')}
+                  className="inline-flex shrink-0 items-center gap-1.5 rounded-lg border border-slate-700 px-2.5 py-1.5 text-[10px] font-black uppercase tracking-widest text-slate-300 transition hover:border-slate-500"
+                >
+                  <MapPin size={12} /> Mapa de inteligência
+                </button>
+              </div>
+            </div>
+          ) : null}
         </div>
       )}
     </div>

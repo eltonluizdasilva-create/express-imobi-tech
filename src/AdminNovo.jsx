@@ -68,6 +68,7 @@ import ModalPacoteCompleto from './components/admin/ModalPacoteCompleto';
 import { carregarCenarioDemo } from './lib/cenarioDemo';
 import { executarAuditoriaZara, carregarUltimaAuditoriaZara } from './lib/auditoriaZara';
 import MapaInteligenciaImobiliaria from './components/admin/MapaInteligenciaImobiliaria';
+import EsteiraCartorioEscritura from './components/imobi/EsteiraCartorioEscritura';
 import ModuloComAbas from './components/admin/ModuloComAbas';
 import GuiaCampoGratis from './components/admin/GuiaCampoGratis';
 import HeroAba from './components/admin/HeroAba';
@@ -766,6 +767,9 @@ export default function Admin() {
   const [listaImoveis, setListaImoveis] = useState([]);
   const [listaVisitas, setListaVisitas] = useState([]);
   const [listaPropostas, setListaPropostas] = useState([]);
+  // Imóvel que a Captação por Nicho manda para a Prestação de Contas
+  // (Central de Inteligência). Só um atalho de navegação: nada é gravado.
+  const [prestacaoFoco, setPrestacaoFoco] = useState(null);
   const [listaTarefas, setListaTarefas] = useState([]);
   const [listaFinanceiro, setListaFinanceiro] = useState([]);
   const [config, setConfig] = useState({});
@@ -1863,10 +1867,10 @@ export default function Admin() {
     if (['dashboard_imobi', 'captacao_imobi', 'funil_leads', 'visitas_imobi', 'financeiro', 'equipe', 'guia_campo_bonus', 'migracao', 'meuplano', 'config'].includes(abaAtiva)) {
       return { id: 'gratis', nome: 'GRÁTIS', badge: 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30' };
     }
-    if (['historico', 'tarefa', 'contador', 'juridico_imobi', 'marketing'].includes(abaAtiva)) {
+    if (['historico', 'marketing'].includes(abaAtiva)) {
       return { id: 'pro', nome: 'PRO · R$ 39,90', badge: 'bg-sky-500/10 text-sky-400 border-sky-500/30' };
     }
-    if (['radar_captacao', 'administrador', 'roleta_imobi', 'credito', 'notafiscal', 'reunioes-atas'].includes(abaAtiva)) {
+    if (['radar_captacao', 'administrador', 'roleta_imobi', 'credito', 'notafiscal', 'reunioes-atas'].includes(abaAtiva) || ['contador', 'juridico_imobi', 'tarefa', 'avaliacao_imovel'].includes(abaAtiva)) {
       return { id: 'plus', nome: 'PLUS · R$ 99,90', badge: 'bg-teal-500/10 text-teal-400 border-teal-500/30' };
     }
     if (['sofia_whatsapp', 'whatsapp_hub', 'secretaria', 'agentes_ia', 'brain'].includes(abaAtiva)) {
@@ -2418,14 +2422,33 @@ export default function Admin() {
               </div>
             }
           >
-            <Comp
-              isPro={isPro}
-              abaAtiva={abaAtiva}
-              setAbaAtiva={setAbaAtiva}
-              oficinaId={oficinaAtualId}
-              dadosOficina={dadosImobiliaria}
-              dadosImobiliaria={dadosImobiliaria}
-            />
+            <div className="space-y-6">
+              {/* Esteira pós-venda: cartório, certidões, ITBI, escritura e registro
+                  antes de liberar a comissão. Vive DENTRO de Repasses & NF — sem
+                  aba nova na sidebar e sem novo módulo em shared/planos.json. */}
+              <SafeBoundary
+                fallback={
+                  <div className="rounded-2xl border border-amber-500/40 bg-amber-500/10 p-4 text-[11px] text-amber-200">
+                    Esteira de cartório indisponível no momento. A emissão de NF e o repasse continuam abaixo.
+                  </div>
+                }
+              >
+                <EsteiraCartorioEscritura
+                  oficinaId={oficinaAtualId}
+                  propostas={listaPropostas}
+                  nomeImobiliaria={dadosImobiliaria?.nome || ''}
+                  onAbrirAba={setAbaAtiva}
+                />
+              </SafeBoundary>
+              <Comp
+                isPro={isPro}
+                abaAtiva={abaAtiva}
+                setAbaAtiva={setAbaAtiva}
+                oficinaId={oficinaAtualId}
+                dadosOficina={dadosImobiliaria}
+                dadosImobiliaria={dadosImobiliaria}
+              />
+            </div>
           </SafeBoundary>
         );
       })()
@@ -2459,6 +2482,7 @@ export default function Admin() {
         dadosImobiliaria={dadosImobiliaria}
         fazerLogout={fazerLogout}
         temaClaro={!isEscuro}
+        ehGestor={ehGestorUI}
       />
 
       {/* ─── 2. ÁREA PRINCIPAL COM TOPO FINO EM 1 LINHA ─── */}
@@ -2553,7 +2577,16 @@ export default function Admin() {
         )}
 
         {abaAtiva === 'mapa_inteligencia' && (
-          <MapaInteligenciaImobiliaria temaClaro={!isEscuro} />
+          <MapaInteligenciaImobiliaria
+            temaClaro={!isEscuro}
+            imoveis={listaImoveis}
+            leads={listaLeads}
+            visitas={listaVisitas}
+            propostas={listaPropostas}
+            dadosOficina={dadosImobiliaria}
+            onAbrirAba={setAbaAtiva}
+            imovelPrestacao={prestacaoFoco}
+          />
         )}
 
         {abaAtiva === 'guia_campo_bonus' && (
@@ -2586,6 +2619,10 @@ export default function Admin() {
             <CaptacaoNicho
               dadosOficina={dadosImobiliaria}
               setAbaAtiva={setAbaAtiva}
+              onAbrirPrestacao={(imovel) => {
+                setPrestacaoFoco(imovel);
+                setAbaAtiva('mapa_inteligencia');
+              }}
             />
             <div className="flex flex-wrap items-center justify-between gap-4 bg-slate-900 border border-slate-800 p-6 rounded-2xl">
               <div className="max-w-3xl">

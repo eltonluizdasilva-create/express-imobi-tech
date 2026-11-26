@@ -32,9 +32,12 @@ import {
   Zap,
   Rocket,
   MousePointer2,
+  Shuffle,
+  FileText,
 } from 'lucide-react';
 import LogoExpress from '../ui/LogoExpress';
 import { DOR_SOLUCAO } from '../../lib/copyAbas';
+import { AVISO_ABA_GESTAO } from '../../lib/permissoes-menu';
 
 /**
  * SimboloPrismaE — Símbolo vetorial (SVG) moderno e tecnológico da Express Imobi Tech.
@@ -250,7 +253,15 @@ export default function SidebarAdmin({
   dadosImobiliaria = {},
   fazerLogout = () => {},
   temaClaro = false,
+  ehGestor = false,
 }) {
+  const ehGestorEfetivo = Boolean(
+    ehGestor ||
+    ehAdminTotal ||
+    ehMasterPlataforma ||
+    (typeof filtrarPorPapel === 'function' && filtrarPorPapel([{ id: 'notafiscal' }]).length > 0)
+  );
+
   // Grupo selecionado para o Painel Central de Ferramentas (aberto tanto no PC quanto no celular)
   const [grupoCentralAtivo, setGrupoCentralAtivo] = useState(null);
 
@@ -377,36 +388,24 @@ export default function SidebarAdmin({
       corInativoBotao: temaClaro
         ? 'border-slate-200/90 bg-slate-50/60 text-slate-700 hover:border-slate-300 hover:bg-white shadow-xs'
         : 'border-slate-800/90 bg-[#060a10] text-slate-300 hover:border-sky-500/40 hover:bg-[#07131e]',
-      descricaoGrupo: '5 ferramentas de alta conversão para acelerar negociações e tráfego.',
+      descricaoGrupo: '3 ferramentas essenciais de captação ilimitada, propostas e anúncios.',
       mostrarPreco: !acessoProLiberado && !ehAdminTotal,
       incluso: acessoProLiberado || ehAdminTotal,
       itens: filtrarPorPapel([
+        {
+          id: 'captacao_imobi',
+          icone: Building2,
+          label: 'Captação & Imóveis Ilimitada',
+          badge: 'Ilimitado',
+          badgeCor: temaClaro ? 'bg-sky-50 text-sky-700 border-sky-300' : 'bg-sky-500/10 text-sky-400 border-sky-500/30',
+          descricao: 'Sem teto de 5 imóveis, fotos em alta resolução e vitrine digital pública.',
+          bloqueado: bloqueioProAtivo && !ehAdminTotal,
+        },
         {
           id: 'historico',
           icone: FileSignature,
           label: 'Propostas & Negócios',
           descricao: 'Estruturação de propostas, contrapropostas e histórico comercial.',
-          bloqueado: bloqueioProAtivo && !ehAdminTotal,
-        },
-        {
-          id: 'tarefa',
-          icone: ScanLine,
-          label: 'Vistoria & Laudo IA',
-          descricao: 'Laudos fotográficos por ambiente com inteligência artificial.',
-          bloqueado: bloqueioProAtivo && !ehAdminTotal,
-        },
-        {
-          id: 'contador',
-          icone: Calculator,
-          label: 'Simuladores',
-          descricao: 'Cálculo de custos de cartório, ITBI, comissões e rentabilidade.',
-          bloqueado: bloqueioProAtivo && !ehAdminTotal,
-        },
-        {
-          id: 'juridico_imobi',
-          icone: Scale,
-          label: 'Assistente Legal',
-          descricao: 'Minutas de compromisso de compra e venda e checagem de certidões.',
           bloqueado: bloqueioProAtivo && !ehAdminTotal,
         },
         {
@@ -438,10 +437,10 @@ export default function SidebarAdmin({
       corInativoBotao: temaClaro
         ? 'border-slate-200/90 bg-slate-50/60 text-slate-700 hover:border-slate-300 hover:bg-white shadow-xs'
         : 'border-slate-800/90 bg-[#060a10] text-slate-300 hover:border-purple-500/40 hover:bg-[#120b1c]',
-      descricaoGrupo: '5 módulos estratégicos de liderança comercial, correspondente e inteligência.',
+      descricaoGrupo: '10 módulos estratégicos de liderança comercial, jurídico, fiscal e inteligência.',
       mostrarPreco: !acessoPlusLiberado && !ehAdminTotal,
       incluso: acessoPlusLiberado || ehAdminTotal,
-      itens: filtrarPorPapel([
+      itens: [
         {
           id: 'radar_captacao',
           icone: Radar,
@@ -452,8 +451,15 @@ export default function SidebarAdmin({
         {
           id: 'administrador',
           icone: TrendingUp,
-          label: 'Diretor Comercial IA + Roleta',
-          descricao: 'Metas da equipe, auditoria de funil e roleta rotativa de leads.',
+          label: 'Diretor Comercial IA',
+          descricao: 'Metas da equipe, auditoria de funil e consultoria estratégica.',
+          bloqueado: bloqueioPlusAtivo && !ehAdminTotal,
+        },
+        {
+          id: 'roleta_imobi',
+          icone: Shuffle,
+          label: 'Roleta de Leads',
+          descricao: 'Fila rotativa (Round-Robin) com distribuição justa entre corretores.',
           bloqueado: bloqueioPlusAtivo && !ehAdminTotal,
         },
         {
@@ -468,6 +474,38 @@ export default function SidebarAdmin({
           icone: Receipt,
           label: 'Repasses & NF',
           descricao: 'Divisão de comissões entre corretores e fechamentos mensais.',
+          badge: !ehGestorEfetivo ? 'Gestão' : undefined,
+          badgeCor: !ehGestorEfetivo ? 'bg-amber-500/10 text-amber-500 border-amber-500/30' : undefined,
+          bloqueado: (bloqueioPlusAtivo && !ehAdminTotal) || !ehGestorEfetivo,
+          bloqueadoGestao: !ehGestorEfetivo,
+          avisoGestao: AVISO_ABA_GESTAO,
+        },
+        {
+          id: 'contador',
+          icone: Calculator,
+          label: 'Simuladores de Custos',
+          descricao: 'Cálculo de custos de cartório, ITBI, comissões e rentabilidade.',
+          bloqueado: bloqueioPlusAtivo && !ehAdminTotal,
+        },
+        {
+          id: 'juridico_imobi',
+          icone: Scale,
+          label: 'Assistente Legal',
+          descricao: 'Minutas de compromisso de compra e venda e checagem de certidões em 27 UFs.',
+          bloqueado: bloqueioPlusAtivo && !ehAdminTotal,
+        },
+        {
+          id: 'tarefa',
+          icone: ScanLine,
+          label: 'Vistoria & Laudo IA',
+          descricao: 'Laudos fotográficos por ambiente com inteligência artificial.',
+          bloqueado: bloqueioPlusAtivo && !ehAdminTotal,
+        },
+        {
+          id: 'avaliacao_imovel',
+          icone: FileText,
+          label: 'Avaliação de Imóvel',
+          descricao: 'Estudo de valor de mercado e laudo executivo com 5 agentes de IA.',
           bloqueado: bloqueioPlusAtivo && !ehAdminTotal,
         },
         {
@@ -477,7 +515,7 @@ export default function SidebarAdmin({
           descricao: 'Gravação ao vivo, transcrição e geração de ata executiva com tarefas.',
           bloqueado: !acessoPlusLiberado && !brainLiberado && !ehAdminTotal,
         },
-      ]),
+      ],
     },
     {
       key: 'ia',
@@ -533,6 +571,10 @@ export default function SidebarAdmin({
   ];
 
   const handleItemClick = (item) => {
+    if (item.bloqueadoGestao) {
+      alert(item.avisoGestao || 'Área de gestão: pergunte ao dono da conta.');
+      return;
+    }
     if (item.bloqueado) {
       if (typeof onUpgrade === 'function') {
         onUpgrade(item);
@@ -1045,7 +1087,14 @@ export default function SidebarAdmin({
                         </div>
 
                         <div className="shrink-0">
-                          {bloqueado ? (
+                          {item.bloqueadoGestao ? (
+                            <span
+                              className="inline-flex items-center gap-1 text-[10px] font-black text-amber-500 dark:text-amber-400 bg-amber-500/10 border border-amber-500/30 px-2 py-0.5 rounded-full"
+                              title="Exclusivo para gestão"
+                            >
+                              <Lock size={10} /> Gestão
+                            </span>
+                          ) : bloqueado ? (
                             <span className="inline-flex items-center gap-1 text-[10px] font-black text-amber-500 dark:text-amber-400 bg-amber-500/10 border border-amber-500/30 px-2 py-0.5 rounded-full">
                               <Lock size={10} /> Upgrade
                             </span>
