@@ -148,7 +148,7 @@ export default function ControleInteligenciaIA({
         <div className="space-y-1">
           <div className="flex flex-wrap items-center gap-2">
             <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-[#10b981]/15 border border-[#10b981]/40 text-[#10b981] text-[10px] font-black uppercase tracking-wider">
-              <Cpu size={12} /> Tiered AI • Controle de Consumo
+              <Cpu size={12} /> Gestão Inteligente • Controle de Atendimento
             </span>
             {feedbackSalvo && (
               <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-[#10b981]/20 text-[#10b981] text-[11px] font-bold animate-pulse">

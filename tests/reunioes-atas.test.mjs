@@ -86,9 +86,9 @@ test('trilho e pilar do topo tratam o módulo como PLUS (com cadeado coerente)',
   assert.match(admin, /MAPA_DETALHES_ABAS\['reunioes-atas'\] = \{/);
 });
 
-test('Sidebar: pilar PLUS anuncia 5 módulos com o microfone', () => {
-  assert.match(sidebar, /descricaoGrupo: '5 módulos estratégicos/);
-  assert.match(sidebar, /id: 'reunioes-atas',\s*icone: '🎙️',\s*label: 'Reuniões & Atas IA',/);
+test('Sidebar: pilar PLUS anuncia 10 módulos com o microfone', () => {
+  assert.match(sidebar, /descricaoGrupo: '10 módulos estratégicos/);
+  assert.match(sidebar, /id: 'reunioes-atas',[\s\S]*?label: 'Reuniões & Atas IA',/);
 });
 
 test('copy, manual e cor da aba existem', () => {

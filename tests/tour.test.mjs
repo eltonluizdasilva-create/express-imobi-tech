@@ -68,11 +68,14 @@ const domCompleto = docFalso([
   elo('captacao_imobi', ' Captação & Imóveis'),
   elo('funil_leads', ' Leads & Funil CRM'),
   elo('credito', ' Correspondente / Crédito', { visivel: false }),
-  elo('agentes_ia', ' 7 Agentes de IA'),
+  elo('agentes_ia', ' Agentes Operacionais · Zara'),
+  elo('brain', ' Tom · Segundo Cérebro'),
 ]);
 const visiveis = coletarAbasVisiveis(domCompleto);
-ok('coleta só as visíveis', visiveis.length === 4, String(visiveis.length));
-ok('mantém a ordem do DOM', visiveis.map((a) => a.id).join() === 'dashboard_imobi,captacao_imobi,funil_leads,agentes_ia');
+ok('coleta só as visíveis', visiveis.length === 5, String(visiveis.length));
+ok('mantém a ordem do DOM', visiveis.map((a) => a.id).join() === 'dashboard_imobi,captacao_imobi,funil_leads,agentes_ia,brain');
+ok('Agentes Operacionais têm aba própria', visiveis.some((a) => a.id === 'agentes_ia'));
+ok('Tom tem aba própria', visiveis.some((a) => a.id === 'brain'));
 ok('remove espaços do rótulo', visiveis[0].label === 'Visão Geral', visiveis[0].label);
 ok('ignora alvo oculto', !visiveis.some((a) => a.id === 'credito'));
 ok('elementoVisivel detecta oculto', elementoVisivel(elo('x', 'X', { visivel: false })) === false);
@@ -145,7 +148,7 @@ const pop1 = renderToStaticMarkup(React.createElement(TourPopover, {
   passo: passos[0], indice: 0, total: passos.length, rect: null, viewport: vp,
   onAnterior() {}, onProximo() {}, onIgnorar() {}, onFechar() {},
 }));
-ok('popover mostra contador dinâmico', pop1.includes('1/4'));
+ok('popover mostra contador dinâmico', pop1.includes(`1/${passos.length}`));
 ok('popover mostra o título da aba', pop1.includes('Visão Geral'));
 ok('popover mostra o ganho', pop1.includes(textoDor('dashboard_imobi').ganho.slice(0, 25)));
 ok('passo 1 esconde Anterior', !pop1.includes('>Anterior<'));
@@ -153,10 +156,10 @@ ok('tem Ignorar apresentação', pop1.includes('Ignorar apresentação'));
 ok('tem botão X acessível', pop1.includes('aria-label="Fechar tour"'));
 
 const popFim = renderToStaticMarkup(React.createElement(TourPopover, {
-  passo: passos[3], indice: 3, total: 4, rect: null, viewport: vp,
+  passo: passos[passos.length - 1], indice: passos.length - 1, total: passos.length, rect: null, viewport: vp,
   onAnterior() {}, onProximo() {}, onIgnorar() {}, onFechar() {},
 }));
-ok('último passo mostra N/N', popFim.includes('4/4'));
+ok('último passo mostra N/N', popFim.includes(`${passos.length}/${passos.length}`));
 ok('último passo tem Começar agora', popFim.includes('Começar agora') && !popFim.includes('>Próximo<'));
 ok('último passo tem Anterior', popFim.includes('>Anterior<'));
 
@@ -168,7 +171,12 @@ ok('inativo não renderiza nada', inativo === '');
 /* ---------------------- conferência no código-fonte --------------------- */
 const fonteTour = readFileSync(new URL('../src/components/OnboardingTour.tsx', import.meta.url), 'utf8');
 const admin = readFileSync(new URL('../src/AdminNovo.jsx', import.meta.url), 'utf8');
+const equipe = readFileSync(new URL('../src/Equipe.jsx', import.meta.url), 'utf8');
 const barra = readFileSync(new URL('../src/components/admin/BarraModulos.jsx', import.meta.url), 'utf8');
+const trilho = readFileSync(new URL('../src/components/admin/TrilhoModulos.jsx', import.meta.url), 'utf8');
+const inicioPro = admin.indexOf('const botoesBlocoPro = [');
+const fimPro = admin.indexOf('];', inicioPro);
+const botoesPro = admin.slice(inicioPro, fimPro);
 
 ok('sem roteiro fixo de 5 passos', !fonteTour.includes('PASSOS_TOUR') && !fonteTour.includes('TOTAL_PASSOS'));
 ok('tour coleta as abas do DOM', fonteTour.includes('coletarAbasVisiveis(document)'));
@@ -178,7 +186,20 @@ ok('barra aceita temaClaro', barra.includes('temaClaro = false'));
 ok('barra tem classes claras nas inativas',
    barra.includes('border-slate-300 bg-white text-slate-800'));
 ok('AdminNovo passa temaClaro para as três barras', (admin.match(/temaClaro=\{!isEscuro\}/g) || []).length === 3);
-ok('AdminNovo alterna a visão', admin.includes('onClick={() => setModoPro(false)}') && admin.includes('onClick={() => setModoPro(true)}'));
+ok('alternador de visão removido (D-22.06)', !admin.includes('setModoPro') && admin.includes('Alternador de visão removido (D-22.06)'));
+ok('Zara tem filtro próprio fora do grupo PRO', !botoesPro.includes("id: 'agentes_ia'") && admin.includes("rotuloCurto: 'IA Zara · PRO'"));
+ok('filtro Zara abre agentes_ia', admin.includes("abaInicial: 'agentes_ia'") && trilho.includes('if (grupo.abaInicial) setAbaAtiva(grupo.abaInicial)'));
+ok('filtro PLUS abre a primeira tela exclusiva do PLUS', admin.includes("abaInicial: 'credito'"));
+ok('filtros restantes têm rotas iniciais', [
+  "abaInicial: 'dashboard_imobi'",
+  "abaInicial: 'captacao_imobi'",
+  "abaInicial: 'sofia_whatsapp'",
+  "abaInicial: 'brain'",
+].every((rota) => admin.includes(rota)));
+ok('Zara identifica o acesso PRO', admin.includes("rotuloCurto: 'IA Zara · PRO'"));
+ok('Tom tem rótulo próprio, sem pílula combinada', admin.includes("label: '🧠 Tom · Segundo Cérebro'") && !admin.includes('Tom + Zara'));
+ok('submenu IA duplicado removido', !admin.includes('const navegacaoIA') && !admin.includes('{navegacaoIA}'));
+ok('Equipe não renderiza limite Infinity', equipe.includes('Ilimitado') && !equipe.includes('{limiteUsuarios}</span>'));
 ok('AdminNovo mantém o botão Refazer tour', admin.includes('setTourManual(true)'));
 ok('AdminNovo renderiza o tour', admin.includes('<OnboardingTour') && admin.includes('hasCompletedTour={dadosImobiliaria?.hasCompletedTour}'));
 

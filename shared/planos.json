@@ -11,13 +11,15 @@
       "equipe",
       "config",
       "ajuda",
-      "meuplano"
+      "meuplano",
+      "guia_campo_bonus"
     ],
     "profissional_extra": [],
     "essencial_plus_extra": [
       "captacao_imobi",
       "historico",
       "marketing",
+      "triagem_credito",
       "agentes_ia",
       "clientes",
       "leads",
@@ -34,7 +36,8 @@
       "avaliacao_imovel",
       "contador",
       "juridico_imobi",
-      "reunioes-atas"
+      "reunioes-atas",
+      "pos_venda"
     ],
     "esquadrao_extra": [
       "whatsapp_hub",
@@ -64,6 +67,10 @@
         {
           "icone": "ShieldCheck",
           "texto": "Painel, financeiro essencial e gestão da equipe"
+        },
+        {
+          "icone": "Target",
+          "texto": "Arena de Treinamento & Roleplay IA para qualificação da equipe"
         },
         {
           "icone": "Lock",
@@ -153,7 +160,7 @@
         },
         {
           "icone": "Check",
-          "texto": "PLUS exclusivo: Correspondente / Crédito, Radar de Captação, Diretor Comercial IA, Roleta de Leads, Repasses & NF, Vistoria & Laudo IA, Avaliação de Imóvel, Reuniões & Atas IA, Simuladores e Assistente Legal"
+          "texto": "PLUS exclusivo: Correspondente / Crédito, Radar de Captação, Diretor Comercial IA, Roleta de Leads, Repasses & NF, Vistoria & Laudo IA, Avaliação de Imóvel, Reuniões & Atas IA, Simuladores, Assistente Legal e Pós-Venda, Chaves & Carteira"
         }
       ],
       "cta": "Assinar PLUS",

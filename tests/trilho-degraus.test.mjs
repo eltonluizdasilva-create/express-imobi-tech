@@ -26,7 +26,7 @@ function contarItensDoBloco(nome) {
   return (fonteAdmin.slice(inicio, fim).match(/\bid: '/g) || []).length;
 }
 
-test('catálogo mantém 3 pilares no PRO e 10 exclusivos no PLUS', () => {
+test('catálogo mantém 3 pilares no PRO e 11 exclusivos no PLUS', () => {
   const catalogo = JSON.parse(
     readFileSync(new URL('../shared/planos.json', import.meta.url), 'utf8'),
   );
@@ -46,8 +46,8 @@ test('catálogo mantém 3 pilares no PRO e 10 exclusivos no PLUS', () => {
     'avaliacao_imovel',
     'contador',
     'juridico_imobi',
-    // D-23.27 — Reuniões & Atas IA entrou como 10º exclusivo do PLUS.
     'reunioes-atas',
+    'pos_venda',
   ];
 
   // D-23.20: os quatro módulos que eram PRO agora são exclusivos do PLUS.
@@ -146,10 +146,10 @@ test('plano PLUS mantém o acesso aos módulos PRO e Grátis (herança comercial
   assert.ok(planoPlus?.preco?.mensal > 0);
 });
 
-test('contadores das pílulas: Grátis 10, PRO 3, PLUS 10', () => {
+test('contadores das pílulas: Grátis 10, PRO 3, PLUS 11', () => {
   assert.equal(contarItensDoBloco('botoesBloco1Essencial'), 10);
   assert.equal(contarItensDoBloco('botoesBlocoPro'), 3);
-  assert.equal(contarItensDoBloco('itensTrilhoPlus'), 10);
+  assert.equal(contarItensDoBloco('itensTrilhoPlus'), 11);
 });
 
 test('GRÁTIS fecha PRO e PLUS: todo item dos dois degraus carrega cadeado', () => {
@@ -167,7 +167,7 @@ test('GRÁTIS fecha PRO e PLUS: todo item dos dois degraus carrega cadeado', () 
   const bloco = fonteAdmin.slice(inicio, fim);
   const ids = (bloco.match(/\bid: '/g) || []).length;
   const cadeados = (bloco.match(/bloqueado: bloqueioPlusAtivo/g) || []).length;
-  assert.equal(ids, 10);
+  assert.equal(ids, 11);
   assert.equal(cadeados, ids, 'módulo do PLUS sem cadeado: estado misto no trilho');
   // D-23.27 — Reuniões & Atas IA também abre para a IA Tom: o cadeado dela
   // depende de `brainLiberado`, igual à Sidebar e à guarda de aba.
@@ -214,6 +214,7 @@ test('itens PLUS navegam para conteúdo existente no painel', () => {
   assert.equal(idDaAbaDoItem({ id: 'juridico_imobi', tabId: 'juridico_imobi' }), 'juridico_imobi');
   assert.equal(idDaAbaDoItem({ id: 'tarefa', tabId: 'tarefa' }), 'tarefa');
   assert.equal(idDaAbaDoItem({ id: 'avaliacao_imovel', tabId: 'avaliacao_imovel' }), 'avaliacao_imovel');
+  assert.equal(idDaAbaDoItem({ id: 'pos_venda', tabId: 'pos_venda' }), 'pos_venda');
   assert.equal(idDaAbaDoItem({ id: 'captacao_imobi' }), 'captacao_imobi');
   assert.equal(idDaAbaDoItem({ id: 'agentes_ia' }), 'agentes_ia');
 });

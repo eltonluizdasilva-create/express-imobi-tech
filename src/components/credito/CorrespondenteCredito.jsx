@@ -75,7 +75,12 @@ export default function CorrespondenteCredito({ dadosOficina, usuario: usuarioPr
       valorImovel: p.valorImovel ? String(p.valorImovel) : atual.valorImovel,
       cidade: p.cidade || atual.cidade,
       uf: p.uf || atual.uf,
+      tipo: p.tipo || atual.tipo,
       rendas: p.renda ? [String(p.renda)] : atual.rendas,
+      nascimentoMaisVelho: p.nascimentoMaisVelho || atual.nascimentoMaisVelho,
+      fgts: p.fgts ? String(p.fgts) : atual.fgts,
+      usaFgts: p.usaFgts !== undefined ? Boolean(p.usaFgts) : atual.usaFgts,
+      entradaDinheiro: p.entradaDinheiro ? String(p.entradaDinheiro) : atual.entradaDinheiro,
     }));
   }, []);
 

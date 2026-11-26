@@ -14,7 +14,9 @@ import {
   Plus,
   Send,
   Trash2,
+  Calculator,
 } from 'lucide-react';
+import TriagemCredito from './components/imobi/TriagemCredito';
 
 const PROPOSTAS_DEMONSTRACAO = [
   {
@@ -47,7 +49,8 @@ const PROPOSTAS_DEMONSTRACAO = [
   },
 ];
 
-export default function Historico({ oficinaId }) {
+export default function Historico({ oficinaId, setAbaAtiva }) {
+  const [subAba, setSubAba] = useState('propostas'); // 'propostas' | 'triagem'
   const [propostas, setPropostas] = useState(PROPOSTAS_DEMONSTRACAO);
   const [searchTerm, setSearchTerm] = useState('');
   const [filtroStatus, setFiltroStatus] = useState('Todos');
@@ -236,7 +239,7 @@ export default function Historico({ oficinaId }) {
               <FileText size={13} /> Propostas & Negócios
             </div>
             <h1 className="text-2xl md:text-4xl font-black tracking-tight text-white uppercase">
-              📝 PROPOSTAS & <span style={{ color: '#10b981' }}>FECHAMENTO</span>
+              PROPOSTAS & <span style={{ color: '#10b981' }}>FECHAMENTO</span>
             </h1>
             <p className="mt-2 text-xs md:text-sm text-zinc-400">
               Gerenciamento de propostas comerciais, análise de crédito (SBPE, FGTS, financiamentos) e histórico de negociações até a assinatura do contrato.
@@ -260,6 +263,42 @@ export default function Historico({ oficinaId }) {
         </div>
       </section>
 
+      {/* NAVEGAÇÃO DE SUB-ABAS NO PLANO PRO */}
+      <div className="flex flex-wrap items-center gap-2 border-b border-zinc-800 pb-3">
+        <button
+          type="button"
+          onClick={() => setSubAba('propostas')}
+          className={`px-4 py-2 rounded-xl text-xs font-black transition cursor-pointer flex items-center gap-2 ${
+            subAba === 'propostas'
+              ? 'bg-zinc-800 text-white border border-zinc-700 shadow-sm'
+              : 'text-zinc-400 hover:text-white hover:bg-zinc-900 border border-transparent'
+          }`}
+        >
+          <FileText size={15} className={subAba === 'propostas' ? 'text-emerald-400' : ''} />
+          <span>Propostas & Negócios</span>
+        </button>
+
+        <button
+          type="button"
+          onClick={() => setSubAba('triagem')}
+          className={`px-4 py-2 rounded-xl text-xs font-black transition cursor-pointer flex items-center gap-2 ${
+            subAba === 'triagem'
+              ? 'bg-sky-500/20 text-sky-300 border border-sky-500/40 shadow-sm'
+              : 'text-zinc-400 hover:text-white hover:bg-zinc-900 border border-transparent'
+          }`}
+        >
+          <Calculator size={15} className={subAba === 'triagem' ? 'text-sky-400' : ''} />
+          <span>Triagem de Financiamento & Crédito</span>
+          <span className="text-[9px] px-1.5 py-0.5 rounded bg-sky-500/20 text-sky-300 border border-sky-500/30 font-black">
+            PRO · IA
+          </span>
+        </button>
+      </div>
+
+      {subAba === 'triagem' ? (
+        <TriagemCredito setAbaAtiva={setAbaAtiva} />
+      ) : (
+        <>
       {/* FORMULÁRIO DE NOVA PROPOSTA IMOBILIÁRIA */}
       <section className="rounded-3xl border border-zinc-800 bg-zinc-900/90 p-6">
         <h2 className="text-xs font-extrabold uppercase tracking-wider text-[#10b981] mb-4 flex items-center gap-2">
@@ -492,6 +531,8 @@ export default function Historico({ oficinaId }) {
           );
         })}
       </div>
+      </>
+      )}
     </div>
   );
 }

@@ -142,6 +142,7 @@ function devApiAi() {
 
       montar('/api/ai', () => import('./api/ai.js'))
       montar('/api/places', () => import('./api/places.js'))
+      montar('/api/importar-xml', () => import('./api/importar-xml.js'))
     },
   }
 }

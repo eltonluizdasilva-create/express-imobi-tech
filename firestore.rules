@@ -157,7 +157,7 @@ service cloud.firestore {
             'clientes', 'tarefa', 'notafiscal', 'migracao',
             'acompanhamento_cliente', 'copiloto', 'secretaria', 'administrador',
             'roleta_imobi', 'avaliacao_imovel', 'credito', 'radar_captacao',
-            'contador', 'juridico_imobi'
+            'contador', 'juridico_imobi', 'reunioes-atas'
           ])
         );
     }
@@ -489,6 +489,15 @@ service cloud.firestore {
       allow create, update: if authed() && ehGestor(oid)
         && (!request.resource.data.keys().hasAny(['cib'])
           || (request.resource.data.cib is string && request.resource.data.cib.size() <= 20));
+    }
+    // Esteira de Cartório & Escritura (dentro de Repasses & NF): dado do
+    // negócio com CND, ITBI e RGI — mesmo contrato da nota fiscal: só gestão.
+    match /oficinas/{oid}/cartorio_negociacoes/{docId} {
+      allow read, delete: if authed() && ehGestor(oid);
+      allow create, update: if authed() && ehGestor(oid)
+        && request.resource.data.id is string
+        && request.resource.data.id.size() > 0
+        && request.resource.data.id.size() <= 120;
     }
     // Histórico comercial: evento é prova. Cria uma vez, nunca reescreve.
     //   read   -> membro do tenant

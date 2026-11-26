@@ -4,8 +4,8 @@ import { ChevronRight } from 'lucide-react';
 /**
  * ModuloComAbas — contêiner de abas internas de um módulo.
  *
- * MOTIVO (Lote 3, 2026-11-20): a barra `PRO · ASSINANTES` tinha botões soltos
- * para telas que são, na prática, sub-telas de um mesmo assunto:
+ * As sub-telas continuam agrupadas no módulo hospedeiro; os acessos PLUS
+ * também podem abrir diretamente as rotas abaixo:
  *   • `Roleta de Leads`  → pertence ao Diretor Comercial IA (`administrador`)
  *   • `Repasses & NF`    → pertence ao Simulador de Custos (`contador`)
  *
@@ -23,20 +23,40 @@ export default function ModuloComAbas({
   abaInicial = null,
   childrenMap = {},
   titulo = null,
+  onMudarSubAba = null,
 }) {
   const chaveInicial =
     abaInicial && childrenMap[abaInicial] ? abaInicial : abas[0]?.key;
 
   const [subAba, setSubAba] = useState(chaveInicial);
 
+  // Sincroniza a subAba com a abaInicial quando a rota externa mudar (ex: navegação pelo trilho superior)
+  React.useEffect(() => {
+    if (abaInicial && childrenMap[abaInicial]) {
+      setSubAba(abaInicial);
+    }
+  }, [abaInicial]);
+
   const conteudo = childrenMap[subAba];
+
+  // Trilha dinâmica: o cabeçalho acompanha a sub-aba ativa. Antes, "Repasses &
+  // NF" aparecia sob o rótulo fixo "Simulador de Custos" e o usuário não sabia
+  // onde estava dentro do módulo.
+  const abaAtivaInfo = abas.find((aba) => aba.key === subAba) || null;
+  const rotuloSubAba = abaAtivaInfo?.label && abaAtivaInfo.label !== titulo ? abaAtivaInfo.label : null;
 
   return (
     <div className="space-y-5">
       {titulo && (
-        <div className="flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.18em] text-slate-500">
+        <div className="flex flex-wrap items-center gap-2 text-[10px] font-black uppercase tracking-[0.18em] text-slate-500">
           <ChevronRight size={13} className="text-emerald-500" />
-          {titulo}
+          <span>{titulo}</span>
+          {rotuloSubAba && (
+            <>
+              <ChevronRight size={13} className="text-slate-700" />
+              <span className="text-slate-300">{rotuloSubAba}</span>
+            </>
+          )}
         </div>
       )}
 
@@ -53,7 +73,12 @@ export default function ModuloComAbas({
               type="button"
               role="tab"
               aria-selected={ativo}
-              onClick={() => setSubAba(key)}
+              onClick={() => {
+                setSubAba(key);
+                if (typeof onMudarSubAba === 'function') {
+                  onMudarSubAba(key);
+                }
+              }}
               className={`flex min-w-0 flex-1 items-center gap-2 rounded-xl border px-3 py-2 text-left transition-all ${
                 ativo
                   ? 'border-emerald-500/60 bg-emerald-500/10'

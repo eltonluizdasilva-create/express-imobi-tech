@@ -3,7 +3,7 @@
  * ============================================================================
  * Substitui o mockup estático de celular que ficava ao lado do QR Code em
  * `src/components/Secretaria.jsx`. O que aparece na tela é o MESMO motor do
- * simulador da aba `agentes_ia` do painel (`AdminNovo.jsx`):
+ * simulador da seção de IA do painel (`AdminNovo.jsx`):
  *
  *   1. `responderSofiaSimulacao()` (`src/lib/simuladorSofia.js`) → `/api/ai`
  *      com o prompt de produção (`sofiaPrompt.js`) em `modo: 'simulacao'`;
@@ -35,11 +35,12 @@ import {
   filtrarCatalogoDisponivel,
   responderSofiaSimulacao,
 } from '../../lib/simuladorSofia';
+import { obterRespostaRapida0Tokens } from '../../data/cerebroPolen';
 import { LIMITE_DEMO, podeUsarDemo, registrarUsoDemo, restantesDemo } from '../../lib/limiteDemo';
 
 /** Saudação fixa: é a única frase do fio que não vem da IA. */
 export const SAUDACAO_POLEN_SIMULACAO =
-  'Olá! Sou a Pólen, a atendente que responde no WhatsApp 24h. Escreva como se você fosse o cliente (bairro, tipo de imóvel, faixa de valor) — eu respondo com os imóveis reais do seu catálogo, sem inventar preço, taxa ou parcela.';
+  'Olá! Sou a Pólen, secretária comercial 24h da sua imobiliária no WhatsApp. Teste como se fosse um cliente interessado em um imóvel — posso tirar dúvidas sobre valores, condomínio, localização e agendar visitas com base no seu catálogo real.';
 
 function horaAgora() {
   try {
@@ -92,6 +93,29 @@ export default function SimuladorPolen({
     async (mensagemBruta) => {
       const mensagem = String(mensagemBruta || '').trim();
       if (!mensagem || enviando) return;
+
+      // Resposta rápida 0 tokens (Cérebro da Pólen):
+      // Para perguntas rápidas de demonstração como "Tenho interesse, mas preciso financiar",
+      // responde instantaneamente sem queimar tokens e apresentando o fechamento oficial com os 7 pontos validados.
+      const imovelRef = disponiveis[0] || (Array.isArray(catalogoImoveis) ? catalogoImoveis[0] : null) || {};
+      const resposta0Tokens = obterRespostaRapida0Tokens({
+        mensagem,
+        imovel: imovelRef,
+        nomeImobiliaria,
+        nomeCorretor,
+      });
+
+      if (resposta0Tokens) {
+        setMsg('');
+        setErro('');
+        setGatilho(null);
+        setHistorico((prev) => [
+          ...prev,
+          { autor: 'cliente', texto: mensagem, hora: horaAgora() },
+          { autor: 'ia', texto: resposta0Tokens, hora: horaAgora() },
+        ]);
+        return;
+      }
 
       if (!podeUsarDemo('polen', { liberado })) {
         setRestantes(0);
@@ -191,15 +215,20 @@ export default function SimuladorPolen({
 
         {/* Barra de topo (estilo WhatsApp) — verde-escura nos dois temas */}
         <div className="whatsapp-barra relative z-10 flex shrink-0 items-center gap-3 bg-[#075E54] px-4 pb-3 pt-7">
-          <div className="h-8 w-8 shrink-0 overflow-hidden rounded-full border border-white/20 bg-zinc-200">
-            <img src="https://api.dicebear.com/7.x/bottts/svg?seed=Polen" alt="Pólen" />
+          <div className="h-9 w-9 shrink-0 overflow-hidden rounded-full border border-emerald-300/40 bg-zinc-900 shadow-sm">
+            <img
+              src="/images/avatar-polen.png"
+              onError={(e) => { e.currentTarget.src = '/images/avatar-polen.svg'; }}
+              alt="Pólen"
+              className="h-full w-full object-cover"
+            />
           </div>
           <div className="min-w-0 flex-1">
             <h5 className="whatsapp-barra-titulo truncate text-xs font-bold text-white">
-              Pólen · Atendimento 24h
+              IA Pólen · 24h
             </h5>
             <span className="whatsapp-barra-status block text-[10px] text-emerald-200">
-              {enviando ? 'digitando…' : 'online'}
+              {enviando ? 'digitando…' : 'online no WhatsApp'}
             </span>
           </div>
           {gatilho && (
@@ -261,21 +290,20 @@ export default function SimuladorPolen({
           )}
 
           {bloqueado && (
-            <div className="mx-auto max-w-[92%] space-y-1.5 rounded-xl border border-amber-500/60 bg-amber-50 px-3 py-2 text-[10.5px] leading-relaxed text-amber-900">
-              <p className="flex items-center gap-1 font-black uppercase tracking-wide">
-                <Lock size={10} /> Limite de demonstração
+            <div className="mx-auto max-w-[92%] space-y-2 rounded-xl border border-emerald-500/50 bg-[#05070A] p-3 text-[10.5px] leading-relaxed text-slate-200 shadow-lg">
+              <p className="flex items-center gap-1.5 font-black uppercase tracking-wide text-[#10b981]">
+                <Sparkles size={12} /> Veja a Pólen em ação 24 horas
               </p>
-              <p>
-                Ela atende sem limite no WhatsApp quando o módulo está contratado (a partir de R$
-                450/mês + implantação).
+              <p className="text-slate-300">
+                Veja como ela atende seus clientes às 2h da manhã e entrega a visita agendada na sua agenda.
               </p>
               {onAbrirPlanos && (
                 <button
                   type="button"
                   onClick={onAbrirPlanos}
-                  className="cursor-pointer rounded-lg bg-amber-500 px-2 py-1 text-[10px] font-black uppercase tracking-wide text-slate-950 transition hover:bg-amber-400"
+                  className="w-full cursor-pointer rounded-xl bg-gradient-to-r from-emerald-500 to-emerald-400 py-2 text-center text-[10px] font-black uppercase tracking-wider text-slate-950 transition hover:opacity-90 shadow-md shadow-emerald-500/20"
                 >
-                  Contratar a Pólen →
+                  Quero a Pólen no meu WhatsApp →
                 </button>
               )}
             </div>
@@ -327,9 +355,8 @@ export default function SimuladorPolen({
         </form>
       </div>
 
-      <p className="mx-auto mt-2 max-w-[340px] text-center text-[10px] leading-relaxed text-zinc-500">
-        Mesma Pólen do WhatsApp, respondendo pelo <span className="font-semibold text-zinc-300">/api/ai</span> com o
-        catálogo real da imobiliária. Nenhuma mensagem daqui vai para o cliente.
+      <p className="mx-auto mt-2 max-w-[340px] text-center text-[10px] leading-relaxed text-zinc-400">
+        Mesma inteligência comercial da Pólen no WhatsApp, qualificando compradores e agendando visitas com base no seu catálogo de imóveis.
       </p>
     </div>
   );

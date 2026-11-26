@@ -1,5 +1,5 @@
 /**
- * tests/simulador-tom.test.mjs — Tom · Maestro da Imobiliária + limite de demo.
+ * tests/simulador-tom.test.mjs — Tom · segundo cérebro estratégico + limite de demo.
  * Execução: node tests/simulador-tom.test.mjs
  * Nenhuma rede, nenhuma chave: o fetch é injetado e o localStorage é um stub.
  */
@@ -98,7 +98,8 @@ await ok('sem dados reais o prompt declara o cenário de demonstração', () => 
   assert.match(prompt, /CENÁRIO DE DEMONSTRAÇÃO/);
   assert.match(prompt, new RegExp(String(CENARIO_DEMO.imoveis)));
   assert.match(prompt, /Imobiliária Horizonte/);
-  assert.match(prompt, /Tom, o Maestro da Imobiliária/);
+  assert.match(prompt, /Tom, o segundo cérebro estratégico/);
+  assert.match(prompt, /Zara coordena a execução operacional recorrente/);
 });
 
 await ok('com dados reais usa as contagens da conta e proíbe invenção', () => {
@@ -207,7 +208,7 @@ await ok('ExpressBrainTab: Tom com 4 ações, pergunta livre e limite', () => {
   assert.match(brainTab, /podeUsarDemo\('tom'/);
   assert.match(brainTab, /registrarUsoDemo\('tom'\)/);
   assert.match(brainTab, /Contratar o Tom/);
-  assert.match(brainTab, /Tom · Maestro da Imobiliária/);
+  assert.match(brainTab, /Tom · Segundo Cérebro Estratégico/);
   assert.equal(/Express Brain/.test(brainTab), false, 'nome comercial antigo ainda na tela');
 });
 

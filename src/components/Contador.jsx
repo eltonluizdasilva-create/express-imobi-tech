@@ -2,19 +2,37 @@
 import React, { useState } from "react";
 import HeroAba from './admin/HeroAba';
 import AceiteLegalGate from './admin/AceiteLegalGate';
+import SeletorUF from './ui/SeletorUF';
 import { AVISO_FISCAL } from '../lib/assistidos-legais';
+import { lerPreferencias } from '../lib/preferencias';
+import { portePorKey, regraUF } from '../lib/regrasEstaduais';
+import { ALIQUOTA_CHEIA } from '../lib/fiscal';
 import {
     Calculator, Receipt, TrendingUp, TrendingDown,
     Trash2, Send, Copy, CheckCircle, ScanLine,
-    Landmark, PiggyBank, Sparkles, FileText, DollarSign, ShieldAlert
+    Landmark, PiggyBank, Sparkles, FileText, DollarSign, ShieldAlert, Percent
 } from "lucide-react";
+
+// Mesmos parâmetros usados na emissão de Repasses & NF: ISS municipal de 3,0%
+// como referência e IBS/CBS efetivo de 13,25% (alíquota cheia de 26,5% com o
+// redutor de 50% da intermediação imobiliária — LC 214/2025). A estimativa só
+// existe para dar margem de conversa; a conferência do contador é obrigatória.
+const ALIQ_ISS_REFERENCIA = 3.0;
+const ALIQ_IBS_CBS_EFETIVA = Number((ALIQUOTA_CHEIA / 2).toFixed(2)); // 13,25
 
 const STYLES = {
     card: 'bg-zinc-900/40 border border-zinc-800 rounded-[2.5rem] p-6 md:p-8 mb-8 shadow-xl',
     input: 'bg-zinc-950 border border-zinc-800 focus:border-amber-500 text-zinc-100 p-4 rounded-xl outline-none w-full transition-all font-mono text-sm shadow-inner'
 };
 
+const fmtBRL = (v) => Number(v || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+
 export default function Contador({ oficinaId }) {
+    // Contexto da negociação (UF + porte do município): é a mesma preferência
+    // que a aba Repasses & NF usa na emissão, então os dois lados do módulo
+    // trabalham com o mesmo município e o mesmo teto de referência.
+    const [prefs, setPrefs] = useState(() => lerPreferencias());
+
     // 1. Estados do Fluxo de Caixa Expresso
     const [transacoes, setTransacoes] = useState([
         { id: 1, tipo: 'receita', valor: 4500.00, desc: 'Comissão Intermediação Apto 302', data: new Date().toLocaleDateString() },
@@ -35,6 +53,20 @@ export default function Contador({ oficinaId }) {
     const totalReceitas = transacoes.filter(t => t.tipo === 'receita').reduce((acc, curr) => acc + curr.valor, 0);
     const totalDespesas = transacoes.filter(t => t.tipo === 'despesa').reduce((acc, curr) => acc + curr.valor, 0);
     const saldo = totalReceitas - totalDespesas;
+
+    // Estimativa de margem: parte da comissão digitada no recibo e, enquanto o
+    // campo estiver vazio, das entradas do caixa. UF e porte do município vêm
+    // do mesmo NEGOCIANDO EM que a aba Repasses & NF usa para emitir.
+    const comissaoBase = (() => {
+        const digitada = parseFloat(String(recValor).replace(',', '.'));
+        return Number.isFinite(digitada) && digitada > 0 ? digitada : totalReceitas;
+    })();
+    const issEstimado = +(comissaoBase * (ALIQ_ISS_REFERENCIA / 100)).toFixed(2);
+    const ibsCbsEstimado = +(comissaoBase * (ALIQ_IBS_CBS_EFETIVA / 100)).toFixed(2);
+    const cargaTributaria = +(issEstimado + ibsCbsEstimado).toFixed(2);
+    const margemLiquida = +(comissaoBase - cargaTributaria).toFixed(2);
+    const regraUf = regraUF(prefs.ufPadrao);
+    const porteMunicipio = portePorKey(prefs.porteMunicipioPadrao);
 
     const addTransacao = () => {
         if (!novaDesc || !novoValor) return alert("Preencha a descrição e o valor.");
@@ -81,9 +113,9 @@ export default function Contador({ oficinaId }) {
                             <HeroAba
                                 flat
                                 icone={Calculator}
-                                chip="Simulador de Custos · comissão, tributo e caixa"
+                                chip="Simulador de Custos · margem líquida, comissão e carga tributária"
                                 titulo="Simule o custo antes de fechar o negócio."
-                                subtitulo="Estimativa referencial de comissão, caixa e tributos, com memória de cálculo. Não é parecer contábil: a conferência por contador inscrito no CRC é obrigatória antes de emitir guia ou recibo fiscal."
+                                subtitulo="Calculadora interna da operação: parte da comissão bruta, desconta a carga tributária estimada (ISS e IBS/CBS) e mostra a margem líquida, com memória de cálculo. Não é o simulador de financiamento do comprador — entrada, parcelas e aprovação ficam em Correspondente / Crédito. Não é parecer contábil: a conferência por contador inscrito no CRC é obrigatória antes de emitir guia ou recibo fiscal."
                                 cor="#f97316"
                             />
                         </div>
@@ -96,6 +128,53 @@ export default function Contador({ oficinaId }) {
                     <span>
                         <strong className="text-amber-400">Estimativa referencial:</strong> {AVISO_FISCAL}
                     </span>
+                </div>
+
+                {/* NEGOCIANDO EM — mesma preferência de UF/porte que Repasses & NF */}
+                <div className="mb-8 flex flex-col gap-2">
+                    <SeletorUF onChange={setPrefs} />
+                    <p className="px-1 text-[10px] text-zinc-500">
+                        O mesmo contexto de negociação usado em <strong className="text-zinc-400">Repasses &amp; NF</strong>:
+                        UF e porte do município alimentam a referência de {regraUf.imposto} e o teto MCMV de {porteMunicipio.label.toLowerCase()}.
+                    </p>
+                </div>
+
+                {/* 💰 MARGEM LÍQUIDA & CARGA TRIBUTÁRIA (mesmos parâmetros da emissão) */}
+                <div className="mb-8 rounded-[2rem] border border-amber-500/30 bg-amber-500/[0.04] p-6">
+                    <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
+                        <h2 className="flex items-center gap-2 text-xs font-black uppercase tracking-widest text-amber-500">
+                            <Percent size={16} /> Margem líquida &amp; carga tributária
+                        </h2>
+                        <span className="text-[10px] font-bold uppercase tracking-widest text-zinc-500">
+                            base: comissão {fmtBRL(comissaoBase)}
+                        </span>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
+                        <div className="rounded-2xl border border-zinc-800 bg-zinc-950/80 p-4">
+                            <span className="block text-[10px] font-black uppercase tracking-widest text-zinc-500">Comissão bruta</span>
+                            <span className="mt-1 block font-mono text-lg font-black text-white">{fmtBRL(comissaoBase)}</span>
+                        </div>
+                        <div className="rounded-2xl border border-zinc-800 bg-zinc-950/80 p-4">
+                            <span className="block text-[10px] font-black uppercase tracking-widest text-zinc-500">ISS ({ALIQ_ISS_REFERENCIA.toFixed(1)}%)</span>
+                            <span className="mt-1 block font-mono text-lg font-black text-amber-400">− {fmtBRL(issEstimado)}</span>
+                        </div>
+                        <div className="rounded-2xl border border-zinc-800 bg-zinc-950/80 p-4">
+                            <span className="block text-[10px] font-black uppercase tracking-widest text-zinc-500">IBS/CBS ({ALIQ_IBS_CBS_EFETIVA.toFixed(2)}%)</span>
+                            <span className="mt-1 block font-mono text-lg font-black text-amber-400">− {fmtBRL(ibsCbsEstimado)}</span>
+                        </div>
+                        <div className="rounded-2xl border border-amber-500/40 bg-amber-500/10 p-4">
+                            <span className="block text-[10px] font-black uppercase tracking-widest text-amber-500">Margem líquida</span>
+                            <span className="mt-1 block font-mono text-lg font-black text-amber-300">{fmtBRL(margemLiquida)}</span>
+                        </div>
+                    </div>
+
+                    <p className="mt-4 font-mono text-[10px] leading-relaxed text-zinc-500">
+                        Memória: {fmtBRL(comissaoBase)} − ISS {fmtBRL(issEstimado)} − IBS/CBS {fmtBRL(ibsCbsEstimado)} =
+                        {' '}{fmtBRL(margemLiquida)} de margem antes das despesas do caixa ({fmtBRL(totalDespesas)} hoje).
+                        Alíquotas de referência iguais às da emissão em Repasses &amp; NF; o ISS é municipal e o enquadramento
+                        (Simples/Presumido/Real) muda o resultado.
+                    </p>
                 </div>
 
                 {/* 💰 DASHBOARD RÁPIDO DO CAIXA */}

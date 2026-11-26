@@ -56,6 +56,9 @@ import AcompanhamentoCliente from './components/acompanhamento/AcompanhamentoCli
 import AvaliacaoImovel from './components/imobi/AvaliacaoImovel';
 import RadarCaptacao from './components/imobi/RadarCaptacao';
 import CorrespondenteCredito from './components/credito/CorrespondenteCredito';
+import TriagemCredito from './components/imobi/TriagemCredito';
+import PosVendaCarteira from './components/imobi/PosVendaCarteira';
+import GuiaCampoGratis from './components/admin/GuiaCampoGratis';
 
 const TriagemWrapper = (props) => (
   <div className="flex flex-col w-full gap-8">
@@ -120,4 +123,7 @@ export const MODULOS_MAP = {
   avaliacao_imovel: AvaliacaoImovel,
   radar_captacao: RadarCaptacao,
   credito: CorrespondenteCredito,
+  triagem_credito: TriagemCredito,
+  pos_venda: PosVendaCarteira,
+  guia_campo_bonus: GuiaCampoGratis,
 };

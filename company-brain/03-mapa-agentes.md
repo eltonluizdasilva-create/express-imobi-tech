@@ -16,7 +16,7 @@
 
 | Origem | Quantidade |
 |---|---|
-| Agentes do produto (7 + 3 assistentes) | 10 |
+| Papéis de IA do produto (Zara + agentes operacionais, Pólen, Tom e 3 assistentes) | 12 |
 | Agentes internos da Express Tech | 7 |
 | Agentes de código / orquestração | 7 |
 | Skills Express Tech (Hermes) | 7 |
@@ -30,22 +30,25 @@
 
 ## 1. Agentes do produto (rodam dentro do Express Imobi Tech)
 
-Definidos em `src/AdminNovo.jsx` (`AGENTES_INICIAIS`, a partir da linha 381) e apresentados na
-landing e no painel.
+Os cartões locais ficam em `src/AdminNovo.jsx` (`AGENTES_INICIAIS`). No painel, o bloco de agentes
+operacionais fica dentro da Central de Inteligência da Imobiliária, junto à área do Tom. Pólen é
+apresentada separadamente como secretária 24h.
 
 | Agente | Caminho | O que faz na prática | Gatilho | Status |
 |---|---|---|---|---|
-| **Pólen · Atendimento 24h** (id interno `sofia`) | `src/AdminNovo.jsx` · `AGENTES_INICIAIS[0]` · prompt em `src/agent/sofiaPrompt.js` | Recebe o lead no WhatsApp em segundos e classifica o interesse (urbano, loteamento, rural, locação). **Nome comercial desde D-22.02: Pólen** (antes "Sofia"). | mensagem recebida no WhatsApp do tenant | Ativo |
-| Iago | `src/AdminNovo.jsx` · `AGENTES_INICIAIS[1]` | Filtra orçamento, metragem, hectares e garantias antes de ocupar o corretor. | Pólen conclui a triagem | Ativo |
-| Téo | `src/AdminNovo.jsx` · `AGENTES_INICIAIS[2]` | Cruza a agenda do corretor e agenda a visita com lembrete. | lead qualificado pelo Iago | Ativo |
-| Lara | `src/AdminNovo.jsx` · `AGENTES_INICIAIS[3]` | Estrutura condições, sinal e permuta e devolve o resumo para aprovação. | pedido de proposta no atendimento | Ativo |
-| Heitor | `src/AdminNovo.jsx` · `AGENTES_INICIAIS[4]` | Retoma lead frio com oportunidade real (queda de preço, imóvel compatível). | lead sem resposta há 15+ dias | Ativo |
-| Nina | `src/AdminNovo.jsx` · `AGENTES_INICIAIS[5]` | Pede RG, comprovante e certidões no ritmo do cliente (hoje inativa por padrão). | início de análise de crédito | Ativo (desligada por padrão) |
+| **Zara · Direção Operacional** | cabeçalho da seção interna `agentes_ia` em `src/AdminNovo.jsx` | Papel de liderança que coordena os agentes e a execução recorrente do funil/rotina. Não é um agente de backend novo. | seção Agentes Operacionais | Papel de UI/produto |
+| Iago | `src/AdminNovo.jsx` · `AGENTES_INICIAIS` | Cartão de qualificação por orçamento, metragem, hectares e garantias. | rotina de qualificação | Cartão e estado local; execução autônoma não é implementada por esse cartão |
+| Téo | `src/AdminNovo.jsx` · `AGENTES_INICIAIS` | Cartão de agendamento de visitas. | rotina de visitas | Cartão e estado local |
+| Lara | `src/AdminNovo.jsx` · `AGENTES_INICIAIS` | Cartão de estruturação de propostas. | rotina de propostas | Cartão e estado local |
+| Heitor | `src/AdminNovo.jsx` · `AGENTES_INICIAIS` | Cartão de reativação de base fria. | rotina de reativação | Cartão e estado local |
+| Nina | `src/AdminNovo.jsx` · `AGENTES_INICIAIS` | Cartão de onboarding e checklist de crédito (inativo por padrão). | análise de crédito | Cartão e estado local |
+| Mônica | `src/AdminNovo.jsx` · `AGENTES_INICIAIS` | Cartão de VGV, comissões e repasses. | rotina financeira | Cartão e estado local |
+| **Pólen · Secretária 24h** (id interno `sofia`) | `src/agent/sofiaPrompt.js`, `src/components/Secretaria.jsx` e simulador da Central de IA | Atendimento e triagem de clientes no WhatsApp; a conexão de produção depende da integração externa. | mensagem recebida no WhatsApp do tenant | Produto separado; simulador no painel |
 | Hermes Copiloto | `src/agent/hermesClient.js` + aba `copiloto` | Copiloto operacional: resume ficha, cruza dados e executa tarefa no painel. | aba Copiloto / pergunta do corretor | Ativo |
 | Diretor Comercial IA | aba `administrador` | Analisa carteira, meta e onde investir; leitura preditiva com LC 214/2025. | aba Diretor Comercial | Ativo |
 | Assistente Fiscal **(do cliente)** | aba `contador` | Orientação tributária na venda do imóvel, ganho de capital e nota do cliente. **Não** é o fiscal da Express Tech. | aba Assistente Fiscal | Ativo |
 | Assistente Jurídico | aba `juridico_imobi` | Analisa cláusula, distrato e matrícula com motor legal de 27 UFs. | aba Assistente Jurídico | Ativo |
-| **Tom · Maestro da Imobiliária** (id interno `brain`) | `src/components/admin/ExpressBrainTab.jsx` + `src/lib/simuladorTom.js` | Central de Inteligência da imobiliária: regras comerciais, processos, auditoria de equipe e memória operacional. O simulador (D-22.02) responde auditando imóveis parados 30+ dias, leads sem resposta, regra de captação/comissão e treino de corretor novo, com as contagens reais da conta ou cenário de demonstração declarado. | aba `brain` / botão do simulador | Ativo (módulo em implantação; simulador no ar) |
+| **Tom · Segundo Cérebro Estratégico** (id interno `brain`) | `src/components/admin/ExpressBrainTab.jsx` + `src/lib/simuladorTom.js` | Apoio decisório estratégico; o simulador usa `/api/ai` e contexto da conta ou cenário demonstrativo. Arquivos e memória operacional persistente estão em implantação. | aba interna `brain` / botão do simulador | Simulador ativo; base estratégica em implantação |
 
 > Esses agentes **não** são skills do Hermes: são código do produto, executados no painel/WhatsApp do
 > cliente. Não confundir com os agentes internos da seção 7.

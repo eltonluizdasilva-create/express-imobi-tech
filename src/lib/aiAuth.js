@@ -10,7 +10,7 @@
  * ============================================================================
  */
 
-import { auth } from './firebase';
+import { auth } from './firebase.js';
 
 export async function cabecalhosIA() {
   const usuario = auth?.currentUser;

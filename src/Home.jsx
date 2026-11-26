@@ -1,860 +1,556 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import {
+  Bot,
+  FileText,
+  HelpCircle,
+  MessageCircle,
+  Mic,
+  ShieldCheck,
+  Sparkles,
+  Target,
+  TrendingUp,
+  Users,
+  Video,
+} from 'lucide-react';
 import LogoExpress from './components/ui/LogoExpress';
 import { EMAIL_INSTITUCIONAL } from './lib/appUrl';
 import { EMAIL_EXCLUSAO, EMPRESA } from './pages/legal/conteudoLegal';
 import { abrirPreferenciasCookies } from './lib/consentimentoCookies';
-import { precoNoCiclo } from './lib/planos';
-
-/**
- * Home — vitrine pública do Express Imobi Tech.
- * Estrutura comercial: promessa → prova de canal → dor → mecanismo (recursos)
- * → fluxo (como funciona) → agentes → planos transparentes → dúvidas → CTA.
- * Identidade: fundo #020408, esmeralda #10B981, teal #0D9488, sky #0284C7.
- */
 
 const EMAIL = EMAIL_INSTITUCIONAL;
-// D-22.09 — todo preço da página vem do catálogo (shared/planos.json).
-const PRECO_PRO = precoNoCiclo('pro');
-const PRECO_PLUS = precoNoCiclo('plus');
-const PRECO_POLEN = precoNoCiclo('esquadrao_ia');
-const PRECO_TOM_AUTONOMO = precoNoCiclo('tom_autonomo');
-const PRECO_TOM_IMOBILIARIA = precoNoCiclo('tom_imobiliaria');
 
-const PORTAIS = ['ZAP Imóveis', 'Viva Real', 'OLX', 'Imovelweb', 'Chaves na Mão'];
+const LINKS = [
+  { id: 'rotina', label: 'Sua Rotina' },
+  { id: 'quem-somos', label: 'Quem Somos' },
+  { id: 'ia', label: 'Atendimento & IA' },
+  { id: 'plano-gratis', label: 'Plano Grátis' },
+];
 
 const DORES = [
   {
-    hora: 'Sábado, 21h',
-    titulo: 'O lead que chamou e não teve resposta',
+    Icone: Target,
+    titulo: 'Avaliação no achismo e horas perdidas',
     texto:
-      'Ele viu o anúncio, mandou mensagem no WhatsApp e só recebeu retorno na segunda. Nesse intervalo, visitou com outra imobiliária que respondeu primeiro.',
-    vira:
-      'A Pólen recebe o contato automaticamente, entende o que ele procura e agenda a visita — inclusive fora do horário comercial.',
+      'Proprietário pedindo valor fora da realidade e você gastando tempo tentando justificar preço na mão sem respaldo técnico.',
   },
   {
-    hora: 'Quarta, 15h',
-    titulo: 'O cliente do decorado que esfriou no crédito',
+    Icone: MessageCircle,
+    titulo: 'Cliente ligando toda hora atrás de notícia',
     texto:
-      'A ficha foi enviada ao correspondente e a análise ficou parada. Sem prazo visível, o cliente foi esfriando em casa enquanto a documentação dormia na caixa de entrada.',
-    vira:
-      'O correspondente atualiza o status dentro do sistema e o responsável é avisado na hora. Você vê o que está aprovado, condicionado e parado.',
+      'Você no meio de uma visita ou negociação e o cliente cobrando atualização porque não sabe em que pé está o processo.',
   },
   {
-    hora: 'Sexta, 18h',
-    titulo: 'A proposta que ninguém retomou',
+    Icone: TrendingUp,
+    titulo: 'Metas no escuro',
     texto:
-      'A conversa terminou em "vou pensar" e ficou sem próximo passo marcado. Duas semanas depois, ninguém sabia dizer se a proposta estava viva ou morta.',
-    vira:
-      'Cada proposta entra no funil com dono e data de retomada. O sistema mostra o que está parado antes do mês fechar.',
+      'Trabalhar o mês inteiro na correria sem enxergar com clareza o quanto já produziu e o que falta para bater sua meta de comissões.',
+  },
+  {
+    Icone: FileText,
+    titulo: 'Propostas & Negócios soltos',
+    texto:
+      'Propostas perdidas em conversas antigas, negociações esfriando por falta de acompanhamento e dinheiro ficando na mesa.',
+  },
+  {
+    Icone: HelpCircle,
+    titulo: 'Dúvidas rápidas que travam a conversa',
+    texto:
+      'Insegurança na hora de ter uma noção clara sobre financiamento, impostos ou regras do negócio diante do cliente.',
   },
 ];
 
-const RECURSOS = [
+const PONTOS_POLEN = [
   {
-    icone: '🧭',
-    titulo: 'CRM & Funil de Vendas',
+    Icone: Mic,
     texto:
-      'Todo lead com etapa, responsável e próximo passo definido. Kanban visual, histórico de conversa e nenhuma negociação esquecida no bloco de notas.',
+      'Cliente mandando áudio enquanto você dirige ou está em visita: ela ouve, responde em áudio e acolhe o cliente sem você precisar parar tudo.',
   },
   {
-    icone: '🎯',
-    titulo: 'Roleta de Leads',
+    Icone: MessageCircle,
     texto:
-      'Distribuição automática e justa entre os corretores da equipe. Sem resposta no prazo, o lead gira para o próximo — sem discussão e sem privilégio.',
+      'Lead pedindo foto e detalhes à noite ou no fim de semana: ela consulta sua carteira, manda a foto na hora e tira as primeiras dúvidas 24h por dia.',
   },
   {
-    icone: '🌐',
-    titulo: 'Portal Público (/portal)',
+    Icone: ShieldCheck,
     texto:
-      'No PRO, os imóveis publicados ficam em uma vitrine própria, com link direto para compartilhar no WhatsApp, no Instagram e nos anúncios.',
-  },
-  {
-    icone: '🧮',
-    titulo: 'Simulador de Financiamento',
-    texto:
-      'Parcelas calculadas na hora, com entrada, prazo e taxa. O corretor conversa com o cliente sabendo o número que cabe no bolso dele.',
-  },
-  {
-    icone: '📋',
-    titulo: 'Vistoria Digital com IA',
-    texto:
-      'Checklist e laudo gerados no celular, com fotos e assinatura. A vistoria termina no imóvel, não no escritório, três dias depois.',
-  },
-  {
-    icone: '🔗',
-    titulo: 'Portais XML nativos',
-    texto:
-      'ZAP, Viva Real, OLX, Imovelweb e Chaves na Mão a partir de um único cadastro. Publicou no sistema, está no portal.',
+      'Curioso tomando seu tempo: ela faz o filtro inicial com educação e entrega o cliente aquecido para você focar no fechamento.',
   },
 ];
 
-const AGENTES = [
+const PONTOS_TOM = [
   {
-    nome: 'Pólen',
-    funcao: 'Recepção 24h',
-    texto: 'Responde automaticamente e identifica se o lead quer imóvel urbano, loteamento, rural ou locação.',
+    Icone: Users,
+    texto:
+      'Panorama de leads e equipe: mostra como está a operação hoje e qual corretor ainda não deu feedback.',
   },
   {
-    nome: 'Iago',
-    funcao: 'Qualificação',
-    texto: 'Filtra orçamento, metragem, hectares e garantias antes de ocupar o tempo do corretor.',
+    Icone: Bot,
+    texto:
+      'Treinamento de corretor novo: prepara a filosofia e os detalhes da sua imobiliária sem você repetir tudo do zero.',
   },
   {
-    nome: 'Téo',
-    funcao: 'Agendamento',
-    texto: 'Cruza a agenda do corretor, confirma o endereço do imóvel e envia o lembrete da visita.',
+    Icone: FileText,
+    texto:
+      'Ata de reunião: você envia o áudio ou anotações e o Tom compila os pontos principais e próximos passos.',
   },
   {
-    nome: 'Lara',
-    funcao: 'Propostas',
-    texto: 'Organiza condições, sinal e permuta, e devolve o resumo pronto para aprovação.',
-  },
-  {
-    nome: 'Heitor',
-    funcao: 'Reativação',
-    texto: 'Retoma leads antigos com oportunidade real, como queda de preço ou imóvel novo compatível.',
-  },
-  {
-    nome: 'Nina',
-    funcao: 'Documentação',
-    texto: 'Pede RG, comprovante de renda e certidões no ritmo do cliente, sem virar cobrança.',
-  },
-  {
-    nome: 'Hermes',
-    funcao: 'Copiloto',
-    texto: 'Executa tarefas dentro do painel: resume ficha, cruza dados e escreve o que você pedir.',
+    Icone: Video,
+    texto:
+      'Vídeos e Reels: ajuda a editar e deixar o material pronto para você revisar e postar com facilidade.',
   },
 ];
 
-const PLANO_GRATIS = [
-  'CRM, funil de leads e agenda de visitas',
-  'Simuladores essenciais e Assistente Legal',
-  'Painel, financeiro essencial e gestão da equipe',
-  'Sem upload de fotos ou publicação de imóveis na vitrine',
-  '1 usuário',
-];
+function ImagemProduto({ src, alt, rotulo, Icone }) {
+  const [erroImagem, setErroImagem] = useState(false);
 
-const PLANO_PRO = [
-  'Tudo do plano gratuito',
-  'Captação & Imóveis e vitrine pública',
-  'Até 7 fotos por imóvel; Foto 1 como capa principal',
-  'Propostas, histórico e Meta Ads & Criativos',
-  'Os 7 agentes de IA no WhatsApp',
-  'Roleta de Leads automática',
-  'Vistoria Digital com IA',
-  'Correspondente / Crédito',
-  'Portais XML: ZAP, Viva Real, OLX, Imovelweb e Chaves na Mão',
-  'Simulador de financiamento e NFS-e',
-  '1 usuário (corretor autônomo)',
-];
+  return (
+    <div className="group relative aspect-[4/3] overflow-hidden rounded-3xl border border-white/10 bg-slate-900 shadow-2xl shadow-black/30">
+      {erroImagem ? (
+        <div
+          role="img"
+          aria-label={`${alt}. Prévia visual indisponível.`}
+          className="absolute inset-0 flex flex-col items-center justify-center gap-4 bg-gradient-to-br from-slate-900 via-zinc-900 to-slate-950 px-6 text-center"
+        >
+          <div className="grid h-16 w-16 place-items-center rounded-2xl border border-emerald-400/20 bg-emerald-400/10 text-emerald-300">
+            <Icone size={30} aria-hidden="true" />
+          </div>
+          <div>
+            <p className="font-bold text-white">{rotulo}</p>
+            <p className="mt-2 text-sm leading-relaxed text-slate-400">
+              A imagem de demonstração será exibida quando o arquivo estiver disponível.
+            </p>
+          </div>
+        </div>
+      ) : (
+        <img
+          src={src}
+          alt={alt}
+          loading="lazy"
+          decoding="async"
+          onError={() => setErroImagem(true)}
+          className="absolute inset-0 h-full w-full object-cover transition-transform duration-500 group-hover:scale-[1.03]"
+        />
+      )}
+      {!erroImagem && (
+        <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-slate-950/90 via-slate-950/30 to-transparent px-5 pb-5 pt-16">
+          <span className="inline-flex items-center gap-2 rounded-full border border-white/15 bg-slate-950/70 px-3 py-1.5 text-[10px] font-bold uppercase tracking-[0.16em] text-white backdrop-blur">
+            <Icone size={13} aria-hidden="true" />
+            {rotulo}
+          </span>
+        </div>
+      )}
+    </div>
+  );
+}
 
-const FAQ = [
-  {
-    q: 'Preciso de cartão para começar?',
-    a: 'Não. O cadastro não pede cartão. Você começa com 10 dias de teste completo, com os módulos PRO e os 7 Agentes de IA liberados. Depois, CRM, agenda, simuladores e Assistente Legal continuam grátis; Captação & Imóveis e os demais módulos PRO exigem assinatura.',
-  },
-  {
-    q: 'Como funcionam o teste de 10 dias e o bônus dos 100 primeiros?',
-    a: 'O teste de 10 dias começa na criação da conta e libera os módulos PRO e os 7 Agentes de IA. Depois dele, sem assinatura, essas ferramentas ficam bloqueadas; o plano Grátis continua disponível. Em paralelo, as 100 primeiras imobiliárias cadastradas garantem 1 ano grátis no CRM Essencial, aplicado na própria conta e sem cobrança.',
-  },
-  {
-    q: 'O que muda de fato entre o gratuito e o PRO?',
-    a: 'O Grátis organiza leads, agenda, simuladores e Assistente Legal, sem upload de fotos. O PRO acrescenta Captação & Imóveis, vitrine pública, até 7 fotos por anúncio e os demais módulos operacionais. Acima dele, PLUS (escala da equipe) e, contratados à parte, a Pólen (atendimento 24h) e o Tom (Autônomo R$ 197 ou Imobiliária R$ 497).',
-  },
-  {
-    q: 'Funciona no celular?',
-    a: 'Sim. O painel foi desenhado para o corretor em campo: o mesmo sistema abre no celular, no tablet e no computador. Vistoria, laudo e simulação de financiamento são feitos na visita, não depois.',
-  },
-  {
-    q: 'Já uso outro sistema. Consigo trazer meus imóveis?',
-    a: 'Sim. Você pode importar a carteira por planilha ou cadastrar imóvel por imóvel. O PRO também inclui a migração assistida, e a conferência da carteira é feita antes de virar a chave.',
-  },
-  {
-    q: 'Os agentes de IA substituem o corretor?',
-    a: 'Não, e nem deveriam. Eles fazem o que consome o dia: primeira resposta, triagem, agendamento, cobrança de documento e retomada de conversa parada. A negociação, a visita e o fechamento continuam com quem entende de gente — o corretor.',
-  },
-  {
-    q: 'Meus dados e os dados dos meus clientes ficam comigo?',
-    a: 'Sim. A conta é sua e a base é isolada por imobiliária. Você pode exportar sua carteira a qualquer momento e cancelar quando quiser, sem multa e sem fidelidade.',
-  },
-];
+function ListaPontos({ itens, cor = 'emerald' }) {
+  const classes =
+    cor === 'amber'
+      ? 'border-amber-400/20 bg-amber-400/10 text-amber-200'
+      : 'border-emerald-400/20 bg-emerald-400/10 text-emerald-200';
 
-function irPara(id) {
-  const alvo = document.getElementById(id);
-  if (alvo) alvo.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  return (
+    <ul className="mt-6 space-y-4">
+      {itens.map(({ Icone, texto }) => (
+        <li key={texto} className="flex items-start gap-3">
+          <span className={`mt-0.5 grid h-8 w-8 shrink-0 place-items-center rounded-xl border ${classes}`}>
+            <Icone size={15} aria-hidden="true" />
+          </span>
+          <span className="text-sm leading-relaxed text-slate-300">{texto}</span>
+        </li>
+      ))}
+    </ul>
+  );
 }
 
 export default function Home() {
   const navigate = useNavigate();
-  const [aberto, setAberto] = useState(0);
 
   return (
-    <div className="min-h-screen bg-[#020408] font-sans text-white selection:bg-emerald-500/30 selection:text-white">
-      {/* ---------------- NAV ---------------- */}
-      <header className="sticky top-0 z-50 border-b border-white/[0.06] bg-[#020408]/85 backdrop-blur-xl">
-        <div className="mx-auto flex max-w-6xl items-center justify-between gap-3 px-4 py-3 sm:px-6">
-          <button
-            type="button"
-            onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
-            className="flex items-center"
-            aria-label="Express Imobi Tech — início"
-          >
-            <span className="sm:hidden">
-              <LogoExpress tamanho="sm" comWordmark={false} />
+    <div className="min-h-screen scroll-smooth bg-slate-950 font-sans text-slate-50 selection:bg-emerald-500/30 selection:text-white">
+      <header className="sticky top-0 z-50 border-b border-white/[0.07] bg-slate-950/90 backdrop-blur-xl">
+        <div className="mx-auto flex max-w-7xl items-center justify-between gap-4 px-4 py-3 sm:px-6 lg:px-8">
+          <a href="#topo" className="flex shrink-0 items-center gap-2.5" aria-label="Express Imobi Tech — início">
+            <LogoExpress tamanho="sm" comWordmark={false} />
+            <span className="text-sm font-extrabold tracking-tight text-white sm:text-base">
+              Express <span className="text-emerald-300">Imobi</span> Tech
             </span>
-            <span className="hidden sm:block">
-              <LogoExpress tamanho="sm" />
-            </span>
-          </button>
+          </a>
 
-          <nav className="hidden items-center gap-7 text-[13px] font-medium text-slate-400 md:flex">
-            <button type="button" onClick={() => irPara('recursos')} className="transition-colors hover:text-white">Recursos</button>
-            <button type="button" onClick={() => irPara('agentes')} className="transition-colors hover:text-white">Agentes de IA</button>
-            <button type="button" onClick={() => irPara('planos')} className="transition-colors hover:text-white">Planos</button>
-            <button type="button" onClick={() => irPara('faq')} className="transition-colors hover:text-white">Dúvidas</button>
+          <nav aria-label="Navegação principal" className="hidden flex-1 items-center justify-center gap-5 lg:flex xl:gap-8">
+            {LINKS.map(({ id, label }) => (
+              <a
+                key={id}
+                href={`#${id}`}
+                className="whitespace-nowrap text-[13px] font-medium text-slate-400 transition-colors hover:text-white"
+              >
+                {label}
+              </a>
+            ))}
           </nav>
 
-          <div className="flex items-center gap-2">
+          <div className="flex shrink-0 items-center gap-1.5 sm:gap-2">
             <button
               type="button"
               onClick={() => navigate('/login-admin')}
-              className="whitespace-nowrap rounded-full px-3 py-2 text-[13px] font-semibold text-slate-300 transition-colors hover:text-white sm:px-4"
+              className="rounded-full px-3 py-2 text-[13px] font-semibold text-slate-300 transition-colors hover:text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-emerald-400 sm:px-4"
             >
               Entrar
             </button>
             <button
               type="button"
               onClick={() => navigate('/cadastro')}
-              className="whitespace-nowrap rounded-full bg-gradient-to-r from-[#34d399] via-[#10b981] to-[#0d9488] px-4 py-2 text-[13px] font-bold text-[#04120c] shadow-[0_8px_30px_-10px_rgba(16,185,129,0.9)] transition-transform hover:scale-[1.03]"
+              className="rounded-full bg-emerald-400 px-4 py-2 text-[13px] font-extrabold text-slate-950 shadow-lg shadow-emerald-950/40 transition hover:bg-emerald-300 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-300"
             >
-              Começar grátis
+              Testar Grátis
             </button>
           </div>
         </div>
+
+        <nav aria-label="Navegação mobile" className="flex gap-5 overflow-x-auto border-t border-white/[0.05] px-4 py-2.5 lg:hidden">
+          {LINKS.map(({ id, label }) => (
+            <a
+              key={id}
+              href={`#${id}`}
+              className="shrink-0 text-xs font-medium text-slate-400 transition-colors hover:text-white"
+            >
+              {label}
+            </a>
+          ))}
+        </nav>
       </header>
 
-      {/* ---------------- HERO ---------------- */}
-      <section className="relative overflow-hidden">
-        <div className="pointer-events-none absolute -left-40 -top-40 h-[38rem] w-[38rem] rounded-full bg-[#10b981]/15 blur-[130px]" />
-        <div className="pointer-events-none absolute -right-32 top-20 h-[30rem] w-[30rem] rounded-full bg-[#0284c7]/15 blur-[130px]" />
+      <main id="topo">
+        <style>{`
+          .home-hero-scene { perspective: 1100px; }
+          .home-hero-panel {
+            transform: rotateX(5deg) rotateY(-7deg);
+            transform-style: preserve-3d;
+            animation: home-hero-drift 8s ease-in-out infinite;
+          }
+          .home-hero-glow { animation: home-hero-glow 5s ease-in-out infinite alternate; }
+          .home-hero-float { animation: home-hero-float 6s ease-in-out infinite; }
+          .home-hero-float-late { animation: home-hero-float 6s ease-in-out 1.2s infinite; }
+          @keyframes home-hero-drift {
+            0%, 100% { transform: rotateX(5deg) rotateY(-7deg) translateY(0); }
+            50% { transform: rotateX(3deg) rotateY(-4deg) translateY(-7px); }
+          }
+          @keyframes home-hero-glow {
+            from { opacity: .35; transform: scale(.94); }
+            to { opacity: .7; transform: scale(1.06); }
+          }
+          @keyframes home-hero-float {
+            0%, 100% { translate: 0 0; }
+            50% { translate: 0 -6px; }
+          }
+          @media (max-width: 1023px) {
+            .home-hero-panel { transform: none; animation: home-hero-float 8s ease-in-out infinite; }
+          }
+          @media (prefers-reduced-motion: reduce) {
+            .home-hero-panel, .home-hero-glow, .home-hero-float, .home-hero-float-late {
+              animation: none !important;
+              transform: none !important;
+              translate: none !important;
+            }
+          }
+        `}</style>
 
-        <div className="relative mx-auto grid max-w-6xl gap-14 px-4 pb-20 pt-14 sm:px-6 lg:grid-cols-[1.05fr_0.95fr] lg:items-center lg:pb-28 lg:pt-20">
-          <div>
-            <span className="inline-flex items-center gap-2 rounded-full border border-emerald-500/25 bg-emerald-500/10 px-3 py-1 text-[11px] font-bold uppercase tracking-[0.18em] text-emerald-300">
-              <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-emerald-400" />
-              CRM imobiliário com 7 agentes de IA
-            </span>
+        <section className="relative isolate overflow-hidden border-b border-white/[0.06]">
+          <div aria-hidden="true" className="pointer-events-none absolute -left-36 -top-40 -z-10 h-[28rem] w-[28rem] rounded-full bg-emerald-500/10 blur-[110px]" />
+          <div aria-hidden="true" className="pointer-events-none absolute -right-28 top-0 -z-10 h-[24rem] w-[24rem] rounded-full bg-teal-400/[0.07] blur-[110px]" />
+          <div aria-hidden="true" className="pointer-events-none absolute inset-0 -z-10 opacity-[0.12] [background-image:linear-gradient(rgba(148,163,184,0.12)_1px,transparent_1px),linear-gradient(90deg,rgba(148,163,184,0.12)_1px,transparent_1px)] [background-size:44px_44px] [mask-image:linear-gradient(to_bottom,black,transparent_90%)]" />
 
-            <h1 className="mt-6 text-[2rem] font-black leading-[1.05] tracking-tight sm:text-5xl lg:text-[3.4rem]">
-              <span className="block text-white">Pronto para a 3ª onda do corretor?</span>
-              <span className="mt-2 block text-[#10b981] sm:mt-3">
-                Indicação e tráfego trazem o lead, mas a resposta imediata fecha.
+          <div className="mx-auto grid max-w-7xl items-center gap-4 px-4 pb-6 pt-6 sm:px-6 sm:pb-8 sm:pt-8 md:grid-cols-[1.02fr_0.98fr] md:gap-4 lg:gap-8 lg:px-8 lg:pb-10 lg:pt-10">
+            <div className="relative z-10 max-w-2xl">
+              <span className="inline-flex items-center gap-2 rounded-full border border-emerald-400/20 bg-emerald-400/[0.07] px-3 py-1.5 text-[9px] font-bold uppercase tracking-[0.14em] text-emerald-200 sm:text-[10px] sm:tracking-[0.18em]">
+                <Sparkles size={13} aria-hidden="true" />
+                ENGENHARIA • CORRETAGEM • INTELIGÊNCIA ARTIFICIAL
               </span>
-            </h1>
 
-            <p className="mt-6 max-w-xl text-[15px] leading-relaxed text-slate-400 sm:text-base">
-              O Express Imobi Tech reúne CRM, funil de vendas, portal público e sete agentes de IA no WhatsApp
-              para que nenhum lead espere por resposta. Você continua conduzindo a visita e fechando o negócio —
-              com os números na mão, não com a memória.
-            </p>
+              <h1 className="mt-3 max-w-xl text-[1.85rem] font-black leading-[1.04] tracking-tight text-white sm:mt-4 sm:text-5xl lg:text-[3.35rem]">
+                Mais clareza no funil.
+                <span className="block bg-gradient-to-r from-emerald-300 via-teal-200 to-sky-300 bg-clip-text text-transparent">
+                  Mais tempo para vender.
+                </span>
+              </h1>
 
-            <div className="mt-8 flex flex-col gap-3 sm:flex-row">
+              <p className="mt-2.5 max-w-xl text-[13px] leading-relaxed text-slate-300 sm:mt-4 sm:text-base sm:leading-7">
+                Organize leads, imóveis e visitas em um só lugar — com ferramentas feitas para a rotina de corretores e imobiliárias.
+              </p>
+
+              <div className="mt-4 flex flex-col items-start gap-2 sm:mt-6">
+                <button
+                  type="button"
+                  onClick={() => navigate('/cadastro')}
+                  className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-emerald-400 px-5 py-3 text-sm font-black text-slate-950 shadow-[0_12px_34px_-14px_rgba(16,185,129,0.85)] transition hover:-translate-y-0.5 hover:bg-emerald-300 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-300 sm:w-auto sm:px-6"
+                >
+                  Comece grátis e organize sua operação <span aria-hidden="true">→</span>
+                </button>
+                <p className="text-center text-[11px] leading-relaxed text-slate-500 sm:text-left sm:text-xs">
+                  Sem cartão de crédito <span className="px-1 text-amber-300">•</span> Sem compromisso
+                </p>
+              </div>
+
+              <div className="mt-4 hidden flex-wrap gap-2 sm:mt-6 sm:flex">
+                {['CRM imobiliário', 'Agenda e visitas', 'Gestão da operação'].map((item) => (
+                  <span key={item} className="rounded-full border border-white/[0.08] bg-white/[0.035] px-3 py-1.5 text-[10px] font-semibold text-slate-300 sm:text-[11px]">
+                    {item}
+                  </span>
+                ))}
+              </div>
+            </div>
+
+            <div className="home-hero-scene relative mx-auto h-[190px] w-full max-w-[500px] sm:h-[250px] md:h-[280px] lg:h-[340px]">
+              <div aria-hidden="true" className="home-hero-glow absolute left-1/2 top-1/2 h-48 w-48 -translate-x-1/2 -translate-y-1/2 rounded-full bg-emerald-400/20 blur-[65px] sm:h-64 sm:w-64" />
+
+              <div className="home-hero-panel absolute inset-3 overflow-hidden rounded-[1.6rem] border border-emerald-300/20 bg-slate-900/80 shadow-[0_30px_90px_-40px_rgba(16,185,129,0.55)] backdrop-blur-md sm:inset-5 sm:rounded-[2rem]">
+                <div aria-hidden="true" className="absolute inset-0 bg-gradient-to-br from-emerald-400/[0.11] via-transparent to-sky-400/[0.08]" />
+                <div className="absolute inset-x-0 top-0 flex items-center justify-between border-b border-white/[0.07] px-4 py-2.5 sm:px-5 sm:py-3">
+                  <div className="flex items-center gap-2">
+                    <span className="h-2 w-2 rounded-full bg-emerald-400 shadow-[0_0_12px_rgba(52,211,153,0.9)]" />
+                    <span className="text-[8px] font-black uppercase tracking-[0.2em] text-slate-300 sm:text-[9px]">
+                      Visão da operação
+                    </span>
+                  </div>
+                  <span className="rounded-full border border-emerald-400/20 bg-emerald-400/[0.08] px-2 py-1 text-[7px] font-bold uppercase tracking-wider text-emerald-200 sm:text-[8px]">
+                    Express Imobi Tech
+                  </span>
+                </div>
+
+                <svg
+                  viewBox="0 0 500 320"
+                  className="absolute inset-0 h-full w-full"
+                  role="img"
+                  aria-label="Ilustração isométrica de uma imobiliária conectada a leads, imóveis e visitas"
+                >
+                  <defs>
+                    <linearGradient id="home-building-top" x1="0" x2="1" y1="0" y2="1">
+                      <stop offset="0" stopColor="#34d399" stopOpacity=".9" />
+                      <stop offset="1" stopColor="#0d9488" stopOpacity=".58" />
+                    </linearGradient>
+                    <linearGradient id="home-building-left" x1="0" x2="0" y1="0" y2="1">
+                      <stop offset="0" stopColor="#0f766e" stopOpacity=".82" />
+                      <stop offset="1" stopColor="#064e3b" stopOpacity=".68" />
+                    </linearGradient>
+                    <linearGradient id="home-building-right" x1="0" x2="0" y1="0" y2="1">
+                      <stop offset="0" stopColor="#0284c7" stopOpacity=".66" />
+                      <stop offset="1" stopColor="#0f172a" stopOpacity=".86" />
+                    </linearGradient>
+                    <filter id="home-building-glow" x="-50%" y="-50%" width="200%" height="200%">
+                      <feGaussianBlur stdDeviation="9" />
+                    </filter>
+                  </defs>
+                  <g fill="none" stroke="#6ee7b7" strokeOpacity=".12">
+                    <path d="M56 255 250 143 444 255 250 367Z" />
+                    <path d="M104 282 250 198 396 282 250 366Z" />
+                    <path d="M150 306 250 248 350 306 250 364Z" />
+                  </g>
+                  <path d="M250 83 350 141 250 199 150 141Z" fill="#10b981" opacity=".34" filter="url(#home-building-glow)" />
+                  <path d="M250 92 340 144 250 196 160 144Z" fill="url(#home-building-top)" stroke="#a7f3d0" strokeOpacity=".7" />
+                  <path d="M160 144 250 196 250 294 160 242Z" fill="url(#home-building-left)" stroke="#6ee7b7" strokeOpacity=".35" />
+                  <path d="M250 196 340 144 340 242 250 294Z" fill="url(#home-building-right)" stroke="#7dd3fc" strokeOpacity=".35" />
+                  <path d="M250 92V196M205 118l90 52M295 118l-90 52" stroke="#d1fae5" strokeOpacity=".58" />
+                  <g fill="#d1fae5" fillOpacity=".76">
+                    <path d="m181 158 18 10v22l-18-10z" />
+                    <path d="m216 178 18 10v22l-18-10z" />
+                    <path d="m181 198 18 10v22l-18-10z" />
+                    <path d="m216 218 18 10v22l-18-10z" />
+                  </g>
+                  <g fill="#bae6fd" fillOpacity=".75">
+                    <path d="m267 188 18-10v22l-18 10z" />
+                    <path d="m301 168 18-10v22l-18 10z" />
+                    <path d="m267 228 18-10v22l-18 10z" />
+                    <path d="m301 208 18-10v22l-18 10z" />
+                  </g>
+                  <path d="M82 112C120 82 145 87 174 112M326 95c35-21 62-14 91 15M343 260c31 14 42 13 68 2" fill="none" stroke="#34d399" strokeWidth="1.5" strokeDasharray="4 7" opacity=".65" />
+                  <circle cx="82" cy="112" r="4" fill="#6ee7b7" />
+                  <circle cx="417" cy="110" r="4" fill="#7dd3fc" />
+                  <circle cx="411" cy="262" r="4" fill="#fcd34d" />
+                </svg>
+
+                <div className="home-hero-float absolute left-2 top-[28%] rounded-xl border border-emerald-300/20 bg-slate-950/90 px-2.5 py-2 shadow-xl backdrop-blur sm:left-4 sm:px-3">
+                  <span className="block text-[7px] font-bold uppercase tracking-widest text-emerald-300 sm:text-[8px]">Leads</span>
+                  <span className="mt-0.5 block text-[9px] font-black text-white sm:text-[10px]">Próximo passo claro</span>
+                </div>
+                <div className="home-hero-float-late absolute right-2 top-[38%] rounded-xl border border-sky-300/20 bg-slate-950/90 px-2.5 py-2 shadow-xl backdrop-blur sm:right-4 sm:px-3">
+                  <span className="block text-[7px] font-bold uppercase tracking-widest text-sky-300 sm:text-[8px]">Imóveis</span>
+                  <span className="mt-0.5 block text-[9px] font-black text-white sm:text-[10px]">Carteira organizada</span>
+                </div>
+                <div className="home-hero-float absolute bottom-3 left-1/2 -translate-x-1/2 rounded-xl border border-amber-300/20 bg-slate-950/90 px-3 py-2 shadow-xl backdrop-blur sm:bottom-4">
+                  <span className="block text-center text-[7px] font-bold uppercase tracking-widest text-amber-200 sm:text-[8px]">Agenda</span>
+                  <span className="mt-0.5 block text-[9px] font-black text-white sm:text-[10px]">Visitas e retornos</span>
+                </div>
+              </div>
+
+              <span aria-hidden="true" className="absolute right-2 top-3 h-2 w-2 rounded-full bg-emerald-300 shadow-[0_0_18px_rgba(110,231,183,0.9)] sm:right-0 sm:top-5" />
+              <span aria-hidden="true" className="absolute bottom-5 left-2 h-1.5 w-1.5 rounded-full bg-sky-300 shadow-[0_0_14px_rgba(125,211,252,0.9)] sm:bottom-7 sm:left-0" />
+            </div>
+          </div>
+        </section>
+
+        <section id="rotina" className="scroll-mt-32 border-y border-white/[0.06] bg-slate-900/35 py-20 sm:py-24">
+          <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+            <div className="mx-auto max-w-3xl text-center">
+              <p className="text-xs font-bold uppercase tracking-[0.2em] text-emerald-300">Sua Rotina</p>
+              <h2 className="mt-4 text-3xl font-black tracking-tight text-white sm:text-4xl">
+                A gente conhece o peso da sua semana
+              </h2>
+              <p className="mx-auto mt-4 max-w-2xl text-sm leading-relaxed text-slate-400 sm:text-base">
+                Antes de falar de tecnologia, a gente sabe exatamente onde o seu tempo e suas comissões escapam:
+              </p>
+            </div>
+
+            <div className="mt-12 grid gap-4 sm:grid-cols-2 xl:grid-cols-5">
+              {DORES.map(({ Icone, titulo, texto }) => (
+                <article key={titulo} className="rounded-2xl border border-white/[0.08] bg-slate-950/70 p-5 transition-colors hover:border-emerald-400/25 sm:p-6">
+                  <div className="grid h-11 w-11 place-items-center rounded-xl border border-emerald-400/20 bg-emerald-400/[0.08] text-emerald-300">
+                    <Icone size={20} aria-hidden="true" />
+                  </div>
+                  <h3 className="mt-5 text-base font-bold leading-snug text-white">{titulo}</h3>
+                  <p className="mt-3 text-sm leading-relaxed text-slate-400">{texto}</p>
+                </article>
+              ))}
+            </div>
+          </div>
+        </section>
+
+        <section id="plano-gratis" className="scroll-mt-32 px-4 py-20 sm:px-6 sm:py-24 lg:px-8">
+          <div className="mx-auto max-w-5xl overflow-hidden rounded-[2rem] border border-emerald-400/25 bg-gradient-to-br from-emerald-400/[0.09] via-slate-900/80 to-slate-950 p-6 shadow-2xl shadow-emerald-950/20 sm:p-10 lg:p-14">
+            <div className="mx-auto max-w-3xl text-center">
+              <span className="inline-flex items-center gap-2 rounded-full border border-emerald-400/20 bg-emerald-400/10 px-3 py-1.5 text-[10px] font-bold uppercase tracking-[0.18em] text-emerald-200">
+                <ShieldCheck size={14} aria-hidden="true" />
+                Entrada leve, sem cartão
+              </span>
+              <h2 className="mt-5 text-3xl font-black tracking-tight text-white sm:text-4xl">
+                A gente entende o ritmo da corretagem.
+              </h2>
+              <p className="mt-5 text-sm leading-relaxed text-slate-300 sm:text-base sm:leading-7">
+                Sabemos que nem sempre é o momento de assumir mais uma mensalidade pesada antes da próxima comissão cair. Por isso, liberamos um Plano Grátis para você entrar sem peso no bolso, explorar cada detalhe e sentir na prática como sua rotina muda.
+              </p>
+              <p className="mt-4 text-sm leading-relaxed text-slate-400 sm:text-base sm:leading-7">
+                Não precisa acreditar na nossa palavra. Entre, teste e compare — veja na prática quais recursos ajudam a organizar sua operação e fazem sentido para a sua rotina.
+              </p>
               <button
                 type="button"
                 onClick={() => navigate('/cadastro')}
-                className="rounded-xl bg-gradient-to-r from-[#34d399] via-[#10b981] to-[#0d9488] px-6 py-3.5 text-sm font-bold text-[#04120c] shadow-[0_16px_40px_-16px_rgba(16,185,129,0.95)] transition-transform hover:scale-[1.02]"
+                className="mt-8 inline-flex w-full items-center justify-center gap-2 rounded-xl bg-emerald-400 px-6 py-3.5 text-sm font-black text-slate-950 shadow-lg shadow-emerald-950/30 transition hover:bg-emerald-300 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-300 sm:w-auto sm:px-8"
               >
-                Começar grátis, sem cartão
-              </button>
-              <button
-                type="button"
-                onClick={() => irPara('planos')}
-                className="rounded-xl border border-white/10 bg-white/[0.03] px-6 py-3.5 text-sm font-semibold text-slate-200 transition-colors hover:border-white/25 hover:text-white"
-              >
-                Ver os planos →
+                Criar Minha Conta Grátis Agora →
               </button>
             </div>
-
-            <ul className="mt-7 flex flex-wrap gap-x-5 gap-y-2 text-[12px] text-slate-500">
-              <li className="flex items-center gap-1.5"><span className="text-emerald-400">✓</span> 10 dias de teste completo, grátis</li>
-              <li className="flex items-center gap-1.5"><span className="text-emerald-400">✓</span> 100 primeiros: 1 ano grátis no CRM Essencial</li>
-              <li className="flex items-center gap-1.5"><span className="text-emerald-400">✓</span> Sem instalação</li>
-              <li className="flex items-center gap-1.5"><span className="text-emerald-400">✓</span> Funciona no celular</li>
-            </ul>
           </div>
+        </section>
 
-          {/* Prévia do painel — só CSS, sem imagem */}
-          <div className="relative">
-            <div className="absolute inset-x-6 -bottom-6 h-24 rounded-3xl bg-emerald-500/20 blur-3xl" />
-            <div className="relative overflow-hidden rounded-2xl border border-white/10 bg-[#050b09] shadow-[0_40px_120px_-40px_rgba(16,185,129,0.45)]">
-              <div className="flex items-center gap-2 border-b border-white/[0.07] px-4 py-3">
-                <span className="h-2.5 w-2.5 rounded-full bg-[#ff5f57]" />
-                <span className="h-2.5 w-2.5 rounded-full bg-[#ffbd2e]" />
-                <span className="h-2.5 w-2.5 rounded-full bg-[#28ca41]" />
-                <span className="ml-2 truncate rounded-md bg-white/[0.04] px-2 py-1 text-[10px] text-slate-500">
-                  imobi.expresstech.com.br
-                </span>
-                <span className="ml-auto shrink-0 rounded-md border border-amber-500/40 bg-amber-500/10 px-2 py-0.5 text-[9px] font-black uppercase tracking-[0.12em] text-amber-300">
-                  Prévia com dados de exemplo
-                </span>
-              </div>
-
-              <div className="space-y-2.5 p-4">
-                {[
-                  { nome: 'Rafael Lima', imovel: 'Apto 3q · Jardim América', etapa: 'Visita agendada', cor: 'emerald' },
-                  { nome: 'Camila Souza', imovel: 'Casa · Setor Sul', etapa: 'Crédito aprovado', cor: 'sky' },
-                  { nome: 'Marcos Dias', imovel: 'Lote · Granja Marileusa', etapa: 'Proposta enviada', cor: 'teal' },
-                ].map((lead) => (
-                  <div key={lead.nome} className="flex items-center justify-between gap-3 rounded-xl border border-white/[0.07] bg-white/[0.02] px-3 py-2.5">
-                    <div className="min-w-0">
-                      <p className="truncate text-[12px] font-semibold text-white">{lead.nome}</p>
-                      <p className="truncate text-[11px] text-slate-500">{lead.imovel}</p>
-                    </div>
-                    <span
-                      className={`shrink-0 rounded-full border px-2 py-0.5 text-[9px] font-bold uppercase tracking-wide ${
-                        lead.cor === 'emerald'
-                          ? 'border-emerald-500/30 bg-emerald-500/10 text-emerald-300'
-                          : lead.cor === 'sky'
-                            ? 'border-sky-500/30 bg-sky-500/10 text-sky-300'
-                            : 'border-teal-500/30 bg-teal-500/10 text-teal-300'
-                      }`}
-                    >
-                      {lead.etapa}
-                    </span>
-                  </div>
-                ))}
-
-                <div className="rounded-xl border border-white/[0.07] bg-white/[0.02] p-3">
-                  <div className="flex items-end justify-between gap-1.5">
-                    {[38, 52, 44, 66, 58, 74, 88].map((altura, i) => (
-                      <span
-                        key={i}
-                        className="w-full rounded-t bg-gradient-to-t from-[#0d9488] to-[#34d399]"
-                        style={{ height: `${altura}px`, opacity: 0.35 + i * 0.09 }}
-                      />
-                    ))}
-                  </div>
-                  <p className="mt-2 text-[10px] uppercase tracking-[0.16em] text-slate-500">Leads atendidos por dia</p>
-                  <p className="mt-1 text-[9px] leading-snug tracking-[0.10em] text-slate-600">
-                    Imagem ilustrativa: nomes, imóveis e números são exemplos de tela, não clientes reais.
-                  </p>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Portais */}
-        <div className="relative border-y border-white/[0.06] bg-white/[0.015]">
-          <div className="mx-auto flex max-w-6xl flex-col items-center gap-4 px-4 py-6 sm:px-6 md:flex-row md:justify-between">
-            <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-slate-500">
-              Seus imóveis nos portais que o cliente já usa
-            </p>
-            <div className="flex flex-wrap items-center justify-center gap-2">
-              {PORTAIS.map((portal) => (
-                <span
-                  key={portal}
-                  className="rounded-full border border-white/10 bg-white/[0.03] px-3 py-1 text-[11px] font-medium text-slate-300"
-                >
-                  {portal}
-                </span>
-              ))}
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* ---------------- DOR ---------------- */}
-      <section className="mx-auto max-w-6xl px-4 py-20 sm:px-6 lg:py-28">
-        <div className="max-w-2xl">
-          <p className="text-[11px] font-bold uppercase tracking-[0.2em] text-emerald-400">Onde a venda se perde</p>
-          <h2 className="mt-3 text-[1.7rem] font-black leading-tight tracking-tight sm:text-4xl">
-            Três momentos em que uma venda escapa — e nenhum deles é falta de competência.
-          </h2>
-          <p className="mt-4 text-[15px] leading-relaxed text-slate-400">
-            Quem atende bem não perde venda por falta de esforço. Perde porque a operação depende de alguém lembrar,
-            alguém responder e alguém cobrar — e ninguém consegue lembrar de tudo, o dia inteiro, todos os dias.
-          </p>
-        </div>
-
-        <div className="mt-12 grid gap-4 md:grid-cols-3">
-          {DORES.map((dor) => (
-            <div
-              key={dor.titulo}
-              className="flex flex-col rounded-2xl border border-white/[0.07] bg-white/[0.02] p-6 transition-colors hover:border-emerald-500/30"
-            >
-              <span className="text-[10px] font-bold uppercase tracking-[0.18em] text-slate-500">{dor.hora}</span>
-              <h3 className="mt-3 text-[15px] font-bold text-white">{dor.titulo}</h3>
-              <p className="mt-2 flex-1 text-[13px] leading-relaxed text-slate-400">{dor.texto}</p>
-              <div className="mt-4 rounded-xl border border-emerald-500/20 bg-emerald-500/[0.07] p-3">
-                <p className="text-[11px] font-bold uppercase tracking-[0.14em] text-emerald-300">Com o sistema</p>
-                <p className="mt-1 text-[13px] leading-relaxed text-slate-300">{dor.vira}</p>
-              </div>
-            </div>
-          ))}
-        </div>
-      </section>
-
-      {/* ---------------- RECURSOS ---------------- */}
-      <section id="recursos" className="border-y border-white/[0.06] bg-white/[0.012] py-20 lg:py-28">
-        <div className="mx-auto max-w-6xl px-4 sm:px-6">
-          <div className="max-w-2xl">
-            <p className="text-[11px] font-bold uppercase tracking-[0.2em] text-emerald-400">O que está dentro</p>
-            <h2 className="mt-3 text-[1.7rem] font-black leading-tight tracking-tight sm:text-4xl">
-              A operação inteira em um só lugar — do primeiro contato ao contrato.
-            </h2>
-            <p className="mt-4 text-[15px] leading-relaxed text-slate-400">
-              Sem sistema paralelo, sem planilha de apoio e sem retrabalho. Cada recurso conversa com o outro,
-              porque nasceu no mesmo lugar.
-            </p>
-          </div>
-
-          <div className="mt-12 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {RECURSOS.map((recurso) => (
-              <div
-                key={recurso.titulo}
-                className="rounded-2xl border border-white/[0.07] bg-[#050b09] p-6 transition-colors hover:border-emerald-500/35"
-              >
-                <div className="grid h-11 w-11 place-items-center rounded-xl border border-white/10 bg-white/[0.04] text-lg">
-                  <span>{recurso.icone}</span>
-                </div>
-                <h3 className="mt-4 text-[15px] font-bold text-white">{recurso.titulo}</h3>
-                <p className="mt-2 text-[13px] leading-relaxed text-slate-400">{recurso.texto}</p>
-              </div>
-            ))}
-          </div>
-
-          <div className="mt-4 flex flex-col items-start justify-between gap-4 rounded-2xl border border-emerald-500/25 bg-gradient-to-r from-emerald-500/[0.12] via-teal-500/[0.08] to-sky-500/[0.08] p-6 sm:flex-row sm:items-center">
+        <section id="quem-somos" className="scroll-mt-32 border-y border-white/[0.06] bg-slate-900/35 py-20 sm:py-24">
+          <div className="mx-auto grid max-w-7xl gap-10 px-4 sm:px-6 lg:grid-cols-[0.8fr_1.2fr] lg:items-center lg:px-8">
             <div>
-              <h3 className="text-[15px] font-bold text-white">Sete agentes de IA atendendo no WhatsApp</h3>
-              <p className="mt-1 text-[13px] text-slate-300">
-                Pólen abre a conversa, Iago qualifica, Téo agenda, Lara monta a proposta, Heitor retoma o frio,
-                Nina organiza documento e Hermes executa o que você pedir dentro do painel.
+              <p className="text-xs font-bold uppercase tracking-[0.2em] text-amber-300">Quem Somos</p>
+              <h2 className="mt-4 text-3xl font-black leading-tight tracking-tight text-white sm:text-4xl">
+                Feito por quem une Engenharia, Corretagem e Inteligência Artificial.
+              </h2>
+            </div>
+            <div className="rounded-3xl border border-white/[0.08] bg-slate-950/70 p-6 sm:p-8">
+              <p className="text-base leading-relaxed text-slate-300 sm:text-lg sm:leading-8">
+                Não é um sistema genérico adaptado de fora. Unimos engenharia de processos, vivência real de balcão imobiliário e recursos pensados para a realidade brasileira. Nossos engenheiros respiram tecnologia e novidade o tempo todo — você fica sabendo das evoluções primeiro e pode mandar sua sugestão de melhoria direto para{' '}
+                <a href={`mailto:${EMAIL}`} className="font-semibold text-emerald-300 underline decoration-emerald-300/40 underline-offset-4 transition hover:text-emerald-200">
+                  {EMAIL}
+                </a>
+                .
               </p>
             </div>
-            <button
-              type="button"
-              onClick={() => irPara('agentes')}
-              className="shrink-0 rounded-xl border border-emerald-400/40 bg-emerald-400/10 px-5 py-2.5 text-[13px] font-bold text-emerald-200 transition-colors hover:bg-emerald-400/20"
-            >
-              Conhecer os agentes →
-            </button>
           </div>
-        </div>
-      </section>
+        </section>
 
-      {/* ---------------- COMO FUNCIONA ---------------- */}
-      <section className="mx-auto max-w-6xl px-4 py-20 sm:px-6 lg:py-28">
-        <div className="max-w-2xl">
-          <p className="text-[11px] font-bold uppercase tracking-[0.2em] text-emerald-400">Como começar</p>
-          <h2 className="mt-3 text-[1.7rem] font-black leading-tight tracking-tight sm:text-4xl">
-            Três passos até a operação rodar sozinha.
-          </h2>
-        </div>
-
-        <div className="mt-12 grid gap-4 md:grid-cols-3">
-          {[
-            {
-              n: '01',
-              t: 'Coloque sua carteira dentro',
-              d: 'Importe por planilha ou cadastre imóvel por imóvel. Com endereço, fotos e valor, o portal público já nasce pronto para receber lead.',
-            },
-            {
-              n: '02',
-              t: 'Ligue seus canais',
-              d: 'Ative o WhatsApp dos agentes, conecte os portais XML e compartilhe o link do portal. Todo contato entra no mesmo funil, com dono definido.',
-            },
-            {
-              n: '03',
-              t: 'Acompanhe e feche',
-              d: 'A roleta distribui, os agentes atendem e o funil mostra o que está parado. Você entra onde é decisivo: a visita, a proposta e o fechamento.',
-            },
-          ].map((passo) => (
-            <div key={passo.n} className="rounded-2xl border border-white/[0.07] bg-white/[0.02] p-6">
-              <span className="text-[26px] font-black leading-none text-emerald-500/25">{passo.n}</span>
-              <h3 className="mt-3 text-[15px] font-bold text-white">{passo.t}</h3>
-              <p className="mt-2 text-[13px] leading-relaxed text-slate-400">{passo.d}</p>
+        <section id="ia" className="scroll-mt-32 px-4 py-20 sm:px-6 sm:py-24 lg:px-8">
+          <div className="mx-auto max-w-7xl">
+            <div className="mx-auto max-w-3xl text-center">
+              <p className="text-xs font-bold uppercase tracking-[0.2em] text-emerald-300">Atendimento &amp; IA</p>
+              <h2 className="mt-4 text-3xl font-black leading-tight tracking-tight text-white sm:text-4xl">
+                Para você sentir o nível do que existe lá dentro, conheça dois dos nossos carros-chefe:
+              </h2>
             </div>
-          ))}
-        </div>
-      </section>
 
-      {/* ---------------- AGENTES ---------------- */}
-      <section id="agentes" className="border-y border-white/[0.06] bg-white/[0.012] py-20 lg:py-28">
-        <div className="mx-auto max-w-6xl px-4 sm:px-6">
-          <div className="max-w-2xl">
-            <p className="text-[11px] font-bold uppercase tracking-[0.2em] text-emerald-400">Esquadrão de IA</p>
-            <h2 className="mt-3 text-[1.7rem] font-black leading-tight tracking-tight sm:text-4xl">
-              Cada agente cuida de uma parte do atendimento. Nenhum deles negocia por você.
-            </h2>
-            <p className="mt-4 text-[15px] leading-relaxed text-slate-400">
-              Eles fazem o trabalho repetitivo que consome o dia e entregam a conversa pronta para quem vende:
-              o corretor.
-            </p>
-          </div>
+            <div className="mt-14 grid items-center gap-8 lg:grid-cols-2 lg:gap-14">
+              <ImagemProduto
+                src="/images/polen-whatsapp.jpg"
+                alt="Demonstração da Pólen no atendimento pelo WhatsApp"
+                rotulo="Pólen · Atendimento no WhatsApp"
+                Icone={MessageCircle}
+              />
+              <article className="py-2">
+                <span className="inline-flex rounded-full border border-emerald-400/20 bg-emerald-400/[0.07] px-3 py-1.5 text-[10px] font-bold uppercase tracking-[0.17em] text-emerald-200">
+                  ATENDIMENTO 24H NO WHATSAPP
+                </span>
+                <h3 className="mt-5 text-2xl font-black leading-tight text-white sm:text-3xl">
+                  Pólen: esqueça chatbots travados de 'digite 1, digite 2'.
+                </h3>
+                <p className="mt-4 text-sm leading-relaxed text-slate-300 sm:text-base sm:leading-7">
+                  A Pólen não é um robô de menu que irrita o cliente. Ela conversa de forma natural, entende e responde até por áudio e envia fotos dos imóveis da sua carteira direto no WhatsApp.
+                </p>
+                <ListaPontos itens={PONTOS_POLEN} />
+              </article>
+            </div>
 
-          <div className="mt-12 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {AGENTES.map((agente) => (
-              <div key={agente.nome} className="rounded-2xl border border-white/[0.07] bg-[#050b09] p-5">
-                <div className="flex items-center justify-between gap-3">
-                  <h3 className="text-[15px] font-bold text-white">{agente.nome}</h3>
-                  <span className="rounded-full border border-white/10 bg-white/[0.04] px-2 py-0.5 text-[9px] font-bold uppercase tracking-[0.12em] text-slate-400">
-                    {agente.funcao}
-                  </span>
-                </div>
-                <p className="mt-3 text-[13px] leading-relaxed text-slate-400">{agente.texto}</p>
+            <div className="mt-20 grid items-center gap-8 lg:grid-cols-2 lg:gap-14">
+              <article className="py-2 lg:order-1">
+                <span className="inline-flex rounded-full border border-amber-400/20 bg-amber-400/[0.07] px-3 py-1.5 text-[10px] font-bold uppercase tracking-[0.17em] text-amber-200">
+                  CENTRAL DE INTELIGÊNCIA OPERACIONAL
+                </span>
+                <h3 className="mt-5 text-2xl font-black leading-tight text-white sm:text-3xl">
+                  Tom: o braço direito da sua operação pelo WhatsApp.
+                </h3>
+                <p className="mt-4 text-sm leading-relaxed text-slate-300 sm:text-base sm:leading-7">
+                  Enquanto você vende, o Tom ajuda a organizar os bastidores sem você precisar fazer tudo na mão:
+                </p>
+                <ListaPontos itens={PONTOS_TOM} cor="amber" />
+              </article>
+              <div className="lg:order-2">
+                <ImagemProduto
+                  src="/images/tom-whatsapp.jpg"
+                  alt="Demonstração do Tom como central de inteligência operacional no WhatsApp"
+                  rotulo="Tom · Inteligência operacional"
+                  Icone={Bot}
+                />
               </div>
-            ))}
-          </div>
-
-          <p className="mt-6 text-[12px] text-slate-500">
-            No plano PRO você também conta com os assistentes de gestão: Diretor Comercial IA, Simulador de Custos e
-            Minutas & Checklist (Lei do Inquilinato) — rascunho operacional, com revisão obrigatória de contador (CRC) e advogado (OAB).
-          </p>
-
-          <p className="mt-3 text-[12px] text-slate-500">
-            Entre o PRO e a camada de IA existe o <span className="font-semibold text-slate-300">PLUS</span> (escala
-            da equipe). Acima dele ficam dois produtos independentes,
-            contratados separadamente: <span className="font-semibold text-emerald-300">Pólen · Atendimento 24h</span> (a
-            atendente que responde e qualifica no WhatsApp oficial) e{' '}
-            <span className="font-semibold text-amber-300">Tom · Maestro da Imobiliária</span> (as regras comerciais, os
-            processos e a auditoria da equipe no mesmo lugar).
-          </p>
-        </div>
-      </section>
-
-      {/* ---------------- PLANOS ---------------- */}
-      <section id="planos" className="mx-auto max-w-6xl px-4 py-20 sm:px-6 lg:py-28">
-        <div className="mx-auto max-w-2xl text-center">
-          <p className="text-[11px] font-bold uppercase tracking-[0.2em] text-emerald-400">Planos</p>
-          <h2 className="mt-3 text-[1.7rem] font-black leading-tight tracking-tight sm:text-4xl">
-            Preço claro, sem letra miúda.
-          </h2>
-          <p className="mt-4 text-[15px] leading-relaxed text-slate-400">
-            Comece de graça e organize a carteira hoje. Quando a operação pedir automação, o PRO entra por menos do
-            que uma diária de anúncio.
-          </p>
-        </div>
-
-        <div className="mt-12 grid items-start gap-4 lg:grid-cols-3">
-          {/* GRÁTIS */}
-          <div className="rounded-2xl border border-white/[0.08] bg-[#050b09] p-7">
-            <div className="flex items-baseline justify-between gap-3">
-              <h3 className="text-lg font-bold text-white">Gratuito</h3>
-              <span className="rounded-full border border-white/10 bg-white/[0.04] px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.12em] text-slate-400">
-                Para começar
-              </span>
             </div>
-            <p className="mt-4 flex items-end gap-1.5">
-              <span className="text-4xl font-black tracking-tight text-white">R$ 0</span>
-              <span className="pb-1 text-sm text-slate-500">/mês</span>
-            </p>
-            <p className="mt-2 text-[13px] text-slate-400">
-              Plano gratuito para sempre, sem cartão. O teste de 10 dias libera também os módulos PRO e os 7 Agentes de IA.
-            </p>
-
-            <ul className="mt-6 space-y-2.5">
-              {PLANO_GRATIS.map((item) => (
-                <li key={item} className="flex items-start gap-2.5 text-[13px] text-slate-300">
-                  <span className="mt-0.5 text-emerald-400">✓</span>
-                  <span>{item}</span>
-                </li>
-              ))}
-            </ul>
-
-            <button
-              type="button"
-              onClick={() => navigate('/cadastro')}
-              className="mt-7 w-full rounded-xl border border-white/15 bg-white/[0.04] px-5 py-3 text-sm font-bold text-white transition-colors hover:border-white/30 hover:bg-white/[0.08]"
-            >
-              Criar conta gratuita
-            </button>
           </div>
+        </section>
 
-          {/* PRO */}
-          <div className="relative rounded-2xl border border-emerald-500/35 bg-gradient-to-b from-emerald-500/[0.10] via-[#050b09] to-[#050b09] p-7 shadow-[0_30px_90px_-40px_rgba(16,185,129,0.7)]">
-            <span className="absolute -top-3 left-7 rounded-full bg-gradient-to-r from-[#34d399] to-[#0d9488] px-3 py-1 text-[10px] font-black uppercase tracking-[0.14em] text-[#04120c]">
-              Mais escolhido
-            </span>
-
-            <div className="flex items-baseline justify-between gap-3">
-              <h3 className="text-lg font-bold text-white">PRO</h3>
-              <span className="rounded-full border border-emerald-500/30 bg-emerald-500/10 px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.12em] text-emerald-300">
-                Operação completa
-              </span>
-            </div>
-            <p className="mt-4 flex items-end gap-1.5">
-              <span className="text-4xl font-black tracking-tight text-white">{PRECO_PRO}</span>
-              <span className="pb-1 text-sm text-slate-400">/mês</span>
-            </p>
-            <p className="mt-2 text-[13px] text-slate-400">
-              Sem fidelidade, cancele quando quiser. Reúne Captação & Imóveis, vitrine pública e os módulos PRO
-              após o teste gratuito de 10 dias.
-            </p>
-
-            <ul className="mt-6 space-y-2.5">
-              {PLANO_PRO.map((item) => (
-                <li key={item} className="flex items-start gap-2.5 text-[13px] text-slate-200">
-                  <span className="mt-0.5 text-emerald-400">✓</span>
-                  <span>{item}</span>
-                </li>
-              ))}
-            </ul>
-
-            <button
-              type="button"
-              onClick={() => navigate('/cadastro')}
-              className="mt-7 w-full rounded-xl bg-gradient-to-r from-[#34d399] via-[#10b981] to-[#0d9488] px-5 py-3 text-sm font-bold text-[#04120c] shadow-[0_18px_44px_-18px_rgba(16,185,129,0.95)] transition-transform hover:scale-[1.01]"
-            >
-              Assinar o PRO
-            </button>
-            <a
-              href={`mailto:${EMAIL}?subject=Quero%20saber%20mais%20sobre%20o%20plano%20PRO`}
-              className="mt-3 block text-center text-[12px] text-slate-400 underline decoration-slate-600 underline-offset-4 transition-colors hover:text-white"
-            >
-              Prefiro falar com a equipe antes
-            </a>
-          </div>
-
-          {/* PLUS */}
-          <div className="rounded-2xl border border-white/[0.08] bg-[#050b09] p-7">
-            <div className="flex items-baseline justify-between gap-3">
-              <h3 className="text-lg font-bold text-white">PLUS</h3>
-              <span className="rounded-full border border-white/10 bg-white/[0.04] px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.12em] text-slate-400">
-                Escala
-              </span>
-            </div>
-            <p className="mt-4 flex items-end gap-1.5">
-              <span className="text-4xl font-black tracking-tight text-white">{PRECO_PLUS}</span>
-              <span className="pb-1 text-sm text-slate-500">/mês</span>
-            </p>
-            <p className="mt-2 text-[13px] text-slate-400">
-              No anual sai por <strong className="text-white">R$ 89,90/mês</strong>. Sem fidelidade e sem
-              implantação.
-            </p>
-
-            <ul className="mt-6 space-y-2.5">
-              {[
-                'Tudo do PRO',
-                'Até 3 usuários inclusos (+R$ 19,90/usuário extra)',
-                'Automações da plataforma e teto maior de operação',
-                'Implantação R$ 0',
-              ].map((item) => (
-                <li key={item} className="flex items-start gap-2.5 text-[13px] text-slate-300">
-                  <span className="mt-0.5 text-emerald-400">✓</span>
-                  <span>{item}</span>
-                </li>
-              ))}
-            </ul>
-
-            <button
-              type="button"
-              onClick={() => navigate('/cadastro')}
-              className="mt-7 w-full rounded-xl border border-emerald-500/40 bg-emerald-500/[0.12] px-5 py-3 text-sm font-bold text-emerald-200 transition-colors hover:bg-emerald-500/20"
-            >
-              Assinar o PLUS
-            </button>
-            <a
-              href={`mailto:${EMAIL}?subject=Quero%20saber%20mais%20sobre%20o%20plano%20PLUS`}
-              className="mt-3 block text-center text-[12px] text-slate-400 underline decoration-slate-600 underline-offset-4 transition-colors hover:text-white"
-            >
-              Falar sobre a operação da equipe
-            </a>
-          </div>
-        </div>
-
-        {/* Teste completo × bônus de lançamento */}
-        <div className="mt-6 grid gap-4 lg:grid-cols-2">
-          <div className="rounded-2xl border border-emerald-500/25 bg-emerald-500/[0.07] p-6">
-            <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-emerald-300">Teste completo</p>
-            <h3 className="mt-2 text-[15px] font-bold text-white">10 dias grátis com tudo liberado</h3>
-            <p className="mt-2 text-[13px] leading-relaxed text-slate-300">
-              Ao criar a conta, o teste de 10 dias libera{' '}
-              <strong className="text-white">os módulos PRO</strong> e os{' '}
-              <strong className="text-white">7 Agentes de IA</strong>. Terminado o período sem assinatura, esses módulos
-              ficam bloqueados; CRM, agenda, simuladores e Assistente Legal continuam no plano gratuito.
-            </p>
-          </div>
-          <div className="rounded-2xl border border-amber-500/25 bg-amber-500/[0.06] p-6">
-            <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-amber-300">Bônus de lançamento</p>
-            <h3 className="mt-2 text-[15px] font-bold text-white">100 primeiros: 1 ano grátis no CRM Essencial</h3>
-            <p className="mt-2 text-[13px] leading-relaxed text-slate-300">
-              As 100 primeiras imobiliárias cadastradas garantem{' '}
-              <strong className="text-white">1 ano grátis no CRM Essencial</strong>, aplicado na própria conta e sem
-              cobrança. O teste completo de 10 dias continua valendo para conhecer as ferramentas PRO e os agentes de IA.
-            </p>
-          </div>
-        </div>
-
-        {/* D-22.09 — Pólen e Tom são produtos separados. O Tom tem dois degraus. */}
-        <div className="mt-6 grid gap-4 md:grid-cols-3">
-          {[
-            {
-              nome: 'Pólen · Atendimento 24h no WhatsApp',
-              preco: PRECO_POLEN,
-              nota: '+ implantação R$ 497',
-              texto:
-                'Atendimento comercial automatizado 24h no WhatsApp oficial: consulta o catálogo, qualifica o lead e compartilha o link do imóvel no portal.',
-              cor: 'emerald',
-            },
-            {
-              nome: 'Tom Autônomo · Segundo Cérebro Empacotado',
-              preco: PRECO_TOM_AUTONOMO,
-              nota: 'sem implantação',
-              texto:
-                'Molde pronto e clonável, conectado por QR Code ao WhatsApp de quem trabalha sozinho: rotina do dia, cobrança de follow-up, roteiro de vídeo e copy.',
-              cor: 'amber',
-            },
-            {
-              nome: 'Tom Imobiliária · Operação Customizada',
-              preco: PRECO_TOM_IMOBILIARIA,
-              nota: '+ implantação R$ 697',
-              texto:
-                'Cérebro adaptado sob medida para imobiliárias e equipes: regras de comissão, metas, auditoria de funil, governança de equipe e imóveis parados.',
-              cor: 'amber',
-            },
-          ].map((modulo) => (
-            <div
-              key={modulo.nome}
-              className={`rounded-2xl border p-6 ${
-                modulo.cor === 'emerald'
-                  ? 'border-emerald-500/30 bg-emerald-500/[0.06]'
-                  : 'border-amber-500/30 bg-amber-500/[0.06]'
-              }`}
-            >
-              <h3 className="text-[15px] font-bold text-white">{modulo.nome}</h3>
-              <p className="mt-1 text-[13px] font-semibold text-slate-300">{modulo.preco}/mês</p>
-              <p className="text-[11px] font-bold uppercase tracking-[0.1em] text-slate-500">{modulo.nota}</p>
-              <p className="mt-2 text-[13px] leading-relaxed text-slate-400">{modulo.texto}</p>
-            </div>
-          ))}
-        </div>
-
-        <p className="mt-4 text-center text-[12px] text-slate-500">
-          Pólen e Tom são camadas diferentes e não vêm um dentro do outro: a Pólen atende o cliente final no
-          WhatsApp, o Tom organiza a operação da casa.{' '}
-          <a
-            href={`mailto:${EMAIL}?subject=Opera%C3%A7%C3%A3o%20IA%20-%20P%C3%B3len%20e%20Tom`}
-            className="font-semibold text-emerald-300 hover:text-emerald-200"
-          >
-            Falar sobre Pólen e Tom
-          </a>
-          .
-        </p>
-
-        <p className="mt-4 text-center text-[12px] text-slate-500">
-          Social de vídeo automático (15s–30s) entra como add-on:{' '}
-          <strong className="text-slate-300">+ R$ 247/mês por 8 vídeos</strong> ou{' '}
-          <strong className="text-slate-300">+ R$ 347/mês por 12 vídeos</strong> — Reels e TikTok, com legenda e
-          copy. Acima de 30s, consulte preços.
-        </p>
-
-        <p className="mt-4 text-center text-[12px] text-slate-500">
-          Imobiliária com equipe e operação de WhatsApp dedicada? Tem um degrau acima do PRO.{' '}
-          <a
-            href={`mailto:${EMAIL}?subject=Plano%20para%20equipe%20-%20Express%20Imobi%20Tech`}
-            className="font-semibold text-emerald-300 hover:text-emerald-200"
-          >
-            Falar sobre a operação completa
-          </a>
-          .
-        </p>
-      </section>
-
-      {/* ---------------- FAQ ---------------- */}
-      <section id="faq" className="border-y border-white/[0.06] bg-white/[0.012] py-20 lg:py-28">
-        <div className="mx-auto grid max-w-6xl gap-10 px-4 sm:px-6 lg:grid-cols-[0.8fr_1.2fr]">
-          <div>
-            <p className="text-[11px] font-bold uppercase tracking-[0.2em] text-emerald-400">Dúvidas</p>
-            <h2 className="mt-3 text-[1.7rem] font-black leading-tight tracking-tight sm:text-4xl">
-              O que os corretores mais perguntam antes de entrar.
+        <section className="relative isolate overflow-hidden border-t border-white/[0.06] bg-slate-900/35 px-4 py-20 sm:px-6 sm:py-24 lg:px-8">
+          <div aria-hidden="true" className="pointer-events-none absolute inset-x-0 top-0 -z-10 h-48 bg-gradient-to-b from-emerald-400/[0.08] to-transparent" />
+          <div className="mx-auto max-w-3xl text-center">
+            <p className="text-xs font-bold uppercase tracking-[0.2em] text-emerald-300">Comece pelo Plano Grátis</p>
+            <h2 className="mt-4 text-3xl font-black leading-tight tracking-tight text-white sm:text-4xl">
+              E isso é só a ponta do iceberg.
             </h2>
-            <p className="mt-4 text-[14px] leading-relaxed text-slate-400">
-              Ficou algo de fora? Escreva para{' '}
-              <a href={`mailto:${EMAIL}`} className="font-semibold text-emerald-300 hover:text-emerald-200">
-                {EMAIL}
-              </a>
-              . Respondemos por e-mail, sem robô do outro lado.
+            <p className="mx-auto mt-4 max-w-2xl text-sm leading-relaxed text-slate-400 sm:text-base sm:leading-7">
+              Entre no Plano Grátis, explore cada aba no seu ritmo e descubra o potencial completo da Express Imobi Tech.
             </p>
-          </div>
-
-          <div className="space-y-2.5">
-            {FAQ.map((item, i) => (
-              <div key={item.q} className="overflow-hidden rounded-xl border border-white/[0.07] bg-[#050b09]">
-                <button
-                  type="button"
-                  onClick={() => setAberto(aberto === i ? -1 : i)}
-                  className="flex w-full items-center justify-between gap-4 px-5 py-4 text-left"
-                >
-                  <span className="text-[14px] font-semibold text-white">{item.q}</span>
-                  <span
-                    className={`shrink-0 text-emerald-400 transition-transform duration-200 ${aberto === i ? 'rotate-45' : ''}`}
-                  >
-                    +
-                  </span>
-                </button>
-                {aberto === i && (
-                  <p className="px-5 pb-4 text-[13px] leading-relaxed text-slate-400">{item.a}</p>
-                )}
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* ---------------- CTA FINAL ---------------- */}
-      <section className="relative overflow-hidden">
-        <div className="pointer-events-none absolute inset-x-0 top-0 h-64 bg-gradient-to-b from-emerald-500/10 to-transparent" />
-        <div className="relative mx-auto max-w-3xl px-4 py-20 text-center sm:px-6 lg:py-28">
-          <h2 className="text-[1.8rem] font-black leading-tight tracking-tight sm:text-4xl">
-            Comece pelo gratuito. O PRO entra quando a operação pedir.
-          </h2>
-          <p className="mx-auto mt-4 max-w-xl text-[15px] leading-relaxed text-slate-400">
-            Crie a conta, cadastre sua carteira e veja o primeiro lead cair no funil. Não precisa de cartão,
-            não precisa de instalação e não precisa parar o que você está fazendo agora.
-          </p>
-
-          <div className="mt-8 flex flex-col justify-center gap-3 sm:flex-row">
             <button
               type="button"
               onClick={() => navigate('/cadastro')}
-              className="rounded-xl bg-gradient-to-r from-[#34d399] via-[#10b981] to-[#0d9488] px-7 py-3.5 text-sm font-bold text-[#04120c] shadow-[0_18px_44px_-18px_rgba(16,185,129,0.95)] transition-transform hover:scale-[1.02]"
+              className="mt-8 inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-emerald-400 px-6 py-4 text-sm font-black text-slate-950 shadow-xl shadow-emerald-950/40 transition hover:-translate-y-0.5 hover:bg-emerald-300 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-300 sm:w-auto sm:px-8 sm:text-base"
             >
-              Criar minha conta grátis
+              Ei corretor, clique aqui e venha ver nosso potencial grátis →
             </button>
-            <a
-              href={`mailto:${EMAIL}`}
-              className="rounded-xl border border-white/15 bg-white/[0.03] px-7 py-3.5 text-sm font-semibold text-slate-200 transition-colors hover:border-white/30 hover:text-white"
-            >
-              Falar com a equipe
-            </a>
           </div>
+        </section>
+      </main>
 
-          <p className="mt-6 text-[12px] text-slate-500">
-            Você também pode conhecer a vitrine pública antes de criar a conta:{' '}
-            <button
-              type="button"
-              onClick={() => navigate('/portal')}
-              className="font-semibold text-emerald-300 hover:text-emerald-200"
-            >
-              ver o Portal
-            </button>
-            .
-          </p>
-        </div>
-      </section>
-
-      {/* ---------------- RODAPÉ ---------------- */}
-      <footer className="border-t border-white/[0.06] bg-[#01060a]">
-        <div className="mx-auto grid max-w-6xl gap-10 px-4 py-14 sm:px-6 md:grid-cols-[1.4fr_1fr_1fr]">
+      <footer className="border-t border-white/[0.07] bg-slate-950">
+        <div className="mx-auto grid max-w-7xl gap-10 px-4 py-12 sm:px-6 md:grid-cols-[1.4fr_1fr_1fr] lg:px-8">
           <div>
-            <LogoExpress tamanho="sm" />
-            <p className="mt-4 max-w-sm text-[13px] leading-relaxed text-slate-500">
-              CRM, funil de vendas, portal público e agentes de IA no WhatsApp para imobiliárias e corretores que
-              tratam o atendimento como parte do negócio.
+            <a href="#topo" aria-label="Express Imobi Tech — início" className="inline-flex items-center gap-2.5">
+              <LogoExpress tamanho="sm" comWordmark={false} />
+              <span className="text-sm font-extrabold tracking-tight text-white">
+                Express <span className="text-emerald-300">Imobi</span> Tech
+              </span>
+            </a>
+            <p className="mt-4 max-w-sm text-[13px] leading-relaxed text-slate-400">
+              CRM, gestão imobiliária e inteligência artificial para corretores e imobiliárias que querem organizar a operação e atender melhor.
             </p>
-            <p className="mt-4 text-[12px] text-slate-500">
+            <p className="mt-4 text-xs leading-relaxed text-slate-500">
               Araguari &amp; Uberlândia — Triângulo Mineiro / MG
               <br />
               Atendimento digital em todo o Brasil
@@ -862,55 +558,52 @@ export default function Home() {
           </div>
 
           <div>
-            <h3 className="text-[11px] font-bold uppercase tracking-[0.18em] text-slate-400">Produto</h3>
-            <ul className="mt-4 space-y-2.5 text-[13px] text-slate-500">
-              <li><button type="button" onClick={() => irPara('recursos')} className="hover:text-white">Recursos</button></li>
-              <li><button type="button" onClick={() => irPara('agentes')} className="hover:text-white">Agentes de IA</button></li>
-              <li><button type="button" onClick={() => irPara('planos')} className="hover:text-white">Planos</button></li>
-              <li><button type="button" onClick={() => navigate('/portal')} className="hover:text-white">Portal público</button></li>
-              <li><button type="button" onClick={() => navigate('/login-admin')} className="hover:text-white">Entrar</button></li>
+            <h3 className="text-[11px] font-bold uppercase tracking-[0.18em] text-slate-300">Produto</h3>
+            <ul className="mt-4 space-y-3 text-[13px] text-slate-400">
+              <li><a href="#rotina" className="transition hover:text-white">Sua Rotina</a></li>
+              <li><a href="#ia" className="transition hover:text-white">Atendimento &amp; IA</a></li>
+              <li><a href="#plano-gratis" className="transition hover:text-white">Plano Grátis</a></li>
+              <li><button type="button" onClick={() => navigate('/portal')} className="transition hover:text-white">Portal público</button></li>
+              <li><button type="button" onClick={() => navigate('/login-admin')} className="transition hover:text-white">Entrar</button></li>
             </ul>
           </div>
 
           <div>
-            <h3 className="text-[11px] font-bold uppercase tracking-[0.18em] text-slate-400">Contato</h3>
-            <ul className="mt-4 space-y-2.5 text-[13px] text-slate-500">
-              <li>
-                <a href={`mailto:${EMAIL}`} className="hover:text-white">{EMAIL}</a>
-              </li>
+            <h3 className="text-[11px] font-bold uppercase tracking-[0.18em] text-slate-300">Contato e documentos</h3>
+            <ul className="mt-4 space-y-3 text-[13px] text-slate-400">
+              <li><a href={`mailto:${EMAIL}`} className="transition hover:text-white">{EMAIL}</a></li>
               <li>
                 <a
                   href={`https://wa.me/${EMPRESA.whatsapp}`}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="hover:text-white"
+                  className="transition hover:text-white"
                 >
                   WhatsApp comercial {EMPRESA.whatsappExibicao}
                 </a>
               </li>
-              <li><button type="button" onClick={() => navigate('/termos')} className="hover:text-white">Termos de uso</button></li>
-              <li><button type="button" onClick={() => navigate('/privacidade')} className="hover:text-white">Política de privacidade</button></li>
-              <li><button type="button" onClick={() => navigate('/reembolso')} className="hover:text-white">Política de reembolso</button></li>
+              <li><button type="button" onClick={() => navigate('/termos')} className="transition hover:text-white">Termos de Uso</button></li>
+              <li><button type="button" onClick={() => navigate('/privacidade')} className="transition hover:text-white">Política de Privacidade</button></li>
+              <li><button type="button" onClick={() => navigate('/reembolso')} className="transition hover:text-white">Política de Reembolso</button></li>
             </ul>
           </div>
         </div>
 
         <div className="border-t border-white/[0.06] px-4 py-6 sm:px-6">
-          <div className="mx-auto flex max-w-6xl flex-col gap-3 text-[11px] text-slate-500 md:flex-row md:items-center md:justify-between">
+          <div className="mx-auto flex max-w-7xl flex-col gap-3 text-[11px] text-slate-500 md:flex-row md:items-center md:justify-between">
             <p>
-              © {new Date().getFullYear()} Express Tech · Express Imobi Tech — Uberlândia/MG · atendimento digital
-              em todo o Brasil.
+              © {new Date().getFullYear()} Express Tech · Express Imobi Tech — Uberlândia/MG · atendimento digital em todo o Brasil.
             </p>
             <p className="flex flex-wrap items-center gap-x-4 gap-y-2">
-              <a href={EMAIL_EXCLUSAO} className="hover:text-white">Excluir meus dados</a>
-              <button type="button" onClick={() => abrirPreferenciasCookies()} className="hover:text-white">
+              <a href={EMAIL_EXCLUSAO} className="transition hover:text-white">Excluir meus dados · LGPD</a>
+              <button type="button" onClick={() => abrirPreferenciasCookies()} className="transition hover:text-white">
                 Preferências de cookies
               </button>
             </p>
           </div>
-          <p className="mx-auto mt-3 max-w-6xl text-[11px] leading-relaxed text-slate-600">
+          <p className="mx-auto mt-3 max-w-7xl text-[11px] leading-relaxed text-slate-600">
             Canal único para contato e privacidade:{' '}
-            <a href={`mailto:${EMAIL}`} className="underline decoration-slate-600 underline-offset-2 hover:text-white">
+            <a href={`mailto:${EMAIL}`} className="underline decoration-slate-600 underline-offset-2 transition hover:text-white">
               {EMAIL}
             </a>
             . O conteúdo deste site é informativo e não substitui a análise do seu corretor, advogado ou contador.

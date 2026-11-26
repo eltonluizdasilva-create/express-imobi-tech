@@ -15,6 +15,7 @@
  */
 
 export const LIMITE_DEMO = 5;
+export const LIMITE_DEMO_TOM = 50;
 
 const PREFIXO = 'expressdemo';
 

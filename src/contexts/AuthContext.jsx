@@ -318,23 +318,14 @@ export function AuthProvider({ children }) {
     };
   }, []);
 
-  // isPro derivado EXCLUSIVAMENTE do documento da organização (+ conta master da plataforma via env)
+  // isPro derivado EXCLUSIVAMENTE do plano real da organização.
+  // `dadosOficina.isPro` e `planoAssinante` são campos legados: quando ficavam
+  // `true` numa conta que voltou ao Grátis, o crachá do /admin anunciava
+  // "Plano PRO Ativo" e o Meu Plano mostrava "Grátis". `isPlanoPro()` resolve
+  // os aliases do catálogo (`essencial_plus` → pro, `profissional` → plus).
   const isPro = useMemo(() => {
     if (isMasterConta) return true;
-    if (typeof dadosOficina?.isPro === 'boolean') return dadosOficina.isPro;
-    if (dadosOficina?.planoAssinante === true) return true;
-    const planoNorm = String(dadosOficina?.plano || '').trim().toLowerCase();
-    if (
-      !planoNorm ||
-      planoNorm === 'gratis' ||
-      planoNorm === 'grátis' ||
-      planoNorm === 'gratuito' ||
-      planoNorm === 'free' ||
-      planoNorm === 'trial'
-    ) {
-      return false;
-    }
-    return isPlanoPro(planoNorm);
+    return isPlanoPro(dadosOficina?.plano);
   }, [dadosOficina, isMasterConta]);
 
   const quantidadeAtualCorretores = useMemo(

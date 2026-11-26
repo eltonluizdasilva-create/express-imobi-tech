@@ -18,6 +18,10 @@ function Chip({ children, tom }) {
 }
 
 export default function DorESolucao({ abaAtiva }) {
+  if (abaAtiva === 'mapa_inteligencia') {
+    return null;
+  }
+
   const { dor, ganho } = textoDor(abaAtiva);
 
   return (

@@ -125,6 +125,14 @@ export default function Equipe({
   }, [membrosLocais, authCtx?.membrosEquipe]);
 
   const quantidadeAtualCorretores = membros.length;
+  const limiteUsuariosIlimitado = !Number.isFinite(limiteUsuarios);
+  const limiteUsuariosExibicao = limiteUsuariosIlimitado ? 'Ilimitado' : limiteUsuarios;
+  const vagasDisponiveis = limiteUsuariosIlimitado
+    ? null
+    : Math.max(0, limiteUsuarios - quantidadeAtualCorretores);
+  const limiteUsuariosDescricao = limiteUsuariosIlimitado
+    ? 'usuários ilimitados'
+    : `${limiteUsuarios} usuários`;
 
   // Cálculo do Medidor Visual de Capacidade
   const percentualCapacidade = useMemo(() => {
@@ -285,7 +293,7 @@ export default function Equipe({
     };
   };
 
-  const copyBloqueioEquipe = `Limite de Equipe Atingido. Seu plano atual permite ${limiteUsuarios} usuários. Faça um upgrade ou contrate pacotes de expansão para adicionar mais corretores e ativar a roleta de leads.`;
+  const copyBloqueioEquipe = `Limite de Equipe Atingido. Seu plano atual permite ${limiteUsuariosDescricao}. Faça um upgrade ou contrate pacotes de expansão para adicionar mais corretores e ativar a roleta de leads.`;
 
   return (
     <div
@@ -370,13 +378,19 @@ export default function Equipe({
               </div>
               <div>
                 <p className="text-xs md:text-sm font-black text-white">
-                  Usuários: <span className={statusBarraCapacidade.classeTexto}>{quantidadeAtualCorretores}</span> de{' '}
-                  <span className="text-[#10b981]">{limiteUsuarios}</span> disponíveis no seu plano
+                  Usuários: <span className={statusBarraCapacidade.classeTexto}>{quantidadeAtualCorretores}</span>
+                  {limiteUsuariosIlimitado ? (
+                    <> · Limite <span className="text-[#10b981]">Ilimitado</span> no seu plano</>
+                  ) : (
+                    <> de <span className="text-[#10b981]">{limiteUsuariosExibicao}</span> disponíveis no seu plano</>
+                  )}
                 </p>
                 <p className="text-[11px] text-slate-400">
                   {quantidadeAtualCorretores >= limiteUsuarios
                     ? 'Capacidade máxima atingida no plano atual. Faça upgrade para liberar novas vagas.'
-                    : `Restam ${Math.max(0, limiteUsuarios - quantidadeAtualCorretores)} vaga(s) disponível(is) para novos corretores ou gerentes.`}
+                    : vagasDisponiveis === null
+                      ? 'Há vagas ilimitadas disponíveis para novos corretores ou gerentes.'
+                      : `Restam ${vagasDisponiveis} vaga(s) disponível(is) para novos corretores ou gerentes.`}
                 </p>
               </div>
             </div>
@@ -660,7 +674,7 @@ export default function Equipe({
                 </div>
                 <div>
                   <span className="text-[10px] font-black uppercase tracking-widest text-[#10b981]">
-                    Nova Vaga Disponível ({quantidadeAtualCorretores}/{limiteUsuarios})
+                    Nova Vaga Disponível ({quantidadeAtualCorretores}/{limiteUsuariosExibicao})
                   </span>
                   <h3 className="text-lg font-black text-white uppercase tracking-tight">
                     Convidar / Adicionar Corretor

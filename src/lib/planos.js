@@ -20,14 +20,18 @@ export const WHATSAPP_COMERCIAL = dados.whatsappComercial;
 /* ------------------------------------------------------------------ */
 
 export const MODULOS_GRATIS = Object.freeze([...dados.modulos.gratis]);
-export const MODULOS_PRO = Object.freeze([
+export const MODULOS_PRO = Object.freeze([...new Set([
   ...dados.modulos.gratis,
   ...(dados.modulos.essencial_plus_extra || []),
   ...(dados.modulos.profissional_extra || []),
-]);
+])]);
+export const MODULOS_PLUS = Object.freeze([...new Set([
+  ...MODULOS_PRO,
+  ...(dados.modulos.plus_extra || []),
+])]);
 // Aliases mantidos para consumidores e contas legadas.
 export const MODULOS_ESSENCIAL_PLUS = MODULOS_PRO;
-export const MODULOS_PROFISSIONAL = MODULOS_PRO;
+export const MODULOS_PROFISSIONAL = MODULOS_PLUS;
 export const MODULOS_ESQUADRAO = Object.freeze([
   ...MODULOS_PRO,
   ...dados.modulos.esquadrao_extra,
@@ -36,9 +40,10 @@ export const MODULOS_ESQUADRAO = Object.freeze([
 const MODULOS_POR_PLANO = {
   gratis: MODULOS_GRATIS,
   pro: MODULOS_PRO,
-  plus: MODULOS_PRO,
+  plus: MODULOS_PLUS,
   essencial_plus: MODULOS_ESSENCIAL_PLUS,
-  profissional: MODULOS_PROFISSIONAL,
+  profissional: MODULOS_PLUS,
+  plano_profissional: MODULOS_PLUS,
   esquadrao_ia: MODULOS_ESQUADRAO,
   // Tom é produto de cérebro operacional, não de módulo do painel: entra com a
   // base gratuita de módulos e o que ele libera é o uso do agente.
@@ -125,14 +130,14 @@ export function normalizarPlano(plano) {
 export function isPlanoPro(plano) {
   const chave = normalizarPlano(plano);
   if (ALIAS_GRATIS.has(chave)) return false;
-  return PLANOS_PRO.has(chave);
+  return PLANOS_PRO.has(chave) || PLANOS_PRO.has(chaveCanonica(chave));
 }
 
 /* ------------------------------------------------------------------ */
 /* TRIAL DE 10 DIAS (D-22.03)                                          */
 /* ------------------------------------------------------------------ */
-/* O teste completo dura 10 dias. Após o trial, os módulos PRO exigem     */
-/* assinatura; o CRM, agenda, simuladores e Assistente Legal seguem grátis.*/
+/* O teste completo dura 10 dias. Simuladores e Assistente Legal passam ao */
+/* PRO; após o trial, também exigem assinatura. CRM e agenda seguem grátis.*/
 
 export const DIAS_TRIAL = 10;
 
@@ -206,10 +211,17 @@ export function diasRestantesTrial(conta = {}, agora = new Date()) {
   return restante > 0 ? Math.ceil(restante / MS_POR_DIA) : 0;
 }
 
+/**
+ * Assinatura paga = plano real do catálogo.
+ *
+ * Os booleanos legados `isPro` / `planoAssinante` NÃO liberam acesso sozinhos:
+ * eles continuavam `true` em contas que voltaram ao Grátis e o /admin anunciava
+ * "Plano PRO Ativo" enquanto Meu Plano mostrava o Grátis. A fonte única é o
+ * campo `plano` (com os aliases resolvidos por `chaveCanonica`).
+ */
 function contaPaga(conta = {}) {
   const dados = conta || {};
   if (dados.papel === 'master') return true;
-  if (dados.isPro === true || dados.planoAssinante === true) return true;
   return isPlanoPro(dados.plano);
 }
 
@@ -221,7 +233,13 @@ export function temAcessoPro(conta = {}, agora = new Date()) {
   return trialAtivo(conta, agora);
 }
 
-/** Mesma regra do PRO: os 7 Agentes de IA acompanham as ferramentas PRO. */
+/** Acesso PLUS: assinatura PLUS ativa ou conta master; o trial padrão libera só PRO. */
+export function temAcessoPlus(conta = {}) {
+  if (conta.papel === 'master') return true;
+  return chaveCanonica(conta.plano) === 'plus' && contaPaga(conta);
+}
+
+/** Mesma regra do PRO: os Agentes Operacionais acompanham as ferramentas PRO. */
 export function temAcessoAgentesIA(conta = {}, agora = new Date()) {
   return temAcessoPro(conta, agora);
 }

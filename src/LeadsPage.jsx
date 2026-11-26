@@ -398,7 +398,7 @@ export default function LeadsPage({ oficinaId: oficinaIdProp, imobiliariaId: imo
               CRM Imobiliário & Funil de Vendas Inteligente
             </div>
             <h1 className="text-3xl font-black tracking-tight text-white md:text-4xl">
-              Transforme leads em <span style={{ color: '#10b981' }}>visitas e escrituras assinadas</span>.
+              Transforme leads em <span className="text-[#10b981]">visitas e escrituras assinadas</span>.
             </h1>
             <p className="mt-3 max-w-xl text-sm leading-6 text-slate-300">
               Acompanhe cada comprador, locatário ou proprietário desde o primeiro contato no WhatsApp ou Simulador até o fechamento do VGV.
@@ -829,7 +829,7 @@ function QuickHighlight({ label, value, helper }) {
   return (
     <div className="rounded-2xl border border-[#10b981]/30 bg-[#020408] p-4">
       <p className="text-xs uppercase tracking-[0.2em] text-slate-400">{label}</p>
-      <p style={{ color: '#10b981' }} className="mt-2 text-2xl font-black">
+      <p className="mt-2 text-2xl font-black text-[#10b981]">
         {value}
       </p>
       <p className="mt-1 text-xs text-slate-400">{helper}</p>

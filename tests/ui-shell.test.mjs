@@ -20,19 +20,23 @@ ok('wordmark tem classe para o tema claro', logo.includes('logo-accent'));
 ok('CSS escurece o degradê no tema claro', /\.tema-claro \.logo-accent\s*\{[\s\S]{0,200}#047857/.test(css));
 ok('logo escala pequeno/grande', logo.includes("tamanho === 'sm'") && logo.includes("tamanho === 'lg'"));
 
-/* --------------------- botões flutuantes (2 × 3) ------------------------- */
-const esquerda = flutuantes.slice(flutuantes.indexOf('LADO ESQUERDO'), flutuantes.indexOf('LADO DIREITO'));
-const direita = flutuantes.slice(flutuantes.indexOf('LADO DIREITO'), flutuantes.indexOf('JANELA CHAT'));
-ok('ajuda fica na coluna da esquerda', esquerda.includes('<AjudaFlutuante'));
-ok('ajuda aparece uma única vez', (flutuantes.match(/<AjudaFlutuante/g) || []).length === 1);
-ok('especialista IA continua na esquerda', esquerda.includes('Especialista Imobiliário IA'));
-ok('direita ficou com 3 botões', (direita.match(/<button/g) || []).length === 3, String((direita.match(/<button/g) || []).length));
-ok('direita tem tarefa, financeiro e lead',
-   direita.includes('acionarTarefaRapida') && direita.includes('acionarFinanceiroRapido') && direita.includes('acionarClienteRapido'));
-ok('posições menores no mobile (bottom/left 4)',
-   flutuantes.includes('bottom-4 left-4') && flutuantes.includes('bottom-4 right-4'));
-ok('volta ao espaçamento maior no desktop',
-   flutuantes.includes('md:bottom-6 md:left-6') && flutuantes.includes('md:bottom-6 md:right-6'));
+/* --------------------- hub flutuante unificado (sofia • zara • tom) ------- */
+ok('hub tem botão único no canto inferior direito',
+   flutuantes.includes('bottom-4 right-4') && flutuantes.includes('md:bottom-6 md:right-6'));
+ok('rótulo do botão destaca Sofia • Zara • Tom',
+   flutuantes.includes('Sofia • Zara • Tom'));
+ok('possui as 3 personas configuradas',
+   flutuantes.includes("id: 'sofia'") && flutuantes.includes("id: 'zara'") && flutuantes.includes("id: 'tom'"));
+ok('sofia tem foco em suporte e guia da plataforma',
+   flutuantes.includes('Suporte & Guia da Plataforma') && flutuantes.includes('Suporte 100% Liberado'));
+ok('zara tem auditoria de rotina e precificação',
+   flutuantes.includes('Agentes Operacionais & Funil') && flutuantes.includes('349'));
+ok('tom tem segundo cérebro e precificação',
+   flutuantes.includes('Segundo Cérebro da Imobiliária') && flutuantes.includes('197'));
+ok('possui controle de modo demonstração (limite 5)',
+   flutuantes.includes('Modo Demonstração') && flutuantes.includes('5'));
+ok('sofia integra guia contextual da aba ativa',
+   flutuantes.includes('guiaAbaAberto') && flutuantes.includes('dorGanhoAbaAtual'));
 
 /* ------------------- espaço no fim da página (mobile) ------------------- */
 ok('conteúdo não fica embaixo dos botões',

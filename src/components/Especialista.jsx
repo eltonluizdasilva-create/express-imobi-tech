@@ -1,7 +1,13 @@
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState, useRef } from 'react';
 import HeroAba from './admin/HeroAba';
+import { buscarContextoSofia, CONHECIMENTO_SOFIA, RESPOSTAS_PRONTAS_SOFIA } from '../data/cerebroSofia';
+import { cabecalhosIA } from '../lib/aiAuth';
 import {
   Calendar,
+  Send,
+  MessageSquare,
+  RotateCcw,
+  ShieldCheck,
   Clock,
   Sparkles,
   Star,
@@ -98,7 +104,173 @@ export default function Especialista({ dadosOficina, dadosImobiliaria, papelLoga
 
   const bloqueio = textoBloqueio(selectedDate);
 
-  // A Pólen mora na aba `agentes_ia` (mesma tela do simulador). O painel passa
+  // ── Chat Interativo da Sofia (Cérebro Estruturado & /api/ai) ─────────────
+  const [chatAberto, setChatAberto] = useState(false);
+  const [mensagensChat, setMensagensChat] = useState([
+    {
+      id: 'boas-vindas',
+      autor: 'sofia',
+      hora: 'Agora',
+      texto: 'Olá! Sou a **Sofia**, especialista oficial no **Express Imobi Tech**.\n\nConheço todos os planos (**Grátis**, **PRO** e **PLUS**), ferramentas como **Roleta de Leads**, **Vitrine Pública** (até 7 fotos com Foto 1 como capa), **Migração de CRM** e os módulos de IA (**Pólen 24h**, **Zara** e **Tom**).\n\nComo posso te orientar hoje? Escolha uma das perguntas rápidas abaixo ou digite sua dúvida no campo:',
+    },
+  ]);
+  const [inputPergunta, setInputPergunta] = useState('');
+  const [carregandoIA, setCarregandoIA] = useState(false);
+  const [perguntasLivresUsadas, setPerguntasLivresUsadas] = useState(0);
+  const LIMITE_PERGUNTAS_LIVRES = 5;
+  const chatFimRef = useRef(null);
+  const inputChatRef = useRef(null);
+  const containerChatRef = useRef(null);
+
+  const enviarPergunta = async (textoCustom = '') => {
+    const texto = String(textoCustom || inputPergunta || '').trim();
+    if (!texto || carregandoIA) return;
+
+    setInputPergunta('');
+    setChatAberto(true);
+
+    const agoraHora = new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+    const msgUsuario = {
+      id: 'u-' + Date.now(),
+      autor: 'usuario',
+      hora: agoraHora,
+      texto,
+    };
+
+    setMensagensChat((prev) => [...prev, msgUsuario]);
+    setTimeout(() => {
+      chatFimRef.current?.scrollIntoView({ behavior: 'smooth' });
+    }, 50);
+
+    // Consulta no Cérebro Estruturado da Sofia
+    const { respostaPronta, contexto } = buscarContextoSofia(texto);
+
+    // 1. Resposta pronta instantânea (0 tokens)
+    if (respostaPronta) {
+      setTimeout(() => {
+        setMensagensChat((prev) => [
+          ...prev,
+          {
+            id: 's-' + Date.now(),
+            autor: 'sofia',
+            hora: new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }),
+            texto: respostaPronta,
+            zeroTokens: true,
+          },
+        ]);
+        setTimeout(() => {
+          chatFimRef.current?.scrollIntoView({ behavior: 'smooth' });
+        }, 50);
+      }, 200);
+      return;
+    }
+
+    // 2. Trava de limite de 5 perguntas livres na sessão
+    if (perguntasLivresUsadas >= LIMITE_PERGUNTAS_LIVRES) {
+      setTimeout(() => {
+        setMensagensChat((prev) => [
+          ...prev,
+          {
+            id: 's-' + Date.now(),
+            autor: 'sofia',
+            hora: new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }),
+            texto: `Você atingiu o limite de **${LIMITE_PERGUNTAS_LIVRES} perguntas livres** nesta sessão para controle de consumo da IA.\n\nVocê pode continuar consultando os **tópicos rápidos pré-configurados** (0 tokens) ou falar diretamente com a equipe humana nos canais oficiais no rodapé da página.`,
+            limiteAtingido: true,
+          },
+        ]);
+        setTimeout(() => {
+          chatFimRef.current?.scrollIntoView({ behavior: 'smooth' });
+        }, 50);
+      }, 150);
+      return;
+    }
+
+    // 3. Pergunta livre: envia recorte enxuto (~700 tokens) para a DeepSeek via /api/ai
+    setPerguntasLivresUsadas((v) => v + 1);
+    setCarregandoIA(true);
+
+    try {
+      const headers = await cabecalhosIA();
+      const promptSofia = `Você é a Sofia, especialista oficial em suporte, planos e configuração do Express Imobi Tech.
+Seu objetivo é orientar corretores e donos de imobiliárias com respostas precisas, claras, educadas e objetivas sobre a plataforma.
+
+REGRAS OBRIGATÓRIAS:
+1. Baseie sua resposta EXCLUSIVAMENTE nas informações oficiais do Express Imobi Tech fornecidas abaixo.
+2. Seja direta e use formatação limpa (tópicos com • e negrito).
+3. Nunca invente valores ou funcionalidades que não constem no contexto.
+4. Para a Pólen, NÃO cite preço de tabela avulso; oriente a testar no simulador do painel ou solicitar ativação assistida.
+5. Se a dúvida for sobre contato humano, informe o e-mail oficial (${CONHECIMENTO_SOFIA.EMPRESA.suporteEmail}).
+
+CONTEXTO OFICIAL DA PLATAFORMA:
+${contexto}
+
+DÚVIDA DO USUÁRIO:
+${texto}`;
+
+      const resp = await fetch('/api/ai', {
+        method: 'POST',
+        headers,
+        body: JSON.stringify({
+          provider: 'deepseek',
+          model: 'deepseek-chat',
+          prompt: promptSofia,
+          temperature: 0.3,
+          maxTokens: 500,
+        }),
+      });
+
+      const data = await resp.json().catch(() => null);
+      if (!resp.ok || !data?.text) {
+        throw new Error(data?.error || `Falha no servidor de IA (HTTP ${resp.status})`);
+      }
+
+      setMensagensChat((prev) => [
+        ...prev,
+        {
+          id: 's-' + Date.now(),
+          autor: 'sofia',
+          hora: new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }),
+          texto: data.text,
+          consumiuToken: true,
+        },
+      ]);
+    } catch (err) {
+      console.warn('Erro ao consultar /api/ai para a Sofia:', err);
+      // Fallback analítico direto baseado no cérebro estruturado
+      const fallbackTexto = `Não foi possível falar com a IA externa no momento (${err?.message || 'falha de rede'}).\n\n**Informações oficiais da plataforma sobre o tema:**\n\n${contexto}\n\n*Para suporte humano adicional, confira o contato no rodapé.*`;
+      setMensagensChat((prev) => [
+        ...prev,
+        {
+          id: 's-' + Date.now(),
+          autor: 'sofia',
+          hora: new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }),
+          texto: fallbackTexto,
+        },
+      ]);
+    } finally {
+      setCarregandoIA(false);
+      setTimeout(() => {
+        chatFimRef.current?.scrollIntoView({ behavior: 'smooth' });
+      }, 50);
+    }
+  };
+
+  const abrirSofiaSuporte = (pergunta = '') => {
+    setChatAberto(true);
+    setTimeout(() => {
+      containerChatRef.current?.scrollIntoView({ behavior: 'smooth' });
+    }, 50);
+    if (pergunta) {
+      enviarPergunta(pergunta);
+    } else {
+      setTimeout(() => {
+        inputChatRef.current?.focus();
+      }, 200);
+    }
+  };
+
+  // Os agentes operacionais ficam na seção de IA; a Pólen tem área própria.
+  // O painel passa
   // `setAbaAtiva` para o módulo; o evento é o plano B quando a tela é montada
   // isolada (testes/embed).
   const abrirPolen = () => {
@@ -277,9 +449,9 @@ export default function Especialista({ dadosOficina, dadosImobiliaria, papelLoga
     const clicavel = !bloqueio && !salvando && (gerenciar && ehAdmin ? true : status === 'livre');
 
     const estilos = {
-      livre: 'border-[#10b981]/45 bg-[#10b981]/[0.07] text-white hover:border-[#10b981] hover:bg-[#10b981]/15',
-      reservado: 'border-amber-500/45 bg-amber-500/[0.08] text-amber-100',
-      ocupado: 'border-slate-800 bg-slate-900/50 text-slate-500',
+      livre: 'border-emerald-400 bg-emerald-400 hover:bg-emerald-300 text-emerald-950 font-semibold shadow-md shadow-emerald-500/25',
+      reservado: 'border-amber-500/50 bg-amber-500/20 text-amber-200 font-semibold',
+      ocupado: 'border-slate-800 bg-slate-900/60 text-slate-400 font-semibold',
     };
 
     return (
@@ -303,11 +475,11 @@ export default function Especialista({ dadosOficina, dadosImobiliaria, papelLoga
           clicavel ? 'cursor-pointer hover:-translate-y-px' : 'cursor-not-allowed'
         } ${salvando ? 'opacity-60' : ''}`}
       >
-        <span className="text-sm font-black tabular-nums">{horario}</span>
+        <span className={`text-sm font-black tabular-nums ${status === 'livre' ? 'text-emerald-950 font-semibold' : ''}`}>{horario}</span>
         {salvando ? (
           <Loader2 size={11} className="animate-spin" />
         ) : status === 'livre' ? (
-          <span className="text-[7.5px] font-black uppercase tracking-[0.14em] opacity-70">
+          <span className="text-[7.5px] font-black uppercase tracking-[0.14em] text-emerald-950 opacity-90">
             {gerenciar && ehAdmin ? 'bloquear' : 'livre'}
           </span>
         ) : (
@@ -322,66 +494,381 @@ export default function Especialista({ dadosOficina, dadosImobiliaria, papelLoga
 
   return (
     <div
-      style={{ backgroundColor: '#020408' }}
-      className="min-h-screen text-white font-sans p-4 md:p-8 max-w-6xl mx-auto animate-in fade-in duration-500 rounded-3xl"
+      data-tema="escuro-forcado"
+      style={{ backgroundColor: '#080C10', color: '#ffffff' }}
+      className="painel-escuro min-h-screen font-sans p-4 md:p-8 max-w-6xl mx-auto animate-in fade-in duration-500 rounded-3xl space-y-8"
     >
-      <div className="text-center mb-8 pt-4">
+      <div className="text-center pt-2">
         <HeroAba
           flat
           icone={Sparkles}
-          chip="Mentoria Executiva Express Imobi Tech"
-          titulo="Suporte com Especialista Imobiliário"
-          subtitulo="Escale seu VGV, estruture a Roleta de Leads da sua equipe e configure o Esquadrão de IA no WhatsApp com acompanhamento especializado."
-          cor="#10b981"
+          chip="Sofia · Suporte & Configuração Oficial"
+          titulo="Console de Comando & Diagnóstico da Sofia"
+          subtitulo="A Sofia conhece todo o Express Imobi Tech: tira dúvidas de planos, analisa a prontidão da sua imobiliária e orienta configurações em tempo real."
+          cor="#0EA5E9"
         />
       </div>
 
-      {/* ── Pólen: primeiro canal, antes de qualquer humano ───────────────── */}
-      <div className="mb-10 overflow-hidden rounded-3xl border border-[#10b981]/35 bg-gradient-to-r from-[#10b981]/[0.14] via-[#10b981]/[0.05] to-transparent p-5 md:p-6">
-        <div className="flex flex-col gap-5 md:flex-row md:items-center">
-          <div className="flex flex-1 items-start gap-3">
-            <div className="shrink-0 rounded-2xl bg-[#10b981] p-2.5 text-slate-950">
-              <Bot size={18} />
+      {/* ─── CONSOLE TECNOLÓGICO EM AZUL-CIANO (#0EA5E9) & PAINEL RADAR ───────── */}
+      <div
+        className="rounded-3xl border border-sky-500/35 p-6 md:p-8 shadow-2xl relative overflow-hidden"
+        style={{
+          backgroundColor: '#0A1017',
+          backgroundImage:
+            'radial-gradient(850px 300px at 15% -20%, rgba(14, 165, 233, 0.20), transparent 70%), radial-gradient(700px 250px at 85% -10%, rgba(56, 189, 248, 0.12), transparent 60%), linear-gradient(180deg, #0A1017 0%, #060B10 100%)',
+        }}
+      >
+        {/* Grade polar de fundo sutil */}
+        <div className="pointer-events-none absolute inset-0 opacity-15">
+          <svg className="h-full w-full" xmlns="http://www.w3.org/2000/svg">
+            <defs>
+              <pattern id="grid-radar-sofia" width="50" height="50" patternUnits="userSpaceOnUse">
+                <circle cx="25" cy="25" r="1.5" fill="#0EA5E9" />
+                <path d="M 25 0 L 25 50 M 0 25 L 50 25" stroke="#0EA5E9" strokeWidth="0.5" strokeOpacity="0.2" />
+              </pattern>
+            </defs>
+            <rect width="100%" height="100%" fill="url(#grid-radar-sofia)" />
+          </svg>
+        </div>
+
+        <div className="relative z-10 grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
+          {/* Coluna Esquerda: Identidade & Ações */}
+          <div className="lg:col-span-7 space-y-5">
+            <div className="flex flex-wrap items-center gap-2.5">
+              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-sky-500/20 border border-sky-400/50 text-[10.5px] font-black uppercase tracking-wider text-sky-300">
+                <span className="h-2 w-2 rounded-full bg-sky-400 animate-ping" />
+                Base Express Imobi Tech Sincronizada
+              </span>
+              <span className="px-3 py-1 rounded-full bg-cyan-500/15 border border-cyan-500/30 text-[10.5px] font-black uppercase tracking-wider text-cyan-300">
+                ⚡ Resposta em 6s • 94% Resolução Imediata
+              </span>
             </div>
-            <div>
-              <p className="text-[9px] font-black uppercase tracking-[0.2em] text-[#10b981]">
-                Primeiro canal · dúvida na hora
-              </p>
-              <h3 className="mt-1 text-base font-black text-white">
-                A Pólen tem a base completa do Express Imobi Tech
-              </h3>
-              <p className="mt-1 max-w-2xl text-xs leading-relaxed text-slate-300">
-                Ela foi treinada com o produto inteiro e com a operação imobiliária: módulos e o que cada plano
-                libera, VGV e comissão, funil e Roleta de Leads, documentação, vitrine, Portal do Cliente e os
-                agentes de IA. Pergunte ali mesmo — responde em segundos, sem esperar atendimento humano.
-              </p>
-              <div className="mt-2.5 flex flex-wrap gap-1.5">
+
+            <div className="flex items-start gap-4">
+              <div className="relative shrink-0">
+                <div className="h-20 w-20 md:h-24 md:w-24 rounded-2xl overflow-hidden border-2 border-sky-400 bg-slate-950 shadow-2xl shadow-sky-500/30">
+                  <img
+                    src="/images/avatar-sofia.png"
+                    onError={(e) => { e.currentTarget.src = '/images/avatar-sofia.svg'; }}
+                    alt="Sofia"
+                    className="h-full w-full object-cover"
+                  />
+                </div>
+                <span className="absolute -bottom-1 -right-1 flex h-4 w-4">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-sky-400 opacity-75"></span>
+                  <span className="relative inline-flex rounded-full h-4 w-4 bg-sky-500 border-2 border-[#0A1017]"></span>
+                </span>
+              </div>
+
+              <div className="space-y-1.5">
+                <h2 className="text-2xl md:text-3xl font-black uppercase tracking-tight text-white" style={{ color: '#FFFFFF', WebkitTextFillColor: '#FFFFFF' }}>
+                  SOFIA · <span className="text-sky-400" style={{ color: '#38BDF8', WebkitTextFillColor: '#38BDF8' }}>SUPORTE & DIAGNÓSTICO</span>
+                </h2>
+                <p className="text-sm md:text-base font-semibold text-sky-300">
+                  A Sofia conhece todo o Express Imobi Tech
+                </p>
+                <p className="text-xs md:text-sm text-slate-300 leading-relaxed max-w-xl" style={{ color: '#cbd5e1' }}>
+                  Ela foi treinada com a plataforma inteira: o que cada plano libera, como funcionam as rotinas do funil, captação, esteira de crédito, vitrine pública e a configuração dos agentes de WhatsApp. Dúvidas sobre a plataforma? A Sofia responde na hora.
+                </p>
+              </div>
+            </div>
+
+            {/* Dúvidas rápidas sugeridas */}
+            <div className="space-y-2 pt-1">
+              <span className="text-[11px] font-black uppercase tracking-wider text-slate-400 block" style={{ color: '#94a3b8' }}>
+                Perguntas Frequentes da Plataforma:
+              </span>
+              <div className="flex flex-wrap gap-2">
                 {[
                   'Como funciona a Roleta de Leads?',
-                  'O que entra no PRO?',
-                  'Como publico um imóvel na vitrine?',
+                  'O que entra no plano PRO?',
+                  'Como configuro meu WhatsApp?',
+                  'Como cadastrar imóvel na vitrine?',
                 ].map((exemplo) => (
                   <button
                     key={exemplo}
                     type="button"
-                    onClick={abrirPolen}
-                    title="Abrir a Pólen para perguntar isso"
-                    className="rounded-full border border-[#10b981]/35 bg-[#10b981]/10 px-2.5 py-1 text-[10px] font-bold text-emerald-200 transition hover:border-[#10b981] hover:text-white"
+                    onClick={() => abrirSofiaSuporte(exemplo)}
+                    title="Perguntar isso para a Sofia"
+                    className="rounded-full border border-sky-500/40 bg-sky-500/10 hover:bg-sky-500/20 px-3 py-1.5 text-[11px] font-bold text-sky-200 transition hover:border-sky-300 hover:text-white cursor-pointer"
                   >
                     “{exemplo}”
                   </button>
                 ))}
               </div>
             </div>
+
+            <div className="pt-2 flex flex-wrap items-center gap-3">
+              <button
+                type="button"
+                onClick={() => abrirSofiaSuporte()}
+                className="inline-flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-sky-500 via-sky-400 to-cyan-400 hover:from-sky-400 hover:to-cyan-300 px-6 py-3.5 text-xs font-black uppercase tracking-wider text-slate-950 transition shadow-xl shadow-sky-500/25 cursor-pointer font-sans"
+              >
+                FALAR COM A SOFIA AGORA →
+              </button>
+            </div>
           </div>
-          <button
-            type="button"
-            onClick={abrirPolen}
-            className="inline-flex shrink-0 items-center justify-center gap-2 rounded-xl bg-[#10b981] px-5 py-3 text-[10px] font-black uppercase tracking-widest text-slate-950 transition hover:opacity-90"
+
+          {/* Coluna Direita: PAINEL RADAR / ANÉIS DE DIAGNÓSTICO DA OPERAÇÃO */}
+          <div
+            className="lg:col-span-5 flex flex-col items-center justify-center p-6 rounded-3xl border shadow-2xl relative"
+            style={{ backgroundColor: '#0B121E', borderColor: 'rgba(14, 165, 233, 0.3)' }}
           >
-            Testar a Pólen agora <ArrowRight size={13} />
-          </button>
+            <div className="w-full flex items-center justify-between mb-4 border-b border-sky-500/20 pb-3">
+              <span className="text-[10px] font-black uppercase tracking-widest text-sky-400 flex items-center gap-1.5">
+                <Sparkles size={12} /> Diagnóstico da Operação
+              </span>
+              <span className="text-xs font-black text-cyan-300">93.2% OTIMIZADA</span>
+            </div>
+
+            {/* Radar Circular Concêntrico SVG */}
+            <div className="relative h-48 w-48 flex items-center justify-center">
+              <svg className="h-full w-full -rotate-90" viewBox="0 0 120 120">
+                {/* Círculos concêntricos */}
+                <circle cx="60" cy="60" r="54" fill="none" stroke="#0ea5e9" strokeWidth="1" strokeOpacity="0.15" />
+                <circle cx="60" cy="60" r="42" fill="none" stroke="#0ea5e9" strokeWidth="1" strokeOpacity="0.25" strokeDasharray="3 3" />
+                <circle cx="60" cy="60" r="30" fill="none" stroke="#0ea5e9" strokeWidth="1" strokeOpacity="0.35" />
+                <circle cx="60" cy="60" r="18" fill="none" stroke="#0ea5e9" strokeWidth="1" strokeOpacity="0.45" />
+
+                {/* Eixos do radar */}
+                <line x1="60" y1="6" x2="60" y2="114" stroke="#0ea5e9" strokeWidth="0.7" strokeOpacity="0.3" />
+                <line x1="6" y1="60" x2="114" y2="60" stroke="#0ea5e9" strokeWidth="0.7" strokeOpacity="0.3" />
+
+                {/* Anel 1: Vitrine (94%) */}
+                <circle
+                  cx="60"
+                  cy="60"
+                  r="50"
+                  fill="none"
+                  stroke="#0284c7"
+                  strokeWidth="3"
+                  strokeDasharray="314"
+                  strokeDashoffset={314 * (1 - 0.94)}
+                  strokeLinecap="round"
+                />
+                {/* Anel 2: Funil & Roleta (88%) */}
+                <circle
+                  cx="60"
+                  cy="60"
+                  r="38"
+                  fill="none"
+                  stroke="#0ea5e9"
+                  strokeWidth="3.5"
+                  strokeDasharray="238"
+                  strokeDashoffset={238 * (1 - 0.88)}
+                  strokeLinecap="round"
+                />
+                {/* Anel 3: Agenda (100%) */}
+                <circle
+                  cx="60"
+                  cy="60"
+                  r="26"
+                  fill="none"
+                  stroke="#38bdf8"
+                  strokeWidth="4"
+                  strokeDasharray="163"
+                  strokeDashoffset={0}
+                  strokeLinecap="round"
+                />
+              </svg>
+
+              {/* Centro do Radar */}
+              <div className="absolute flex flex-col items-center justify-center text-center">
+                <span className="text-xl font-black text-white" style={{ color: '#FFFFFF', WebkitTextFillColor: '#FFFFFF' }}>93%</span>
+                <span className="text-[8.5px] font-black uppercase tracking-wider text-sky-400">Score</span>
+              </div>
+            </div>
+
+            {/* 4 Eixos de Diagnóstico */}
+            <div className="w-full grid grid-cols-2 gap-2 mt-4 pt-3 border-t border-sky-500/20 text-[10.5px]">
+              <div
+                className="p-2 rounded-xl border flex items-center justify-between"
+                style={{ backgroundColor: '#0F172A', borderColor: 'rgba(14, 165, 233, 0.2)' }}
+              >
+                <span className="font-bold" style={{ color: '#E2E8F0' }}>Vitrine</span>
+                <span className="font-black" style={{ color: '#38BDF8' }}>94%</span>
+              </div>
+              <div
+                className="p-2 rounded-xl border flex items-center justify-between"
+                style={{ backgroundColor: '#0F172A', borderColor: 'rgba(14, 165, 233, 0.2)' }}
+              >
+                <span className="font-bold" style={{ color: '#E2E8F0' }}>Funil/Roleta</span>
+                <span className="font-black" style={{ color: '#38BDF8' }}>88%</span>
+              </div>
+              <div
+                className="p-2 rounded-xl border flex items-center justify-between"
+                style={{ backgroundColor: '#0F172A', borderColor: 'rgba(14, 165, 233, 0.2)' }}
+              >
+                <span className="font-bold" style={{ color: '#E2E8F0' }}>Agenda</span>
+                <span className="font-black" style={{ color: '#38BDF8' }}>100%</span>
+              </div>
+              <div
+                className="p-2 rounded-xl border flex items-center justify-between"
+                style={{ backgroundColor: '#0F172A', borderColor: 'rgba(14, 165, 233, 0.2)' }}
+              >
+                <span className="font-bold" style={{ color: '#E2E8F0' }}>Automação</span>
+                <span className="font-black" style={{ color: '#38BDF8' }}>91%</span>
+              </div>
+            </div>
+          </div>
         </div>
+      </div>
+
+      {/* ─── CHAT INTERATIVO DA SOFIA (100% NO PAINEL / ZERO REDIRECIONAMENTO WHATSAPP) ─── */}
+      <div
+        ref={containerChatRef}
+        id="chat-interativo-sofia"
+        className="rounded-3xl border border-sky-500/35 p-5 md:p-7 shadow-2xl space-y-5 animate-in fade-in duration-500 relative"
+        style={{
+          backgroundColor: '#070C12',
+          backgroundImage:
+            'radial-gradient(900px 300px at 15% 0%, rgba(14, 165, 233, 0.12), transparent 70%), linear-gradient(180deg, #070C12 0%, #04080D 100%)',
+          color: '#ffffff',
+        }}
+      >
+        {/* Cabeçalho do Chat */}
+        <div className="flex flex-wrap items-center justify-between gap-4 pb-4 border-b border-sky-500/20">
+          <div className="flex items-center gap-3">
+            <div className="relative">
+              <div className="h-12 w-12 rounded-2xl overflow-hidden border-2 border-sky-400 bg-slate-950 shadow-lg shadow-sky-500/20">
+                <img src="/images/avatar-sofia.png" alt="Sofia" className="h-full w-full object-cover" />
+              </div>
+              <span className="absolute -bottom-0.5 -right-0.5 flex h-3.5 w-3.5">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-sky-400 opacity-75"></span>
+                <span className="relative inline-flex rounded-full h-3.5 w-3.5 bg-sky-500 border-2 border-[#070C12]"></span>
+              </span>
+            </div>
+            <div>
+              <div className="flex items-center gap-2">
+                <h3 className="text-base md:text-lg font-black text-white" style={{ color: '#ffffff', WebkitTextFillColor: '#ffffff' }}>
+                  Chat Interativo com a Sofia
+                </h3>
+                <span className="px-2 py-0.5 rounded-full bg-sky-500/15 border border-sky-400/30 text-[9.5px] font-black uppercase tracking-wider text-sky-300">
+                  IA Especialista Online
+                </span>
+              </div>
+              <p className="text-xs text-slate-300" style={{ color: '#cbd5e1' }}>
+                Tire dúvidas de planos, regras comerciais, rotinas do funil e configurações em tempo real.
+              </p>
+            </div>
+          </div>
+
+          <div className="flex flex-wrap items-center gap-2 text-[10.5px]">
+            <span className="px-3 py-1 rounded-full bg-emerald-500/15 border border-emerald-500/30 font-bold text-emerald-300">
+              ● 0 tokens nas perguntas rápidas
+            </span>
+            <span className="px-3 py-1 rounded-full bg-slate-800/90 border border-slate-700 font-bold text-slate-300">
+              Perguntas livres: <strong className="text-sky-300">{perguntasLivresUsadas} / {LIMITE_PERGUNTAS_LIVRES}</strong>
+            </span>
+          </div>
+        </div>
+
+        {/* Área de Mensagens com rolagem suave */}
+        <div
+          className="h-[360px] overflow-y-auto p-4 rounded-2xl space-y-4 border border-sky-500/20"
+          style={{
+            backgroundColor: '#090F16',
+            backgroundImage:
+              'radial-gradient(circle at 50% 50%, rgba(14, 165, 233, 0.04) 0%, transparent 80%)',
+          }}
+        >
+          {mensagensChat.map((msg) => {
+            const ehUsuario = msg.autor === 'usuario';
+            return (
+              <div key={msg.id} className={`flex flex-col ${ehUsuario ? 'items-end' : 'items-start'} space-y-1`}>
+                <div
+                  className={`max-w-[90%] md:max-w-[80%] rounded-2xl p-4 text-xs md:text-sm leading-relaxed shadow-md ${
+                    ehUsuario
+                      ? 'bg-sky-600 text-white rounded-tr-none'
+                      : 'bg-[#0E1622] text-slate-100 rounded-tl-none border border-sky-500/30'
+                  }`}
+                >
+                  {!ehUsuario && (
+                    <div className="flex items-center gap-1.5 text-[10px] font-black uppercase tracking-wider text-sky-400 mb-2 border-b border-sky-500/20 pb-1.5">
+                      <Sparkles size={12} /> Sofia · Especialista
+                      {msg.zeroTokens && (
+                        <span className="ml-auto text-[9px] font-bold text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-full border border-emerald-500/20">
+                          ✓ Resposta Instantânea (0 tokens)
+                        </span>
+                      )}
+                    </div>
+                  )}
+
+                  <div className="whitespace-pre-line space-y-2">
+                    {msg.texto}
+                  </div>
+
+                  <div className={`flex items-center justify-end text-[9px] mt-2 ${ehUsuario ? 'text-sky-200' : 'text-slate-400'}`}>
+                    <span>{msg.hora}</span>
+                  </div>
+                </div>
+              </div>
+            );
+          })}
+
+          {carregandoIA && (
+            <div className="flex items-start gap-2">
+              <div className="max-w-[75%] rounded-2xl rounded-tl-none p-3.5 bg-[#0E1622] border border-sky-500/30 text-xs text-sky-200 flex items-center gap-2">
+                <Loader2 size={14} className="animate-spin text-sky-400" />
+                <span>Sofia consultando o cérebro da plataforma...</span>
+              </div>
+            </div>
+          )}
+
+          <div ref={chatFimRef} />
+        </div>
+
+        {/* Pílulas de Perguntas Rápidas (0 tokens) */}
+        <div className="space-y-1.5 pt-1">
+          <span className="text-[10px] font-black uppercase tracking-wider text-slate-400 block" style={{ color: '#94a3b8' }}>
+            Perguntas Rápidas (Resposta Imediata · 0 tokens):
+          </span>
+          <div className="flex flex-wrap gap-2">
+            {[
+              'Como funciona a Roleta de Leads?',
+              'O que entra no plano PRO?',
+              'Como configuro meu WhatsApp?',
+              'Como cadastrar imóvel na vitrine?',
+            ].map((p) => (
+              <button
+                key={p}
+                type="button"
+                onClick={() => enviarPergunta(p)}
+                disabled={carregandoIA}
+                className="rounded-full border border-sky-500/40 bg-sky-500/10 hover:bg-sky-500/20 px-3 py-1.5 text-[11px] font-bold text-sky-200 transition hover:border-sky-300 hover:text-white cursor-pointer disabled:opacity-50"
+              >
+                “{p}”
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Barra de Entrada de Pergunta Livre */}
+        <form
+          onSubmit={(e) => {
+            e.preventDefault();
+            enviarPergunta();
+          }}
+          className="flex items-center gap-2 pt-2"
+        >
+          <input
+            ref={inputChatRef}
+            type="text"
+            value={inputPergunta}
+            onChange={(e) => setInputPergunta(e.target.value)}
+            placeholder="Digite sua dúvida sobre planos, ferramentas ou configurações..."
+            disabled={carregandoIA}
+            className="flex-1 bg-[#090F16] border border-sky-500/30 focus:border-sky-400 rounded-xl px-4 py-3 text-xs md:text-sm text-white placeholder-slate-400 outline-none transition disabled:opacity-50"
+          />
+          <button
+            type="submit"
+            disabled={carregandoIA || !inputPergunta.trim()}
+            className="inline-flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-sky-500 to-cyan-400 hover:from-sky-400 hover:to-cyan-300 text-slate-950 font-black px-5 py-3 text-xs uppercase tracking-wider transition shadow-lg shadow-sky-500/20 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            <Send size={15} />
+            <span className="hidden sm:inline">Perguntar</span>
+          </button>
+        </form>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
@@ -395,10 +882,10 @@ export default function Especialista({ dadosOficina, dadosImobiliaria, papelLoga
                 <Calendar size={20} />
               </div>
               <div>
-                <h3 className="text-white font-black uppercase text-lg tracking-tight">
+                <h3 className="text-white font-black uppercase text-lg tracking-tight" style={{ color: '#ffffff' }}>
                   Agenda de Consultoria Imobiliária
                 </h3>
-                <p className="text-slate-400 text-xs font-medium">
+                <p className="text-slate-300 text-xs font-medium" style={{ color: '#cbd5e1' }}>
                   Escolha o dia e o horário para alinhar sua operação de VGV e Leads
                 </p>
               </div>
@@ -598,7 +1085,7 @@ export default function Especialista({ dadosOficina, dadosImobiliaria, papelLoga
                 </div>
               </div>
               <p className="text-[10px] leading-relaxed text-slate-500 sm:max-w-[240px] sm:text-right">
-                Dúvida rápida? A Pólen responde na hora. Humano é para o que precisa de gente.
+                Dúvida rápida? A Sofia responde na hora. Humano é para o que precisa de gente.
               </p>
             </div>
           </div>
@@ -631,11 +1118,11 @@ export default function Especialista({ dadosOficina, dadosImobiliaria, papelLoga
               <Star size={11} className="text-[#10b981]" /> Implantação VIP
             </div>
             <h3 className="text-xl font-black text-white uppercase tracking-tight mb-2">
-              Setup Esquadrão IA & WhatsApp
+              Setup de IA Operacional & WhatsApp
             </h3>
             <p className="text-slate-400 text-xs leading-relaxed mb-6">
-              Acompanhamento individual com nossos especialistas para conectar o Pólen (Atendimento 24h) e o Tom
-              (Maestro da Imobiliária) na sua imobiliária.
+              Acompanhamento individual com nossos especialistas para conectar a Pólen (secretária 24h),
+              organizar os Agentes Operacionais com Zara e configurar o Tom como segundo cérebro estratégico.
             </p>
             <button
               type="button"

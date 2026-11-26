@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" width="1024" height="1024" role="img" aria-label="Express Imobi Tech — símbolo Órbita">
+  <title>Express Imobi Tech — símbolo C: Órbita do E</title>
+  <!-- Monograma E + órbita da automação com nó ativo -->
+  <g fill="none" stroke="#E6EDF3" stroke-width="30">
+    <ellipse cx="512" cy="512" rx="352" ry="196" transform="rotate(-22 512 512)"/>
+  </g>
+  <g fill="#E6EDF3">
+    <rect x="248" y="248" width="112" height="528" rx="26"/>
+    <rect x="248" y="248" width="512" height="112" rx="26"/>
+    <rect x="248" y="456" width="404" height="112" rx="26"/>
+    <rect x="248" y="664" width="512" height="112" rx="26"/>
+  </g>
+  <circle cx="806" cy="308" r="68" fill="#10B981"/>
+</svg>

@@ -32,9 +32,9 @@ export const AVISO_SEM_DISPONIVEIS =
 
 /** 3 perguntas rápidas do simulador da Pólen (1 clique). */
 export const ACOES_POLEN = Object.freeze([
-  { key: 'estoque', rotulo: 'Quais imóveis vocês têm disponíveis?', pergunta: 'Quais imóveis vocês têm disponíveis?' },
-  { key: 'financiamento', rotulo: 'Aceita financiamento Caixa?', pergunta: 'Aceita financiamento Caixa?' },
-  { key: 'visita', rotulo: 'Quero agendar uma visita', pergunta: 'Quero agendar uma visita.' },
+  { key: 'visita', rotulo: 'Quero agendar uma visita nesse imóvel', pergunta: 'Quero agendar uma visita nesse imóvel.' },
+  { key: 'financiamento', rotulo: 'Tenho interesse, mas preciso financiar', pergunta: 'Tenho interesse, mas preciso financiar' },
+  { key: 'condominio', rotulo: 'Qual o valor do condomínio?', pergunta: 'Qual o valor do condomínio e IPTU?' },
 ]);
 
 /**

@@ -4,6 +4,7 @@ import { BrowserRouter as Router, Navigate, Route, Routes, useLocation } from 'r
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { OficinaProvider } from './components/OficinaContext';
 import { auth } from './lib/firebase';
+import { ambienteDevLocal } from './lib/acesso-plano';
 
 import Layout from './components/Layout';
 import CookieBanner from './components/CookieBanner';
@@ -105,14 +106,22 @@ function TelaCarregamento() {
 
 // ============================================================
 // ROTA PRIVADA
-// Garante que apenas usuários logados acessem o Admin
+// Garante que apenas usuários logados acessem o Admin.
+// Exceção: máquina de desenvolvimento (`npm run dev` / localhost) abre o
+// painel sem login para testar o modo Admin Total (D-23.19). Em produção o
+// bundle tem `import.meta.env.DEV === false` e o host não é local, então a
+// regra de login continua valendo.
 // ============================================================
+const ACESSO_LOCAL_DEV = ambienteDevLocal();
+
 function PrivateRoute({ children }) {
   const { logado, carregandoAuth } = useAuth();
 
   if (carregandoAuth) {
     return <TelaCarregamento />;
   }
+
+  if (ACESSO_LOCAL_DEV) return children;
 
   return logado ? children : <Navigate to="/login-admin" replace />;
 }

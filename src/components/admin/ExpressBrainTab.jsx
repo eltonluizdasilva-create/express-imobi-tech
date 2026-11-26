@@ -1,4 +1,4 @@
-import React, { useCallback, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
   Brain,
   Lock,
@@ -13,18 +13,25 @@ import {
   Send,
   RotateCcw,
   Wand2,
+  ChevronDown,
+  ChevronUp,
+  Save,
+  CheckCircle2,
+  Sliders,
 } from 'lucide-react';
 import HeroAba from './HeroAba';
+import GrafoSegundoCerebro from './GrafoSegundoCerebro';
+import NucleoTomJarvis from './NucleoTomJarvis';
 import { getPlano, precoNoCiclo, WHATSAPP_COMERCIAL } from '../../lib/planos';
 import { cabecalhosIA } from '../../lib/aiAuth';
 import { ACOES_TOM, responderTomSimulacao } from '../../lib/simuladorTom';
-import { LIMITE_DEMO, podeUsarDemo, registrarUsoDemo, restantesDemo } from '../../lib/limiteDemo';
+import { LIMITE_DEMO_TOM, podeUsarDemo, registrarUsoDemo, restantesDemo } from '../../lib/limiteDemo';
+import { carregarRegrasTom, salvarRegrasTom, REGRAS_TOM_PADRAO } from '../../lib/regrasTom';
 
 /**
- * ExpressBrainTab — aba `brain` (módulo TOM · MAESTRO DA IMOBILIÁRIA).
+ * ExpressBrainTab — aba `brain` (Tom · segundo cérebro estratégico).
  *
- * Nome comercial (D-22.02): **Tom · Maestro da Imobiliária**. O ID interno
- * continua `brain` e os gates continuam `temExpressBrain` / `brainAtivo` —
+ * O ID interno continua `brain` e os gates continuam `temExpressBrain` / `brainAtivo` —
  * renomear a rota quebraria deep link, tour e webhook.
  *
  * O simulador fala com o motor real (`src/lib/simuladorTom.js` → `/api/ai`).
@@ -61,7 +68,7 @@ const PILARES = [
 ];
 
 const SAUDACAO_TOM =
-  'Sou o Tom, o Maestro da Imobiliária. Escolha uma das quatro ações abaixo ou escreva a sua pergunta: eu leio a sua operação e devolvo o que fazer primeiro, com quem executa.';
+  'Sou o Tom, seu segundo cérebro estratégico. Escolha uma das quatro ações abaixo ou escreva sua pergunta: eu leio o contexto da operação e apoio sua decisão.';
 // D-22.09 — o Tom deixou de ser um único produto dentro do pacote Operação IA.
 // Agora são dois degraus com preço próprio, lidos do catálogo compartilhado.
 const PLANO_TOM_AUTONOMO = getPlano('tom_autonomo');
@@ -74,29 +81,80 @@ export default function ExpressBrainTab({
   setAbaAtiva = () => {},
   dadosOficina = null,
   contextoOperacao = {},
+  tenantId = '',
+  db = null,
+  isPro = false,
+  adminTotal = false,
+  plano = 'gratis',
 }) {
   const zap = String(WHATSAPP_COMERCIAL || '').replace(/\D/g, '');
   const nomeOficina = dadosOficina?.nomeOficina || dadosOficina?.nomeImobiliaria || '';
+
+  // ---- Nó Selecionado no Centro Neural (Jarvis) ---------------------------
+  const [noSelecionado, setNoSelecionado] = useState(null);
+
+  // ---- Regras Comerciais da Casa (Tom + Zara) -----------------------------
+  const [painelRegrasAberto, setPainelRegrasAberto] = useState(true);
+  const [regras, setRegras] = useState(REGRAS_TOM_PADRAO);
+  const [salvandoRegras, setSalvandoRegras] = useState(false);
+  const [sucessoRegras, setSucessoRegras] = useState('');
+  const [erroRegras, setErroRegras] = useState('');
+
+  useEffect(() => {
+    let ativo = true;
+    async function carregar() {
+      try {
+        const dados = await carregarRegrasTom(tenantId, db);
+        if (ativo && dados) {
+          setRegras(dados);
+        }
+      } catch (err) {
+        console.warn('Erro ao carregar regras Tom:', err);
+      }
+    }
+    carregar();
+    return () => {
+      ativo = false;
+    };
+  }, [tenantId, db]);
+
+  const handleSalvarRegras = async (e) => {
+    if (e) e.preventDefault();
+    setSalvandoRegras(true);
+    setErroRegras('');
+    setSucessoRegras('');
+    try {
+      const atualizado = await salvarRegrasTom(tenantId, regras, db);
+      setRegras(atualizado);
+      setSucessoRegras('Regras comerciais da casa salvas com sucesso no Firestore!');
+      setTimeout(() => setSucessoRegras(''), 4000);
+    } catch (err) {
+      setErroRegras(`Erro ao salvar regras: ${err.message || 'tente novamente'}`);
+    } finally {
+      setSalvandoRegras(false);
+    }
+  };
 
   // ---- Simulador do Tom (motor real via /api/ai) -------------------------
   const [msg, setMsg] = useState('');
   const [enviando, setEnviando] = useState(false);
   const [erro, setErro] = useState('');
-  const [restantes, setRestantes] = useState(() => restantesDemo('tom'));
+  const [restantes, setRestantes] = useState(() => restantesDemo('tom', LIMITE_DEMO_TOM));
   const [historico, setHistorico] = useState(() => [{ autor: 'ia', texto: SAUDACAO_TOM }]);
   const fimRef = useRef(null);
+  const simuladorRef = useRef(null);
 
-  const podeFalar = liberado || podeUsarDemo('tom', { liberado });
-  const consultasFeitas = Math.max(0, LIMITE_DEMO - restantes);
+  const podeFalar = liberado || podeUsarDemo('tom', { liberado, limite: LIMITE_DEMO_TOM });
+  const consultasFeitas = Math.max(0, LIMITE_DEMO_TOM - restantes);
 
   const consultarTom = useCallback(
     async (pergunta) => {
       const texto = String(pergunta || '').trim();
       if (!texto || enviando) return;
-      if (!podeUsarDemo('tom', { liberado })) {
+      if (!podeUsarDemo('tom', { liberado, limite: LIMITE_DEMO_TOM })) {
         setRestantes(0);
         setErro(
-          `Você usou as ${LIMITE_DEMO} consultas gratuitas do Tom. Contrate o módulo para seguir conversando com o Maestro.`
+          `Você usou as ${LIMITE_DEMO_TOM} consultas gratuitas de teste do Tom. Contrate o módulo para seguir conversando com o Maestro.`
         );
         return;
       }
@@ -111,7 +169,11 @@ export default function ExpressBrainTab({
         const resultado = await responderTomSimulacao({
           mensagem: texto,
           historico: historicoAnterior,
-          contexto: contextoOperacao || {},
+          contexto: {
+            ...(contextoOperacao || {}),
+            regrasComerciais: regras,
+            resumoNo: noSelecionado?.resumoContexto || null,
+          },
           nomeImobiliaria: nomeOficina,
           cabecalhos: await cabecalhosIA(),
         });
@@ -123,7 +185,7 @@ export default function ExpressBrainTab({
 
         if (!liberado) {
           registrarUsoDemo('tom');
-          setRestantes(restantesDemo('tom'));
+          setRestantes(restantesDemo('tom', LIMITE_DEMO_TOM));
         }
         setHistorico((prev) => [...prev, { autor: 'ia', texto: resultado.texto }]);
         setTimeout(() => {
@@ -139,8 +201,19 @@ export default function ExpressBrainTab({
         setEnviando(false);
       }
     },
-    [contextoOperacao, enviando, historico, liberado, nomeOficina]
+    [contextoOperacao, enviando, historico, liberado, noSelecionado, nomeOficina, regras]
   );
+
+  // Seleção de pergunta via Núcleo Jarvis: preenche o campo de comando sem chamada automática
+  const handleSelecionarPerguntaDoNucleo = useCallback((pergunta, no) => {
+    setMsg(pergunta);
+    setNoSelecionado(no);
+    try {
+      simuladorRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    } catch {
+      /* ambiente sem layout */
+    }
+  }, []);
 
   const reiniciar = () => {
     setMsg('');
@@ -150,7 +223,7 @@ export default function ExpressBrainTab({
 
   const falarComercial = () => {
     const texto = [
-      'Olá! Quero falar sobre o Tom (Maestro da Imobiliária) do Express Imobi Tech.',
+      'Olá! Quero falar sobre o Tom (Segundo Cérebro Estratégico) do Express Imobi Tech.',
       nomeOficina ? `Imobiliária: ${nomeOficina}.` : '',
       `Podemos falar do Tom Autônomo (${PRECO_TOM_AUTONOMO}) e do Tom Imobiliária (${PRECO_TOM_IMOBILIARIA} + implantação)?`,
     ]
@@ -164,25 +237,199 @@ export default function ExpressBrainTab({
       <HeroAba
         icone={Brain}
         titulo="Tom ·"
-        destaque="Maestro da Imobiliária"
-        chip="Central de Inteligência da Imobiliária"
-        subtitulo="O Tom rege a operação: regras comerciais, processos, auditoria da equipe e o histórico que hoje vive na cabeça do dono."
+        destaque="Segundo Cérebro Estratégico"
+        chip="Visão estratégica da operação"
+        subtitulo="O Tom atua como segundo cérebro e sócio estratégico, apoiando decisões com base nas regras comerciais da casa."
         cor="#f59e0b"
       />
 
-      {/* Placeholder assumido: o produto ainda está em implantação. */}
-      <div className="tarja-aviso flex flex-wrap items-center gap-2 rounded-2xl border border-amber-500/30 bg-amber-500/10 px-4 py-3">
-        <span className="inline-flex items-center gap-1.5 rounded-full border border-amber-400/50 bg-amber-500/15 px-2 py-0.5 text-[10px] font-black uppercase tracking-[0.14em] text-amber-300">
-          <Clock size={12} /> Em implantação
-        </span>
-        <p className="text-xs text-amber-100/90">
-          A base de regras, processos e auditoria entra nas próximas entregas. O simulador abaixo já
-          responde pelo motor real de IA — nada aqui altera dados da sua operação.
-        </p>
+      {/* ─── NÚCLEO TOM JARVIS (CENTRO DE COMANDO NEURAL) ───────────────── */}
+      <NucleoTomJarvis
+        plano={plano}
+        isPro={isPro}
+        liberado={liberado}
+        adminTotal={adminTotal}
+        estadoProcessamento={enviando}
+        onSelecionarPergunta={handleSelecionarPerguntaDoNucleo}
+        onTextoVoz={(texto) => setMsg(texto)}
+        noSelecionado={noSelecionado}
+        setNoSelecionado={setNoSelecionado}
+      />
+
+      {/* ─── PAINEL COLAPSÁVEL: REGRAS COMERCIAIS DA CASA (TOM) ────────────── */}
+      <div className="rounded-2xl border border-emerald-500/30 bg-[#020408] shadow-lg shadow-black/40 overflow-hidden">
+        <button
+          type="button"
+          onClick={() => setPainelRegrasAberto((prev) => !prev)}
+          className="w-full flex items-center justify-between p-4 md:p-5 bg-slate-900/90 hover:bg-slate-900 border-b border-emerald-500/20 text-left transition"
+        >
+          <div className="flex items-center gap-3">
+            <div className="p-2.5 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-[#10b981]">
+              <ScrollText size={20} />
+            </div>
+            <div>
+              <div className="flex items-center gap-2">
+                <h3 className="text-sm md:text-base font-black tracking-tight text-white">
+                  Regras Comerciais da Casa
+                </h3>
+                <span className="px-2 py-0.5 rounded-full bg-emerald-500/20 border border-emerald-500/40 text-[10px] font-black uppercase tracking-wider text-[#10b981]">
+                  Ativo no Firestore
+                </span>
+              </div>
+              <p className="text-xs text-slate-400 mt-0.5">
+                Limites operacionais, SLA de resposta e políticas que guiam Tom e Zara.
+              </p>
+            </div>
+          </div>
+          <div className="flex items-center gap-2 text-slate-400">
+            <span className="text-xs font-semibold hidden sm:inline">
+              {painelRegrasAberto ? 'Recolher' : 'Expandir'}
+            </span>
+            {painelRegrasAberto ? <ChevronUp size={18} /> : <ChevronDown size={18} />}
+          </div>
+        </button>
+
+        {painelRegrasAberto && (
+          <form onSubmit={handleSalvarRegras} className="p-4 md:p-6 space-y-5 bg-[#020408]">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+              <div>
+                <label className="block text-xs font-bold text-slate-300 mb-1">
+                  Comissão Padrão da Imobiliária (%)
+                </label>
+                <div className="relative">
+                  <input
+                    type="number"
+                    step="0.5"
+                    min="1"
+                    max="30"
+                    value={regras.comissaoPadrao ?? 6}
+                    onChange={(e) => setRegras((prev) => ({ ...prev, comissaoPadrao: e.target.value }))}
+                    className="w-full rounded-xl bg-slate-900 border border-slate-700 px-3 py-2 text-xs font-bold text-white focus:outline-none focus:border-[#10b981]"
+                    required
+                  />
+                  <span className="absolute right-3 top-2 text-xs font-bold text-slate-500">%</span>
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-300 mb-1">
+                  Desconto Máximo Permitido (%)
+                </label>
+                <div className="relative">
+                  <input
+                    type="number"
+                    step="0.5"
+                    min="0"
+                    max="50"
+                    value={regras.descontoMaximo ?? 5}
+                    onChange={(e) => setRegras((prev) => ({ ...prev, descontoMaximo: e.target.value }))}
+                    className="w-full rounded-xl bg-slate-900 border border-slate-700 px-3 py-2 text-xs font-bold text-white focus:outline-none focus:border-[#10b981]"
+                    required
+                  />
+                  <span className="absolute right-3 top-2 text-xs font-bold text-slate-500">%</span>
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-300 mb-1">
+                  SLA Atendimento a Novos Leads (minutos)
+                </label>
+                <div className="relative">
+                  <input
+                    type="number"
+                    step="1"
+                    min="1"
+                    max="1440"
+                    value={regras.slaAtendimentoMinutos ?? 15}
+                    onChange={(e) => setRegras((prev) => ({ ...prev, slaAtendimentoMinutos: e.target.value }))}
+                    className="w-full rounded-xl bg-slate-900 border border-slate-700 px-3 py-2 text-xs font-bold text-white focus:outline-none focus:border-[#10b981]"
+                    required
+                  />
+                  <span className="absolute right-3 top-2 text-xs font-bold text-slate-500">min</span>
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-300 mb-1">
+                  Alerta Imóvel Parado Sem Giro (dias)
+                </label>
+                <div className="relative">
+                  <input
+                    type="number"
+                    step="1"
+                    min="5"
+                    max="365"
+                    value={regras.diasAlertaImovelParado ?? 30}
+                    onChange={(e) => setRegras((prev) => ({ ...prev, diasAlertaImovelParado: e.target.value }))}
+                    className="w-full rounded-xl bg-slate-900 border border-slate-700 px-3 py-2 text-xs font-bold text-white focus:outline-none focus:border-[#10b981]"
+                    required
+                  />
+                  <span className="absolute right-3 top-2 text-xs font-bold text-slate-500">dias</span>
+                </div>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-xs font-bold text-slate-300 mb-1">
+                  Política de Permuta
+                </label>
+                <textarea
+                  rows={2}
+                  value={regras.politicaPermuta ?? ''}
+                  onChange={(e) => setRegras((prev) => ({ ...prev, politicaPermuta: e.target.value }))}
+                  placeholder="Ex: Aceita até 30% em veículos ou imóveis de menor valor avaliados pela casa..."
+                  className="w-full rounded-xl bg-slate-900 border border-slate-700 p-3 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-[#10b981]"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-300 mb-1">
+                  Regras Gerais da Equipe e Observações
+                </label>
+                <textarea
+                  rows={2}
+                  value={regras.regrasEquipe ?? ''}
+                  onChange={(e) => setRegras((prev) => ({ ...prev, regrasEquipe: e.target.value }))}
+                  placeholder="Ex: Todo lead recebido deve ser contatado em até 15 minutos. Propostas exigem laudo..."
+                  className="w-full rounded-xl bg-slate-900 border border-slate-700 p-3 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-[#10b981]"
+                />
+              </div>
+            </div>
+
+            {sucessoRegras && (
+              <div className="flex items-center gap-2 rounded-xl border border-emerald-500/40 bg-emerald-500/10 p-3 text-xs font-bold text-[#10b981]">
+                <CheckCircle2 size={16} />
+                <span>{sucessoRegras}</span>
+              </div>
+            )}
+
+            {erroRegras && (
+              <div className="rounded-xl border border-red-500/40 bg-red-500/10 p-3 text-xs text-red-300">
+                {erroRegras}
+              </div>
+            )}
+
+            <div className="flex justify-end">
+              <button
+                type="submit"
+                disabled={salvandoRegras}
+                className="inline-flex items-center gap-2 rounded-xl bg-[#10b981] hover:bg-emerald-400 text-slate-950 font-black px-5 py-2.5 text-xs uppercase tracking-wider transition shadow-md shadow-emerald-500/20 disabled:opacity-50 cursor-pointer"
+              >
+                <Save size={15} />
+                <span>{salvandoRegras ? 'Salvando...' : 'Salvar Regras da Casa'}</span>
+              </button>
+            </div>
+          </form>
+        )}
       </div>
 
       {/* ─── SIMULADOR INTERATIVO DO TOM ────────────────────────────────── */}
-      <div className="rounded-2xl border border-slate-800 bg-slate-900 p-5">
+      <div
+        ref={simuladorRef}
+        id="simulador-tom"
+        className="rounded-2xl border border-slate-800 bg-slate-900 p-5"
+      >
         <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-800 pb-3">
           <h2 className="flex items-center gap-2 text-sm font-black uppercase tracking-tight text-white">
             <Sparkles size={16} className="text-amber-400" /> Simulador do Tom (IA real)
@@ -191,9 +438,9 @@ export default function ExpressBrainTab({
             {!liberado && (
               <span
                 className="rounded-md border border-slate-700 bg-slate-800 px-2 py-0.5 text-[10px] font-bold text-white"
-                title="Consultas gratuitas de demonstração neste navegador"
+                title="Consultas de teste para validar o Tom com a equipe"
               >
-                {Math.min(consultasFeitas, LIMITE_DEMO)}/{LIMITE_DEMO} consultas de demonstração
+                {Math.min(consultasFeitas, LIMITE_DEMO_TOM)}/{LIMITE_DEMO_TOM} consultas de teste
               </span>
             )}
             <button
@@ -235,10 +482,10 @@ export default function ExpressBrainTab({
         {!podeFalar && (
           <div className="tarja-aviso mt-3 flex flex-wrap items-center gap-2 rounded-xl border border-amber-500/40 bg-amber-500/10 p-3">
             <span className="inline-flex items-center gap-1.5 rounded-full border border-amber-400/50 bg-amber-500/15 px-2 py-0.5 text-[10px] font-black uppercase tracking-[0.12em] text-amber-300">
-              <Lock size={11} /> Limite gratuito atingido
+              <Lock size={11} /> Limite de testes atingido
             </span>
             <p className="min-w-0 flex-1 text-[11px] text-amber-100/90">
-              Você usou as {LIMITE_DEMO} consultas de demonstração do Tom. Contrate o módulo para o
+              Você usou as {LIMITE_DEMO_TOM} consultas de teste do Tom. Contrate o módulo para o
               Maestro ler a sua operação de verdade.
             </p>
             <button
@@ -364,7 +611,7 @@ export default function ExpressBrainTab({
             <Lock size={34} className="text-emerald-400" />
           </div>
           <h3 className="text-lg font-black uppercase tracking-tight text-white md:text-xl">
-            Tom · Maestro da Imobiliária
+            Tom · Segundo Cérebro Estratégico
           </h3>
           <p className="mx-auto mt-2 max-w-xl text-sm leading-6 text-slate-300">
             Tom Autônomo por {PRECO_TOM_AUTONOMO} (sem implantação) ou Tom Imobiliária por{' '}

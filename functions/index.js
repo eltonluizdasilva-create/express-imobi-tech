@@ -12,6 +12,7 @@
  */
 
 const { onCall, onRequest, HttpsError } = require('firebase-functions/v2/https');
+const { onSchedule } = require('firebase-functions/v2/scheduler');
 const { logger } = require('firebase-functions');
 const admin = require('firebase-admin');
 const dados = require('./planos.json');
@@ -30,7 +31,10 @@ const norm = (v) => String(v ?? '').trim().toLowerCase();
 function isPlanoPro(plano) {
   const chave = norm(plano);
   if (ALIAS_GRATIS.has(chave)) return false;
-  return dados.planosPro.includes(chave);
+  let canonica = chave;
+  if (['essencial_plus', 'essencialplus'].includes(chave)) canonica = 'pro';
+  if (['profissional', 'plano_profissional'].includes(chave)) canonica = 'plus';
+  return dados.planosPro.includes(chave) || dados.planosPro.includes(canonica);
 }
 
 function modulosDoPlano(planoKey) {
@@ -38,14 +42,21 @@ function modulosDoPlano(planoKey) {
   const gratis = dados.modulos.gratis || [];
   const essencialPlus = dados.modulos.essencial_plus_extra || [];
   const profissional = dados.modulos.profissional_extra || [];
+  const plus = dados.modulos.plus_extra || [];
   const esquadrao = dados.modulos.esquadrao_extra || [];
 
-  if (['essencial_plus', 'pro', 'profissional', 'plus'].includes(chave)) {
-    return [...new Set([...gratis, ...essencialPlus, ...profissional])];
+  const modulosPro = [...new Set([...gratis, ...essencialPlus, ...profissional])];
+
+  if (['essencial_plus', 'pro'].includes(chave)) {
+    return modulosPro;
+  }
+
+  if (['plus', 'profissional', 'plano_profissional'].includes(chave)) {
+    return [...new Set([...modulosPro, ...plus])];
   }
 
   if (chave === 'esquadrao_ia' || chave === 'presenca_digital') {
-    return [...new Set([...gratis, ...essencialPlus, ...profissional, ...esquadrao])];
+    return [...new Set([...modulosPro, ...esquadrao])];
   }
 
   return [...gratis];
@@ -257,3 +268,109 @@ exports.pagamentoWebhook = onRequest({ region: REGIAO }, async (req, res) => {
 
   res.status(200).json({ ok: true, ignorado: true, status });
 });
+
+/**
+ * cronZaraMatinal — Auditoria das 08:00 (America/Sao_Paulo)
+ * ============================================================================
+ * Disparo automático às 08:00 no fuso de Brasília.
+ * Lê regras_tom, resume leads e imóveis críticos de cada tenant e grava
+ * a auditoria em imobiliarias/{tenantId}/auditorias_zara.
+ */
+exports.cronZaraMatinal = onSchedule(
+  {
+    schedule: '0 8 * * *',
+    timeZone: 'America/Sao_Paulo',
+    region: REGIAO,
+    memory: '512MiB',
+  },
+  async (event) => {
+    logger.info('cronZaraMatinal: Iniciando auditoria matinal das 08:00...');
+    const agora = Date.now();
+
+    try {
+      const snapOficinas = await db.collection('oficinas').limit(150).get();
+      for (const docOfi of snapOficinas.docs) {
+        const tenantId = docOfi.id;
+        try {
+          const snapRegras = await db.doc(`imobiliarias/${tenantId}/config/regras_tom`).get();
+          const regras = snapRegras.exists
+            ? snapRegras.data()
+            : {
+                comissaoPadrao: 6,
+                descontoMaximo: 5,
+                slaAtendimentoMinutos: 15,
+                diasAlertaImovelParado: 30,
+              };
+
+          const slaMin = Number(regras.slaAtendimentoMinutos) || 15;
+          const diasLimite = Number(regras.diasAlertaImovelParado) || 30;
+
+          const snapLeads = await db.collection(`oficinas/${tenantId}/leads_imobi`).limit(150).get();
+          const snapImv = await db.collection(`oficinas/${tenantId}/imoveis_imobi`).limit(150).get();
+
+          if (snapLeads.empty && snapImv.empty) continue;
+
+          const leadsAtrasados = [];
+          snapLeads.forEach((d) => {
+            const data = d.data();
+            const st = String(data.status || '').toLowerCase();
+            if (['convertido', 'ganho', 'perdido', 'descartado'].includes(st)) return;
+            const t = data.criadoEm || data.dataCriacao;
+            const ms = t?.toMillis ? t.toMillis() : t ? new Date(t).getTime() : 0;
+            if (ms > 0 && (agora - ms) / 60000 > slaMin) {
+              leadsAtrasados.push({
+                id: d.id,
+                nome: data.nome || 'Lead sem nome',
+                corretor: data.corretor || 'Não atribuído',
+                tempoParado: `${Math.round((agora - ms) / 60000)}m`,
+              });
+            }
+          });
+
+          const imoveisParados = [];
+          snapImv.forEach((d) => {
+            const data = d.data();
+            const st = String(data.status || '').toLowerCase();
+            if (['vendido', 'alugado', 'inativo'].includes(st)) return;
+            const t = data.atualizadoEm || data.criadoEm;
+            const ms = t?.toMillis ? t.toMillis() : t ? new Date(t).getTime() : 0;
+            if (ms > 0 && (agora - ms) / 86400000 >= diasLimite) {
+              imoveisParados.push({
+                id: d.id,
+                codigo: data.codigo || d.id,
+                titulo: data.titulo || 'Imóvel sem título',
+                diasParado: Math.floor((agora - ms) / 86400000),
+                corretor: data.corretorResponsavel || 'Não atribuído',
+              });
+            }
+          });
+
+          const relatorio = `1. **Resumo em 2 linhas**\nAuditoria automática das 08:00 concluída. ${leadsAtrasados.length} lead(s) com SLA vencido e ${imoveisParados.length} imóvel(is) sem giro.\n\n2. **Urgências de Atendimento**\n${leadsAtrasados.length > 0 ? leadsAtrasados.map((l) => `- ${l.nome} (${l.tempoParado}) - Corretor: ${l.corretor}`).join('\n') : 'Todos os leads dentro do SLA.'}\n\n3. **Carteira Travada**\n${imoveisParados.length > 0 ? imoveisParados.map((i) => `- [${i.codigo}] ${i.titulo} (${i.diasParado} dias) - Corretor: ${i.corretor}`).join('\n') : 'Nenhum imóvel sem giro.'}\n\n4. **Ação Prioritária do Gestor Hoje**\nCobrar atualização imediata dos corretores responsáveis.`;
+
+          const registro = {
+            tenantId,
+            relatorio,
+            geradoEm: new Date().toISOString(),
+            horaFormatada: '08:00',
+            dataExtenso: new Date().toLocaleDateString('pt-BR', { weekday: 'long', day: '2-digit', month: 'long', year: 'numeric' }),
+            totalLeadsAtrasados: leadsAtrasados.length,
+            totalImoveisParados: imoveisParados.length,
+            leadsAtrasados,
+            imoveisParados,
+            regrasAplicadas: regras,
+            origem: 'firebase_scheduled_function',
+            criadoEm: admin.firestore.FieldValue.serverTimestamp(),
+          };
+
+          await db.collection(`imobiliarias/${tenantId}/auditorias_zara`).add(registro);
+          await db.doc(`imobiliarias/${tenantId}/auditorias_zara/ultima`).set(registro, { merge: true });
+        } catch (innerErr) {
+          logger.warn(`cronZaraMatinal: Erro no tenant ${tenantId}:`, innerErr);
+        }
+      }
+      logger.info('cronZaraMatinal: Auditoria matinal finalizada com sucesso.');
+    } catch (err) {
+      logger.error('cronZaraMatinal: Falha geral:', err);
+    }
+  }
+);

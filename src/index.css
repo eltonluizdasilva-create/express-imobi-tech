@@ -46,9 +46,43 @@ html.tema-claro #root {
 .tema-claro [class*="bg-zinc-800"],
 .tema-claro [class*="bg-slate-800"] { background-color: #f1f5f9 !important; }
 
+/* Superfícies escuras fora da paleta slate/zinc nos módulos do Admin.
+   Inputs, botões e modais permanecem com o tratamento próprio. */
+html.tema-claro .admin-painel :is(div, section, article):is(
+  [class*="bg-neutral-900"],
+  [class*="bg-neutral-950"],
+  [class*="bg-gray-900"],
+  [class*="bg-gray-950"]
+):not(.fixed):not(.fixed *) {
+  background-color: #ffffff !important;
+  border-color: #e2e8f0 !important;
+}
+
+html.tema-claro .admin-painel :is(div, section, article):is(
+  [class*="bg-[#09090b]"],
+  [class*="bg-[#0c0c0c]"]
+):not(.fixed):not(.fixed *) {
+  background-color: #ffffff !important;
+  border-color: #e2e8f0 !important;
+}
+
 /* Gradientes escuros viram superfície lisa */
 .tema-claro [class*="bg-gradient-to"][class*="from-zinc"],
 .tema-claro [class*="bg-gradient-to"][class*="from-slate"] { background-image: none !important; }
+
+html.tema-claro .admin-painel :is(div, section, article):is(
+  [class*="bg-[radial-gradient"][class*="rgba(15,23,42"],
+  [class*="bg-[radial-gradient"][class*="rgba(9,15,29"],
+  [class*="bg-[radial-gradient"][class*="#020408"],
+  [class*="bg-[linear-gradient"][class*="rgba(15,23,42"],
+  [class*="bg-[linear-gradient"][class*="rgba(3,7,18"],
+  [class*="bg-gradient-to"][class*="from-amber-950"],
+  [class*="bg-gradient-to"][class*="from-[#0f0f0c]"]
+):not(.fixed):not(.fixed *) {
+  background-color: #ffffff !important;
+  background-image: none !important;
+  border-color: #e2e8f0 !important;
+}
 
 /* Bordas */
 .tema-claro [class*="border-zinc-9"],
@@ -99,6 +133,48 @@ html.tema-claro .tarja-aviso {
 /* Superfície que continua escura nos dois temas. O tema claro força branco em
    `bg-slate-900`/`bg-zinc-950`, então esta classe pinta a cor fora do `bg-*`.
    Usada como moldura do `AnelEscuro` (cabeçalhos de IA). */
+
+/* Painéis de IA intencionalmente escuros: preserva títulos brancos e legendas claras em qualquer tema */
+.painel-escuro,
+[data-tema="escuro-forcado"] {
+  color-scheme: dark;
+}
+.tema-claro .painel-escuro [class*="text-white"],
+.tema-claro .anel-escuro [class*="text-white"],
+.tema-claro [data-tema="escuro-forcado"] [class*="text-white"],
+.tema-claro .painel-escuro h1,
+.tema-claro .painel-escuro h2,
+.tema-claro .painel-escuro h3,
+.tema-claro .painel-escuro h4,
+.tema-claro .painel-escuro h5,
+.tema-claro .painel-escuro h6,
+.tema-claro [data-tema="escuro-forcado"] h1,
+.tema-claro [data-tema="escuro-forcado"] h2,
+.tema-claro [data-tema="escuro-forcado"] h3,
+.tema-claro [data-tema="escuro-forcado"] h4,
+.tema-claro [data-tema="escuro-forcado"] h5,
+.tema-claro [data-tema="escuro-forcado"] h6 {
+  color: #ffffff !important;
+}
+.tema-claro .painel-escuro [class*="text-slate-1"],
+.tema-claro .painel-escuro [class*="text-slate-2"],
+.tema-claro .painel-escuro [class*="text-slate-3"],
+.tema-claro .painel-escuro [class*="text-zinc-1"],
+.tema-claro .painel-escuro [class*="text-zinc-2"],
+.tema-claro .painel-escuro [class*="text-zinc-3"],
+.tema-claro [data-tema="escuro-forcado"] [class*="text-slate-1"],
+.tema-claro [data-tema="escuro-forcado"] [class*="text-slate-2"],
+.tema-claro [data-tema="escuro-forcado"] [class*="text-slate-3"],
+.tema-claro [data-tema="escuro-forcado"] [class*="text-zinc-1"],
+.tema-claro [data-tema="escuro-forcado"] [class*="text-zinc-2"],
+.tema-claro [data-tema="escuro-forcado"] [class*="text-zinc-3"] {
+  color: #cbd5e1 !important;
+}
+.tema-claro .painel-escuro [class*="text-slate-4"],
+.tema-claro [data-tema="escuro-forcado"] [class*="text-slate-4"] {
+  color: #94a3b8 !important;
+}
+
 .anel-escuro {
   background-color: #0b1220 !important;
   background-image: none !important;

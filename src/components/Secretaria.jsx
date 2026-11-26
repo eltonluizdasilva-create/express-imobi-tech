@@ -364,7 +364,7 @@ export default function Secretaria({ oficinaId, abrirRecuperacaoFinanceira, dado
                         <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
                             <div>
                                 <h2 className="text-2xl md:text-3xl font-black text-white bg-gradient-to-r from-white to-zinc-400 bg-clip-text text-transparent tracking-tight">
-                                    Ative sua Secretária IA em 30 segundos
+                                    Ativação da Secretária IA no WhatsApp
                                 </h2>
                                 <p className="text-zinc-400 mt-1">Conecte seu WhatsApp e libere o Portal do Cliente automaticamente.</p>
                             </div>
@@ -444,8 +444,8 @@ export default function Secretaria({ oficinaId, abrirRecuperacaoFinanceira, dado
                                         <div className="flex gap-4 items-start">
                                             <div className="w-10 h-10 rounded-full bg-zinc-800 text-zinc-400 font-black flex items-center justify-center shrink-0 border-4 border-zinc-900">3</div>
                                             <div>
-                                                <h4 className="text-zinc-400 font-bold text-lg leading-tight">Imprima o QR Code do Portal</h4>
-                                                <p className="text-zinc-500 text-sm mt-1">Cole o código no seu balcão para seus clientes baixarem o app.</p>
+                                                <h4 className="text-zinc-400 font-bold text-lg leading-tight">QR Code do Portal Imobiliário</h4>
+                                                <p className="text-zinc-500 text-sm mt-1">Disponibilize o link e QR Code do Portal Imobiliário para seus clientes acessarem a vitrine.</p>
                                             </div>
                                         </div>
                                     </div>
@@ -607,7 +607,7 @@ export default function Secretaria({ oficinaId, abrirRecuperacaoFinanceira, dado
                                 )}
 
                                 {/* SIMULADOR INTERATIVO DA PÓLEN (telemóvel real).
-                                    Mesmo motor da aba `agentes_ia`: simuladorSofia.js +
+                                    Mesmo motor da seção de IA do painel: simuladorSofia.js +
                                     limiteDemo.js (5 mensagens de demonstração) e as 3
                                     perguntas rápidas de ACOES_POLEN. O mockup estático
                                     que ficava aqui foi removido em 22/11. */}

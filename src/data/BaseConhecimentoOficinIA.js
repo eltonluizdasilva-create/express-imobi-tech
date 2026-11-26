@@ -24,7 +24,7 @@ export const CONHECIMENTO_OFICINA_IA = {
             "Funil de Leads & CRM Imobiliário com Roleta de Distribuição Justa",
             "Captação & Catálogo de Imóveis com Ficha Rápida para WhatsApp",
             "Vistoria Imobiliária & Laudo Fotográfico com IA",
-            "Esquadrão de 7 Agentes IA (Sofia Triagem, Hermes Copiloto, Téo Visitas)",
+            "Agentes Operacionais coordenados por Zara, Tom como segundo cérebro estratégico e Pólen como secretária 24h",
         ],
     },
 

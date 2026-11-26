@@ -1,0 +1,386 @@
+{
+  "_comment": "FONTE UNICA DE VERDADE de planos, precos, modulos e limites. Consumido por src/lib/planos.js (frontend) e functions/index.js (backend).",
+  "whatsappComercial": "8562099640154",
+  "modulos": {
+    "gratis": [
+      "dashboard_imobi",
+      "funil_leads",
+      "migracao",
+      "visitas_imobi",
+      "financeiro",
+      "equipe",
+      "config",
+      "ajuda",
+      "meuplano"
+    ],
+    "profissional_extra": [],
+    "essencial_plus_extra": [
+      "captacao_imobi",
+      "historico",
+      "marketing",
+      "agentes_ia",
+      "clientes",
+      "leads",
+      "acompanhamento_cliente",
+      "copiloto"
+    ],
+    "plus_extra": [
+      "credito",
+      "radar_captacao",
+      "administrador",
+      "roleta_imobi",
+      "notafiscal",
+      "tarefa",
+      "avaliacao_imovel",
+      "contador",
+      "juridico_imobi",
+      "reunioes-atas"
+    ],
+    "esquadrao_extra": [
+      "whatsapp_hub",
+      "secretaria",
+      "sofia_whatsapp",
+      "brain"
+    ]
+  },
+  "planos": [
+    {
+      "key": "gratis",
+      "nome": "Grátis",
+      "subtitulo": "Ferramentas essenciais para organizar leads, agenda e atendimento",
+      "icone": "Gift",
+      "preco": {
+        "mensal": 0,
+        "anual": 0
+      },
+      "precoLabel": "R$ 0",
+      "periodo": "/sempre",
+      "destaque": false,
+      "recursos": [
+        {
+          "icone": "Users",
+          "texto": "CRM de leads, funil e agenda de visitas"
+        },
+        {
+          "icone": "ShieldCheck",
+          "texto": "Painel, financeiro essencial e gestão da equipe"
+        },
+        {
+          "icone": "Lock",
+          "texto": "Sem upload de fotos ou publicação de imóveis na vitrine"
+        },
+        {
+          "icone": "Users",
+          "texto": "1 usuário"
+        }
+      ],
+      "cta": "Usar Modo Grátis",
+      "autoAtivavel": true
+    },
+    {
+      "key": "pro",
+      "nome": "PRO",
+      "subtitulo": "Captação, imóveis e gestão completa em um único plano",
+      "icone": "Crown",
+      "preco": {
+        "mensal": 39.9,
+        "anual": 34.9
+      },
+      "periodo": "/mês",
+      "destaque": true,
+      "recursos": [
+        {
+          "icone": "Check",
+          "texto": "Tudo do plano Grátis"
+        },
+        {
+          "icone": "Home",
+          "texto": "Captação & Imóveis e vitrine pública"
+        },
+        {
+          "icone": "Camera",
+          "texto": "Até 7 fotos por imóvel; a Foto 1 é a capa principal"
+        },
+        {
+          "icone": "FileBarChart",
+          "texto": "Propostas & Negócios, Meta Ads & Criativos e demais módulos PRO"
+        },
+        {
+          "icone": "Bot",
+          "texto": "Agentes Operacionais coordenados por Zara e acompanhamento do cliente"
+        },
+        {
+          "icone": "FileBarChart",
+          "texto": "Publicação em Portais XML"
+        },
+        {
+          "icone": "Users",
+          "texto": "1 usuário (corretor autônomo)"
+        }
+      ],
+      "cta": "Assinar PRO",
+      "autoAtivavel": true,
+      "setup": "Implantação R$ 0"
+    },
+    {
+      "key": "plus",
+      "nome": "PLUS",
+      "subtitulo": "Escala operacional completa do corretor ou da imobiliária",
+      "icone": "Rocket",
+      "preco": {
+        "mensal": 99.9,
+        "anual": 89.9
+      },
+      "setup": "Implantação R$ 0",
+      "periodo": "/mês",
+      "destaque": false,
+      "recursos": [
+        {
+          "icone": "Check",
+          "texto": "Tudo do PRO"
+        },
+        {
+          "icone": "Users",
+          "texto": "Até 3 usuários inclusos (+R$ 19,90/usuário extra)"
+        },
+        {
+          "icone": "TrendingUp",
+          "texto": "Automações da plataforma e teto maior de operação"
+        },
+        {
+          "icone": "Bot",
+          "texto": "Agentes Operacionais + Zara e módulos assistidos sem limite do degrau de entrada"
+        },
+        {
+          "icone": "Check",
+          "texto": "PLUS exclusivo: Correspondente / Crédito, Radar de Captação, Diretor Comercial IA, Roleta de Leads, Repasses & NF, Reuniões & Atas IA, Vistoria & Laudo IA, Avaliação de Imóvel, Simuladores e Assistente Legal"
+        }
+      ],
+      "cta": "Assinar PLUS",
+      "autoAtivavel": true
+    },
+    {
+      "key": "esquadrao_ia",
+      "nome": "IA Pólen · 24H",
+      "subtitulo": "Atendimento comercial automatizado, 24h, no WhatsApp da imobiliária",
+      "icone": "Bot",
+      "preco": {
+        "mensal": 450
+      },
+      "precoLabel": "R$ 450",
+      "valorMinimoMensal": 450,
+      "periodo": "/mês",
+      "setup": "Implantação R$ 497",
+      "destaque": false,
+      "recursos": [
+        {
+          "icone": "Clock",
+          "texto": "Atendimento comercial 24h no WhatsApp oficial"
+        },
+        {
+          "icone": "Check",
+          "texto": "Consulta o catálogo de imóveis e qualifica o lead"
+        },
+        {
+          "icone": "Camera",
+          "texto": "Envia só a Foto 1 (fachada) + resumo + link; as demais fotos sob pedido"
+        },
+        {
+          "icone": "Shuffle",
+          "texto": "Distribui o lead para o corretor da vez"
+        }
+      ],
+      "cta": "Contratar Pólen",
+      "autoAtivavel": false
+    },
+    {
+      "key": "tom_autonomo",
+      "nome": "Tom Autônomo — Segundo Cérebro Empacotado",
+      "subtitulo": "Molde pronto clonável, conectado por QR Code ao WhatsApp do corretor que trabalha sozinho",
+      "icone": "Smartphone",
+      "preco": {
+        "mensal": 197
+      },
+      "periodo": "/mês",
+      "setup": "Implantação R$ 0",
+      "destaque": false,
+      "recursos": [
+        {
+          "icone": "Check",
+          "texto": "Gestão da rotina diária"
+        },
+        {
+          "icone": "Check",
+          "texto": "Cobrança de follow-up"
+        },
+        {
+          "icone": "Video",
+          "texto": "Roteiros de vídeo"
+        },
+        {
+          "icone": "PenLine",
+          "texto": "Legendas e copy"
+        },
+        {
+          "icone": "Link",
+          "texto": "Integrado ao Express Imobi Tech"
+        }
+      ],
+      "cta": "Contratar Tom Autônomo",
+      "autoAtivavel": false
+    },
+    {
+      "key": "tom_imobiliaria",
+      "nome": "Tom Imobiliária — Operação Customizada",
+      "subtitulo": "Cérebro operacional adaptado sob medida para imobiliárias e equipes",
+      "icone": "Building2",
+      "preco": {
+        "mensal": 497
+      },
+      "periodo": "/mês",
+      "setup": "Implantação R$ 697",
+      "destaque": false,
+      "recursos": [
+        {
+          "icone": "Percent",
+          "texto": "Regras de comissão"
+        },
+        {
+          "icone": "Target",
+          "texto": "Metas"
+        },
+        {
+          "icone": "Search",
+          "texto": "Auditoria de funil"
+        },
+        {
+          "icone": "ShieldCheck",
+          "texto": "Governança de equipe"
+        },
+        {
+          "icone": "Home",
+          "texto": "Imóveis parados"
+        }
+      ],
+      "cta": "Falar sobre Tom Imobiliária",
+      "autoAtivavel": false
+    },
+    {
+      "key": "presenca_digital",
+      "nome": "Presença Digital & Tráfego",
+      "subtitulo": "Vitrine própria no ar e tráfego sob gestão, com a verba de anúncios à parte",
+      "icone": "Globe",
+      "preco": null,
+      "precoLabel": "Setup R$ 690 + Gestão R$ 490/mês",
+      "periodo": "",
+      "setup": "Setup R$ 690 (Vitrine/Portal sincronizado + Google Meu Negócio) + Gestão de Tráfego opcional R$ 490/mês · verba de anúncios à parte",
+      "destaque": false,
+      "recursos": [
+        {
+          "icone": "Globe",
+          "texto": "Vitrine/Portal próprio sincronizado — setup R$ 690"
+        },
+        {
+          "icone": "MapPin",
+          "texto": "Google Meu Negócio configurado e otimizado (incluso no setup)"
+        },
+        {
+          "icone": "TrendingUp",
+          "texto": "Gestão de Tráfego opcional — R$ 490/mês"
+        },
+        {
+          "icone": "Wallet",
+          "texto": "Verba de anúncios paga à parte (direto nas plataformas)"
+        }
+      ],
+      "cta": "Falar com Especialista",
+      "autoAtivavel": false
+    }
+  ],
+  "limites": {
+    "gratis": {
+      "funcionarios": 1,
+      "abas": 1,
+      "osMes": 1,
+      "descricao": "Até 1 Ordem de Serviço por mês"
+    },
+    "pro": {
+      "funcionarios": 1,
+      "abas": 5,
+      "osMes": null,
+      "descricao": "O.S. ilimitadas"
+    },
+    "esquadrao_ia": {
+      "funcionarios": 5,
+      "abas": 8,
+      "osMes": null,
+      "descricao": "O.S. ilimitadas"
+    },
+    "essencial": {
+      "funcionarios": 1,
+      "abas": 3,
+      "osMes": null,
+      "descricao": "O.S. ilimitadas"
+    },
+    "especialista": {
+      "funcionarios": 5,
+      "abas": 8,
+      "osMes": null,
+      "descricao": "O.S. ilimitadas"
+    },
+    "master": {
+      "funcionarios": null,
+      "abas": null,
+      "osMes": null,
+      "descricao": "Acesso total"
+    },
+    "planoPrimeIA": {
+      "funcionarios": null,
+      "abas": null,
+      "osMes": null,
+      "descricao": "Acesso total + IA Prime"
+    },
+    "plus": {
+      "funcionarios": 3,
+      "usuarioAdicionalPreco": 19.9,
+      "abas": 8,
+      "osMes": null,
+      "descricao": "Até 3 usuários inclusos; +R$ 19,90/mês por usuário extra"
+    }
+  },
+  "planosPro": [
+    "pro",
+    "plus",
+    "profissional",
+    "esquadrao_ia",
+    "essencial_plus",
+    "premium",
+    "pago",
+    "master",
+    "prime",
+    "planoprimeia",
+    "especialista",
+    "ultimate"
+  ],
+  "addons": [
+    {
+      "key": "social_video",
+      "nome": "Add-on Social Vídeo Automático 15s–30s",
+      "subtitulo": "Vídeo bruto pelo WhatsApp; o sistema compacta, corta pausas, legenda e publica em Reels e TikTok",
+      "opcoes": [
+        {
+          "videos": 8,
+          "preco": 247,
+          "label": "+ R$ 247,00/mês"
+        },
+        {
+          "videos": 12,
+          "preco": 347,
+          "label": "+ R$ 347,00/mês"
+        }
+      ],
+      "acimaDe30s": "Consulte preços",
+      "fluxo": "WhatsApp → compacta antes de editar (FFmpeg) → corta pausas → legenda dinâmica + copy → aprovação com \"POSTAR\" → Instagram Reels e TikTok"
+    }
+  ]
+}

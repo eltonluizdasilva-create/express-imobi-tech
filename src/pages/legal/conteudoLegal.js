@@ -112,7 +112,7 @@ const TERMOS = {
       id: 'planos',
       titulo: '6. Planos, teste de 10 dias e cobrança',
       paragrafos: [
-        'A conta começa com 10 dias de teste completo, sem cartão. Durante o teste ficam liberados os módulos PRO e os 7 Agentes de IA. Encerrado o período sem assinatura ativa, esses módulos passam a exigir o Plano PRO; CRM, agenda, simuladores e Assistente Legal continuam no plano gratuito.',
+        'A conta começa com 10 dias de teste completo, sem cartão. Durante o teste ficam liberados os módulos PRO e os Agentes Operacionais. Encerrado o período sem assinatura ativa, os módulos PRO exigem o Plano PRO e os módulos exclusivos exigem o PLUS; CRM e agenda continuam no plano gratuito.',
         'Os preços vigentes, os módulos de cada plano e os limites estão sempre na tela Meu Plano e no checkout, que leem a tabela oficial de planos. Em caso de divergência entre texto de campanha e essa tabela, vale a tabela do checkout.',
         'A cobrança é feita pelo processador de pagamentos contratado e indicado no checkout. A renovação é automática no ciclo escolhido (mensal ou anual) até que você cancele.',
         'Reajuste de preço é comunicado com antecedência na própria plataforma antes de valer para a próxima renovação.',

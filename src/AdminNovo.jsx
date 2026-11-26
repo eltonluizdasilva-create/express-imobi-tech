@@ -428,12 +428,12 @@ const GRUPOS_MENU_IMOBI = [
       },
       {
         id: 'guia_campo_bonus',
-        label: '🧭 Bônus de Campo',
-        tituloCard: 'BÔNUS DE CAMPO',
-        tituloLimpo: 'Bônus de Campo · Guia Grátis',
+        label: 'Arena & Treinamento',
+        tituloCard: 'ARENA & TREINAMENTO',
+        tituloLimpo: 'Arena de Treinamento & Roleplay IA',
         tier: 'gratis',
         descricao:
-          'Guia estático com dicas de postura, visitas, observação de imóveis, vídeos e organização dos próximos passos.',
+          'Simulação de negociação com clientes exigentes em até 5 turnos, ditado por voz e avaliação executiva de autoridade.',
       },
     ],
   },
@@ -517,6 +517,13 @@ MAPA_DETALHES_ABAS['reunioes-atas'] = {
   tituloLimpo: 'Reuniões & Atas IA',
   descricao: 'Gravação ao vivo, transcrição inteligente e atas executivas com tarefas na agenda.',
 };
+MAPA_DETALHES_ABAS.pos_venda = {
+  id: 'pos_venda',
+  label: 'Pós-Venda, Chaves & Carteira',
+  tituloCard: 'PÓS-VENDA, CHAVES & CARTEIRA',
+  tituloLimpo: 'Pós-Venda, Chaves & Carteira',
+  descricao: 'Linha do tempo pós-fechamento, entrega de chaves e marcos de relacionamento com IA.',
+};
 
 const AGENTES_INICIAIS = [
   {
@@ -589,6 +596,7 @@ const LABELS_ABAS_IMOBI = (GRUPOS_MENU_IMOBI || [])
 LABELS_ABAS_IMOBI.agentes_ia = 'Agentes Operacionais · Zara';
 LABELS_ABAS_IMOBI.mapa_inteligencia = 'Central de Inteligência da Imobiliária';
 LABELS_ABAS_IMOBI['reunioes-atas'] = 'Reuniões & Atas IA';
+LABELS_ABAS_IMOBI.pos_venda = 'Pós-Venda, Chaves & Carteira';
 
 // ─── Componente Principal ──────────────────────────────────────────────────────
 
@@ -1870,7 +1878,7 @@ export default function Admin() {
     if (['historico', 'marketing'].includes(abaAtiva)) {
       return { id: 'pro', nome: 'PRO · R$ 39,90', badge: 'bg-sky-500/10 text-sky-400 border-sky-500/30' };
     }
-    if (['radar_captacao', 'administrador', 'roleta_imobi', 'credito', 'notafiscal', 'reunioes-atas'].includes(abaAtiva) || ['contador', 'juridico_imobi', 'tarefa', 'avaliacao_imovel'].includes(abaAtiva)) {
+    if (['radar_captacao', 'administrador', 'roleta_imobi', 'credito', 'notafiscal', 'reunioes-atas'].includes(abaAtiva) || ['contador', 'juridico_imobi', 'tarefa', 'avaliacao_imovel', 'pos_venda'].includes(abaAtiva)) {
       return { id: 'plus', nome: 'PLUS · R$ 99,90', badge: 'bg-teal-500/10 text-teal-400 border-teal-500/30' };
     }
     if (['sofia_whatsapp', 'whatsapp_hub', 'secretaria', 'agentes_ia', 'brain'].includes(abaAtiva)) {
@@ -1925,7 +1933,7 @@ export default function Admin() {
     { id: 'financeiro', icone: '💰', label: 'Financeiro & VGV' },
     { id: 'equipe', icone: '🧑‍💼', label: 'Corretores & Equipe' },
     { id: 'config', icone: '⚙️', label: 'Configurações' },
-    { id: 'guia_campo_bonus', icone: '🧭', label: 'Bônus de Campo' },
+    { id: 'guia_campo_bonus', icone: '🎯', label: 'Arena & Treino' },
     { id: 'especialista', icone: '🎧', label: 'Suporte Especialista' },
   ];
 
@@ -2052,6 +2060,14 @@ export default function Admin() {
       // D-23.27 — quem contrata a IA Tom também abre a aba: o cadeado segue a
       // mesma regra da Sidebar e da guarda de aba (`acessoPlusLiberado || brainLiberado`).
       bloqueado: bloqueioPlusAtivo && !brainLiberado,
+    },
+    {
+      id: 'pos_venda',
+      tabId: 'pos_venda',
+      icone: '🔑',
+      label: 'Pós-Venda, Chaves & Carteira',
+      badge: 'PLUS',
+      bloqueado: bloqueioPlusAtivo,
     },
   ]);
   const beneficiosPlus = [

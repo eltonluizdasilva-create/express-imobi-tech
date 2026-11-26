@@ -34,74 +34,75 @@ import {
   MousePointer2,
   Shuffle,
   FileText,
+  KeyRound,
 } from 'lucide-react';
 import LogoExpress from '../ui/LogoExpress';
 import { DOR_SOLUCAO } from '../../lib/copyAbas';
 import { AVISO_ABA_GESTAO } from '../../lib/permissoes-menu';
 
 /**
- * SimboloPrismaE — Símbolo vetorial (SVG) moderno e tecnológico da Express Imobi Tech.
- * Prisma arquitetônico estilizado formando um "E" futurista com linhas luminosas
- * e micro-faceta tecnológica, adaptável para modo claro e escuro.
+ * SimboloPrismaE — marca vetorial da Express Imobi Tech.
+ *
+ * Tile squircle com o gradiente oficial (esmeralda → teal → sky) e monograma "E"
+ * recortado em diagonal ascendente. Sem imagem, sem sombras dentro do glifo e sem
+ * gradientes internos: o símbolo continua nítido de 28 px (sidebar recolhida) a 44 px.
+ * O nome exportado é mantido por compatibilidade com `SidebarAdmin.jsx`.
  */
 export function SimboloPrismaE({ tamanho = 'md', className = '', temaClaro = false }) {
-  const dim = tamanho === 'sm' ? 'w-7 h-7' : tamanho === 'lg' ? 'w-10 h-10' : 'w-8 h-8';
+  const caixa =
+    tamanho === 'sm'
+      ? 'h-8 w-8 rounded-[11px] p-[7px]'
+      : tamanho === 'lg'
+        ? 'h-11 w-11 rounded-[14px] p-[9px]'
+        : 'h-9 w-9 rounded-xl p-2 md:h-10 md:w-10 md:rounded-[13px]';
 
   return (
     <div
-      style={{ backgroundColor: temaClaro ? '#f0fdf4' : '#0B1215' }}
-      className={`relative flex items-center justify-center rounded-2xl border ${
+      className={`group relative flex shrink-0 items-center justify-center overflow-hidden ring-1 transition-all duration-300 ${caixa} ${
         temaClaro
-          ? 'border-emerald-300/80 shadow-[0_2px_10px_rgba(16,185,129,0.14)]'
-          : 'border-emerald-500/35 shadow-[0_0_18px_rgba(16,185,129,0.18)]'
-      } p-1.5 transition-all duration-300 hover:border-emerald-400/80 hover:shadow-[0_0_24px_rgba(16,185,129,0.32)] group ${className}`}
+          ? 'ring-black/10 shadow-[0_6px_18px_-10px_rgba(13,148,136,0.7)]'
+          : 'ring-white/20 shadow-[0_10px_28px_-12px_rgba(16,185,129,0.95)]'
+      } ${className}`}
+      style={{
+        background: 'linear-gradient(142deg, #34D399 0%, #10B981 40%, #0D9488 70%, #0284C7 100%)',
+      }}
     >
+      {/* brilho de vidro — profundidade sem pesar no traço */}
+      <span
+        aria-hidden="true"
+        className="pointer-events-none absolute inset-0"
+        style={{
+          background: 'radial-gradient(120% 90% at 20% 0%, rgba(255,255,255,0.55), rgba(255,255,255,0) 62%)',
+        }}
+      />
+      {/* faixa de luz diagonal: reforça o movimento ascendente do monograma */}
+      <span
+        aria-hidden="true"
+        className="pointer-events-none absolute -left-6 top-0 h-full w-14 rotate-[18deg] bg-white/15 blur-[6px] transition-transform duration-500 group-hover:translate-x-6"
+      />
+      {/* aro interno — acabamento de vidro */}
+      <span
+        aria-hidden="true"
+        className="pointer-events-none absolute inset-0 rounded-[inherit] ring-1 ring-inset ring-white/25"
+      />
+
       <svg
-        viewBox="0 0 36 36"
-        className={`${dim} drop-shadow-[0_0_8px_rgba(16,185,129,0.5)] transition-transform duration-300 group-hover:scale-105`}
-        fill="none"
+        viewBox="0 0 32 32"
+        className="relative h-full w-full transition-transform duration-300 group-hover:scale-105"
         xmlns="http://www.w3.org/2000/svg"
-        aria-label="Express Imobi Tech — Símbolo Prisma E"
+        role="img"
+        aria-label="Express Imobi Tech"
       >
-        <defs>
-          <linearGradient id="prismA" x1="0%" y1="0%" x2="100%" y2="100%">
-            <stop offset="0%" stopColor="#34D399" />
-            <stop offset="100%" stopColor="#10B981" />
-          </linearGradient>
-          <linearGradient id="prismB" x1="0%" y1="0%" x2="100%" y2="100%">
-            <stop offset="0%" stopColor="#10B981" />
-            <stop offset="100%" stopColor="#047857" />
-          </linearGradient>
-          <linearGradient id="prismC" x1="0%" y1="0%" x2="100%" y2="100%">
-            <stop offset="0%" stopColor="#6EE7B7" />
-            <stop offset="100%" stopColor="#10B981" />
-          </linearGradient>
-        </defs>
-
-        {/* Prisma Isométrico — Coluna Vertical do 'E' */}
-        <path d="M8 7L14 4V32L8 35V7Z" fill="url(#prismB)" />
-        <path d="M14 4L18 6.5V34.5L14 32V4Z" fill="url(#prismA)" />
-
-        {/* Prisma Isométrico — Barra Superior do 'E' */}
-        <path d="M14 4L28 9L26 12.5L14 7.5V4Z" fill="url(#prismC)" />
-        <path d="M26 12.5L28 9V12L26 15.5V12.5Z" fill="url(#prismB)" />
-
-        {/* Prisma Isométrico — Barra Central do 'E' */}
-        <path d="M14 15.5L24 19L22 22L14 18.5V15.5Z" fill="url(#prismC)" />
-        <path d="M22 22L24 19V22L22 25V22Z" fill="url(#prismB)" />
-
-        {/* Prisma Isométrico — Barra Inferior do 'E' */}
-        <path d="M14 27L28 32L26 35.5L14 30.5V27Z" fill="url(#prismC)" />
-        <path d="M26 35.5L28 32V35L26 38.5V35.5Z" fill="url(#prismB)" />
-
-        {/* Linhas luminosas de aresta do Prisma com reflexo esmeralda */}
+        {/* Monograma "E": haste cheia + três barras com corte diagonal ascendente */}
         <path
-          d="M8 7L14 4L28 9M14 15.5L24 19M14 27L28 32M14 4V32M18 6.5V34.5"
-          stroke={temaClaro ? '#059669' : '#A7F3D0'}
-          strokeWidth="1.1"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          opacity="0.9"
+          d="M9.3 7H22.7l-1.5 4.1h-7.4v3.1h6l-1.5 4.1h-4.5v3.1h7.4L22.7 25H9.3V7Z"
+          fill="#FFFFFF"
+        />
+        {/* spark de IA no canto livre — detalhe moderno, longe do traço */}
+        <path
+          d="M25.9 4.6c.28 1.72.84 2.28 2.56 2.56-1.72.28-2.28.84-2.56 2.56-.28-1.72-.84-2.28-2.56-2.56 1.72-.28 2.28-.84 2.56-2.56Z"
+          fill="#FFFFFF"
+          fillOpacity="0.85"
         />
       </svg>
     </div>
@@ -245,13 +246,9 @@ export default function SidebarAdmin({
   totalImoveisCadastrados = 0,
   ehMasterPlataforma = false,
   filtrarPorPapel = (x) => x,
-  sidebarAbertaMobile = false,
-  setSidebarAbertaMobile = () => {},
   sidebarRecuada = true,
   onToggleRecuada = () => {},
   onUpgrade = () => {},
-  dadosImobiliaria = {},
-  fazerLogout = () => {},
   temaClaro = false,
   ehGestor = false,
 }) {
@@ -345,8 +342,8 @@ export default function SidebarAdmin({
         {
           id: 'guia_campo_bonus',
           icone: Compass,
-          label: 'Treinamento Corretor',
-          descricao: 'Roteiros de abordagem de campo, scripts e dicas de fechamento.',
+          label: 'Arena & Treinamento',
+          descricao: 'Simulação real de objeções com IA (5 turnos), voz e feedback executivo.',
         },
         {
           id: 'migracao',
@@ -515,6 +512,13 @@ export default function SidebarAdmin({
           descricao: 'Gravação ao vivo, transcrição e geração de ata executiva com tarefas.',
           bloqueado: !acessoPlusLiberado && !brainLiberado && !ehAdminTotal,
         },
+        {
+          id: 'pos_venda',
+          icone: KeyRound,
+          label: 'Pós-Venda, Chaves & Carteira',
+          descricao: 'Linha do tempo pós-fechamento, entrega de chaves e relacionamento com IA.',
+          bloqueado: bloqueioPlusAtivo && !ehAdminTotal,
+        },
       ],
     },
     {
@@ -617,12 +621,12 @@ export default function SidebarAdmin({
           {sidebarRecuada ? '»' : '«'}
         </button>
 
-        {/* ─── TOPO DA SIDEBAR: SÍMBOLO PRISMA 'E' + TOGGLE » / « ──────────── */}
+        {/* ─── TOPO DA SIDEBAR: MARCA (MONOGRAMA E) + TOGGLE » / « ─────────── */}
         <div className={`flex items-center justify-between px-3 py-3.5 border-b ${
           temaClaro ? 'border-slate-200/90 bg-slate-50/80' : 'border-slate-800/80 bg-[#04070c]'
         }`}>
           {sidebarRecuada ? (
-            /* Visão Curta (w-20): Símbolo Prisma Centralizado */
+            /* Visão Curta (w-20): marca centralizada */
             <div className="w-full flex flex-col items-center gap-2">
               <button
                 type="button"

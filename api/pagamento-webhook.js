@@ -46,7 +46,10 @@ function msDoTimestamp(valor) {
 function isPlanoPro(plano) {
   const chave = norm(plano);
   if (ALIAS_GRATIS.has(chave)) return false;
-  return dados.planosPro.includes(chave);
+  let canonica = chave;
+  if (['essencial_plus', 'essencialplus'].includes(chave)) canonica = 'pro';
+  if (['profissional', 'plano_profissional'].includes(chave)) canonica = 'plus';
+  return dados.planosPro.includes(chave) || dados.planosPro.includes(canonica);
 }
 
 function modulosDoPlano(planoKey) {
@@ -54,15 +57,18 @@ function modulosDoPlano(planoKey) {
   const gratis = dados.modulos.gratis || [];
   const essencialPlus = dados.modulos.essencial_plus_extra || [];
   const profissional = dados.modulos.profissional_extra || [];
+  const plus = dados.modulos.plus_extra || [];
   const esquadrao = dados.modulos.esquadrao_extra || [];
+  const modulosPro = [...new Set([...gratis, ...essencialPlus, ...profissional])];
 
-  // D-22.09 — 'pro' (R$ 39,90) e 'plus' (R$ 99,90) liberam o mesmo conjunto de
-  // módulos do painel; os nomes antigos seguem aceitos para contas legadas.
-  if (['essencial_plus', 'profissional', 'pro', 'plus'].includes(chave)) {
-    return [...new Set([...gratis, ...essencialPlus, ...profissional])];
+  if (['essencial_plus', 'pro'].includes(chave)) {
+    return modulosPro;
+  }
+  if (['plus', 'profissional', 'plano_profissional'].includes(chave)) {
+    return [...new Set([...modulosPro, ...plus])];
   }
   if (chave === 'esquadrao_ia' || chave === 'polen' || chave === 'presenca_digital') {
-    return [...new Set([...gratis, ...essencialPlus, ...profissional, ...esquadrao])];
+    return [...new Set([...modulosPro, ...esquadrao])];
   }
   // Tom Autônomo e Tom Imobiliária são produtos de agente: não liberam módulo
   // extra do painel, então ficam com a base gratuita.

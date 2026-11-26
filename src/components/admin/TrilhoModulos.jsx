@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { ChevronLeft, ChevronRight, Lock, LayoutGrid, X } from 'lucide-react';
+import { idDaAbaDoItem, itensProprios, montarDegraus, selecionarItens } from './trilho-degraus';
 
 /**
  * TrilhoModulos — navegação em UMA linha arrastável (substitui as 4 barra
@@ -10,34 +11,13 @@ import { ChevronLeft, ChevronRight, Lock, LayoutGrid, X } from 'lucide-react';
  * Por que arrasto + setas + filtro: com 22 módulos o trilho passa de 3000px;
  * sozinho o arrasto esconde metade do menu de quem usa mouse. As setas, a borda
  * esmaecida existem para provar que há mais à direita.
+ *
+ * Filtro por degrau é vitrine estrita: a pílula PLUS mostra só os cinco módulos
+ * exclusivos do PLUS (o contador fecha em 5) e a pílula PRO mostra só os sete
+ * dela. A herança comercial não muda — quem assina PLUS continua abrindo e
+ * usando os módulos PRO e Grátis, porque o gate de acesso vive em
+ * `src/lib/planos.js` + `permissoes-menu.js`, não neste componente.
  */
-
-const DEGRAUS = {
-  gratis: {
-    id: 'gratis',
-    nome: 'Grátis',
-    cor: '#10b981',
-    base: '16,185,129',
-    textoClaro: '#047857',
-    textoEscuro: '#6ee7b7',
-  },
-  pro: {
-    id: 'pro',
-    nome: 'PRO',
-    cor: '#0284c7',
-    base: '2,132,199',
-    textoClaro: '#0369a1',
-    textoEscuro: '#7dd3fc',
-  },
-  operacao: {
-    id: 'operacao',
-    nome: 'Módulos de IA',
-    cor: '#f59e0b',
-    base: '245,158,11',
-    textoClaro: '#b45309',
-    textoEscuro: '#fcd34d',
-  },
-};
 
 const rgba = (base, a) => `rgba(${base},${a})`;
 
@@ -56,17 +36,16 @@ export default function TrilhoModulos({
   const [bordas, setBordas] = useState({ esq: false, dir: true });
 
   // ------------------------------------------------------------------ dados
-  const degrausVisiveis = useMemo(
-    () => grupos.map((g) => ({ ...g, degrau: DEGRAUS[g.degrau] || DEGRAUS.gratis })),
-    [grupos],
-  );
+  const degrausVisiveis = useMemo(() => montarDegraus(grupos), [grupos]);
 
-  const itensVisiveis = useMemo(() => {
-    const base = filtro === 'todos' ? degrausVisiveis : degrausVisiveis.filter((g) => g.id === filtro);
-    return base.flatMap((g) =>
-      (g.itens || []).map((item) => ({ ...item, grupoId: g.id, degrau: g.degrau })),
-    );
-  }, [degrausVisiveis, filtro]);
+  const itensVisiveis = useMemo(
+    () => selecionarItens(degrausVisiveis, filtro),
+    [degrausVisiveis, filtro],
+  );
+  const grupoSelecionado = filtro === 'todos'
+    ? null
+    : degrausVisiveis.find((grupo) => grupo.id === filtro);
+  const beneficiosVisiveis = grupoSelecionado?.beneficios || [];
 
   // ------------------------------------------------------------ medição/rolagem
   const medir = useCallback(() => {
@@ -136,14 +115,20 @@ export default function TrilhoModulos({
       setAbaAtiva('meuplano');
       return;
     }
-    setAbaAtiva(item.id);
+    setAbaAtiva(idDaAbaDoItem(item));
+  };
+
+  const selecionarFiltro = (grupo, ativo) => {
+    setFiltro(ativo ? 'todos' : grupo.id);
+    if (grupo.abaInicial) setAbaAtiva(grupo.abaInicial);
   };
 
   // ------------------------------------------------------------------ pílula
   const Pilula = ({ item, compacta = false }) => {
-    const ativo = abaAtiva === item.id;
+    const abaId = idDaAbaDoItem(item);
+    const ativo = abaAtiva === abaId;
     const { cor, base, textoClaro, textoEscuro } = item.degrau;
-    const det = detalhes[item.id];
+    const det = detalhes[abaId];
     const textoAcento = temaClaro ? textoClaro : textoEscuro;
 
     return (
@@ -209,6 +194,18 @@ export default function TrilhoModulos({
             {item.badge}
           </span>
         )}
+        {/* Selo do item herdado: hoje o filtro é estrito e só renderiza itens
+            próprios do degrau, então ele serve de marca para visões futuras que
+            voltem a listar a herança PRO dentro do PLUS. */}
+        {item.herdado && (
+          <span
+            className="whitespace-nowrap rounded-full border px-1 py-0.5 text-[8px] font-black uppercase tracking-[0.08em] opacity-80"
+            style={{ borderColor: rgba(base, 0.35), color: textoAcento }}
+            title="Módulo herdado do PRO — no PLUS ele vem incluído"
+          >
+            PRO
+          </span>
+        )}
         {item.bloqueado && <Lock size={10} className="shrink-0 opacity-80" aria-hidden="true" />}
       </button>
     );
@@ -221,16 +218,24 @@ export default function TrilhoModulos({
         <div className="flex min-w-0 flex-1 items-center gap-1.5 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
           {degrausVisiveis.map((g) => {
             const ativo = filtro === g.id;
+            // Contagem = vitrine do degrau. Os módulos herdados do PRO seguem
+            // acessíveis no plano PLUS, mas não entram aqui (nem na pílula).
+            const quantidade = itensProprios(g).length;
+            const unidadeContagem = g.herdaDe
+              ? 'módulos exclusivos deste degrau (os do PRO seguem inclusos no plano)'
+              : 'módulos neste degrau';
             return (
               <button
                 key={g.id}
                 type="button"
-                onClick={() => setFiltro(ativo ? 'todos' : g.id)}
+                onClick={() => selecionarFiltro(g, ativo)}
                 aria-pressed={ativo}
                 title={
                   ativo
-                    ? `Mostrando só o ${g.degrau.nome} — clique para ver todos os módulos`
-                    : `Mostrar só os módulos do ${g.degrau.nome}`
+                    ? `Mostrando só ${g.degrau.nome} — clique para ver todos`
+                    : g.herdaDe
+                      ? `Mostrar só os módulos exclusivos do ${g.degrau.nome} (os módulos PRO continuam inclusos no plano)`
+                      : `Mostrar só os módulos do ${g.degrau.nome}`
                 }
                 className={`inline-flex shrink-0 items-center gap-1.5 rounded-full border px-2.5 py-1 text-[9.5px] font-black uppercase tracking-[0.10em] transition ${
                   ativo ? 'font-black' : ''
@@ -247,16 +252,18 @@ export default function TrilhoModulos({
                   <span className="hidden font-extrabold tracking-normal sm:inline">{g.preco}</span>
                 )}
                 {/* A contagem fica numa caixinha própria para não se confundir com o preço. */}
-                <span
-                  title={`${(g.itens || []).length} módulos neste degrau`}
-                  className="ml-1 inline-flex h-4 min-w-[16px] items-center justify-center rounded-full px-1 text-[8.5px] font-black tabular-nums"
-                  style={{
-                    background: rgba(g.degrau.base, temaClaro ? 0.14 : 0.22),
-                    border: `1px solid ${rgba(g.degrau.base, 0.35)}`,
-                  }}
-                >
-                  {(g.itens || []).length}
-                </span>
+                {!g.ocultarContagem && (
+                  <span
+                    title={`${quantidade} ${unidadeContagem}`}
+                    className="ml-1 inline-flex h-4 min-w-[16px] items-center justify-center rounded-full px-1 text-[8.5px] font-black tabular-nums"
+                    style={{
+                      background: rgba(g.degrau.base, temaClaro ? 0.14 : 0.22),
+                      border: `1px solid ${rgba(g.degrau.base, 0.35)}`,
+                    }}
+                  >
+                    {quantidade}
+                  </span>
+                )}
                 {ativo && <X size={9} className="opacity-70" aria-hidden="true" />}
               </button>
             );
@@ -278,6 +285,36 @@ export default function TrilhoModulos({
           <span className="hidden sm:inline">{grade ? 'Fechar' : 'Ver tudo'}</span>
         </button>
       </div>
+
+      {beneficiosVisiveis.length > 0 && (
+        <div
+          className="mx-3 mb-1 flex flex-wrap items-center gap-1.5 rounded-xl border px-3 py-2 md:mx-4"
+          style={{
+            borderColor: rgba(grupoSelecionado.degrau.base, 0.35),
+            background: rgba(grupoSelecionado.degrau.base, temaClaro ? 0.07 : 0.10),
+          }}
+          aria-label={`Diferenciais do plano ${grupoSelecionado.degrau.nome}`}
+        >
+          <span
+            className="text-[9px] font-black uppercase tracking-[0.12em]"
+            style={{ color: temaClaro ? grupoSelecionado.degrau.textoClaro : grupoSelecionado.degrau.textoEscuro }}
+          >
+            Diferenciais do {grupoSelecionado.degrau.nome}:
+          </span>
+          {beneficiosVisiveis.map((beneficio) => (
+            <span
+              key={beneficio}
+              className="rounded-full border px-2 py-1 text-[10px] font-semibold"
+              style={{
+                borderColor: rgba(grupoSelecionado.degrau.base, 0.3),
+                color: temaClaro ? grupoSelecionado.degrau.textoClaro : grupoSelecionado.degrau.textoEscuro,
+              }}
+            >
+              {beneficio}
+            </span>
+          ))}
+        </div>
+      )}
 
       {/* ---------- trilho único ---------- */}
       <div className="relative flex items-center gap-1 px-2 md:px-3">
@@ -384,12 +421,17 @@ export default function TrilhoModulos({
                 <span className="h-1.5 w-1.5 rounded-full" style={{ background: g.degrau.cor }} />
                 {g.titulo}
                 {g.preco && <span className="opacity-60">{g.preco}</span>}
-                <span className="opacity-50">· {(g.itens || []).length} módulos</span>
+                <span className="opacity-50">· {itensProprios(g).length} módulos</span>
               </div>
               <div className="flex flex-wrap gap-1.5">
-                {(g.itens || []).map((item) => (
+                {itensProprios(g).map((item) => (
                   <Pilula key={item.id} item={{ ...item, grupoId: g.id, degrau: g.degrau }} compacta />
                 ))}
+                {(g.itens || []).some((item) => item.herdado) && (
+                  <span className="px-1 py-1 text-[10px] text-slate-400">
+                    + {(g.itens || []).filter((item) => item.herdado).length} módulos do PRO já inclusos no plano
+                  </span>
+                )}
               </div>
             </div>
           ))}

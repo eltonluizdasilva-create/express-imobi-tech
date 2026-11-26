@@ -112,9 +112,9 @@ export default function Cadastro() {
             CADASTRO REALIZADO!
           </h1>
           <p style={{ color: '#888', marginBottom: '30px', lineHeight: '1.6' }}>
-            Sua conta começa com <strong style={{ color: 'white' }}>10 dias de teste completo</strong>: os módulos PRO
-            e os 7 Agentes de IA ficam liberados nesse período. Depois, sem assinatura, esses módulos pedem o Plano PRO
-            e CRM, agenda, simuladores e Assistente Legal continuam no plano gratuito.
+            Sua conta começa com             <strong style={{ color: 'white' }}>10 dias de teste completo</strong>: os módulos PRO
+            e os Agentes Operacionais ficam liberados nesse período.             Depois, sem assinatura, os módulos PRO pedem o Plano PRO; os módulos exclusivos pedem o PLUS.
+            CRM e agenda continuam disponíveis no plano gratuito.
           </p>
           <div style={{ background: '#111', padding: '20px', borderRadius: '10px', marginBottom: '30px', border: '1px solid #333' }}>
             <p style={{ color: '#888', fontSize: '12px', margin: '0 0 5px 0' }}>ACESSE COM</p>

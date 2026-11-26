@@ -1,0 +1,53 @@
+[35msrc/AdminNovo.jsx[m[36m:[m[32m271[m[36m:[m        tituloCard: 'ATIVAÇÃO & QR CODE DA [1;31mPÓLEN[m (WHATSAPP)',
+[35msrc/AdminNovo.jsx[m[36m:[m[32m280[m[36m:[m        tituloCard: '[1;31mPÓLEN[m · ATENDIMENTO 24H',
+[35msrc/AdminNovo.jsx[m[36m:[m[32m710[m[36m:[m  const [restantes[1;31mPolen[m, setRestantes[1;31mPolen[m] = useState(() => restantesDemo('[1;31mpolen[m'));
+[35msrc/AdminNovo.jsx[m[36m:[m[32m1390[m[36m:[m  const enviarMensagem[1;31mPolen[m = async (mensagemBruta) => {
+[35msrc/AdminNovo.jsx[m[36m:[m[32m1401[m[36m:[m    if (!podeUsarDemo('[1;31mpolen[m', { liberado: sofiaLiberada })) {
+[35msrc/AdminNovo.jsx[m[36m:[m[32m1402[m[36m:[m      setRestantes[1;31mPolen[m(0);
+[35msrc/AdminNovo.jsx[m[36m:[m[32m1435[m[36m:[m        registrarUsoDemo('[1;31mpolen[m');
+[35msrc/AdminNovo.jsx[m[36m:[m[32m1436[m[36m:[m        setRestantes[1;31mPolen[m(restantesDemo('[1;31mpolen[m'));
+[35msrc/AdminNovo.jsx[m[36m:[m[32m1453[m[36m:[m    await enviarMensagem[1;31mPolen[m(msgTesteIA);
+[35msrc/AdminNovo.jsx[m[36m:[m[32m2832[m[36m:[m            {/* Simulador da [1;31mPÓLEN[m REAL: mesma persona do WhatsApp, resposta via /api/ai
+[35msrc/AdminNovo.jsx[m[36m:[m[32m2860[m[36m:[m                      💬 {Math.min(Math.max(0, LIMITE_DEMO - restantes[1;31mPolen[m), LIMITE_DEMO)}/{LIMITE_DEMO} mensagens grátis
+[35msrc/AdminNovo.jsx[m[36m:[m[32m2945[m[36m:[m                    disabled={bloqueioProAtivo || enviandoSimIA || (!sofiaLiberada && restantes[1;31mPolen[m <= 0)}
+[35msrc/AdminNovo.jsx[m[36m:[m[32m2946[m[36m:[m                    onClick={() => enviarMensagem[1;31mPolen[m(acao.pergunta)}
+[35msrc/AdminNovo.jsx[m[36m:[m[32m2973[m[36m:[m              {!sofiaLiberada && restantes[1;31mPolen[m <= 0 && (
+[35msrc/AdminNovo.jsx[m[36m:[m[32m2996[m[36m:[m                    disabled={bloqueioProAtivo || enviandoSimIA || (!sofiaLiberada && restantes[1;31mPolen[m <= 0)}
+[35msrc/AdminNovo.jsx[m[36m:[m[32m3009[m[36m:[m                  disabled={bloqueioProAtivo || enviandoSimIA || (!sofiaLiberada && restantes[1;31mPolen[m <= 0)}
+[35msrc/AdminNovo.jsx[m[36m:[m[32m3021[m[36m:[m        {/* ─── ABA UNIFICADA: [1;31mPÓLEN[m · ATENDIMENTO 24H & QR CODE ───────────────
+[35msrc/components/Especialista.jsx[m[36m:[m[32m104[m[36m:[m  const abrir[1;31mPolen[m = () => {
+[35msrc/components/Especialista.jsx[m[36m:[m[32m367[m[36m:[m                    onClick={abrir[1;31mPolen[m}
+[35msrc/components/Especialista.jsx[m[36m:[m[32m379[m[36m:[m            onClick={abrir[1;31mPolen[m}
+[35msrc/components/Secretaria.jsx[m[36m:[m[32m14[m[36m:[mimport Simulador[1;31mPolen[m from './imobi/Simulador[1;31mPolen[m';
+[35msrc/components/Secretaria.jsx[m[36m:[m[32m34[m[36m:[m    const [1;31mpolen[mLiberada = dadosOficina?.papel === 'master' || temSofiaWhatsApp(dadosOficina || {});
+[35msrc/components/Secretaria.jsx[m[36m:[m[32m609[m[36m:[m                                {/* SIMULADOR INTERATIVO DA [1;31mPÓLEN[m (telemóvel real).
+[35msrc/components/Secretaria.jsx[m[36m:[m[32m614[m[36m:[m                                <Simulador[1;31mPolen[m
+[35msrc/components/Secretaria.jsx[m[36m:[m[32m618[m[36m:[m                                    liberado={[1;31mpolen[mLiberada}
+[35msrc/components/admin/MenuNavegacao.jsx[m[36m:[m[32m53[m[36m:[m    { id: 'sofia_whatsapp', label: '[1;31mPÓLEN[m 24H', icon: PhoneCall },
+[35msrc/components/imobi/SimuladorPolen.jsx[m[36m:[m[32m2[m[36m:[m * src/components/imobi/Simulador[1;31mPolen[m.jsx — telemóvel interativo da Pólen.
+[35msrc/components/imobi/SimuladorPolen.jsx[m[36m:[m[32m13[m[36m:[m *      chave `expressdemo:[1;31mpolen[m`); conta com o módulo contratado não tem
+[35msrc/components/imobi/SimuladorPolen.jsx[m[36m:[m[32m54[m[36m:[mexport default function Simulador[1;31mPolen[m({
+[35msrc/components/imobi/SimuladorPolen.jsx[m[36m:[m[32m68[m[36m:[m  const [restantes, setRestantes] = useState(() => restantesDemo('[1;31mpolen[m'));
+[35msrc/components/imobi/SimuladorPolen.jsx[m[36m:[m[32m96[m[36m:[m      if (!podeUsarDemo('[1;31mpolen[m', { liberado })) {
+[35msrc/components/imobi/SimuladorPolen.jsx[m[36m:[m[32m127[m[36m:[m          registrarUsoDemo('[1;31mpolen[m');
+[35msrc/components/imobi/SimuladorPolen.jsx[m[36m:[m[32m128[m[36m:[m          setRestantes(restantesDemo('[1;31mpolen[m'));
+[35msrc/components/imobi/SimuladorPolen.jsx[m[36m:[m[32m195[m[36m:[m            <img src="https://api.dicebear.com/7.x/bottts/svg?seed=[1;31mPolen[m" alt="Pólen" />
+[35msrc/index.css[m[36m:[m[32m184[m[36m:[m/* Cabeçalho do telemóvel da Pólen (`src/components/imobi/Simulador[1;31mPolen[m.jsx`,
+[35msrc/lib/limiteDemo.js[m[36m:[m[32m21[m[36m:[m/** Chave de storage do módulo ('[1;31mpolen[m' | 'tom'). */
+[35msrc/lib/limiteDemo.js[m[36m:[m[32m22[m[36m:[mexport function chaveDemo(modulo = '[1;31mpolen[m') {
+[35msrc/lib/limiteDemo.js[m[36m:[m[32m23[m[36m:[m  const slug = String(modulo || '[1;31mpolen[m')
+[35msrc/lib/limiteDemo.js[m[36m:[m[32m28[m[36m:[m  return `${PREFIXO}:${slug || '[1;31mpolen[m'}`;
+[35msrc/lib/limiteDemo.js[m[36m:[m[32m41[m[36m:[mexport function lerUsoDemo(modulo = '[1;31mpolen[m') {
+[35msrc/lib/limiteDemo.js[m[36m:[m[32m53[m[36m:[mexport function registrarUsoDemo(modulo = '[1;31mpolen[m') {
+[35msrc/lib/limiteDemo.js[m[36m:[m[32m67[m[36m:[mexport function restantesDemo(modulo = '[1;31mpolen[m', limite = LIMITE_DEMO) {
+[35msrc/lib/limiteDemo.js[m[36m:[m[32m75[m[36m:[mexport function podeUsarDemo(modulo = '[1;31mpolen[m', { liberado = false, limite = LIMITE_DEMO } = {}) {
+[35msrc/lib/limiteDemo.js[m[36m:[m[32m80[m[36m:[mexport function limparUsoDemo(modulo = '[1;31mpolen[m') {
+[35msrc/lib/planos.js[m[36m:[m[32m242[m[36m:[m  if (['[1;31mpolen[m', 'pólen'].includes(chave)) return 'esquadrao_ia';
+[35msrc/lib/planosComerciais.js[m[36m:[m[32m21[m[36m:[mconst plano[1;31mPolen[m = getPlano('esquadrao_ia');
+[35msrc/lib/planosComerciais.js[m[36m:[m[32m74[m[36m:[m    nome: plano[1;31mPolen[m.nome,
+[35msrc/lib/planosComerciais.js[m[36m:[m[32m77[m[36m:[m    resumo: plano[1;31mPolen[m.subtitulo,
+[35msrc/lib/planosComerciais.js[m[36m:[m[32m78[m[36m:[m    detalhePreco: plano[1;31mPolen[m.precoLabel,
+[35msrc/lib/planosComerciais.js[m[36m:[m[32m79[m[36m:[m    periodo: plano[1;31mPolen[m.periodo,
+[35msrc/lib/planosComerciais.js[m[36m:[m[32m80[m[36m:[m    implementacao: plano[1;31mPolen[m.setup,
+[35msrc/lib/planosComerciais.js[m[36m:[m[32m81[m[36m:[m    recursos: textos(plano[1;31mPolen[m),
+[35msrc/lib/planosComerciais.js[m[36m:[m[32m82[m[36m:[m    cta: plano[1;31mPolen[m.cta,

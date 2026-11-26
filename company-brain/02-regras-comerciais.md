@@ -1,6 +1,6 @@
 # 02 — Regras Comerciais · Express Tech
 
-> **Verdade atual:** 2026-11-23 · Toda alteração de preço, plano ou política entra aqui **e** em
+> **Verdade atual:** 2026-11-25 · Toda alteração de preço, plano ou política entra aqui **e** em
 > `05-decisoes-ativas.md`, com data.
 
 ---
@@ -11,7 +11,7 @@
 
 | Item | Valor | Observação |
 |---|---|---|
-| Pólen · Atendimento 24h | **R$ 450/mês** + **implantação R$ 497** | produto independente; contratação consultiva |
+| Pólen · Atendimento 24h | **R$ 450/mês** + **implantação R$ 497** | produto independente; contratação consultiva (na interface, usa o rótulo `IA PÓLEN · 24H` e copy de curiosidade comercial, sem expor o preço diretamente ao usuário) |
 | Tom Autônomo | **R$ 197/mês** | implantação R$ 0 |
 | Tom Imobiliária | **R$ 497/mês** + **implantação R$ 697** | operação customizada para equipe |
 | Add-on Social Vídeo Automático | **R$ 247/mês (8 vídeos)** ou **R$ 347/mês (12 vídeos)** | vídeos acima de 30s: consultar |
@@ -24,9 +24,9 @@ Pólen e Tom são produtos independentes: nenhum é incluído automaticamente no
 
 | Plano | Preço | O que entrega |
 |---|---|---|
-| **Grátis** | **R$ 0** | CRM, funil, agenda, simuladores e Assistente Legal; sem upload de fotos de imóveis |
-| **PRO** | **R$ 39,90/mês** ou **R$ 34,90/mês no anual** | Captação & Imóveis, vitrine pública (opt-in), até 7 fotos por imóvel, 7 agentes de IA e módulos PRO; Foto 1 é a capa |
-| **PLUS** | **R$ 99,90/mês** ou **R$ 89,90/mês no anual** | Tudo do PRO, até 3 usuários inclusos e teto maior de operação |
+| **Grátis** | **R$ 0** | CRM, funil, agenda e ferramentas essenciais; sem upload de fotos de imóveis |
+| **PRO** | **R$ 39,90/mês** ou **R$ 34,90/mês no anual** | Captação & Imóveis, Propostas & Negócios, Meta Ads & Criativos, vitrine pública (opt-in), até 7 fotos por imóvel e Agentes Operacionais coordenados por Zara; Foto 1 é a capa |
+| **PLUS** | **R$ 99,90/mês** ou **R$ 89,90/mês no anual** | Tudo do PRO, até 3 usuários inclusos e teto maior de operação; Correspondente / Crédito, Radar de Captação, Diretor Comercial IA, Roleta de Leads, Repasses & NF, Vistoria & Laudo IA, Avaliação de Imóvel, Simuladores de Custos e Assistente Legal exclusivos |
 | **Pólen · Atendimento 24h** | **R$ 450/mês** + implantação de **R$ 497** | Atendimento comercial automatizado; produto contratado à parte |
 | **Tom Autônomo** | **R$ 197/mês** | Segundo cérebro empacotado; implantação R$ 0 |
 | **Tom Imobiliária** | **R$ 497/mês** + implantação de **R$ 697** | Operação customizada para imobiliárias |

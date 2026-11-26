@@ -21,7 +21,7 @@ const COBERTURA = [
   ['notafiscal', 'Repasses'],
   ['avaliacao_imovel', 'Avaliação PTAM'],
   ['credito', 'Correspondente/Crédito'],
-  ['agentes_ia', 'Esquadrão de IA'],
+  ['agentes_ia', 'Agentes Operacionais · Zara'],
 ];
 
 /* ------------------------- 1. cobertura e forma -------------------------- */
@@ -89,7 +89,7 @@ ok('alternador de visão para todos (não é mais só do MASTER)',
    admin.includes('onClick={() => setModoPro(false)}') && admin.includes('onClick={() => setModoPro(true)}'));
 ok('alternador tem os dois rótulos', admin.includes('Enxuta') && admin.includes('Completa'));
 ok('pílula do topo mostra o plano real',
-   admin.includes("'✨ Plano PRO Ativo' : '⚡ Plano Gratuito'"));
+   admin.includes('rotuloPlano({') && admin.includes('nivel: nivelVisao'));
 ok('selo MASTER preservado', /border-amber-500\/40[\s\S]{0,240}?master/.test(admin));
 ok('botão + PRO presente', admin.includes('+ PRO'));
 ok('faixa DorESolucao no TOPO da aba (antes do conteúdo)',
@@ -114,7 +114,7 @@ const idsApp = new Set([
 const semCopy = [...idsApp].filter((id) => !DOR_SOLUCAO[id]);
 ok(`todas as ${idsApp.size} abas do painel têm copy`, semCopy.length === 0, semCopy.join(', '));
 
-// ---- textos pedidos para o Esquadrão de IA Elite (verbatim) ----
+// ---- textos pedidos para os módulos de IA (verbatim) ----
 const ESPERADOS = {
   administrador: ['Equipe travada, estoque encalhado ou dúvida sobre onde investir em tráfego?',
                   'Um diretor comercial 24h analisando sua carteira e montando planos prontos para bater meta.'],

@@ -6,7 +6,7 @@ import DorESolucao from '../src/components/ui/DorESolucao.jsx';
 const abas = ['dashboard_imobi', 'captacao_imobi', 'funil_leads', 'visitas_imobi', 'financeiro',
   'historico', 'marketing', 'tarefa', 'notafiscal', 'avaliacao_imovel', 'credito', 'agentes_ia',
   'administrador', 'contador', 'juridico_imobi', 'copiloto', 'secretaria', 'whatsapp_hub',
-  'meuplano', 'migracao', 'especialista', 'acompanhamento_cliente', 'aba_inexistente'];
+  'reunioes-atas', 'meuplano', 'migracao', 'especialista', 'acompanhamento_cliente', 'aba_inexistente'];
 
 let falhas = 0;
 for (const aba of abas) {
