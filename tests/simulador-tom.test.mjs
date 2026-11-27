@@ -188,18 +188,19 @@ await ok('resposta vazia da IA não vira bolha em branco', async () => {
 
 const adminNovo = readFileSync(new URL('../src/AdminNovo.jsx', import.meta.url), 'utf8');
 const brainTab = readFileSync(new URL('../src/components/admin/ExpressBrainTab.jsx', import.meta.url), 'utf8');
+const polenTab = readFileSync(new URL('../src/components/imobi/AbaAgentesZara.jsx', import.meta.url), 'utf8');
 
 await ok('AdminNovo: simulador chama a Pólen real e tem as 3 perguntas rápidas', () => {
-  assert.match(adminNovo, /responderSofiaSimulacao/);
-  assert.match(adminNovo, /ACOES_POLEN/);
-  assert.match(adminNovo, /Pólen está digitando/);
-  assert.equal(/Sofia está digitando/.test(adminNovo), false, 'nome antigo ainda na UI');
+  assert.match(polenTab, /responderSofiaSimulacao/);
+  assert.match(polenTab, /ACOES_POLEN/);
+  assert.match(polenTab, /Pólen está digitando/);
+  assert.equal(/Sofia está digitando/.test(polenTab), false, 'nome antigo ainda na UI');
 });
 
 await ok('AdminNovo: limite de demo aplicado ao simulador da Pólen', () => {
-  assert.match(adminNovo, /podeUsarDemo\('polen'/);
-  assert.match(adminNovo, /registrarUsoDemo\('polen'\)/);
-  assert.match(adminNovo, /Contratar a Pólen/);
+  assert.match(polenTab, /podeUsarDemo\('polen'/);
+  assert.match(polenTab, /registrarUsoDemo\('polen'\)/);
+  assert.match(polenTab, /Contratar a Pólen/);
 });
 
 await ok('ExpressBrainTab: Tom com 4 ações, pergunta livre e limite', () => {

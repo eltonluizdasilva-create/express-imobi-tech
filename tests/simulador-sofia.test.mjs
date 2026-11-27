@@ -227,7 +227,7 @@ await ok('histórico do painel vira papéis do provedor', async () => {
 });
 
 await ok('AdminNovo usa a Sofia real e não tem mais taxa/ficha inventada', async () => {
-  const fonte = readFileSync(new URL('../src/AdminNovo.jsx', import.meta.url), 'utf8');
+  const fonte = readFileSync(new URL('../src/components/imobi/AbaAgentesZara.jsx', import.meta.url), 'utf8');
   assert.match(fonte, /responderSofiaSimulacao/);
   assert.match(fonte, /cabecalhosIA\(\)/);
   assert.match(fonte, /AVISO_CATALOGO_VAZIO/);
