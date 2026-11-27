@@ -4,7 +4,7 @@ import { db, auth } from './lib/firebase';
 
 // Importações necessárias para a trava de segurança
 import { signInWithEmailAndPassword, GoogleAuthProvider, signInWithPopup, signOut } from 'firebase/auth';
-import { collectionGroup, collection, query, where, getDocs, doc, setDoc, getDoc, serverTimestamp } from 'firebase/firestore';
+import { doc, setDoc, getDoc, serverTimestamp } from 'firebase/firestore';
 
 export default function LoginAdmin() {
   const [email, setEmail] = useState('');
@@ -13,9 +13,10 @@ export default function LoginAdmin() {
   const [carregando, setCarregando] = useState(false);
   const navigate = useNavigate();
 
-  // Função para verificar se o e-mail está autorizado no sistema
-  const verificarAutorizacao = async (emailUsuario) => {
-    const emailNormalizado = emailUsuario.toLowerCase().trim();
+  // Função para verificar se o usuário está autorizado no sistema
+  const verificarAutorizacao = async (user) => {
+    if (!user) return false;
+    const emailNormalizado = (typeof user === 'string' ? user : user?.email || '').toLowerCase().trim();
 
     // 1. A SUA CHAVE MESTRA: Coloque todos os seus e-mails de dono do sistema aqui
     const emailsAdminsMaster = [
@@ -23,19 +24,30 @@ export default function LoginAdmin() {
       "elton.luizdasilva@gmail.com"
     ];
 
-    if (emailsAdminsMaster.includes(emailNormalizado)) return true;
+    if (emailNormalizado && emailsAdminsMaster.includes(emailNormalizado)) return true;
 
     try {
-      // 2. É DONO de alguma imobiliária cadastrada?
-      const qDono = query(collection(db, "oficinas"), where("email", "==", emailNormalizado));
-      const donoSnapshot = await getDocs(qDono);
-      if (!donoSnapshot.empty) return true;
+      const uid = user.uid;
+      if (!uid) return false;
 
-      // 3. É CORRETOR/FUNCIONÁRIO na equipe de alguém?
-      const qEquipe = query(collectionGroup(db, "equipe"), where("email", "==", emailNormalizado));
-      const equipeSnapshot = await getDocs(qEquipe);
+      // 2. Consulta direta getDoc em usuarios/{uid} e oficinas/{uid}
+      // Leituras diretas (get) permitidas pelas regras do Firestore para o próprio usuário autenticado
+      const userRef = doc(db, "usuarios", uid);
+      const oficinaRef = doc(db, "oficinas", uid);
 
-      return !equipeSnapshot.empty;
+      const [userSnap, oficinaSnap] = await Promise.all([
+        getDoc(userRef),
+        getDoc(oficinaRef)
+      ]);
+
+      if (userSnap.exists()) {
+        const dadosUser = userSnap.data() || {};
+        if (dadosUser.oficinaId) return true;
+      }
+
+      if (oficinaSnap.exists()) return true;
+
+      return false;
     } catch (e) {
       console.error("Erro na verificação:", e);
       return false;
@@ -49,10 +61,10 @@ export default function LoginAdmin() {
 
     try {
       // 1. Autenticação de senha
-      await signInWithEmailAndPassword(auth, email, senha);
+      const userCredential = await signInWithEmailAndPassword(auth, email, senha);
 
-      // 2. Trava de Segurança: Verificar permissão total
-      const autorizado = await verificarAutorizacao(email);
+      // 2. Trava de Segurança: Verificar permissão total passando o objeto user
+      const autorizado = await verificarAutorizacao(userCredential.user);
 
       if (!autorizado) {
         await signOut(auth);
@@ -63,7 +75,24 @@ export default function LoginAdmin() {
       navigate('/admin');
     } catch (error) {
       console.error("Erro no login:", error);
-      setErro('E-mail ou senha incorretos. Tente novamente.');
+      if (
+        error.code === 'auth/wrong-password' ||
+        error.code === 'auth/user-not-found' ||
+        error.code === 'auth/invalid-credential' ||
+        error.code === 'auth/invalid-login-credentials'
+      ) {
+        setErro('E-mail ou senha incorretos. Verifique seus dados.');
+      } else if (error.code === 'auth/invalid-email') {
+        setErro('Formato de e-mail inválido.');
+      } else if (error.code === 'auth/too-many-requests') {
+        setErro('Muitas tentativas sem sucesso. Aguarde alguns instantes e tente novamente.');
+      } else if (error.code === 'auth/network-request-failed') {
+        setErro('Falha de conexão com a rede. Verifique sua internet.');
+      } else if (error.code === 'permission-denied') {
+        setErro('Permissão negada ao acessar os dados da conta.');
+      } else {
+        setErro(error.message || 'Erro ao realizar login. Tente novamente.');
+      }
     } finally {
       setCarregando(false);
     }
@@ -93,20 +122,20 @@ export default function LoginAdmin() {
           dataCriacao: serverTimestamp()
         });
 
-        // Organização: fonte única de plano/IA. `creditosIA` e `limiteUsuarios` são provisionados pelo backend.
+        // Organização: fonte única de plano/IA (plano gratuito válido conforme regras do Firestore)
         await setDoc(doc(db, "oficinas", user.uid), {
           uid: user.uid,
           nome: user.displayName || "Minha Imobiliária",
           nomeOficina: user.displayName || "Minha Imobiliária",
           email: user.email,
-          plano: 'premium',
+          plano: 'gratuito',
           nivelInteligencia: 'padrao',
           ativo: true,
           criadoEm: serverTimestamp()
         }, { merge: true });
       }
 
-      const autorizado = await verificarAutorizacao(user.email);
+      const autorizado = await verificarAutorizacao(user);
 
       if (!autorizado) {
         await signOut(auth);
@@ -117,7 +146,15 @@ export default function LoginAdmin() {
       navigate('/admin');
     } catch (error) {
       console.error("Erro no login com Google:", error);
-      setErro('Acesso com Google cancelado ou falhou.');
+      if (error.code === 'auth/popup-closed-by-user') {
+        setErro('Acesso com Google cancelado.');
+      } else if (error.code === 'auth/network-request-failed') {
+        setErro('Falha de conexão com a rede. Verifique sua internet.');
+      } else if (error.code === 'permission-denied') {
+        setErro('Permissão negada ao registrar dados da conta.');
+      } else {
+        setErro(error.message || 'Acesso com Google cancelado ou falhou.');
+      }
     }
   };
 
