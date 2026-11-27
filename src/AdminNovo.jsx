@@ -85,6 +85,10 @@ import RodapeLegal from './components/ui/RodapeLegal';
 import { configParaOnboarding } from './lib/configImobiliaria';
 import AbaCaptacaoVitrine from './components/imobi/AbaCaptacaoVitrine';
 const ModalNovoImovel = lazy(() => import('./components/imobi/ModalNovoImovel'));
+const AbaFunilLeads = lazy(() => import('./components/imobi/AbaFunilLeads'));
+const AbaAgendaVisitas = lazy(() => import('./components/imobi/AbaAgendaVisitas'));
+const ModalNovoLeadImobi = lazy(() => import('./components/imobi/ModalNovoLeadImobi'));
+const ModalNovaVisita = lazy(() => import('./components/imobi/ModalNovaVisita'));
 import DorESolucao from './components/ui/DorESolucao';
 import LogoExpress from './components/ui/LogoExpress';
 import MicButton from './components/ui/MicButton';
@@ -113,9 +117,8 @@ import {
 
 import { useAuth } from './contexts/AuthContext';
 import useCarregamentoInicial from './hooks/useCarregamentoInicial.jsx';
-import { registrarEventoLead, TIPOS_EVENTO } from './services/girardEngine';
 import CockpitVisaoGeral from './components/imobi/CockpitVisaoGeral';
-import useQuickActions, { parseMoedaBR } from './hooks/useQuickActions';
+import useQuickActions from './hooks/useQuickActions';
 import { cabecalhosIA } from './lib/aiAuth';
 import {
   ACOES_POLEN,
@@ -490,7 +493,6 @@ export default function Admin() {
   const [tourManual, setTourManual] = useState(false);
   const [modalNovoLeadImobi, setModalNovoLeadImobi] = useState(false);
   const [modalNovaVisita, setModalNovaVisita] = useState(false);
-  const [salvandoAcao, setSalvandoAcao] = useState(false);
   const [sidebarAbertaMobile, setSidebarAbertaMobile] = useState(false);
   const [modalAjudaAberto, setModalAjudaAberto] = useState(false);
   const [sidebarRecuada, setSidebarRecuada] = useState(() => {
@@ -518,22 +520,7 @@ export default function Admin() {
   const [ultimaAuditoriaZara, setUltimaAuditoriaZara] = useState(null);
   const [erroAuditoriaZara, setErroAuditoriaZara] = useState('');
 
-  const [formLead, setFormLead] = useState({
-    nome: '',
-    telefone: '',
-    interesse: 'Compra',
-    bairro: '',
-    orcamento: '',
-    estagio: 'Novo Lead',
-  });
-  const [formVisita, setFormVisita] = useState({
-    cliente: '',
-    telefone: '',
-    imovel: '',
-    data: '',
-    hora: '10:00',
-    corretor: 'Corretor Plantão 01',
-  });
+  const [imovelParaVisita, setImovelParaVisita] = useState('');
 
   // Simulador da Pólen REAL (aba de Agentes) — a resposta vem do /api/ai com o
   // catálogo do tenant; nada de roteiro fixo, taxa inventada ou ficha fictícia.
@@ -870,45 +857,6 @@ export default function Admin() {
     return ordenados[0];
   }, [corretoresAtivos, ponteiroRoleta]);
 
-  const salvarLeadImobi = async (e) => {
-    e.preventDefault();
-    if (!formLead.nome.trim()) return;
-    setSalvandoAcao(true);
-    try {
-      const sorteado = roletaAtiva && proximoCorretorDaVez ? proximoCorretorDaVez : null;
-      const corretorSorteado = sorteado ? sorteado.nome : 'Atendimento Direto';
-      const orcamentoNumerico = parseMoedaBR(formLead.orcamento);
-
-      const novoLeadObj = {
-        ...formLead,
-        orcamento: orcamentoNumerico,
-        corretorResponsavel: corretorSorteado,
-        corretorWhatsapp: sorteado?.whatsapp || '',
-        distribuidoPorRoleta: Boolean(sorteado),
-        prazoAceiteMin: tempoRepasseMin,
-        origem: 'WhatsApp IA • Roleta',
-        criadoEm: serverTimestamp(),
-      };
-
-      if (imobiliariaId) {
-        await addDoc(collection(db, 'oficinas', imobiliariaId, 'leads_imobi'), novoLeadObj);
-      } else {
-        setListaLeads((prev) => [{ id: `local_${Date.now()}`, ...novoLeadObj }, ...(prev || [])]);
-      }
-
-      if (sorteado) {
-        setPonteiroRoleta((prev) => (prev + 1) % Math.max((corretoresRoleta || []).length, 1));
-      }
-      setFormLead({ nome: '', telefone: '', interesse: 'Compra', bairro: '', orcamento: '', estagio: 'Novo Lead' });
-      setModalNovoLeadImobi(false);
-      setAbaAtiva('funil_leads');
-    } catch (err) {
-      console.error('Erro ao salvar lead:', err);
-    } finally {
-      setSalvandoAcao(false);
-    }
-  };
-
   // Repassa um lead específico para o próximo corretor ativo na fila rotativa
   const repassarLeadRoleta = async (lead) => {
     if (!imobiliariaId || !lead?.id) return;
@@ -978,62 +926,6 @@ export default function Admin() {
     setNovoCorretorZap('');
     setStatusRoletaMsg(`Corretor ${novo.nome} incluído na roleta ativa!`);
     setTimeout(() => setStatusRoletaMsg(''), 4000);
-  };
-
-  const salvarVisitaImobi = async (e) => {
-    e.preventDefault();
-    if (!formVisita.cliente.trim() || !imobiliariaId) return;
-    setSalvandoAcao(true);
-    try {
-      await addDoc(collection(db, 'oficinas', imobiliariaId, 'visitas_imobi'), {
-        ...formVisita,
-        leadId: formVisita.leadId || null,
-        status: 'Confirmada',
-        criadoEm: serverTimestamp(),
-      });
-      const eventoVisita = await registrarEventoLead(db, imobiliariaId, {
-        leadId: formVisita.leadId || null,
-        telefone: formVisita.telefone,
-        tipo: TIPOS_EVENTO.VISITA_AGENDADA,
-        canal: 'painel',
-        descricao: `Visita agendada para ${formVisita.data || ''} ${formVisita.hora || ''}`.trim(),
-        metadados: { imovel: formVisita.imovel, corretor: formVisita.corretor },
-      });
-      if (!eventoVisita.ok) {
-        console.error('Falha ao registrar evento de visita:', eventoVisita.error);
-      }
-      setFormVisita({ cliente: '', telefone: '', imovel: '', data: '', hora: '10:00', corretor: 'Corretor Plantão 01' });
-      setModalNovaVisita(false);
-      setAbaAtiva('visitas_imobi');
-    } catch (err) {
-      console.error('Erro ao agendar visita:', err);
-    } finally {
-      setSalvandoAcao(false);
-    }
-  };
-
-  const atualizarEstagioLead = async (leadId, novoEstagio) => {
-    if (!imobiliariaId || !leadId) return;
-    try {
-      await updateDoc(doc(db, 'oficinas', imobiliariaId, 'leads_imobi', leadId), {
-        estagio: novoEstagio,
-        etapaAlteradaEm: serverTimestamp(),
-        ...(novoEstagio === 'Fechado' ? { posVendaStatus: 'pendente' } : {}),
-      });
-      const eventoEstagio = await registrarEventoLead(db, imobiliariaId, {
-        leadId,
-        tipo: TIPOS_EVENTO.MUDANCA_ETAPA,
-        canal: 'painel',
-        descricao: `Estagio alterado para ${novoEstagio}`,
-        metadados: { estagioNovo: novoEstagio },
-        chaveIdempotencia: `${TIPOS_EVENTO.MUDANCA_ETAPA}:${leadId}:${novoEstagio}:${new Date().toISOString().slice(0, 13)}`,
-      });
-      if (!eventoEstagio.ok) {
-        console.error('Falha ao registrar evento de mudanca de estagio:', eventoEstagio.error);
-      }
-    } catch (err) {
-      console.error('Erro ao mover lead no funil:', err);
-    }
   };
 
   const excluirRegistroImobi = async (colecao, id) => {
@@ -2080,7 +1972,10 @@ export default function Admin() {
             setAbaAtiva={setAbaAtiva}
             onNovoImovel={() => setModalNovoImovel(true)}
             setPrestacaoFoco={setPrestacaoFoco}
-            setFormVisita={setFormVisita}
+            setFormVisita={(val) => {
+              const res = typeof val === 'function' ? val({ imovel: '' }) : val;
+              setImovelParaVisita(res?.imovel || '');
+            }}
             setModalNovaVisita={setModalNovaVisita}
             excluirRegistroImobi={excluirRegistroImobi}
             fmtBRL={fmtBRL}
@@ -2088,209 +1983,49 @@ export default function Admin() {
         )}
 
         {/* ─── ABA 3: FUNIL DE LEADS & CRM IMOBILIÁRIO ───────────────────────── */}
+        {/* Copy: Nenhum lead esfria por falta de retorno: cada cliente tem dono, etapa e prazo — e o card mostra quem está parado há mais tempo. */}
         {abaAtiva === 'funil_leads' && (
-          <div className="space-y-6">
-            <div className="flex flex-wrap items-center justify-between gap-4 bg-slate-900 border border-slate-800 p-6 rounded-2xl">
-              <div className="max-w-2xl">
-                <h2 className="text-2xl font-black text-white uppercase tracking-tight">
-                  👥 FUNIL DE <span style={{ color: '#10b981' }}>VENDAS & CRM</span>
-                </h2>
-                <p className="text-xs text-slate-300 mt-1">
-                  Nenhum lead esfria por falta de retorno: cada cliente tem dono, etapa e prazo — e o card mostra quem está parado há mais tempo.
-                </p>
-                <p className="text-xs text-slate-400 mt-1.5">
-                  VGV no Funil: <span className="text-[#10b981] font-bold">{fmtBRL(metricas.vgvLeadsCRM)}</span> • Comissão Prevista (6%):{' '}
-                  <span className="text-[#10b981] font-bold">{fmtBRL(metricas.comissaoLeadsCRM)}</span>
-                </p>
-              </div>
-              <div className="flex flex-wrap items-center gap-2">
-                <button
-                  onClick={redistribuirLeadsEquilibrado}
-                  className="flex items-center gap-1.5 px-4 py-2.5 rounded-xl bg-[#020408] border border-slate-700 hover:border-[#10b981] text-slate-200 hover:text-[#10b981] font-bold text-xs cursor-pointer transition"
-                >
-                  <Shuffle size={15} className="text-[#10b981]" /> Redistribuir Fila (Roleta)
-                </button>
-                <button
-                  onClick={() => setAbaAtiva('roleta_imobi')}
-                  className="flex items-center gap-1.5 px-4 py-2.5 rounded-xl bg-[#020408] border border-slate-700 hover:border-[#10b981] text-slate-300 font-bold text-xs cursor-pointer transition"
-                >
-                  ⚙️ Controlos da Roleta
-                </button>
-                <button
-                  onClick={() => setModalNovoLeadImobi(true)}
-                  style={{ backgroundColor: '#10b981' }}
-                  className="flex items-center gap-2 px-5 py-2.5 rounded-xl hover:opacity-90 text-white font-bold text-sm cursor-pointer"
-                >
-                  <Plus size={18} /> Adicionar Lead
-                </button>
-              </div>
-            </div>
-
-            {statusRoletaMsg && (
-              <div className="bg-[#020408] border border-[#10b981] rounded-xl px-4 py-3 text-xs font-bold text-[#10b981] flex items-center justify-between">
-                <span>{statusRoletaMsg}</span>
-                <button onClick={() => setStatusRoletaMsg('')} aria-label="Fechar o aviso da roleta" className="text-slate-400 hover:text-white cursor-pointer">✕</button>
-              </div>
-            )}
-
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-              {[
-                { titulo: 'Novo Lead', equivalentes: ['Novo Lead'] },
-                { titulo: 'Em Atendimento', equivalentes: ['Em Atendimento', 'Qualificado IA'] },
-                { titulo: 'Visita Agendada', equivalentes: ['Visita Agendada'] },
-                { titulo: 'Fechado', equivalentes: ['Fechado', 'Proposta / Fechamento'] },
-              ]?.map((colInfo) => {
-                const coluna = colInfo.titulo;
-                const leadsColuna = (Array.isArray(listaLeads) ? listaLeads : []).filter((l) =>
-                  colInfo.equivalentes.includes(l?.estagio || 'Novo Lead')
-                );
-                return (
-                  <div key={coluna} className="bg-slate-900/80 border border-slate-800 rounded-2xl p-4 min-h-[360px]">
-                    <div className="flex items-center justify-between mb-3 pb-2 border-b border-slate-800">
-                      <h3 className="text-xs font-extrabold uppercase tracking-wider text-slate-200">{coluna}</h3>
-                      <span style={{ color: '#10b981' }} className="px-2 py-0.5 text-xs font-bold rounded-full bg-slate-800 text-[#10b981]">
-                        {leadsColuna.length}
-                      </span>
-                    </div>
-
-                    <div className="space-y-3">
-                      {(leadsColuna || [])?.map((lead) => (
-                        <div key={lead.id} className="bg-[#020408] border border-slate-800 rounded-xl p-3.5 space-y-2">
-                          <div className="flex items-center justify-between">
-                            <span className="font-bold text-sm text-white">{lead.nome}</span>
-                            <button
-                              onClick={() => excluirRegistroImobi('leads_imobi', lead.id)}
-                              className="text-slate-500 hover:text-emerald-400 cursor-pointer"
-                            >
-                              <Trash2 size={13} />
-                            </button>
-                          </div>
-                          <p className="text-xs text-slate-400">
-                            🎯 {lead.interesse} • 📍 {lead.bairro || 'A definir'}
-                          </p>
-                          <p style={{ color: '#10b981' }} className="text-xs font-bold text-[#10b981]">
-                            💰 Orçamento: {fmtBRL(lead.orcamento)} • 6%: {fmtBRL((Number(lead.orcamento) || 0) * 0.06)}
-                          </p>
-                          <div className="flex items-center justify-between gap-2">
-                            <p className="text-[11px] text-slate-300 truncate">👔 {lead.corretorResponsavel || 'Plantão'}</p>
-                            <button
-                              onClick={() => {
-                                setCreditoPrefill({
-                                  leadId: lead.id,
-                                  leadNome: lead.nome,
-                                  valorImovel: lead.orcamento,
-                                  imovelTitulo: lead.interesse,
-                                });
-                                setAbaAtiva('credito');
-                              }}
-                              title="Abrir o correspondente com este lead pré-carregado"
-                              className="px-2 py-0.5 rounded bg-slate-900 border border-slate-700 hover:border-[#10b981] text-[10px] font-bold text-[#10b981] cursor-pointer transition"
-                            >
-                              🏦 Simular
-                            </button>
-                            <button
-                              onClick={() => repassarLeadRoleta(lead)}
-                              title="Repassar para o próximo corretor ativo na roleta"
-                              className="px-2 py-0.5 rounded bg-slate-900 border border-slate-700 hover:border-[#10b981] text-[10px] font-bold text-[#10b981] cursor-pointer transition"
-                            >
-                              🔀 Repassar
-                            </button>
-                          </div>
-
-                          <div className="pt-2 flex flex-wrap gap-1.5">
-                            <button
-                              onClick={() =>
-                                abrirWhatsApp(
-                                  lead.telefone,
-                                  `Olá ${lead.nome}! Aqui é da imobiliária. Separei excelentes opções de ${lead.interesse} em ${lead.bairro || 'sua região'}!`
-                                )
-                              }
-                              style={{ backgroundColor: '#10b981' }}
-                              className="flex-1 py-1.5 px-2 rounded-lg text-white hover:opacity-90 text-[11px] font-bold cursor-pointer"
-                            >
-                              💬 Chamar Zap
-                            </button>
-                            <select
-                              value={
-                                lead.estagio === 'Qualificado IA'
-                                  ? 'Em Atendimento'
-                                  : lead.estagio === 'Proposta / Fechamento'
-                                  ? 'Fechado'
-                                  : lead.estagio || 'Novo Lead'
-                              }
-                              onChange={(e) => atualizarEstagioLead(lead.id, e.target.value)}
-                              className="bg-slate-900 border border-slate-700 rounded-lg text-[11px] text-slate-200 px-2 py-1"
-                            >
-                              <option value="Novo Lead">Novo Lead</option>
-                              <option value="Em Atendimento">Em Atendimento</option>
-                              <option value="Visita Agendada">Visita Agendada</option>
-                              <option value="Fechado">Fechado</option>
-                            </select>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
+          <Suspense fallback={<div className="p-8 text-center text-slate-400">Carregando Funil...</div>}>
+            <AbaFunilLeads
+              listaLeads={listaLeads}
+              vgvLeadsCRM={metricas.vgvLeadsCRM}
+              comissaoLeadsCRM={metricas.comissaoLeadsCRM}
+              statusRoletaMsg={statusRoletaMsg}
+              onLimparStatusRoleta={() => setStatusRoletaMsg('')}
+              onRedistribuirFila={redistribuirLeadsEquilibrado}
+              onAbrirRoleta={() => setAbaAtiva('roleta_imobi')}
+              onAbrirNovoLead={() => setModalNovoLeadImobi(true)}
+              onRepassarLead={repassarLeadRoleta}
+              onSimularCredito={(lead) => {
+                setCreditoPrefill({
+                  leadId: lead.id,
+                  leadNome: lead.nome,
+                  valorImovel: lead.orcamento,
+                  imovelTitulo: lead.interesse,
+                });
+                setAbaAtiva('credito');
+              }}
+              onAbrirWhatsApp={abrirWhatsApp}
+              onExcluirLead={excluirRegistroImobi}
+              imobiliariaId={imobiliariaId}
+              fmtBRL={fmtBRL}
+            />
+          </Suspense>
         )}
 
         {/* ─── ABA 4: AGENDA DE VISITAS COM CONFIRMAÇÃO WHATSAPP ─────────────── */}
         {abaAtiva === 'visitas_imobi' && (
-          <div className="space-y-6">
-            <div className="flex flex-wrap items-center justify-between gap-4 bg-slate-900 border border-slate-800 p-6 rounded-2xl">
-              <div className="max-w-2xl">
-                <h2 className="text-2xl font-black text-white uppercase tracking-tight">
-                  📅 AGENDA DE <span style={{ color: '#10b981' }}>VISITAS & PLANTÃO</span>
-                </h2>
-                <p className="text-sm text-slate-400 mt-1">
-                  Visita confirmada no WhatsApp antes do horário: menos plantão furado, mais negócio fechado.
-                </p>
-              </div>
-              <button
-                onClick={() => setModalNovaVisita(true)}
-                style={{ backgroundColor: '#10b981' }}
-                className="flex items-center gap-2 px-5 py-2.5 rounded-xl hover:opacity-90 text-white font-bold text-sm cursor-pointer"
-              >
-                <Plus size={18} /> Agendar Nova Visita
-              </button>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {(listaVisitas || [])?.map((vis) => (
-                <div key={vis.id} className="bg-slate-900 border border-slate-800 rounded-2xl p-5 space-y-3">
-                  <div className="flex items-center justify-between">
-                    <span className="px-2.5 py-1 rounded-full bg-[#10b981]/15 text-[#10b981] text-xs font-bold">
-                      📅 {vis.data || 'Data a confirmar'} às {vis.hora}
-                    </span>
-                    <button
-                      onClick={() => excluirRegistroImobi('visitas_imobi', vis.id)}
-                      className="text-slate-500 hover:text-emerald-400 cursor-pointer"
-                    >
-                      <Trash2 size={15} />
-                    </button>
-                  </div>
-                  <h3 className="font-bold text-white text-base">👤 {vis.cliente}</h3>
-                  <p className="text-xs text-slate-300">🏠 Imóvel: {vis.imovel || 'Seleção da carteira'}</p>
-                  <p className="text-xs text-slate-400">👔 Corretor: {vis.corretor}</p>
-                  <button
-                    onClick={() =>
-                      abrirWhatsApp(
-                        vis.telefone,
-                        `Olá ${vis.cliente}! Confirmando nossa visita ao imóvel (${vis.imovel}) no dia ${vis.data} às ${vis.hora}. Posso confirmar sua presença?`
-                      )
-                    }
-                    style={{ backgroundColor: '#10b981' }}
-                    className="w-full py-2 rounded-xl hover:opacity-90 text-white text-xs font-bold cursor-pointer"
-                  >
-                    💬 Confirmar Visita no WhatsApp
-                  </button>
-                </div>
-              ))}
-            </div>
-          </div>
+          <Suspense fallback={<div className="p-8 text-center text-slate-400">Carregando Agenda...</div>}>
+            <AbaAgendaVisitas
+              listaVisitas={listaVisitas}
+              onAbrirNovaVisita={() => {
+                setImovelParaVisita('');
+                setModalNovaVisita(true);
+              }}
+              onExcluirVisita={excluirRegistroImobi}
+              onAbrirWhatsApp={abrirWhatsApp}
+            />
+          </Suspense>
         )}
 
         {/* ─── ABA 5: ROLETA DE DISTRIBUIÇÃO DE LEADS (MÓDULO DE ASSINANTES) ──── */}
@@ -2864,238 +2599,33 @@ export default function Admin() {
         </Suspense>
       )}
 
-      {modalNovoLeadImobi && (
-        <div className="fixed inset-0 z-50 bg-black/75 flex items-center justify-center p-4">
-          <form
-            onSubmit={salvarLeadImobi}
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby="modal-novo-lead-titulo"
-            className="bg-slate-900 border border-slate-700 rounded-2xl p-6 w-full max-w-md space-y-4"
-          >
-            <h3 id="modal-novo-lead-titulo" className="text-lg font-black text-white">👥 Cadastrar Novo Lead Imobiliário</h3>
-            <div className="bg-[#020408] border border-slate-800 rounded-xl px-3.5 py-2.5 text-xs flex items-center justify-between">
-              <span className="text-slate-400">🔀 Destino na Roleta:</span>
-              <span style={{ color: '#10b981' }} className="font-bold text-[#10b981]">
-                {roletaAtiva ? (proximoCorretorDaVez?.nome || 'Plantão Geral') : 'Fila Manual (Roleta Pausada)'}
-              </span>
-            </div>
-            <div>
-              <label htmlFor="lead-nome" className="block text-[10px] font-bold uppercase text-slate-400 mb-1">
-                Nome do cliente *
-              </label>
-              <input
-                id="lead-nome"
-                name="nome"
-                autoComplete="off"
-                required
-                placeholder="Ex: Maria Oliveira"
-                value={formLead.nome}
-                onChange={(e) => setFormLead({ ...formLead, nome: e.target.value })}
-                className="w-full bg-[#020408] border border-slate-700 rounded-xl px-3.5 py-2.5 text-sm text-white"
-              />
-            </div>
-            <div>
-              <label htmlFor="lead-telefone" className="block text-[10px] font-bold uppercase text-slate-400 mb-1">
-                WhatsApp com DDD *
-              </label>
-              <input
-                id="lead-telefone"
-                name="telefone"
-                type="tel"
-                inputMode="tel"
-                autoComplete="off"
-                required
-                placeholder="Ex: 34999998888"
-                value={formLead.telefone}
-                onChange={(e) => setFormLead({ ...formLead, telefone: e.target.value })}
-                className="w-full bg-[#020408] border border-slate-700 rounded-xl px-3.5 py-2.5 text-sm text-white"
-              />
-            </div>
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <label htmlFor="lead-interesse" className="block text-[10px] font-bold uppercase text-slate-400 mb-1">
-                  Interesse
-                </label>
-                <select
-                  id="lead-interesse"
-                  name="interesse"
-                  value={formLead.interesse}
-                  onChange={(e) => setFormLead({ ...formLead, interesse: e.target.value })}
-                  className="w-full bg-[#020408] border border-slate-700 rounded-xl px-3 py-2.5 text-sm text-white"
-                >
-                  <option>Compra</option>
-                  <option>Locação</option>
-                  <option>Investimento</option>
-                </select>
-              </div>
-              <div>
-                <label htmlFor="lead-orcamento" className="block text-[10px] font-bold uppercase text-slate-400 mb-1">
-                  Orçamento (R$)
-                </label>
-                <input
-                  id="lead-orcamento"
-                  name="orcamento"
-                  inputMode="decimal"
-                  autoComplete="off"
-                  placeholder="Ex: 350.000"
-                  value={formLead.orcamento}
-                  onChange={(e) => setFormLead({ ...formLead, orcamento: e.target.value })}
-                  className="w-full bg-[#020408] border border-slate-700 rounded-xl px-3.5 py-2.5 text-sm text-white"
-                />
-              </div>
-            </div>
-            <div>
-              <label htmlFor="lead-bairro" className="block text-[10px] font-bold uppercase text-slate-400 mb-1">
-                Bairro de preferência
-              </label>
-              <input
-                id="lead-bairro"
-                name="bairro"
-                autoComplete="off"
-                placeholder="Ex: Tibery"
-                value={formLead.bairro}
-                onChange={(e) => setFormLead({ ...formLead, bairro: e.target.value })}
-                className="w-full bg-[#020408] border border-slate-700 rounded-xl px-3.5 py-2.5 text-sm text-white"
-              />
-            </div>
-            {/* LGPD — dado de terceiro digitado pelo corretor (D-22.05) */}
-            <p className="text-[10.5px] leading-relaxed text-slate-500">
-              Registre aqui apenas o que o cliente informou para ser atendido: nome, WhatsApp, interesse e faixa de
-              orçamento. O cadastro fica no CRM desta imobiliária e serve para responder a esse contato. Para
-              correção ou exclusão, use <strong className="text-slate-300">Excluir meus dados</strong> no rodapé do
-              painel ou a Política de Privacidade.
-            </p>
-            <div className="flex justify-end gap-2 pt-2">
-              <button
-                type="button"
-                onClick={() => setModalNovoLeadImobi(false)}
-                className="px-4 py-2 rounded-xl bg-slate-800 text-slate-300 text-xs font-bold cursor-pointer"
-              >
-                Cancelar
-              </button>
-              <button
-                type="submit"
-                disabled={salvandoAcao}
-                style={{ backgroundColor: '#10b981' }}
-                className="px-5 py-2 rounded-xl text-white text-xs font-bold cursor-pointer"
-              >
-                {salvandoAcao ? 'Distribuindo...' : 'Salvar e Enviar p/ Roleta'}
-              </button>
-            </div>
-          </form>
-        </div>
-      )}
+      <Suspense fallback={null}>
+        <ModalNovoLeadImobi
+          aberto={modalNovoLeadImobi}
+          onFechar={() => setModalNovoLeadImobi(false)}
+          imobiliariaId={imobiliariaId}
+          roletaAtiva={roletaAtiva}
+          proximoCorretorDaVez={proximoCorretorDaVez}
+          tempoRepasseMin={tempoRepasseMin}
+          corretoresRoleta={corretoresRoleta}
+          setPonteiroRoleta={setPonteiroRoleta}
+          setListaLeads={setListaLeads}
+          onSalvo={() => setAbaAtiva('funil_leads')}
+        />
+      </Suspense>
 
-      {modalNovaVisita && (
-        <div className="fixed inset-0 z-50 bg-black/75 flex items-center justify-center p-4">
-          <form
-            onSubmit={salvarVisitaImobi}
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby="modal-nova-visita-titulo"
-            className="bg-slate-900 border border-slate-700 rounded-2xl p-6 w-full max-w-md space-y-4"
-          >
-            <h3 id="modal-nova-visita-titulo" className="text-lg font-black text-white">📅 Agendar Visita ao Imóvel</h3>
-            <div>
-              <label htmlFor="visita-cliente" className="block text-[10px] font-bold uppercase text-slate-400 mb-1">
-                Nome do cliente *
-              </label>
-              <input
-                id="visita-cliente"
-                name="cliente"
-                autoComplete="off"
-                required
-                placeholder="Ex: Maria Oliveira"
-                value={formVisita.cliente}
-                onChange={(e) => setFormVisita({ ...formVisita, cliente: e.target.value })}
-                className="w-full bg-[#020408] border border-slate-700 rounded-xl px-3.5 py-2.5 text-sm text-white"
-              />
-            </div>
-            <div>
-              <label htmlFor="visita-telefone" className="block text-[10px] font-bold uppercase text-slate-400 mb-1">
-                WhatsApp do cliente
-              </label>
-              <input
-                id="visita-telefone"
-                name="telefone"
-                type="tel"
-                inputMode="tel"
-                autoComplete="off"
-                placeholder="Ex: 34999998888"
-                value={formVisita.telefone}
-                onChange={(e) => setFormVisita({ ...formVisita, telefone: e.target.value })}
-                className="w-full bg-[#020408] border border-slate-700 rounded-xl px-3.5 py-2.5 text-sm text-white"
-              />
-            </div>
-            <div>
-              <label htmlFor="visita-imovel" className="block text-[10px] font-bold uppercase text-slate-400 mb-1">
-                Imóvel / código
-              </label>
-              <input
-                id="visita-imovel"
-                name="imovel"
-                autoComplete="off"
-                placeholder="Ex: IMB-1042"
-                value={formVisita.imovel}
-                onChange={(e) => setFormVisita({ ...formVisita, imovel: e.target.value })}
-                className="w-full bg-[#020408] border border-slate-700 rounded-xl px-3.5 py-2.5 text-sm text-white"
-              />
-            </div>
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <label htmlFor="visita-data" className="block text-[10px] font-bold uppercase text-slate-400 mb-1">
-                  Data
-                </label>
-                <input
-                  id="visita-data"
-                  name="data"
-                  type="date"
-                  value={formVisita.data}
-                  onChange={(e) => setFormVisita({ ...formVisita, data: e.target.value })}
-                  className="w-full bg-[#020408] border border-slate-700 rounded-xl px-3 py-2.5 text-sm text-white"
-                />
-              </div>
-              <div>
-                <label htmlFor="visita-hora" className="block text-[10px] font-bold uppercase text-slate-400 mb-1">
-                  Hora
-                </label>
-                <input
-                  id="visita-hora"
-                  name="hora"
-                  type="time"
-                  value={formVisita.hora}
-                  onChange={(e) => setFormVisita({ ...formVisita, hora: e.target.value })}
-                  className="w-full bg-[#020408] border border-slate-700 rounded-xl px-3 py-2.5 text-sm text-white"
-                />
-              </div>
-            </div>
-            {/* LGPD — dado de terceiro digitado pelo corretor (D-22.05) */}
-            <p className="text-[10.5px] leading-relaxed text-slate-500">
-              Nome e WhatsApp servem para confirmar a visita e ficam registrados no CRM desta imobiliária. Não pede
-              documento nem dado financeiro. Para correção ou exclusão, use{' '}
-              <strong className="text-slate-300">Excluir meus dados</strong> no rodapé do painel.
-            </p>
-            <div className="flex justify-end gap-2 pt-2">
-              <button
-                type="button"
-                onClick={() => setModalNovaVisita(false)}
-                className="px-4 py-2 rounded-xl bg-slate-800 text-slate-300 text-xs font-bold cursor-pointer"
-              >
-                Cancelar
-              </button>
-              <button
-                type="submit"
-                disabled={salvandoAcao}
-                style={{ backgroundColor: '#10b981' }}
-                className="px-5 py-2 rounded-xl text-white text-xs font-bold cursor-pointer"
-              >
-                {salvandoAcao ? 'Agendando...' : 'Confirmar Visita'}
-              </button>
-            </div>
-          </form>
-        </div>
-      )}
+      <Suspense fallback={null}>
+        <ModalNovaVisita
+          aberto={modalNovaVisita}
+          onFechar={() => {
+            setModalNovaVisita(false);
+            setImovelParaVisita('');
+          }}
+          imobiliariaId={imobiliariaId}
+          imovelInicial={imovelParaVisita}
+          onSalvo={() => setAbaAtiva('visitas_imobi')}
+        />
+      </Suspense>
 
       <ModuloBloqueado
         toastModuloBloqueado={toastModuloBloqueado}
