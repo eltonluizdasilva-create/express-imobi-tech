@@ -193,6 +193,8 @@ ok(
 /* ------------------- 7. contratos de fonte (regressão) ------------------- */
 const portal = ler('src/PortalCliente.jsx');
 const admin = ler('src/AdminNovo.jsx');
+const modalImovel = ler('src/components/imobi/ModalNovoImovel.jsx');
+const abaCaptacao = ler('src/components/imobi/AbaCaptacaoVitrine.jsx');
 const hook = ler('src/hooks/useCarregamentoInicial.jsx');
 const configuracoes = ler('src/Configuracoes.jsx');
 const numeroSuporte = (ler('src/lib/contato.js').match(/WHATSAPP_SUPORTE\s*=\s*'(\d+)'/) || [])[1] || '';
@@ -219,17 +221,17 @@ ok(
 );
 ok('deep link ?imovel= abre a ficha do anúncio', portal.includes('if (!imovelIdDireto) return;'));
 
-ok('AdminNovo grava o imóvel com orçamento de fotos', admin.includes('limitarFotosAoOrcamento(fotosEscolhidas)'));
+ok('ModalNovoImovel grava o imóvel com orçamento de fotos', modalImovel.includes('limitarFotosAoOrcamento(fotosEscolhidas)'));
 ok(
-  'AdminNovo copia a marca da imobiliária para o anúncio',
-  admin.includes('snapshotMarcaImobiliaria(config, dadosImobiliaria)'),
+  'ModalNovoImovel copia a marca da imobiliária para o anúncio',
+  modalImovel.includes('snapshotMarcaImobiliaria(config, dadosImobiliaria)'),
 );
 ok(
-  'AdminNovo fecha o modal só depois de gravar o documento',
-  admin.indexOf('setModalNovoImovel(false)') > admin.indexOf("'imoveis_imobi'"),
+  'ModalNovoImovel fecha o modal só depois de gravar o documento',
+  modalImovel.indexOf('setModalNovoImovel(false)') > modalImovel.indexOf("'imoveis_imobi'"),
 );
-ok('AdminNovo mostra o erro do salvamento dentro do modal', admin.includes('{erroImovel && ('));
-ok('AdminNovo confirma o sucesso na aba Captação', admin.includes('{sucessoImovel && ('));
+ok('ModalNovoImovel mostra o erro do salvamento dentro do modal', modalImovel.includes('{erroImovel && ('));
+ok('AbaCaptacaoVitrine confirma o sucesso na aba Captação', abaCaptacao.includes('{sucessoImovel && ('));
 ok(
   'hook de carga lê config canônica e legada',
   hook.includes('CONFIG_CANONICA') && hook.includes('CONFIG_LEGADA') && hook.includes('mesclarConfigImobiliaria'),
