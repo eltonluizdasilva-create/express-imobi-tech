@@ -1,7 +1,19 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { db } from './lib/firebase';
-import { WHATSAPP_SUPORTE } from './lib/contato';
+// D-23.39 — o anúncio fala em nome da imobiliária: WhatsApp do imóvel (nunca o
+// número do suporte) e ficha expandida com galeria, link direto e captura de
+// lead no CRM do tenant quando não há telefone publicado.
+import {
+  creciDoImovel,
+  imovelCorrespondeAoTermo,
+  imovelEhExemplo,
+  nomeDaImobiliariaDoImovel,
+  rotuloCodigoImovel,
+  urlImovelPortal,
+  urlWhatsappImovel,
+  whatsappDoImovel,
+} from './lib/contatoImovel';
 import {
   collectionGroup,
   query,
@@ -44,6 +56,10 @@ import {
   Home,
   Key,
   Share2,
+  X,
+  ChevronLeft,
+  ChevronRight,
+  Link2,
 } from 'lucide-react';
 
 // ==========================================
@@ -1873,6 +1889,15 @@ export default function PortalCliente() {
   const [vitrineEmDemonstracao, setVitrineEmDemonstracao] = useState(false);
   // Fluxo explícito de exclusão de dados (LGPD) acessível no portal público.
   const [exclusaoAberta, setExclusaoAberta] = useState(false);
+  // D-23.39 — ficha expandida do imóvel: galeria, detalhes técnicos, link
+  // partilhável (?imovel=CODIGO) e formulário de lead quando a imobiliária não
+  // publicou WhatsApp no anúncio.
+  const [imovelAberto, setImovelAberto] = useState(null);
+  const [fotoAtivaFicha, setFotoAtivaFicha] = useState(0);
+  const [linkCopiado, setLinkCopiado] = useState(false);
+  const [leadImovel, setLeadImovel] = useState({ nome: '', whatsapp: '', mensagem: '' });
+  const [leadEnviando, setLeadEnviando] = useState(false);
+  const [leadStatus, setLeadStatus] = useState({ tipo: '', texto: '' });
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -1993,29 +2018,93 @@ export default function PortalCliente() {
     carregarVitrinePublica();
   }, []);
 
-  const demonstrarInteresseImovel = async (imv) => {
-    if (nomePortal.trim() && String(whatsappPortal || '').replace(/\D/g, '').length >= 8) {
-      await registrarLeadNoCRM({
-        nome: nomePortal,
-        telefone: whatsappPortal,
-        interesse: `${imv.finalidade || 'Compra'} — ${imv.titulo}`,
-        bairro: imv.bairro || 'Vitrine Digital',
-        orcamento: Number(imv.valor) || 0,
-        detalhes: `Lead clicou em "Tenho Interesse" na Vitrine Digital para o imóvel ${imv.codigo || ''} (${imv.padraoImovel || 'Médio Padrão'}).`,
-        oficinaIdPreferencial: oficinaIdPortal,
+  // ─── Ficha do imóvel: abrir, contactar, partilhar e captar lead ───────────
+  const abrirFichaImovel = (imv) => {
+    if (!imv) return;
+    setImovelAberto(imv);
+    setFotoAtivaFicha(0);
+    setLinkCopiado(false);
+    setLeadStatus({ tipo: '', texto: '' });
+    setLeadImovel({
+      nome: String(nomePortal || '').trim(),
+      whatsapp: String(whatsappPortal || '').trim(),
+      mensagem: '',
+    });
+  };
+
+  const fecharFichaImovel = () => {
+    setImovelAberto(null);
+    setLinkCopiado(false);
+    setLeadStatus({ tipo: '', texto: '' });
+  };
+
+  // Regra D-23.38: quando o anúncio não tem WhatsApp da imobiliária, o portal
+  // capta o lead no CRM do tenant — jamais empresta o número do suporte.
+  const enviarLeadDoImovel = async (evento) => {
+    evento?.preventDefault?.();
+    const alvo = imovelAberto;
+    if (!alvo) return;
+
+    const nome = String(leadImovel.nome || '').trim();
+    const telefone = String(leadImovel.whatsapp || '').replace(/\D/g, '');
+    if (!nome || telefone.length < 8) {
+      setLeadStatus({
+        tipo: 'erro',
+        texto: 'Informe o seu nome e um WhatsApp válido (com DDD) para o corretor poder responder.',
       });
+      return;
     }
 
-    const foneCorretor = String(imv?.whatsappCorretor || WHATSAPP_SUPORTE).replace(/\D/g, '');
-    const msg =
-      `Olá! Vi na Vitrine Digital da Imobiliária o imóvel *${imv.codigo || 'IMÓVEL'} - ${imv.titulo}* ` +
-      `(${imv.padraoImovel || 'Disponível'}) em *${imv.bairro || 'destaque'}* pelo valor de *${fmtBRL(imv.valor)}* ` +
-      `e tenho interesse em receber mais informações e agendar uma visita!`;
+    setLeadEnviando(true);
+    setLeadStatus({ tipo: '', texto: '' });
 
-    const url = foneCorretor
-      ? `https://wa.me/${foneCorretor}?text=${encodeURIComponent(msg)}`
-      : `https://api.whatsapp.com/send?text=${encodeURIComponent(msg)}`;
-    window.open(url, '_blank');
+    const okLead = await registrarLeadNoCRM({
+      nome,
+      telefone,
+      interesse: `${alvo.finalidade || 'Compra'} — ${alvo.titulo || rotuloCodigoImovel(alvo)}`,
+      bairro: alvo.bairro || 'Vitrine Digital',
+      orcamento: Number(alvo.valor) || 0,
+      detalhes:
+        `Interesse na ficha do imóvel ${rotuloCodigoImovel(alvo)}` +
+        (String(leadImovel.mensagem || '').trim()
+          ? ` — mensagem do cliente: ${String(leadImovel.mensagem).trim()}`
+          : ''),
+      oficinaIdPreferencial: alvo.oficinaId || oficinaIdPortal,
+    });
+
+    setLeadEnviando(false);
+
+    if (!okLead) {
+      setLeadStatus({
+        tipo: 'erro',
+        texto: 'Não foi possível enviar agora. Tente novamente ou fale pelo WhatsApp da imobiliária.',
+      });
+      return;
+    }
+
+    setNomePortal(nome);
+    setWhatsappPortal(String(leadImovel.whatsapp || '').trim());
+    setLeadStatus({
+      tipo: 'ok',
+      texto: 'Pedido enviado! O corretor responsável já recebeu o seu contacto no CRM da imobiliária.',
+    });
+    setLeadImovel((prev) => ({ ...prev, mensagem: '' }));
+  };
+
+  const copiarLinkImovel = async () => {
+    if (!imovelAberto) return;
+    const link = urlImovelPortal(
+      typeof window !== 'undefined' ? window.location.origin : '',
+      imovelAberto,
+      { imobiliariaId: imovelAberto.oficinaId || oficinaIdPortal || filtroImobiliaria },
+    );
+    try {
+      await navigator.clipboard.writeText(link);
+      setLinkCopiado(true);
+    } catch {
+      setLinkCopiado(false);
+      if (typeof window !== 'undefined') window.prompt('Copie o link deste imóvel:', link);
+    }
   };
 
   const formatarDataBR = (valor) => {
@@ -2189,7 +2278,7 @@ export default function PortalCliente() {
   const imovelDiretoNaoEncontrado =
     Boolean(imovelIdDireto) &&
     imoveisVitrine.length > 0 &&
-    !imoveisVitrine.some((imovel) => String(imovel?.id || '') === imovelIdDireto);
+    !imoveisVitrine.some((imovel) => imovelCorrespondeAoTermo(imovel, imovelIdDireto));
 
   // D-23.37 — cidade e busca são geradas/derivadas dos imóveis realmente
   // publicados (publico: true). Cartão de demonstração nunca alimenta o filtro.
@@ -2204,7 +2293,7 @@ export default function PortalCliente() {
   ).sort((a, b) => a.localeCompare(b, 'pt-BR'));
 
   const imoveisFiltrados = (imoveisVitrine || []).filter((imv) => {
-    if (imovelIdDireto && String(imv?.id || '') !== imovelIdDireto) return false;
+    if (imovelIdDireto && !imovelCorrespondeAoTermo(imv, imovelIdDireto)) return false;
 
     if (cidadeFiltro !== 'Todas') {
       const cidadeImovel = String(imv?.cidade || imv?.municipio || '').trim();
@@ -2226,6 +2315,38 @@ export default function PortalCliente() {
       return /lote|terreno|fazenda|rural|ch[aá]cara|s[ií]tio/i.test(imv?.tipo || '');
     return true;
   });
+
+  // Deep link ?imovel=CODIGO: abre a ficha assim que o anúncio aparece na
+  // vitrine (o código divulgado não é o id do documento no Firestore).
+  useEffect(() => {
+    if (!imovelIdDireto) return;
+    const achado = (imoveisVitrine || []).find((imv) =>
+      imovelCorrespondeAoTermo(imv, imovelIdDireto),
+    );
+    if (!achado) return;
+    setImovelAberto(achado);
+    setFotoAtivaFicha(0);
+    setLinkCopiado(false);
+  }, [imoveisVitrine, imovelIdDireto]);
+
+  // Dados derivados da ficha aberta: galeria, contacto da imobiliária e selo
+  // de "exemplo" para os anúncios de demonstração do portal.
+  const fotosFicha = imovelAberto
+    ? Array.isArray(imovelAberto.fotos) && imovelAberto.fotos.length > 0
+      ? imovelAberto.fotos
+      : imovelAberto.fotoCapa
+        ? [imovelAberto.fotoCapa]
+        : []
+    : [];
+  const fotoFichaAtual =
+    fotosFicha[fotoAtivaFicha] || fotosFicha[0] || imovelAberto?.fotoCapa || FOTOS_EXEMPLO.apartamento;
+  const whatsappFicha = imovelAberto ? whatsappDoImovel(imovelAberto) : '';
+  const linkWhatsappFicha = imovelAberto
+    ? urlWhatsappImovel(imovelAberto, { nome: String(leadImovel.nome || nomePortal || '').trim() })
+    : '';
+  const exemploFicha = imovelAberto
+    ? imovelEhExemplo(imovelAberto, { vitrineEmDemonstracao })
+    : false;
 
   return (
     <div className="flex flex-col min-h-screen bg-[#020408] text-white font-sans overflow-x-hidden pt-14">
@@ -2400,8 +2521,20 @@ export default function PortalCliente() {
                         className="rounded-3xl border border-slate-800 hover:border-[#10b981] bg-slate-950 overflow-hidden flex flex-col justify-between transition-all shadow-xl"
                       >
                         <div>
-                          {/* Imagem de Capa + Seletor de Galeria */}
-                          <div className="relative h-52 w-full bg-[#020408] overflow-hidden border-b border-slate-800">
+                          {/* Imagem de Capa + Seletor de Galeria (clique abre a ficha) */}
+                          <div
+                            role="button"
+                            tabIndex={0}
+                            onClick={() => abrirFichaImovel(imv)}
+                            onKeyDown={(evento) => {
+                              if (evento.key === 'Enter' || evento.key === ' ') {
+                                evento.preventDefault();
+                                abrirFichaImovel(imv);
+                              }
+                            }}
+                            aria-label={`Abrir a ficha completa do imóvel ${imv.codigo || imv.titulo || ''}`}
+                            className="relative h-52 w-full bg-[#020408] overflow-hidden border-b border-slate-800 cursor-pointer"
+                          >
                             <img
                               src={fotoAtual}
                               alt={ehExemplo ? `Imagem ilustrativa de exemplo — ${imv.titulo || 'imóvel'}` : imv.titulo}
@@ -2496,13 +2629,26 @@ export default function PortalCliente() {
                             </span>
                             <span className="text-xl font-black text-[#10b981]">{fmtBRL(imv.valor)}</span>
                           </div>
-                          <button
-                            type="button"
-                            onClick={() => demonstrarInteresseImovel(imv)}
-                            className="px-4 py-2.5 rounded-xl bg-[#10b981] text-[#020408] font-black text-xs uppercase tracking-wider hover:opacity-90 transition cursor-pointer shadow-lg shadow-[#10b981]/20"
-                          >
-                            💬 Tenho Interesse
-                          </button>
+                          <div className="flex items-center gap-2">
+                            {whatsappDoImovel(imv) && (
+                              <a
+                                href={urlWhatsappImovel(imv, { nome: nomePortal })}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                aria-label={`Falar no WhatsApp da imobiliária sobre o imóvel ${imv.codigo || imv.titulo || ''}`}
+                                className="inline-flex items-center gap-1.5 rounded-xl border border-[#10b981]/50 px-3 py-2.5 text-[11px] font-black uppercase tracking-wider text-[#10b981] transition hover:bg-[#10b981]/10"
+                              >
+                                <Phone size={13} aria-hidden="true" /> WhatsApp
+                              </a>
+                            )}
+                            <button
+                              type="button"
+                              onClick={() => abrirFichaImovel(imv)}
+                              className="px-4 py-2.5 rounded-xl bg-[#10b981] text-[#020408] font-black text-xs uppercase tracking-wider hover:opacity-90 transition cursor-pointer shadow-lg shadow-[#10b981]/20"
+                            >
+                              💬 Tenho Interesse
+                            </button>
+                          </div>
                         </div>
                       </div>
                     );
@@ -2825,6 +2971,291 @@ export default function PortalCliente() {
           </div>
         )}
       </main>
+
+      {/* D-23.39 — FICHA EXPANDIDA DO IMÓVEL: galeria navegável, ficha técnica,
+          imobiliária responsável, link partilhável e contacto. Sem WhatsApp
+          publicado no anúncio, o visitante deixa o contacto aqui e o lead cai no
+          CRM da imobiliária (nunca no número do suporte da plataforma). */}
+      {imovelAberto && (
+        <div
+          role="dialog"
+          aria-modal="true"
+          aria-label={`Ficha do imóvel ${rotuloCodigoImovel(imovelAberto)}`}
+          className="fixed inset-0 z-[70] flex items-start justify-center overflow-y-auto bg-[#020408]/90 p-3 backdrop-blur-sm sm:items-center sm:p-6"
+          onClick={fecharFichaImovel}
+        >
+          <div
+            tabIndex={-1}
+            onClick={(evento) => evento.stopPropagation()}
+            onKeyDown={(evento) => {
+              if (evento.key === 'Escape') fecharFichaImovel();
+            }}
+            className="my-4 w-full max-w-4xl overflow-hidden rounded-3xl border border-[#10b981]/30 bg-slate-950 text-left shadow-[0_0_60px_rgba(16,185,129,0.15)] sm:my-0"
+          >
+            <div className="flex items-start justify-between gap-3 border-b border-slate-800 px-4 py-3 sm:px-6">
+              <div className="min-w-0">
+                <span className="text-[10px] font-black uppercase tracking-[0.2em] text-[#10b981]">
+                  {rotuloCodigoImovel(imovelAberto)} · {imovelAberto.finalidade || 'Venda'}
+                </span>
+                <h2 className="mt-0.5 text-base font-black leading-snug text-white sm:text-lg">
+                  {imovelAberto.titulo || 'Imóvel'}
+                </h2>
+              </div>
+              <button
+                type="button"
+                onClick={fecharFichaImovel}
+                aria-label="Fechar a ficha do imóvel"
+                className="shrink-0 cursor-pointer rounded-xl border border-slate-700 p-2 text-slate-300 transition hover:border-[#10b981] hover:text-white"
+              >
+                <X size={16} aria-hidden="true" />
+              </button>
+            </div>
+            <div className="max-h-[85vh] overflow-y-auto">
+              <div className="relative h-56 w-full bg-[#020408] sm:h-80">
+                <img
+                  src={fotoFichaAtual}
+                  alt={
+                    exemploFicha
+                      ? `Imagem ilustrativa de exemplo — ${imovelAberto.titulo || 'imóvel'}`
+                      : imovelAberto.titulo || 'Foto do imóvel'
+                  }
+                  className="h-full w-full object-cover"
+                />
+                {exemploFicha && (
+                  <span className="absolute left-3 top-3 rounded-full bg-amber-500 px-2.5 py-0.5 text-[10px] font-black uppercase tracking-wide text-amber-950">
+                    Exemplo
+                  </span>
+                )}
+                {fotosFicha.length > 1 && (
+                  <>
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setFotoAtivaFicha((prev) => (prev - 1 + fotosFicha.length) % fotosFicha.length)
+                      }
+                      aria-label="Foto anterior"
+                      className="absolute left-2 top-1/2 -translate-y-1/2 cursor-pointer rounded-full bg-black/70 p-2 text-white transition hover:bg-black"
+                    >
+                      <ChevronLeft size={16} aria-hidden="true" />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setFotoAtivaFicha((prev) => (prev + 1) % fotosFicha.length)}
+                      aria-label="Próxima foto"
+                      className="absolute right-2 top-1/2 -translate-y-1/2 cursor-pointer rounded-full bg-black/70 p-2 text-white transition hover:bg-black"
+                    >
+                      <ChevronRight size={16} aria-hidden="true" />
+                    </button>
+                    <span className="absolute bottom-3 right-3 rounded-full bg-black/70 px-2 py-0.5 text-[10px] font-black text-white">
+                      {fotoAtivaFicha + 1}/{fotosFicha.length}
+                    </span>
+                  </>
+                )}
+              </div>
+
+              {fotosFicha.length > 1 && (
+                <div className="flex gap-1.5 overflow-x-auto border-b border-slate-900 px-4 py-2 sm:px-6">
+                  {fotosFicha.map((fUrl, idx) => (
+                    <button
+                      key={`${fUrl}_${idx}`}
+                      type="button"
+                      onClick={() => setFotoAtivaFicha(idx)}
+                      aria-label={`Ver foto ${idx + 1} de ${fotosFicha.length}`}
+                      aria-pressed={fotoAtivaFicha === idx}
+                      className={`h-12 w-16 shrink-0 cursor-pointer overflow-hidden rounded-lg border-2 ${
+                        fotoAtivaFicha === idx ? 'border-[#10b981]' : 'border-transparent opacity-70'
+                      }`}
+                    >
+                      <img src={fUrl} alt={`Miniatura ${idx + 1}`} className="h-full w-full object-cover" />
+                    </button>
+                  ))}
+                </div>
+              )}
+              <div className="space-y-4 px-4 py-4 sm:px-6">
+                <div className="flex flex-wrap items-center gap-2">
+                  <span className="rounded-full bg-[#10b981]/15 px-2.5 py-1 text-[10px] font-black uppercase tracking-wide text-[#10b981]">
+                    {imovelAberto.tipo || 'Imóvel'}
+                  </span>
+                  <span className="rounded-full border border-slate-700 px-2.5 py-1 text-[10px] font-black uppercase tracking-wide text-slate-300">
+                    {imovelAberto.padraoImovel || 'Médio Padrão'}
+                  </span>
+                  <span className="rounded-full border border-slate-700 px-2.5 py-1 text-[10px] font-black uppercase tracking-wide text-slate-300">
+                    {imovelAberto.status || 'Disponível'}
+                  </span>
+                </div>
+
+                <p className="text-2xl font-black text-[#10b981]">
+                  {fmtBRL(imovelAberto.valor)}
+                  {imovelAberto.finalidade === 'Locação' && (
+                    <span className="ml-1 text-xs font-bold text-slate-400">/mês</span>
+                  )}
+                </p>
+
+                <div className="grid grid-cols-2 gap-2 text-[11px] sm:grid-cols-3">
+                  {[
+                    { rotulo: 'Cidade', valor: imovelAberto.cidade || imovelAberto.municipio },
+                    { rotulo: 'Bairro', valor: imovelAberto.bairro },
+                    { rotulo: 'Quartos', valor: imovelAberto.quartos },
+                    { rotulo: 'Suítes', valor: imovelAberto.suites },
+                    { rotulo: 'Vagas', valor: imovelAberto.vagas },
+                    {
+                      rotulo: 'Área construída',
+                      valor: imovelAberto.areaConstruida ? `${imovelAberto.areaConstruida} m²` : '',
+                    },
+                    {
+                      rotulo: 'Terreno',
+                      valor: imovelAberto.metragemTerreno ? `${imovelAberto.metragemTerreno} m²` : '',
+                    },
+                    {
+                      rotulo: 'Quadra / Lote',
+                      valor: [imovelAberto.quadra, imovelAberto.lote].filter(Boolean).join(' · '),
+                    },
+                    { rotulo: 'Área rural', valor: imovelAberto.hectares ? `${imovelAberto.hectares} ha` : '' },
+                    { rotulo: 'Aptidão rural', valor: imovelAberto.aptidaoRural },
+                    { rotulo: 'Garantia', valor: imovelAberto.modalidadeGarantia },
+                    {
+                      rotulo: 'Condomínio',
+                      valor: imovelAberto.condominio ? fmtBRL(imovelAberto.condominio) : '',
+                    },
+                  ]
+                    .filter((linha) => String(linha.valor || '').trim())
+                    .map((linha) => (
+                      <div
+                        key={linha.rotulo}
+                        className="rounded-xl border border-slate-800 bg-[#020408] px-3 py-2"
+                      >
+                        <span className="block text-[9px] font-black uppercase tracking-wide text-slate-500">
+                          {linha.rotulo}
+                        </span>
+                        <span className="font-bold text-white">{linha.valor}</span>
+                      </div>
+                    ))}
+                </div>
+
+                {(imovelAberto.descricao ||
+                  imovelAberto.observacoes ||
+                  imovelAberto.benfeitorias ||
+                  imovelAberto.regrasLocacao) && (
+                  <div className="rounded-2xl border border-slate-800 bg-[#020408] p-3 text-[11px] leading-relaxed text-slate-300">
+                    <span className="mb-1 block text-[9px] font-black uppercase tracking-wide text-slate-500">
+                      Sobre o imóvel
+                    </span>
+                    {imovelAberto.descricao ||
+                      imovelAberto.observacoes ||
+                      imovelAberto.benfeitorias ||
+                      imovelAberto.regrasLocacao}
+                  </div>
+                )}
+                <div className="rounded-2xl border border-[#10b981]/30 bg-[#020408] p-3">
+                  <div className="mb-2 flex flex-wrap items-start justify-between gap-2">
+                    <div className="min-w-0">
+                      <span className="block text-[9px] font-black uppercase tracking-wide text-slate-500">
+                        Anunciado por
+                      </span>
+                      <span className="block truncate text-xs font-black text-white">
+                        {nomeDaImobiliariaDoImovel(imovelAberto) || 'Imobiliária responsável'}
+                      </span>
+                      {creciDoImovel(imovelAberto) && (
+                        <span className="block text-[10px] text-slate-400">
+                          CRECI {creciDoImovel(imovelAberto)}
+                        </span>
+                      )}
+                    </div>
+                    <button
+                      type="button"
+                      onClick={copiarLinkImovel}
+                      className="inline-flex shrink-0 cursor-pointer items-center gap-1.5 rounded-xl border border-slate-700 px-2.5 py-1.5 text-[10px] font-black uppercase tracking-wider text-slate-200 transition hover:border-[#10b981] hover:text-white"
+                    >
+                      <Link2 size={12} aria-hidden="true" />
+                      {linkCopiado ? 'Link copiado' : 'Compartilhar link'}
+                    </button>
+                  </div>
+
+                  {whatsappFicha ? (
+                    <a
+                      href={linkWhatsappFicha}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex w-full items-center justify-center gap-2 rounded-2xl bg-[#10b981] px-4 py-3 text-xs font-black uppercase tracking-wider text-[#020408] transition hover:opacity-90"
+                    >
+                      <Phone size={14} aria-hidden="true" />
+                      Falar no WhatsApp da imobiliária
+                    </a>
+                  ) : (
+                    <p className="rounded-xl border border-amber-500/40 bg-amber-500/10 px-3 py-2 text-[11px] leading-relaxed text-amber-200">
+                      Esta imobiliária ainda não publicou um WhatsApp neste anúncio. Deixe o seu contacto abaixo
+                      que o corretor responsável responde pelo CRM.
+                    </p>
+                  )}
+
+                  <form onSubmit={enviarLeadDoImovel} className="mt-3 space-y-2">
+                    <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+                      <input
+                        value={leadImovel.nome}
+                        onChange={(evento) =>
+                          setLeadImovel((prev) => ({ ...prev, nome: evento.target.value }))
+                        }
+                        placeholder="Seu nome"
+                        aria-label="Seu nome"
+                        autoComplete="name"
+                        className="w-full rounded-xl border border-slate-800 bg-slate-950 px-3 py-2.5 text-xs font-semibold text-white outline-none placeholder:text-slate-600 focus:border-[#10b981]"
+                      />
+                      <input
+                        value={leadImovel.whatsapp}
+                        onChange={(evento) =>
+                          setLeadImovel((prev) => ({ ...prev, whatsapp: evento.target.value }))
+                        }
+                        placeholder="Seu WhatsApp com DDD"
+                        aria-label="Seu WhatsApp com DDD"
+                        type="tel"
+                        inputMode="tel"
+                        autoComplete="tel"
+                        className="w-full rounded-xl border border-slate-800 bg-slate-950 px-3 py-2.5 text-xs font-semibold text-white outline-none placeholder:text-slate-600 focus:border-[#10b981]"
+                      />
+                    </div>
+                    <textarea
+                      value={leadImovel.mensagem}
+                      onChange={(evento) =>
+                        setLeadImovel((prev) => ({ ...prev, mensagem: evento.target.value }))
+                      }
+                      placeholder="Quer agendar uma visita? Escreva aqui (opcional)"
+                      aria-label="Mensagem para o corretor"
+                      rows={2}
+                      className="w-full rounded-xl border border-slate-800 bg-slate-950 px-3 py-2.5 text-xs font-semibold text-white outline-none placeholder:text-slate-600 focus:border-[#10b981]"
+                    />
+                    <button
+                      type="submit"
+                      disabled={leadEnviando}
+                      aria-busy={leadEnviando}
+                      className="w-full cursor-pointer rounded-2xl border border-[#10b981] px-4 py-2.5 text-[11px] font-black uppercase tracking-wider text-[#10b981] transition hover:bg-[#10b981]/10 disabled:cursor-not-allowed disabled:opacity-60"
+                    >
+                      {leadEnviando ? 'Enviando…' : 'Quero que a imobiliária me contacte'}
+                    </button>
+                  </form>
+
+                  {leadStatus.texto && (
+                    <p
+                      role={leadStatus.tipo === 'erro' ? 'alert' : 'status'}
+                      className={`mt-2 rounded-xl border px-3 py-2 text-[11px] font-bold leading-relaxed ${
+                        leadStatus.tipo === 'erro'
+                          ? 'border-rose-500/40 bg-rose-500/10 text-rose-200'
+                          : 'border-[#10b981]/40 bg-[#10b981]/10 text-[#10b981]'
+                      }`}
+                    >
+                      {leadStatus.texto}
+                    </p>
+                  )}
+
+                  <p className="mt-2 text-[10px] leading-relaxed text-slate-500">
+                    Nome e WhatsApp são usados apenas para responder a este anúncio e ficam registados no CRM da
+                    imobiliária responsável. Para correção ou exclusão, use o pedido no rodapé do portal.
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Rodapé do portal: quem opera, para que servem os dados e como pedir
           exclusão. O visitante é cliente da imobiliária; a plataforma é

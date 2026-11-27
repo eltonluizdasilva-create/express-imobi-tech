@@ -49,6 +49,7 @@ import {
   Calculator,
   Receipt,
   Lock,
+  LoaderCircle,
 } from 'lucide-react';
 
 // Componentes existentes do ecossistema
@@ -82,7 +83,8 @@ import ControleInteligenciaIA from './components/ControleInteligenciaIA';
 import GuiaDaAba from './components/ui/GuiaDaAba';
 import RodapeLegal from './components/ui/RodapeLegal';
 import { FOTOS_EXEMPLO, AVISO_FOTO_EXEMPLO, ehFotoExemplo, temFotoExemplo } from './lib/fotosExemplo';
-import { adicionarFotosImovel, MAX_FOTOS_IMOVEL } from './lib/fotosImovel';
+import { adicionarFotosImovel, bytesDaFoto, bytesDeFotos, limitarFotosAoOrcamento, MAX_FOTOS_IMOVEL, ORCAMENTO_FOTOS_BYTES } from './lib/fotosImovel';
+import { configParaOnboarding, snapshotMarcaImobiliaria } from './lib/configImobiliaria';
 import DorESolucao from './components/ui/DorESolucao';
 import LogoExpress from './components/ui/LogoExpress';
 import MicButton from './components/ui/MicButton';
@@ -112,7 +114,7 @@ import {
 import { useAuth } from './contexts/AuthContext';
 import useCarregamentoInicial from './hooks/useCarregamentoInicial.jsx';
 import { registrarEventoLead, TIPOS_EVENTO } from './services/girardEngine';
-import RodaProspeccao from './components/RodaProspeccao';
+import CockpitVisaoGeral from './components/imobi/CockpitVisaoGeral';
 import useQuickActions, { parseMoedaBR } from './hooks/useQuickActions';
 import { cabecalhosIA } from './lib/aiAuth';
 import {
@@ -639,20 +641,17 @@ export default function Admin() {
 
   const dadosImobiliaria = dadosImobCtx || dadosLegadoCtx;
 
+  // D-23.15 — a aba inicial do painel é a Central de Inteligência
+  // (`mapa_inteligencia`): é o primeiro lugar que o cliente vê ao entrar, com o
+  // mapa de integração visível sem cabeçalho duplicado. Aba gratuita e liberada
+  // para todos os papéis, então nenhuma guarda de plano precisa redirecionar.
+  const [abaAtiva, setAbaAtiva] = useState('mapa_inteligencia');
+
   // --- Conta MASTER da plataforma: só ela vê o alternador de demonstração ---
   // MASTER = VITE_SU (papelLogado 'master') ou custom claim admin=true no token.
   // (Declarado antes dos retornos de carregamento para a contagem de hooks não
   // mudar entre o primeiro render e os seguintes.)
   const [claimAdmin, setClaimAdmin] = useState(false);
-  useEffect(() => {
-    let vivo = true;
-    const conta = auth?.currentUser;
-    if (!conta?.getIdTokenResult) return undefined;
-    conta.getIdTokenResult()
-      .then((r) => { if (vivo) setClaimAdmin(r?.claims?.admin === true); })
-      .catch(() => {});
-    return () => { vivo = false; };
-  }, [auth?.currentUser]);
 
   // Degrau simulado pelo master no topo do painel. `master` = Admin Total
   // (padrão e único modo que abre tudo); os outros valores mostram exatamente
@@ -671,6 +670,34 @@ export default function Admin() {
       return 'master';
     }
   });
+
+  // Alternador Modo Lite (Modo Lite / Modo Completo): persistido em localStorage
+  const [modoLite, setModoLite] = useState(lerEstadoModoLite);
+
+  // Controle de planos, Trial e contexto do tenant
+  const [trialExpirou, setTrialExpirou] = useState(false);
+  const trialVerificadoRef = useRef(false);
+  const [toastModuloBloqueado, setToastModuloBloqueado] = useState(null);
+  const [modalUpgradeAba, setModalUpgradeAba] = useState(null);
+
+  const [dadosNegocioGlobal, setDadosNegocioGlobal] = useState({
+    codigoImovel: '',
+    cliente: '',
+    telefone: '',
+    imobiliariaId: '',
+    oficinaId: '',
+  });
+
+  useEffect(() => {
+    let vivo = true;
+    const conta = auth?.currentUser;
+    if (!conta?.getIdTokenResult) return undefined;
+    conta.getIdTokenResult()
+      .then((r) => { if (vivo) setClaimAdmin(r?.claims?.admin === true); })
+      .catch(() => {});
+    return () => { vivo = false; };
+  }, [auth?.currentUser]);
+
   useEffect(() => {
     try {
       localStorage.setItem(CHAVE_SIMULACAO_PLANO, nivelSimulado);
@@ -678,9 +705,6 @@ export default function Admin() {
       /* modo privado / storage bloqueado: a escolha vale só nesta sessão */
     }
   }, [nivelSimulado]);
-
-  // Alternador Modo Lite (Modo Lite / Modo Completo): persistido em localStorage
-  const [modoLite, setModoLite] = useState(lerEstadoModoLite);
 
   const toggleModoLite = useCallback(() => {
     setModoLite((prev) => {
@@ -751,12 +775,6 @@ export default function Admin() {
     document.title = 'Express Imobi Tech — Plataforma Imobiliária IA';
   }, []);
 
-  // D-23.15 — a aba inicial do painel é a Central de Inteligência
-  // (`mapa_inteligencia`): é o primeiro lugar que o cliente vê ao entrar, com o
-  // mapa de integração visível sem cabeçalho duplicado. Aba gratuita e liberada
-  // para todos os papéis, então nenhuma guarda de plano precisa redirecionar.
-  const [abaAtiva, setAbaAtiva] = useState('mapa_inteligencia');
-
   // Guardas de acesso também cobrem links diretos e estado antigo do painel.
   useEffect(() => {
     if (abaAtiva === 'reunioes-atas') {
@@ -822,6 +840,14 @@ export default function Admin() {
 
   // Modais próprios de Ação Rápida Imobiliária
   const [modalNovoImovel, setModalNovoImovel] = useState(false);
+  // Retorno da gravação do imóvel: o erro fica dentro do modal (com o formulário
+  // preenchido) e o sucesso vira faixa na aba Captação, já com o modal fechado.
+  const [erroImovel, setErroImovel] = useState('');
+  const [sucessoImovel, setSucessoImovel] = useState('');
+
+  useEffect(() => {
+    if (modalNovoImovel) setErroImovel('');
+  }, [modalNovoImovel]);
   // Tour guiado: abre sozinho 1x por conta; este estado é só o "Refazer tour".
   const [tourManual, setTourManual] = useState(false);
   const [modalNovoLeadImobi, setModalNovoLeadImobi] = useState(false);
@@ -914,20 +940,6 @@ export default function Admin() {
   // fora do catálogo enviado ao /api/ai (e da contagem mostrada na tela).
   const imoveisDisponiveisSimIA = useMemo(() => filtrarCatalogoDisponivel(listaImoveis), [listaImoveis]);
 
-  // Controle de planos e Trial
-  const [trialExpirou, setTrialExpirou] = useState(false);
-  const trialVerificadoRef = useRef(false);
-  const [toastModuloBloqueado, setToastModuloBloqueado] = useState(null);
-  const [modalUpgradeAba, setModalUpgradeAba] = useState(null);
-
-  const [dadosNegocioGlobal, setDadosNegocioGlobal] = useState({
-    codigoImovel: '',
-    cliente: '',
-    telefone: '',
-    imobiliariaId: '',
-    oficinaId: '',
-  });
-
   // ---- visibilidade do menu por papel (espelho das Firestore Rules) ----
   // `papelEfetivo` = papel real ou 'master' no modo desenvolvedor local.
   const ehGestorUI = ehGestorDoPapel(papelEfetivo);
@@ -994,7 +1006,7 @@ export default function Admin() {
     }
   }, [isTrial, dataFimTrial]);
 
-  const { carregarFinanceiro, carregarPlanos } = useCarregamentoInicial(imobiliariaId, {
+  const { carregarFinanceiro, carregarPlanos, carregarConfig } = useCarregamentoInicial(imobiliariaId, {
     setListaCarros: noop,
     setListaFinanceiro,
     setListaEstoque: noop,
@@ -1125,6 +1137,12 @@ export default function Admin() {
     if (typeof carregarPlanos === 'function') carregarPlanos();
   }, [carregarPlanos]);
 
+  // Identidade da imobiliária (nome/CRECI/WhatsApp): sem esta leitura o estado
+  // `config` ficava sempre vazio e o checklist "Primeiros Passos" travava em 0/3.
+  useEffect(() => {
+    if (typeof carregarConfig === 'function') carregarConfig();
+  }, [carregarConfig]);
+
   // Sincroniza imóveis com status "Ativo" / "Disponível" na Vitrine Digital Pública do Portal do Cliente
   useEffect(() => {
     try {
@@ -1245,7 +1263,7 @@ export default function Admin() {
     if (!urlDireta) setNovaFotoInput('');
   };
 
-  const lerFotoComprimida = (file) =>
+  const lerFotoComprimida = (file, maxW = 900, qualidade = 0.78) =>
     new Promise((resolve, reject) => {
       const reader = new FileReader();
       reader.onerror = () => reject(reader.error || new Error('Falha ao ler o arquivo de imagem.'));
@@ -1255,14 +1273,13 @@ export default function Admin() {
         img.onload = () => {
           try {
             const canvas = document.createElement('canvas');
-            const maxW = 900;
             const scale = img.width > maxW ? maxW / img.width : 1;
             canvas.width = Math.round(img.width * scale);
             canvas.height = Math.round(img.height * scale);
             const ctx2d = canvas.getContext('2d');
             if (!ctx2d) throw new Error('Não foi possível preparar a compressão da imagem.');
             ctx2d.drawImage(img, 0, 0, canvas.width, canvas.height);
-            resolve(canvas.toDataURL('image/jpeg', 0.78));
+            resolve(canvas.toDataURL('image/jpeg', qualidade));
           } catch (error) {
             reject(error);
           }
@@ -1297,9 +1314,28 @@ export default function Admin() {
     );
 
     try {
+      // As fotos vão em base64 DENTRO do documento do imóvel, e o Firestore
+      // limita cada documento a 1 MB. Sem contar bytes, o `addDoc` falhava e a
+      // tela ficava sem loading e sem o modal fechar (bug de produção).
+      let restante = Math.max(0, ORCAMENTO_FOTOS_BYTES - bytesDeFotos(fotosAtuais));
+      let descartadasPorPeso = 0;
       const fotosNovas = [];
+
       for (const arquivo of selecionados) {
-        fotosNovas.push(await lerFotoComprimida(arquivo));
+        if (restante <= 0) {
+          descartadasPorPeso += 1;
+          continue;
+        }
+        // Tenta 900px/0.78; se estourar o que resta, reduz resolução e qualidade.
+        let foto = await lerFotoComprimida(arquivo, 900, 0.78);
+        if (bytesDaFoto(foto) > restante) foto = await lerFotoComprimida(arquivo, 720, 0.62);
+        if (bytesDaFoto(foto) > restante) foto = await lerFotoComprimida(arquivo, 600, 0.5);
+        if (bytesDaFoto(foto) > restante) {
+          descartadasPorPeso += 1;
+          continue;
+        }
+        restante -= bytesDaFoto(foto);
+        fotosNovas.push(foto);
       }
 
       setFormImovel((prev) => {
@@ -1312,6 +1348,14 @@ export default function Admin() {
           fotoCapa: atuais[0] || adicionadas[0] || '',
         };
       });
+
+      if (descartadasPorPeso > 0) {
+        setAvisoFotosImovel(
+          `${descartadasPorPeso} foto(s) ficaram fora: a ficha do imóvel tem limite de ~${Math.round(
+            ORCAMENTO_FOTOS_BYTES / 1024,
+          )} KB de fotos (documento de 1 MB no Firestore). Nas restantes, use o campo de link da imagem.`,
+        );
+      }
     } catch (error) {
       console.error('Erro ao comprimir fotos do imóvel:', error);
       setAvisoFotosImovel('Não foi possível processar as fotos selecionadas. Tente novamente.');
@@ -1352,60 +1396,97 @@ export default function Admin() {
   };
 
   const salvarImovelImobi = async (e) => {
-    e.preventDefault();
-    if (!formImovel.titulo.trim()) return;
+    e?.preventDefault?.();
+    // Guarda contra duplo clique: sem isto, o mesmo imóvel era gravado 2x.
+    if (salvandoAcao) return;
+
+    const titulo = String(formImovel.titulo || '').trim();
+    if (!titulo) {
+      setErroImovel('Informe o título do imóvel para salvar.');
+      return;
+    }
+
     setSalvandoAcao(true);
+    setErroImovel('');
+    setSucessoImovel('');
+
+    const fotosEscolhidas = Array.isArray(formImovel.fotos) ? formImovel.fotos : [];
+    const listaFotos = limitarFotosAoOrcamento(fotosEscolhidas);
+    const fotosDescartadas = fotosEscolhidas.length - listaFotos.length;
+    // Marca do tenant copiada para o anúncio: o visitante anónimo do portal não
+    // consegue ler `config/geral`, mas lê o imóvel público (firestore.rules).
+    const marca = snapshotMarcaImobiliaria(config, dadosImobiliaria);
+
+    const novoImovel = {
+      ...formImovel,
+      titulo,
+      fotos: listaFotos,
+      fotoCapa: listaFotos[0] || '',
+      publico: formImovel.publico === true,
+      padraoImovel: formImovel.padraoImovel || 'Médio Padrão',
+      valor: parseMoedaBR(formImovel.valor),
+      codigo: `IMB-${Math.floor(1000 + Math.random() * 9000)}`,
+      status: formImovel.status || 'Ativo',
+      ...marca,
+      whatsappCorretor: marca.imobiliariaWhatsapp || '',
+      criadoEm: serverTimestamp(),
+    };
+
     try {
-      const listaFotos = Array.isArray(formImovel.fotos) ? formImovel.fotos : [];
-      const capaEscolhida = listaFotos[0] || '';
-      const novoImovel = {
-        ...formImovel,
-        fotos: listaFotos,
-        fotoCapa: capaEscolhida,
-        publico: formImovel.publico === true,
-        padraoImovel: formImovel.padraoImovel || 'Médio Padrão',
-        valor: parseMoedaBR(formImovel.valor),
-        codigo: `IMB-${Math.floor(1000 + Math.random() * 9000)}`,
-        status: formImovel.status || 'Ativo',
-        whatsappCorretor: config?.whatsapp || config?.telefone || '',
-        criadoEm: serverTimestamp(),
-      };
       if (imobiliariaId) {
         await addDoc(collection(db, 'oficinas', imobiliariaId, 'imoveis_imobi'), novoImovel);
       } else {
         setListaImoveis((prev) => [{ id: `local_${Date.now()}`, ...novoImovel }, ...(prev || [])]);
       }
-      setFormImovel({
-        titulo: '',
-        tipo: 'Apartamento',
-        finalidade: 'Venda',
-        padraoImovel: 'Médio Padrão',
-        status: 'Ativo',
-        publico: false,
-        publicarPortais: true,
-        bairro: '',
-        quartos: '2',
-        valor: '',
-        fotos: [],
-        fotoCapa: '',
-        quadra: '',
-        lote: '',
-        metragemTerreno: '',
-        hectares: '',
-        aptidaoRural: 'Dupla Aptidão (Lavoura e Pecuária)',
-        benfeitorias: '',
-        modalidadeGarantia: 'Seguro Fiança / CredPago',
-        regrasLocacao: '',
-      });
-      setNovaFotoInput('');
-      setAvisoFotosImovel('');
-      setModalNovoImovel(false);
-      setAbaAtiva('captacao_imobi');
     } catch (err) {
       console.error('Erro ao captar imóvel:', err);
-    } finally {
+      const grandeDemais = /too large|1048576|6000000|invalid-argument|exceeds/i.test(
+        `${err?.code || ''} ${err?.message || ''}`,
+      );
+      setErroImovel(
+        grandeDemais
+          ? 'A ficha do imóvel ficou maior que o limite do banco (1 MB). Remova 1 ou 2 fotos, ou cadastre-as por link, e salve de novo.'
+          : `Não foi possível salvar o imóvel: ${err?.message || 'erro desconhecido'}. Tente novamente.`,
+      );
       setSalvandoAcao(false);
+      return;
     }
+
+    // Documento gravado: fecha o modal JÁ e confirma na aba. O estado do
+    // formulário é limpo depois, para o corretor não ver o modal vazio piscando.
+    setModalNovoImovel(false);
+    setSalvandoAcao(false);
+    setSucessoImovel(
+      fotosDescartadas > 0
+        ? `Imóvel salvo com sucesso! ${fotosDescartadas} foto(s) ficaram fora por causa do limite de 1 MB do documento.`
+        : 'Imóvel salvo com sucesso! Ele já aparece na vitrine e no portal.',
+    );
+
+    setFormImovel({
+      titulo: '',
+      tipo: 'Apartamento',
+      finalidade: 'Venda',
+      padraoImovel: 'Médio Padrão',
+      status: 'Ativo',
+      publico: false,
+      publicarPortais: true,
+      bairro: '',
+      quartos: '2',
+      valor: '',
+      fotos: [],
+      fotoCapa: '',
+      quadra: '',
+      lote: '',
+      metragemTerreno: '',
+      hectares: '',
+      aptidaoRural: 'Dupla Aptidão (Lavoura e Pecuária)',
+      benfeitorias: '',
+      modalidadeGarantia: 'Seguro Fiança / CredPago',
+      regrasLocacao: '',
+    });
+    setNovaFotoInput('');
+    setAvisoFotosImovel('');
+    setAbaAtiva('captacao_imobi');
   };
 
   // ─── Roleta Rotativa e Justa (Cálculo de Carga em Tempo Real do CRM) ─────────
@@ -2604,26 +2685,32 @@ export default function Admin() {
 
           {/* ─── ABA 1: PAINEL EXECUTIVO (VISÃO GERAL) ─────────────────────────── */}
         {abaAtiva === 'dashboard_imobi' && (
-          <div className="space-y-4">
+          <div className="space-y-6">
             <OnboardingPrimeiroUso
-              config={config}
+              config={configParaOnboarding(config, dadosImobiliaria)}
               imoveis={listaImoveis}
               onIrPara={setAbaAtiva}
               onNovoImovel={() => setModalNovoImovel(true)}
             />
-          <RodaProspeccao
-            leads={listaLeads}
-            visitas={listaVisitas}
-            propostas={listaPropostas}
-            tarefas={listaTarefas}
-            oficinaId={imobiliariaId}
-            papelLogado={papelEfetivo}
-            usuarioNome={dadosImobiliaria?.nomeCorretor || dadosImobiliaria?.corretorResponsavel || ''}
-            usuarioUid={currentUserId}
-            vgv={(listaImoveis || []).reduce((acc, item) => acc + (Number(item?.valor) || 0), 0)}
-            comissao={(listaImoveis || []).reduce((acc, item) => acc + (Number(item?.valor) || 0), 0) * 0.06}
-            onAbrirAba={setAbaAtiva}
-          />
+            <CockpitVisaoGeral
+              imoveis={listaImoveis}
+              leads={listaLeads}
+              visitas={listaVisitas}
+              propostas={listaPropostas}
+              tarefas={listaTarefas}
+              oficinaId={imobiliariaId}
+              papelLogado={papelEfetivo}
+              usuarioNome={dadosImobiliaria?.nomeCorretor || dadosImobiliaria?.corretorResponsavel || ''}
+              usuarioUid={currentUserId}
+              dadosImobiliaria={dadosImobiliaria}
+              isEscuro={isEscuro}
+              onAbrirAba={setAbaAtiva}
+              onAbrirPrestacao={(imovel) => {
+                setPrestacaoFoco(imovel);
+                setAbaAtiva('mapa_inteligencia');
+              }}
+              onNovoImovel={() => setModalNovoImovel(true)}
+            />
           </div>
         )}
 
@@ -2665,6 +2752,23 @@ export default function Admin() {
                     Restam {Math.max(0, 5 - (Array.isArray(listaImoveis) ? listaImoveis.length : 0))} vagas de imóveis grátis.
                   </span>
                 )}
+              </div>
+            )}
+            {sucessoImovel && (
+              <div
+                role="status"
+                className="flex items-start justify-between gap-3 rounded-2xl border border-emerald-500/40 bg-emerald-500/10 px-4 py-3 text-xs font-bold text-emerald-200"
+              >
+                <span className="flex items-center gap-2">
+                  <CheckCircle2 size={14} aria-hidden="true" /> {sucessoImovel}
+                </span>
+                <button
+                  type="button"
+                  onClick={() => setSucessoImovel('')}
+                  className="shrink-0 rounded-lg border border-emerald-400/40 px-2 py-0.5 text-[10px] font-black uppercase text-emerald-300 hover:bg-emerald-500/20 cursor-pointer"
+                >
+                  Fechar
+                </button>
               </div>
             )}
             <CaptacaoNicho
@@ -3971,6 +4075,11 @@ export default function Admin() {
                   })}
                 </div>
               )}
+
+              <p className="text-[10px] text-slate-500">
+                Peso das fotos nesta ficha: {(bytesDeFotos(formImovel.fotos) / 1024).toFixed(0)} KB de ~
+                {Math.round(ORCAMENTO_FOTOS_BYTES / 1024)} KB (o documento do Firestore aceita 1 MB no total).
+              </p>
             </div>
 
             {/* CAMPOS ESPECÍFICOS 1: LOTEAMENTOS / CONDOMÍNIOS (QUADRA, LOTE E METRAGEM) */}
@@ -4092,21 +4201,38 @@ export default function Admin() {
               </div>
             )}
 
+            {erroImovel && (
+              <p
+                role="alert"
+                className="rounded-xl border border-rose-500/40 bg-rose-500/10 px-3 py-2 text-[11px] font-bold leading-relaxed text-rose-200"
+              >
+                {erroImovel}
+              </p>
+            )}
+
             <div className="flex justify-end gap-2 pt-2">
               <button
                 type="button"
                 onClick={() => setModalNovoImovel(false)}
-                className="px-4 py-2 rounded-xl bg-slate-800 text-slate-300 text-xs font-bold cursor-pointer"
+                disabled={salvandoAcao}
+                className="px-4 py-2 rounded-xl bg-slate-800 text-slate-300 text-xs font-bold cursor-pointer disabled:opacity-60"
               >
                 Cancelar
               </button>
               <button
                 type="submit"
                 disabled={salvandoAcao}
+                aria-busy={salvandoAcao}
                 style={{ backgroundColor: '#10b981' }}
-                className="px-5 py-2 rounded-xl text-white text-xs font-bold cursor-pointer"
+                className="flex items-center gap-2 px-5 py-2 rounded-xl text-white text-xs font-bold cursor-pointer disabled:cursor-wait disabled:opacity-60"
               >
-                {salvandoAcao ? 'Salvando...' : 'Salvar Imóvel'}
+                {salvandoAcao ? (
+                  <>
+                    <LoaderCircle size={14} className="animate-spin" aria-hidden="true" /> Salvando…
+                  </>
+                ) : (
+                  'Salvar Imóvel'
+                )}
               </button>
             </div>
           </form>

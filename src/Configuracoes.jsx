@@ -9,12 +9,20 @@ import { db } from './lib/firebase';
 import SolicitacaoExclusaoDados from './components/privacidade/SolicitacaoExclusaoDados';
 import { abrirPreferenciasCookies } from './lib/consentimentoCookies';
 import { resumoRastreamento } from './lib/transparenciaDados';
+import {
+  CONFIG_CANONICA,
+  CONFIG_LEGADA,
+  mesclarConfigImobiliaria,
+  normalizarConfigImobiliaria,
+} from './lib/configImobiliaria';
 
 const ESTADO_INICIAL = {
   nome: '',
+  nomeImobiliaria: '',
   creci: '',
   endereco: '',
   telefone: '',
+  whatsapp: '',
   logoUrl: '',
   pixKey: '',
 };
@@ -38,9 +46,22 @@ export default function Configuracoes({ oficinaId, onSalvo }) {
   useEffect(() => {
     async function carregar() {
       if (!oficinaId) return;
-      const snap = await getDoc(doc(db, 'oficinas', oficinaId, 'configuracoes', 'geral'));
-      if (snap.exists()) {
-        setConfig((prev) => ({ ...prev, ...snap.data() }));
+      try {
+        // O painel e o checklist leem `config/geral`; versões antigas desta tela
+        // gravaram em `configuracoes/geral`. Lê as duas e deixa a canônica vencer.
+        const [canonica, legada] = await Promise.all([
+          getDoc(doc(db, 'oficinas', oficinaId, CONFIG_CANONICA.colecao, CONFIG_CANONICA.docId)).catch(() => null),
+          getDoc(doc(db, 'oficinas', oficinaId, CONFIG_LEGADA.colecao, CONFIG_LEGADA.docId)).catch(() => null),
+        ]);
+        const dados = mesclarConfigImobiliaria(
+          legada?.exists() ? legada.data() : null,
+          canonica?.exists() ? canonica.data() : null,
+        );
+        if (Object.keys(dados).length) {
+          setConfig((prev) => normalizarConfigImobiliaria({ ...prev, ...dados }));
+        }
+      } catch (error) {
+        console.warn('[Configurações] Não foi possível carregar a config:', error?.message);
       }
     }
 
@@ -48,7 +69,14 @@ export default function Configuracoes({ oficinaId, onSalvo }) {
   }, [oficinaId]);
 
   const atualizarCampo = (campo, valor) => {
-    setConfig((prev) => ({ ...prev, [campo]: valor }));
+    setConfig((prev) => {
+      const proximo = { ...prev, [campo]: valor };
+      // Nome e telefone têm dois nomes no banco (legado × canônico): mantém os
+      // dois em sincronia para o checklist e o anúncio público não divergirem.
+      if (campo === 'nome') proximo.nomeImobiliaria = valor;
+      if (campo === 'telefone') proximo.whatsapp = valor;
+      return proximo;
+    });
   };
 
   const salvar = async () => {
@@ -56,8 +84,27 @@ export default function Configuracoes({ oficinaId, onSalvo }) {
 
     setSalvando(true);
     try {
-      await setDoc(doc(db, 'oficinas', oficinaId, 'configuracoes', 'geral'), config, { merge: true });
-      if (onSalvo) await onSalvo();
+      const dados = normalizarConfigImobiliaria(config);
+      // Grava no caminho canônico (lido por AdminNovo, checklist e portal) e
+      // mantém o espelho legado para não quebrar telas antigas.
+      await setDoc(
+        doc(db, 'oficinas', oficinaId, CONFIG_CANONICA.colecao, CONFIG_CANONICA.docId),
+        dados,
+        { merge: true },
+      );
+      await setDoc(
+        doc(db, 'oficinas', oficinaId, CONFIG_LEGADA.colecao, CONFIG_LEGADA.docId),
+        dados,
+        { merge: true },
+      );
+      setConfig(dados);
+      if (onSalvo) {
+        try {
+          await onSalvo();
+        } catch (erroCallback) {
+          console.warn('[Configurações] Salvo, mas o recarregamento do painel falhou:', erroCallback?.message);
+        }
+      }
       alert('Configurações da imobiliária salvas com sucesso!');
     } catch (error) {
       alert('Erro ao salvar configurações: ' + error.message);
@@ -231,11 +278,14 @@ export default function Configuracoes({ oficinaId, onSalvo }) {
           <label className={labelCls}>TELEFONE / WHATSAPP</label>
           <input
             type="text"
-            value={config.telefone}
+            value={config.telefone || config.whatsapp || ''}
             onChange={(e) => atualizarCampo('telefone', e.target.value)}
             placeholder="Ex: (11) 99999-9999"
             className={inputCls}
           />
+          <p className="mt-1.5 text-[11px] text-slate-500">
+            É este número que aparece no anúncio público dos seus imóveis e no botão de WhatsApp do portal.
+          </p>
         </div>
 
         <div>

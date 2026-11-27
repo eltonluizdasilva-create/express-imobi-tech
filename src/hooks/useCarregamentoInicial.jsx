@@ -1,6 +1,7 @@
 import { useCallback } from 'react';
 import { db } from '../lib/firebase';
 import { collection, getDocs, doc, getDoc, query, orderBy } from 'firebase/firestore';
+import { CONFIG_CANONICA, CONFIG_LEGADA, mesclarConfigImobiliaria, normalizarConfigImobiliaria } from '../lib/configImobiliaria';
 
 export default function useCarregamentoInicial(oficinaId, setters) {
   const { setListaCarros, setListaFinanceiro, setListaEstoque, setConfig, setPlanosSistema, logado } = setters;
@@ -27,8 +28,22 @@ export default function useCarregamentoInicial(oficinaId, setters) {
 
   const carregarConfig = useCallback(async () => {
     if (!oficinaId || !logado) return;
-    const s = await getDoc(doc(db, 'oficinas', oficinaId, 'config', 'geral'));
-    if (s.exists()) setConfig(s.data());
+    try {
+      // Caminho canônico (config/geral) + espelho legado (configuracoes/geral):
+      // a tela de Configurações antiga gravava no segundo, e o painel só lia o
+      // primeiro — a marca nunca chegava ao checklist nem ao anúncio público.
+      const [canonica, legada] = await Promise.all([
+        getDoc(doc(db, 'oficinas', oficinaId, CONFIG_CANONICA.colecao, CONFIG_CANONICA.docId)).catch(() => null),
+        getDoc(doc(db, 'oficinas', oficinaId, CONFIG_LEGADA.colecao, CONFIG_LEGADA.docId)).catch(() => null),
+      ]);
+      const dados = mesclarConfigImobiliaria(
+        legada?.exists() ? legada.data() : null,
+        canonica?.exists() ? canonica.data() : null,
+      );
+      if (Object.keys(dados).length) setConfig(normalizarConfigImobiliaria(dados));
+    } catch (e) {
+      console.warn('Aviso carregarConfig:', e?.message);
+    }
   }, [oficinaId, logado, setConfig]);
 
   const carregarPlanos = useCallback(async () => {

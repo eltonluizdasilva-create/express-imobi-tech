@@ -81,10 +81,21 @@ export function marcaConfigurada(config) {
   return Boolean(nome) && zap.length >= 10;
 }
 
+/**
+ * Alternativa do passo 1: CRECI informado também prova que a marca foi
+ * configurada. O corretor que preenche o CRECI na tela de Configurações via
+ * nome + CRECI e o checklist ficava em 0/3 mesmo com o cadastro completo.
+ */
+export function creciInformado(config) {
+  if (!config || typeof config !== 'object') return false;
+  const creci = String(config.creci || config.registroCreci || '').replace(/\s+/g, '');
+  return creci.length >= 4;
+}
+
 export function avaliarPassos({ config, imoveis, passo3Feito = false } = {}) {
   const total = Array.isArray(imoveis) ? imoveis.length : 0;
   const concluidos = {
-    marca: marcaConfigurada(config),
+    marca: marcaConfigurada(config) || creciInformado(config),
     imovel: total >= 1,
     divulgar: Boolean(passo3Feito),
   };
