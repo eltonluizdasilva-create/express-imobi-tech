@@ -90,10 +90,24 @@ test('4. Inspeção de código: TopbarAdmin possui alternador ao lado do tema e 
   assert.ok(idxLogout > idxLite, 'Botão Sair deve ficar após o botão Modo Lite');
 });
 
-test('5. Inspeção de código: AdminNovo conecta estado e persistência', () => {
+test('5. Inspeção de código: AdminNovo conecta estado, faixa informativa e CockpitVisaoGeral', () => {
   const adminFonte = readFileSync(new URL('../src/AdminNovo.jsx', import.meta.url), 'utf8');
+  const cockpitFonte = readFileSync(new URL('../src/components/imobi/CockpitVisaoGeral.jsx', import.meta.url), 'utf8');
 
   assert.ok(adminFonte.includes('modoLite'), 'AdminNovo deve ter estado modoLite');
   assert.ok(adminFonte.includes('toggleModoLite'), 'AdminNovo deve ter toggleModoLite');
   assert.ok(adminFonte.includes('modoLite={modoLite}'), 'AdminNovo deve passar modoLite para os componentes filhos');
+
+  // Faixa informativa discreta no topo do conteúdo
+  assert.ok(
+    adminFonte.includes('Modo Lite ativo') &&
+    adminFonte.includes('exibindo apenas módulos Grátis e PRO. Alterne para Completo para acessar PLUS e IA.') &&
+    adminFonte.includes('Ativar Completo'),
+    'AdminNovo deve exibir a faixa informativa com texto e botão "Ativar Completo"',
+  );
+
+  // CockpitVisaoGeral recebe modoLite e sinaliza etapas PLUS
+  assert.ok(cockpitFonte.includes('modoLite = false') || cockpitFonte.includes('modoLite'), 'CockpitVisaoGeral deve receber prop modoLite');
+  assert.ok(cockpitFonte.includes('Modo Completo'), 'CockpitVisaoGeral deve exibir tag Modo Completo nos passos PLUS');
+  assert.ok(cockpitFonte.includes('isEtapaPlusLite'), 'CockpitVisaoGeral deve aplicar opacidade suave nos passos PLUS em Modo Lite');
 });

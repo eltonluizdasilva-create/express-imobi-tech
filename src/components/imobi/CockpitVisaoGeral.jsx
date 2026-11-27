@@ -61,6 +61,7 @@ export default function CockpitVisaoGeral({
   dadosImobiliaria = null,
   temaClaro = false,
   isEscuro = true,
+  modoLite = false,
   onAbrirAba = () => {},
   onAbrirPrestacao = () => {},
   onNovoImovel = () => {},
@@ -165,6 +166,7 @@ export default function CockpitVisaoGeral({
             const isGratis = etapa.plano === 'gratis';
             const isPro = etapa.plano === 'pro';
             const isPlus = etapa.plano === 'plus';
+            const isEtapaPlusLite = modoLite && isPlus;
 
             const badgeEstilo = isGratis
               ? 'text-emerald-400 bg-emerald-500/10 border-emerald-500/30'
@@ -178,6 +180,8 @@ export default function CockpitVisaoGeral({
                 data-testid={`etapa-${etapa.id}`}
                 onClick={() => onAbrirAba(etapa.abaDestino)}
                 className={`group relative flex-shrink-0 w-[190px] md:w-auto p-3.5 rounded-2xl cursor-pointer transition-all duration-200 border hover:-translate-y-0.5 hover:shadow-lg ${
+                  isEtapaPlusLite ? 'opacity-65 hover:opacity-95' : ''
+                } ${
                   isTemaClaro
                     ? 'bg-white border-slate-200 hover:border-emerald-500 shadow-sm'
                     : 'bg-[#020408] border-slate-800 hover:border-emerald-500/70'
@@ -195,11 +199,21 @@ export default function CockpitVisaoGeral({
                   <span className="text-[10px] font-black tracking-widest text-slate-500">
                     PASSO {etapa.passo}
                   </span>
-                  <span
-                    className={`px-1.5 py-0.5 rounded-md text-[9px] font-black tracking-wide border ${badgeEstilo}`}
-                  >
-                    {etapa.badge}
-                  </span>
+                  <div className="flex items-center gap-1">
+                    {isEtapaPlusLite && (
+                      <span
+                        title="Etapa disponível no Modo Completo"
+                        className="px-1.5 py-0.5 rounded text-[8px] font-black uppercase tracking-wider bg-purple-500/20 text-purple-300 border border-purple-500/40"
+                      >
+                        Modo Completo
+                      </span>
+                    )}
+                    <span
+                      className={`px-1.5 py-0.5 rounded-md text-[9px] font-black tracking-wide border ${badgeEstilo}`}
+                    >
+                      {etapa.badge}
+                    </span>
+                  </div>
                 </div>
 
                 {/* Ícone com halo e Quantidade em Destaque */}

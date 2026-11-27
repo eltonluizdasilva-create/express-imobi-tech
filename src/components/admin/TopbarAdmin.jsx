@@ -153,30 +153,53 @@ export default function TopbarAdmin({
           {isEscuro ? <Sun size={15} aria-hidden="true" /> : <Moon size={15} aria-hidden="true" />}
         </button>
 
-        {/* Alternador Modo Lite (Modo Lite / Modo Completo) */}
-        <button
-          type="button"
-          onClick={toggleModoLite}
-          className={`flex items-center gap-1.5 px-2 sm:px-2.5 py-1 h-8 rounded-lg border text-xs font-bold transition cursor-pointer ${
-            modoLite
-              ? 'border-emerald-500/60 bg-emerald-500/20 text-emerald-300 ring-1 ring-emerald-500/30'
-              : isEscuro
-                ? 'border-slate-700/80 bg-slate-800/60 text-slate-300 hover:text-white hover:bg-slate-800'
-                : 'border-slate-200 bg-slate-100 text-slate-600 hover:text-slate-900 hover:bg-slate-200 shadow-sm'
+        {/* Alternador Segmentado Modo Lite / Modo Completo */}
+        <div
+          role="group"
+          aria-label="Alternar entre Modo Lite e Modo Completo"
+          className={`flex items-center p-0.5 rounded-lg border text-[10px] sm:text-xs font-bold transition shrink-0 ${
+            isEscuro ? 'border-slate-800 bg-[#060a10]' : 'border-slate-200 bg-slate-100 shadow-sm'
           }`}
-          title={
-            modoLite
-              ? 'Modo Lite ativo (focado no dia a dia do corretor) — clique para ativar o Modo Completo'
-              : 'Modo Completo ativo — clique para ativar o Modo Lite'
-          }
-          aria-label={modoLite ? 'Mudar para Modo Completo' : 'Mudar para Modo Lite'}
-          aria-pressed={modoLite}
         >
-          <Sparkles size={13} className={modoLite ? 'text-emerald-400 fill-emerald-400' : 'text-slate-400'} aria-hidden="true" />
-          <span className="font-black uppercase text-[10px] sm:text-[11px] tracking-wider whitespace-nowrap">
-            {modoLite ? 'Modo Lite' : 'Modo Completo'}
-          </span>
-        </button>
+          {/* Opção Modo Lite */}
+          <button
+            type="button"
+            onClick={toggleModoLite}
+            disabled={modoLite}
+            className={`flex items-center gap-1 px-2 py-0.5 sm:px-2.5 sm:py-1 rounded-md text-[10px] sm:text-[11px] font-black uppercase tracking-wider transition cursor-pointer ${
+              modoLite
+                ? 'bg-emerald-500 text-slate-950 shadow-sm shadow-emerald-500/20 cursor-default'
+                : isEscuro
+                  ? 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/50'
+                  : 'text-slate-600 hover:text-slate-900 hover:bg-slate-200/60'
+            }`}
+            title="Modo Lite: focado no dia a dia (apenas Grátis e PRO)"
+            aria-label="Modo Lite"
+            aria-pressed={modoLite}
+          >
+            <Sparkles size={11} className={modoLite ? 'text-slate-950 fill-slate-950' : 'text-slate-400'} aria-hidden="true" />
+            <span>Lite</span>
+          </button>
+
+          {/* Opção Modo Completo */}
+          <button
+            type="button"
+            onClick={toggleModoLite}
+            disabled={!modoLite}
+            className={`flex items-center gap-1 px-2 py-0.5 sm:px-2.5 sm:py-1 rounded-md text-[10px] sm:text-[11px] font-black uppercase tracking-wider transition cursor-pointer ${
+              !modoLite
+                ? 'bg-indigo-600 text-white shadow-sm shadow-indigo-600/30 cursor-default'
+                : isEscuro
+                  ? 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/50'
+                  : 'text-slate-600 hover:text-slate-900 hover:bg-slate-200/60'
+            }`}
+            title="Modo Completo: todas as ferramentas, incluindo PLUS e IA"
+            aria-label="Modo Completo"
+            aria-pressed={!modoLite}
+          >
+            <span>Completo</span>
+          </button>
+        </div>
 
         {/* Botão Sair */}
         <button
