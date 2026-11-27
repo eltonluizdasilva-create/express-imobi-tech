@@ -9,6 +9,7 @@ import {
   SOFIA_CONFIG,
   descreverImovel,
   formatarValor,
+  getPeriodoDiaBrasilia,
   montarCatalogo,
   montarCorpoSofia,
   montarPromptSofia,
@@ -155,6 +156,32 @@ ok('espelho do front também remove o handoff', () => {
   const { texto, gatilho } = separarGatilho('Temos 2 opções.\n[GATILHO_HERMES: {"acao":"CHAMAR_IAGO","motivo":"apto"}]\nQual bairro?');
   assert.equal(texto, 'Temos 2 opções.\nQual bairro?');
   assert.deepEqual(gatilho, { acao: 'CHAMAR_IAGO', motivo: 'apto' });
+});
+
+ok('getPeriodoDiaBrasilia calcula Bom dia, Boa tarde e Boa noite em America/Sao_Paulo com h23', () => {
+  // 08:00 BRT (11:00 UTC) -> Bom dia
+  assert.equal(getPeriodoDiaBrasilia(new Date('2026-11-27T11:00:00Z')), 'Bom dia');
+  // 11:59 BRT (14:59 UTC) -> Bom dia
+  assert.equal(getPeriodoDiaBrasilia(new Date('2026-11-27T14:59:00Z')), 'Bom dia');
+  // 12:00 BRT (15:00 UTC) -> Boa tarde
+  assert.equal(getPeriodoDiaBrasilia(new Date('2026-11-27T15:00:00Z')), 'Boa tarde');
+  // 17:59 BRT (20:59 UTC) -> Boa tarde
+  assert.equal(getPeriodoDiaBrasilia(new Date('2026-11-27T20:59:00Z')), 'Boa tarde');
+  // 18:00 BRT (21:00 UTC) -> Boa noite
+  assert.equal(getPeriodoDiaBrasilia(new Date('2026-11-27T21:00:00Z')), 'Boa noite');
+  // 23:59 BRT (2026-11-28T02:59:00Z) -> Boa noite
+  assert.equal(getPeriodoDiaBrasilia(new Date('2026-11-28T02:59:00Z')), 'Boa noite');
+  // 04:00 BRT (07:00 UTC) -> Boa noite
+  assert.equal(getPeriodoDiaBrasilia(new Date('2026-11-27T07:00:00Z')), 'Boa noite');
+});
+
+ok('montarPromptSofia injeta {{periodo_dia}} dinâmico e garante persona Pólen', () => {
+  const prompt = montarPromptSofia({ periodoDia: 'Boa tarde', nomeImobiliaria: 'Imobiliária Modelo' });
+  assert.match(prompt, /Você é a Pólen/);
+  assert.match(prompt, /Nunca se apresente como Sofia/);
+  assert.match(prompt, /Boa tarde! Sou a Pólen/);
+  assert.match(prompt, /Período do dia atual: Boa tarde/);
+  assert.equal(prompt.includes('{{periodo_dia}}'), false);
 });
 
 console.log(`\n${passou} verificações PASS${process.exitCode ? ' — COM FALHAS' : ''}`);

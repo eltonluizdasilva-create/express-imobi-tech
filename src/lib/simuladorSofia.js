@@ -24,6 +24,28 @@
 
 import { linhaSegura, montarCorpoSofia, separarGatilho } from '../agent/sofiaPrompt.js';
 
+/**
+ * Retorna o período do dia ('Bom dia', 'Boa tarde' ou 'Boa noite')
+ * no fuso horário oficial de Brasília (America/Sao_Paulo) com hourCycle h23.
+ *
+ * @param {Date} [data=new Date()]
+ * @returns {'Bom dia' | 'Boa tarde' | 'Boa noite'}
+ */
+export function getPeriodoDiaBrasilia(data = new Date()) {
+  const d = data instanceof Date && !Number.isNaN(data.getTime()) ? data : new Date();
+  const horaStr = new Intl.DateTimeFormat('pt-BR', {
+    timeZone: 'America/Sao_Paulo',
+    hour: 'numeric',
+    hourCycle: 'h23',
+  }).format(d);
+
+  const horaBr = parseInt(horaStr, 10);
+
+  if (horaBr >= 5 && horaBr < 12) return 'Bom dia';
+  if (horaBr >= 12 && horaBr < 18) return 'Boa tarde';
+  return 'Boa noite';
+}
+
 export const AVISO_CATALOGO_VAZIO =
   'Nenhum imóvel cadastrado ainda. Cadastre o primeiro imóvel em Captação & Imóveis para a Pólen responder com o catálogo real.';
 
@@ -144,6 +166,7 @@ export async function responderSofiaSimulacao({
   catalogoImoveis = [],
   nomeImobiliaria,
   nomeCorretor,
+  periodoDia,
   cabecalhos = { 'Content-Type': 'application/json' },
   fetchImpl,
 } = {}) {
@@ -165,12 +188,15 @@ export async function responderSofiaSimulacao({
     return { ok: false, codigo: 'sem_fetch', erro: 'Este navegador não consegue chamar a IA.' };
   }
 
+  const periodo = periodoDia || getPeriodoDiaBrasilia();
+
   const corpo = montarCorpoSofia({
     historico: [...historicoParaMensagens(historico), { role: 'user', content: texto }],
     catalogoImoveis: catalogo,
     modo: 'simulacao',
     nomeImobiliaria,
     nomeCorretor,
+    periodoDia: periodo,
   });
 
   let resposta;

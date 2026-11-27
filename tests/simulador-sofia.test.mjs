@@ -11,6 +11,7 @@ import {
   AVISO_SEM_DISPONIVEIS,
   descreverHandoff,
   filtrarCatalogoDisponivel,
+  getPeriodoDiaBrasilia,
   historicoParaMensagens,
   normalizarGatilho,
   responderSofiaSimulacao,
@@ -293,6 +294,17 @@ await ok('HTTP real (localhost): Bearer chega no header e a tag não volta para 
   } finally {
     await new Promise((resolve) => servidor.close(resolve));
   }
+});
+
+await ok('getPeriodoDiaBrasilia é exportada e injetada no corpo para o /api/ai', async () => {
+  assert.equal(typeof getPeriodoDiaBrasilia, 'function');
+  const fetchFalso = fakeFetch(respJson({ text: 'Olá!' }));
+  await responderSofiaSimulacao({ ...BASE, periodoDia: 'Boa tarde', fetchImpl: fetchFalso });
+  const { corpo } = fetchFalso.chamadas[0];
+  assert.equal(corpo.periodoDia, 'Boa tarde');
+  assert.match(corpo.systemPrompt, /Boa tarde/);
+  assert.equal(corpo.systemPrompt.includes('{{periodo_dia}}'), false);
+  assert.match(corpo.systemPrompt, /Você é a Pólen/);
 });
 
 console.log(`\n${passou} verificações PASS${process.exitCode ? ' — COM FALHAS' : ''}`);

@@ -206,23 +206,44 @@ function normalizarArquivos(brutos) {
   return { arquivos, avisos };
 }
 
+/**
+ * Retorna o período do dia ('Bom dia', 'Boa tarde' ou 'Boa noite')
+ * com base no horário oficial de Brasília (America/Sao_Paulo) e hourCycle h23.
+ */
+export function getPeriodoDiaBrasilia(data = new Date()) {
+  const d = data instanceof Date && !Number.isNaN(data.getTime()) ? data : new Date();
+  const horaStr = new Intl.DateTimeFormat('pt-BR', {
+    timeZone: 'America/Sao_Paulo',
+    hour: 'numeric',
+    hourCycle: 'h23',
+  }).format(d);
+
+  const horaBr = parseInt(horaStr, 10);
+
+  if (horaBr >= 5 && horaBr < 12) return 'Bom dia';
+  if (horaBr >= 12 && horaBr < 18) return 'Boa tarde';
+  return 'Boa noite';
+}
+
 function normalizarMensagens(corpo) {
   const lista = [];
+  const periodo = corpo.periodoDia || getPeriodoDiaBrasilia();
+  const aplicarPeriodo = (texto) => (typeof texto === 'string' ? texto.replaceAll('{{periodo_dia}}', periodo) : texto);
 
   if (typeof corpo.systemPrompt === 'string' && corpo.systemPrompt.trim()) {
-    lista.push({ role: 'system', content: corpo.systemPrompt.slice(0, LIMITE_PROMPT) });
+    lista.push({ role: 'system', content: aplicarPeriodo(corpo.systemPrompt).slice(0, LIMITE_PROMPT) });
   }
 
   if (Array.isArray(corpo.messages)) {
     corpo.messages.slice(0, LIMITE_MENSAGENS).forEach((m) => {
       if (!m || typeof m.content !== 'string') return;
       const role = ['system', 'assistant', 'user'].includes(m.role) ? m.role : 'user';
-      lista.push({ role, content: m.content.slice(0, LIMITE_PROMPT) });
+      lista.push({ role, content: aplicarPeriodo(m.content).slice(0, LIMITE_PROMPT) });
     });
   }
 
   if (typeof corpo.prompt === 'string' && corpo.prompt.trim()) {
-    lista.push({ role: 'user', content: corpo.prompt.slice(0, LIMITE_PROMPT) });
+    lista.push({ role: 'user', content: aplicarPeriodo(corpo.prompt).slice(0, LIMITE_PROMPT) });
   }
 
   return lista;

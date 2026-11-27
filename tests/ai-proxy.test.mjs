@@ -246,4 +246,23 @@ ok('tipo não suportado é descartado com aviso', () => {
 const r405 = await chamar(livre, { method: 'PUT', headers: {} });
 ok('método não suportado → 405', () => assert.equal(r405.statusCode, 405));
 
+/* 7. injeção dinâmica de {{periodo_dia}} no horário de Brasília */
+chamadas = stubFetch(RESPOSTA_GEMINI('Olá!'));
+const rPeriodo = await chamar(livre, {
+  method: 'POST',
+  headers: {},
+  body: {
+    provider: 'gemini',
+    systemPrompt: 'Saudação: {{periodo_dia}}! Sou a Pólen.',
+    prompt: 'Olá',
+  },
+});
+ok('api/ai substitui {{periodo_dia}} pelo horário de Brasília', () => {
+  assert.equal(rPeriodo.statusCode, 200);
+  const enviado = JSON.parse(chamadas[0].init.body);
+  const instrucao = enviado.systemInstruction?.parts?.[0]?.text || '';
+  assert.match(instrucao, /Bom dia|Boa tarde|Boa noite/);
+  assert.equal(instrucao.includes('{{periodo_dia}}'), false);
+});
+
 console.log(`\n${passou} verificações PASS${process.exitCode ? ' — COM FALHAS' : ''}`);
